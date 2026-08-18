@@ -1,0 +1,87 @@
+spring:
+  application:
+    name: cleany
+
+  datasource:
+    url: ${cleany.postgres.url}
+    username: ${cleany.postgres.username}
+    password: ${cleany.postgres.password}
+    driverClassName: org.postgresql.Driver
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  liquibase:
+    enabled: true
+    database-change-log-table: cleany_changelog
+    database-change-log-lock-table: cleany_changelog_lock
+
+  http:
+    clients:
+      connect-timeout: ${TELEGRAM_API_CONNECT_TIMEOUT:3s}
+      read-timeout: ${TELEGRAM_API_READ_TIMEOUT:35s}
+  web:
+    error:
+      include-stacktrace: never
+      include-message: never
+
+cleany:
+  postgres:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+cleaning:
+  booking-days-ahead: ${CLEANING_BOOKING_DAYS_AHEAD:7}
+  currency: TRY
+  zone-id: Europe/Istanbul
+  prices:
+    regular:
+      studio: ${CLEANING_PRICES_REGULAR_STUDIO}
+      one-plus-one: ${CLEANING_PRICES_REGULAR_ONE_PLUS_ONE}
+      two-plus-one: ${CLEANING_PRICES_REGULAR_TWO_PLUS_ONE}
+      three-plus-one: ${CLEANING_PRICES_REGULAR_THREE_PLUS_ONE}
+      four-plus-one: ${CLEANING_PRICES_REGULAR_FOUR_PLUS_ONE}
+      duplex-surcharge: ${CLEANING_PRICES_REGULAR_DUPLEX_SURCHARGE}
+    deep:
+      studio: ${CLEANING_PRICES_DEEP_STUDIO}
+      one-plus-one: ${CLEANING_PRICES_DEEP_ONE_PLUS_ONE}
+      two-plus-one: ${CLEANING_PRICES_DEEP_TWO_PLUS_ONE}
+      three-plus-one: ${CLEANING_PRICES_DEEP_THREE_PLUS_ONE}
+      four-plus-one: ${CLEANING_PRICES_DEEP_FOUR_PLUS_ONE}
+      duplex-surcharge: ${CLEANING_PRICES_DEEP_DUPLEX_SURCHARGE}
+
+cleaner:
+  telegram-ids: ${CLEANER_TELEGRAM_IDS:}
+
+admin:
+  telegram-ids: ${ADMIN_TELEGRAM_IDS:}
+
+telegram:
+  bot-token: ${TELEGRAM_BOT_TOKEN}
+  webhook-secret: ${TELEGRAM_WEBHOOK_SECRET:}
+  init-data-max-age: ${TELEGRAM_INIT_DATA_MAX_AGE:1h}
+  init-data-allowed-clock-skew: ${TELEGRAM_INIT_DATA_ALLOWED_CLOCK_SKEW:30s}
+  bot-enabled: ${TELEGRAM_BOT_ENABLED:true}
+  api-base-url: ${TELEGRAM_API_BASE_URL:https://api.telegram.org}
+  update-mode: ${TELEGRAM_UPDATE_MODE:polling}
+  polling-timeout-seconds: ${TELEGRAM_POLLING_TIMEOUT_SECONDS:25}
+  polling-retry-delay: ${TELEGRAM_POLLING_RETRY_DELAY:3s}
+  polling-drop-pending-updates: ${TELEGRAM_POLLING_DROP_PENDING_UPDATES:false}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true

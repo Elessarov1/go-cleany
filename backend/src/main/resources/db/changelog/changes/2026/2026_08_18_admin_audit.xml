@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260818-03" author="go-cleany">
+        <createTable tableName="cleaning_order_event">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_cleaning_order_event" nullable="false"/>
+            </column>
+            <column name="order_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="event_type" type="VARCHAR(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="from_status" type="VARCHAR(32)"/>
+            <column name="to_status" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="actor_type" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="actor_telegram_user_id" type="BIGINT"/>
+            <column name="details" type="VARCHAR(1000)"/>
+            <column name="occurred_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="cleaning_order_event"
+                baseColumnNames="order_id"
+                constraintName="fk_cleaning_order_event_order"
+                referencedTableName="cleaning_order"
+                referencedColumnNames="id"
+                onDelete="CASCADE"/>
+
+        <createIndex tableName="cleaning_order_event" indexName="idx_cleaning_order_event_order_time">
+            <column name="order_id"/>
+            <column name="occurred_at"/>
+        </createIndex>
+
+        <sql dbms="postgresql">
+            alter table cleaning_order_event
+                add constraint ck_cleaning_order_event_type
+                    check (event_type in ('IMPORTED', 'CREATED', 'ACCEPTED', 'REPORT_STARTED',
+                                          'PHOTO_ADDED', 'COMMENT_UPDATED', 'COMPLETED',
+                                          'CANCELLED_BY_CUSTOMER', 'CANCELLED_BY_CLEANER')),
+                add constraint ck_cleaning_order_event_actor
+                    check (actor_type in ('CUSTOMER', 'CLEANER', 'SYSTEM')),
+                add constraint ck_cleaning_order_event_from_status
+                    check (from_status is null or from_status in
+                           ('NEW', 'ACCEPTED', 'AWAITING_REPORT', 'COMPLETED', 'REJECTED', 'CANCELLED')),
+                add constraint ck_cleaning_order_event_to_status
+                    check (to_status in
+                           ('NEW', 'ACCEPTED', 'AWAITING_REPORT', 'COMPLETED', 'REJECTED', 'CANCELLED'));
+
+            insert into cleaning_order_event (
+                order_id, event_type, from_status, to_status, actor_type,
+                actor_telegram_user_id, details, occurred_at
+            )
+            select id, 'IMPORTED', null, status, 'SYSTEM', null,
+                   'Заказ существовал до включения журнала аудита', created_at
+              from cleaning_order;
+        </sql>
+
+        <rollback>
+            <dropTable tableName="cleaning_order_event"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

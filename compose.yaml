@@ -1,0 +1,73 @@
+name: cleany-local
+
+services:
+  postgres:
+    image: postgres:16.14-alpine3.24
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cleany}
+      POSTGRES_USER: ${POSTGRES_USER:-cleany}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cleany-local-password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-cleany}?ApplicationName=cleany
+      DB_USERNAME: ${POSTGRES_USER:-cleany}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-cleany-local-password}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?Set TELEGRAM_BOT_TOKEN in .env.docker}
+      TELEGRAM_BOT_ENABLED: "true"
+      TELEGRAM_UPDATE_MODE: polling
+      TELEGRAM_POLLING_TIMEOUT_SECONDS: ${TELEGRAM_POLLING_TIMEOUT_SECONDS:-25}
+      TELEGRAM_POLLING_RETRY_DELAY: ${TELEGRAM_POLLING_RETRY_DELAY:-3s}
+      TELEGRAM_POLLING_DROP_PENDING_UPDATES: ${TELEGRAM_POLLING_DROP_PENDING_UPDATES:-false}
+      CLEANER_TELEGRAM_IDS: ${CLEANER_TELEGRAM_IDS:-1}
+      ADMIN_TELEGRAM_IDS: ${ADMIN_TELEGRAM_IDS:-1}
+      LOCAL_TELEGRAM_USER_ID: ${LOCAL_TELEGRAM_USER_ID:-1}
+      LOCAL_TELEGRAM_USERNAME: ${LOCAL_TELEGRAM_USERNAME:-browser_preview}
+      LOCAL_TELEGRAM_FIRST_NAME: ${LOCAL_TELEGRAM_FIRST_NAME:-Alex}
+      LOCAL_TELEGRAM_LAST_NAME: ${LOCAL_TELEGRAM_LAST_NAME:-}
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--XX:MaxRAMPercentage=75.0}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/health | grep -q ok"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

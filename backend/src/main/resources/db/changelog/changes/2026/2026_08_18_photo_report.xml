@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260818-01" author="cleany">
+        <addColumn tableName="cleaning_order">
+            <column name="report_input_active" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <createIndex tableName="cleaning_order" indexName="idx_cleaning_order_active_report">
+            <column name="cleaner_telegram_user_id"/>
+            <column name="status"/>
+            <column name="report_input_active"/>
+        </createIndex>
+
+        <sql dbms="postgresql">
+            create unique index uq_cleaning_order_active_report_per_cleaner
+                on cleaning_order (cleaner_telegram_user_id)
+                where report_input_active = true;
+        </sql>
+
+        <rollback>
+            <sql dbms="postgresql">
+                drop index if exists uq_cleaning_order_active_report_per_cleaner;
+            </sql>
+            <dropIndex tableName="cleaning_order" indexName="idx_cleaning_order_active_report"/>
+            <dropColumn tableName="cleaning_order" columnName="report_input_active"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="20260818-02" author="cleany">
+        <addUniqueConstraint
+                tableName="cleaning_order_photo"
+                columnNames="order_id, telegram_file_unique_id"
+                constraintName="uq_cleaning_order_photo_file"/>
+
+        <rollback>
+            <dropUniqueConstraint
+                    tableName="cleaning_order_photo"
+                    constraintName="uq_cleaning_order_photo_file"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

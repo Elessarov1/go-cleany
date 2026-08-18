@@ -1,0 +1,271 @@
+package com.cleany.order;
+
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.Currency;
+import java.util.List;
+import java.util.Optional;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+import org.springframework.context.ApplicationEventPublisher;
+
+import com.cleany.configuration.CleanerProperties;
+import com.cleany.configuration.CleaningProperties;
+import com.cleany.pricing.CleaningPriceService;
+import com.cleany.telegram.CustomerIdentityProvider;
+import com.cleany.telegram.TelegramPrincipal;
+
+class CleaningOrderServiceTest {
+
+    private static final Instant NOW = Instant.parse("2026-08-17T09:00:00Z");
+    private static final long CLEANER_ID = 123456789L;
+
+    private CleaningOrderRepository repository;
+    private CleaningOrderPhotoRepository photoRepository;
+    private CleaningOrderEventRepository eventRepository;
+    private ApplicationEventPublisher eventPublisher;
+    private CleaningOrderService service;
+
+    @BeforeEach
+    void setUp() {
+        repository = Mockito.mock(CleaningOrderRepository.class);
+        photoRepository = Mockito.mock(CleaningOrderPhotoRepository.class);
+        eventRepository = Mockito.mock(CleaningOrderEventRepository.class);
+        eventPublisher = Mockito.mock(ApplicationEventPublisher.class);
+        CleaningProperties properties = properties();
+        CustomerIdentityProvider identityProvider = () ->
+                new TelegramPrincipal(900001L, "browser_preview", "Alex", null);
+        service = new CleaningOrderService(
+                repository,
+                photoRepository,
+                eventRepository,
+                new CleaningPriceService(properties),
+                properties,
+                new CleanerProperties(List.of(CLEANER_ID)),
+                identityProvider,
+                Clock.fixed(NOW, ZoneOffset.UTC),
+                eventPublisher
+        );
+    }
+
+    @Test
+    void orderRequest_trustedCustomer_priceAndIdentityStoredFromBackend() {
+        Mockito.when(repository.save(Mockito.any(CleaningOrder.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        var command = new CreateCleaningOrderCommand(
+                ServiceArea.MAHMUTLAR,
+                " Barbaros Cd. 24 ",
+                ApartmentType.TWO_PLUS_ONE,
+                true,
+                CleaningType.REGULAR,
+                LocalDate.of(2026, 8, 18),
+                " +90 555 123 45 67 ",
+                " Key with security "
+        );
+
+        service.createOrder(command);
+
+        var captor = ArgumentCaptor.forClass(CleaningOrder.class);
+        Mockito.verify(repository).save(captor.capture());
+        CleaningOrder order = captor.getValue();
+        Assertions.assertEquals(900001L, order.getTelegramUserId());
+        Assertions.assertEquals(0, order.getPrice().compareTo(BigDecimal.valueOf(1400)));
+        Assertions.assertEquals("TRY", order.getCurrency());
+        Assertions.assertEquals(CleaningOrderStatus.NEW, order.getStatus());
+        Assertions.assertEquals("Barbaros Cd. 24", order.getAddress());
+        var eventCaptor = ArgumentCaptor.forClass(CleaningOrderEvent.class);
+        Mockito.verify(eventRepository).save(eventCaptor.capture());
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(OrderEventType.CREATED, eventCaptor.getValue().getEventType()),
+                () -> Assertions.assertEquals(OrderActorType.CUSTOMER, eventCaptor.getValue().getActorType()),
+                () -> Assertions.assertEquals(
+                        Long.valueOf(900001L),
+                        eventCaptor.getValue().getActorTelegramUserId()
+                ),
+                () -> Assertions.assertEquals(CleaningOrderStatus.NEW, eventCaptor.getValue().getToStatus())
+        );
+        Mockito.verify(eventPublisher).publishEvent(Mockito.any(CleaningOrderCreatedEvent.class));
+    }
+
+    @Test
+    void orderRequest_dateOutsideBookingHorizon_exceptionThrown() {
+        var command = new CreateCleaningOrderCommand(
+                ServiceArea.KESTEL,
+                "Address",
+                ApartmentType.STUDIO,
+                false,
+                CleaningType.REGULAR,
+                LocalDate.of(2026, 8, 25),
+                "+90 555",
+                null
+        );
+
+        Assertions.assertThrows(
+                BookingDateNotAvailableException.class,
+                () -> service.createOrder(command)
+        );
+    }
+
+    @Test
+    void newOrder_configuredCleanerClaims_orderAcceptedByConditionalUpdate() {
+        CleaningOrder acceptedOrder = sampleOrder();
+        Mockito.when(repository.claimNewOrder(
+                43L,
+                CLEANER_ID,
+                NOW,
+                CleaningOrderStatus.NEW,
+                CleaningOrderStatus.ACCEPTED
+        )).thenReturn(1);
+        Mockito.when(repository.findById(43L)).thenReturn(Optional.of(acceptedOrder));
+
+        CleaningOrder result = service.acceptOrder(43L, CLEANER_ID);
+
+        Assertions.assertSame(acceptedOrder, result);
+        Mockito.verify(repository).claimNewOrder(
+                43L,
+                CLEANER_ID,
+                NOW,
+                CleaningOrderStatus.NEW,
+                CleaningOrderStatus.ACCEPTED
+        );
+    }
+
+    @Test
+    void alreadyClaimedOrder_secondCleanerAttemptsClaim_conflictThrown() {
+        Mockito.when(repository.claimNewOrder(
+                43L,
+                CLEANER_ID,
+                NOW,
+                CleaningOrderStatus.NEW,
+                CleaningOrderStatus.ACCEPTED
+        )).thenReturn(0);
+
+        Assertions.assertThrows(
+                OrderClaimConflictException.class,
+                () -> service.acceptOrder(43L, CLEANER_ID)
+        );
+    }
+
+    @Test
+    void acceptedOrder_assignedCleanerCancels_orderCancelled() {
+        CleaningOrder order = Mockito.mock(CleaningOrder.class);
+        Mockito.when(repository.findById(43L)).thenReturn(Optional.of(order));
+
+        CleaningOrder result = service.cancelOrderByCleaner(43L, CLEANER_ID);
+
+        Assertions.assertSame(order, result);
+        Mockito.verify(order).cancelByCleaner(CLEANER_ID);
+    }
+
+    @Test
+    void acceptedOrder_unconfiguredCleanerAttemptsCancel_authorizationRejected() {
+        Assertions.assertThrows(
+                CleanerNotAuthorizedException.class,
+                () -> service.cancelOrderByCleaner(43L, 777L)
+        );
+        Mockito.verifyNoInteractions(repository);
+    }
+
+    @Test
+    void acceptedOrder_finishSelected_reportCollectionActivated() {
+        CleaningOrder order = Mockito.mock(CleaningOrder.class);
+        Mockito.when(repository.findById(43L)).thenReturn(Optional.of(order));
+
+        CleaningOrder result = service.markAwaitingReport(43L, CLEANER_ID);
+
+        Assertions.assertSame(order, result);
+        Mockito.verify(order).requireCanStartReport(CLEANER_ID);
+        Mockito.verify(repository).deactivateOtherReportInputs(CLEANER_ID, 43L);
+        Mockito.verify(order).startReportCollection(CLEANER_ID);
+    }
+
+    @Test
+    void activeReport_photoAndCaptionStored_idempotently() {
+        CleaningOrder order = Mockito.mock(CleaningOrder.class);
+        Mockito.when(order.getId()).thenReturn(43L);
+        Mockito.when(order.getCleanerComment()).thenReturn("Looks good");
+        Mockito.when(repository.findByCleanerTelegramUserIdAndReportInputActiveTrue(CLEANER_ID))
+                .thenReturn(Optional.of(order));
+        Mockito.when(photoRepository.existsByOrderIdAndTelegramFileUniqueId(43L, "unique-1"))
+                .thenReturn(false);
+        Mockito.when(photoRepository.countByOrderId(43L)).thenReturn(1L);
+
+        CleaningOrderReportProgress progress = service.addPhotoToActiveReport(
+                CLEANER_ID,
+                "file-1",
+                "unique-1",
+                " Looks good "
+        );
+
+        var photoCaptor = ArgumentCaptor.forClass(CleaningOrderPhoto.class);
+        Mockito.verify(photoRepository).save(photoCaptor.capture());
+        Assertions.assertAll(
+                () -> Assertions.assertEquals("file-1", photoCaptor.getValue().getTelegramFileId()),
+                () -> Assertions.assertEquals("unique-1", photoCaptor.getValue().getTelegramFileUniqueId()),
+                () -> Assertions.assertEquals(43L, progress.orderId()),
+                () -> Assertions.assertEquals(1L, progress.photoCount()),
+                () -> Assertions.assertTrue(progress.commentPresent())
+        );
+        Mockito.verify(order).requireReportAccess(CLEANER_ID);
+        Mockito.verify(order).updateCleanerComment(CLEANER_ID, "Looks good");
+    }
+
+    @Test
+    void reportWithoutPhotos_deliveryRejected() {
+        CleaningOrder order = Mockito.mock(CleaningOrder.class);
+        Mockito.when(repository.findById(43L)).thenReturn(Optional.of(order));
+        Mockito.when(photoRepository.findAllByOrderIdOrderByCreatedAt(43L)).thenReturn(List.of());
+
+        Assertions.assertThrows(
+                PhotoReportEmptyException.class,
+                () -> service.getReportForDelivery(43L, CLEANER_ID)
+        );
+        Mockito.verify(order).requireReportAccess(CLEANER_ID);
+    }
+
+    private static CleaningOrder sampleOrder() {
+        return new CleaningOrder(
+                900001L,
+                "browser_preview",
+                "Alex",
+                "+90 555",
+                ServiceArea.MAHMUTLAR,
+                "Address",
+                ApartmentType.TWO_PLUS_ONE,
+                false,
+                CleaningType.REGULAR,
+                BigDecimal.valueOf(1100),
+                "TRY",
+                LocalDate.of(2026, 8, 18),
+                null,
+                NOW
+        );
+    }
+
+    private static CleaningProperties properties() {
+        var regular = new CleaningProperties.PriceGroup(
+                amount(800), amount(900), amount(1100), amount(1350), amount(1650), amount(300)
+        );
+        var deep = new CleaningProperties.PriceGroup(
+                amount(1200), amount(1400), amount(1700), amount(2050), amount(2450), amount(450)
+        );
+        return new CleaningProperties(
+                7,
+                Currency.getInstance("TRY"),
+                ZoneId.of("Europe/Istanbul"),
+                new CleaningProperties.Prices(regular, deep)
+        );
+    }
+
+    private static BigDecimal amount(long value) {
+        return BigDecimal.valueOf(value);
+    }
+}

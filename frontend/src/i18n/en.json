@@ -1,0 +1,247 @@
+{
+  "app": {
+    "tagline": "A clean home, without the back-and-forth",
+    "homeLabel": "go-cleany home",
+    "navigation": {
+      "label": "Primary navigation",
+      "book": "Book",
+      "orders": "Orders",
+      "admin": "Admin"
+    }
+  },
+  "common": {
+    "back": "Back",
+    "loading": "Loading…",
+    "retry": "Try again",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "optional": "Optional",
+    "notProvided": "Not provided",
+    "errorTitle": "Something went wrong"
+  },
+  "create": {
+    "eyebrow": "Apartment cleaning in Alanya",
+    "title": "Book a cleaner in a few taps",
+    "subtitle": "Choose what you need, see the fixed price, and let a cleaner confirm the date with you.",
+    "area": {
+      "step": "01",
+      "title": "Where should we come?",
+      "hint": "We currently work in three nearby areas."
+    },
+    "apartment": {
+      "step": "02",
+      "title": "What is your apartment like?",
+      "duplexTitle": "Is it a duplex?",
+      "duplexHint": "A fixed surcharge is included in the price."
+    },
+    "cleaning": {
+      "step": "03",
+      "title": "Choose the cleaning",
+      "included": "What is included?",
+      "includedTitle": "Included in {{type}} cleaning",
+      "exclusions": "Not included"
+    },
+    "details": {
+      "step": "04",
+      "title": "Date and contact details",
+      "date": "Preferred date",
+      "dateHint": "The cleaner will confirm the order and contact you if the exact time needs to be clarified.",
+      "address": "Full address",
+      "addressPlaceholder": "Street, building, entrance, apartment",
+      "phone": "Phone number",
+      "phonePlaceholder": "+90 5xx xxx xx xx",
+      "comment": "Comment",
+      "commentPlaceholder": "Access details, pets, or anything useful for the cleaner"
+    },
+    "summary": {
+      "title": "Your cleaning",
+      "pending": "Select the apartment and cleaning type to see the price",
+      "fixed": "Fixed price",
+      "directPayment": "Pay the cleaner directly after cleaning. go-cleany does not process your payment."
+    },
+    "submit": "Book for {{price}}",
+    "submitting": "Creating your order…",
+    "validation": {
+      "area": "Choose an area",
+      "apartmentType": "Choose an apartment type",
+      "cleaningType": "Choose a cleaning type",
+      "requestedDate": "Choose a preferred date",
+      "address": "Enter the full address",
+      "phone": "Enter a phone number"
+    },
+    "error": "We could not create the order. Please try again."
+  },
+  "areas": {
+    "MAHMUTLAR": "Mahmutlar",
+    "KARGICAK": "Kargıcak",
+    "KESTEL": "Kestel"
+  },
+  "apartments": {
+    "STUDIO": "1+0 / Studio",
+    "ONE_PLUS_ONE": "1+1",
+    "TWO_PLUS_ONE": "2+1",
+    "THREE_PLUS_ONE": "3+1",
+    "FOUR_PLUS_ONE": "4+1"
+  },
+  "cleaning": {
+    "REGULAR": {
+      "title": "Regular",
+      "description": "A fresh, tidy home for everyday comfort.",
+      "included": [
+        "Floors",
+        "Dust and surfaces",
+        "Bathroom and toilet",
+        "Kitchen surfaces",
+        "Mirrors",
+        "Trash removal"
+      ],
+      "excluded": [
+        "Exterior windows",
+        "Post-construction cleaning",
+        "Furniture dry cleaning"
+      ]
+    },
+    "DEEP": {
+      "title": "Deep",
+      "description": "A more thorough clean when your home needs extra care.",
+      "included": [
+        "All regular-cleaning areas",
+        "Detailed kitchen surfaces",
+        "Detailed bathroom surfaces",
+        "Doors and reachable fixtures",
+        "Extra attention to buildup"
+      ],
+      "excluded": [
+        "Post-construction cleaning",
+        "Furniture dry cleaning",
+        "Specialist restoration work"
+      ]
+    }
+  },
+  "orders": {
+    "eyebrow": "Your history",
+    "title": "My orders",
+    "subtitle": "Track confirmation and completion in one place.",
+    "emptyTitle": "No cleanings yet",
+    "emptyText": "Your first order will appear here after you book it.",
+    "emptyAction": "Book a cleaning",
+    "open": "View details",
+    "loadError": "We could not load your orders."
+  },
+  "details": {
+    "eyebrow": "Order #{{id}}",
+    "title": "Cleaning details",
+    "timelineTitle": "Order progress",
+    "cleaning": "Cleaning",
+    "date": "Preferred date",
+    "area": "Area",
+    "address": "Address",
+    "apartment": "Apartment",
+    "phone": "Phone",
+    "customerComment": "Your comment",
+    "cleanerComment": "Cleaner comment",
+    "photoReport": "Photo report",
+    "photos_one": "{{count}} photo sent",
+    "photos_other": "{{count}} photos sent",
+    "price": "Price",
+    "payment": "Pay the cleaner directly after cleaning.",
+    "cancel": "Cancel order",
+    "cancelConfirm": "Cancel this order?",
+    "cancelling": "Cancelling…",
+    "cancelError": "The order could not be cancelled.",
+    "loadError": "We could not find this order."
+  },
+  "created": {
+    "eyebrow": "Order sent",
+    "title": "We’re finding your cleaner",
+    "text": "The cleaner will confirm the order. We will notify you in Telegram.",
+    "date": "Preferred date",
+    "price": "Fixed price",
+    "details": "View order details",
+    "another": "Book another cleaning"
+  },
+  "status": {
+    "NEW": "Waiting for a cleaner",
+    "ACCEPTED": "Confirmed",
+    "AWAITING_REPORT": "Cleaning finished",
+    "COMPLETED": "Completed",
+    "REJECTED": "Unavailable",
+    "CANCELLED": "Cancelled",
+    "help": {
+      "NEW": "Your order has been sent to the cleaning team.",
+      "ACCEPTED": "A cleaner has accepted your order and may contact you about the time.",
+      "AWAITING_REPORT": "The cleaner is preparing your photo report.",
+      "COMPLETED": "The cleaning and photo report are complete.",
+      "REJECTED": "Unfortunately, the team cannot fulfil this order.",
+      "CANCELLED": "This order has been cancelled."
+    }
+  },
+  "admin": {
+    "eyebrow": "go-cleany / operations",
+    "title": "Service overview",
+    "subtitle": "Current metrics and the order log, without direct database access.",
+    "statsLabel": "Order statistics",
+    "stats": {
+      "total": "Total",
+      "today": "Today",
+      "new": "New",
+      "active": "Active",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "amount": "Completed revenue"
+    },
+    "orders": {
+      "title": "Recent orders",
+      "subtitle": "Open an order to see its complete history.",
+      "filterLabel": "Filter by status",
+      "all": "All",
+      "empty": "There are no orders with this status."
+    },
+    "orderEyebrow": "Order #{{id}}",
+    "orderTitle": "Order record",
+    "customer": "Customer",
+    "cleaner": "Cleaner Telegram ID",
+    "notAssigned": "Not assigned",
+    "history": {
+      "title": "Order history",
+      "subtitle": "Events are retained in an append-only log."
+    },
+    "events": {
+      "IMPORTED": "Order added to the log",
+      "CREATED": "Order created",
+      "ACCEPTED": "Cleaner accepted the order",
+      "REPORT_STARTED": "Photo report started",
+      "PHOTO_ADDED": "Photo added",
+      "COMMENT_UPDATED": "Cleaner comment updated",
+      "COMPLETED": "Order completed",
+      "CANCELLED_BY_CUSTOMER": "Order cancelled by customer",
+      "CANCELLED_BY_CLEANER": "Order cancelled by cleaner"
+    },
+    "actors": {
+      "CUSTOMER": "customer",
+      "CLEANER": "cleaner",
+      "SYSTEM": "system"
+    },
+    "loadError": "The administrative statistics could not be loaded.",
+    "orderLoadError": "The order history could not be loaded."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "action": "Go home"
+  },
+  "preview": {
+    "title": "Preview",
+    "language": "Language",
+    "scenario": "Scenario",
+    "scenarios": {
+      "empty": "Empty",
+      "NEW": "New order",
+      "ACCEPTED": "Accepted",
+      "AWAITING_REPORT": "Awaiting report",
+      "COMPLETED": "Completed",
+      "REJECTED": "Rejected",
+      "CANCELLED": "Cancelled"
+    }
+  }
+}

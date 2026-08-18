@@ -1,0 +1,67 @@
+spring:
+  application:
+    name: cleany-test
+
+  datasource:
+    driverClassName: org.postgresql.Driver
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  liquibase:
+    enabled: true
+    database-change-log-table: cleany_changelog
+    database-change-log-lock-table: cleany_changelog_lock
+
+cleaning:
+  booking-days-ahead: 7
+  currency: TRY
+  zone-id: Europe/Istanbul
+  prices:
+    regular:
+      studio: 800
+      one-plus-one: 900
+      two-plus-one: 1100
+      three-plus-one: 1350
+      four-plus-one: 1650
+      duplex-surcharge: 300
+    deep:
+      studio: 1200
+      one-plus-one: 1400
+      two-plus-one: 1700
+      three-plus-one: 2050
+      four-plus-one: 2450
+      duplex-surcharge: 450
+
+cleaner:
+  telegram-ids:
+    - 123456789
+    - 987654321
+
+admin:
+  telegram-ids:
+    - 900001
+
+telegram:
+  bot-token: 123456789:test-token
+  webhook-secret: test-not-configured
+  init-data-max-age: 1h
+  init-data-allowed-clock-skew: 30s
+  bot-enabled: false
+  api-base-url: https://api.telegram.org
+  update-mode: polling
+  polling-timeout-seconds: 25
+  polling-retry-delay: 3s
+  polling-drop-pending-updates: false
+
+logging:
+  level:
+    root: ERROR
+    com.cleany: DEBUG
+    org.hibernate: ERROR

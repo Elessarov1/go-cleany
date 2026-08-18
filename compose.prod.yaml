@@ -1,0 +1,134 @@
+name: go-cleany
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  postgres:
+    image: postgres:16.14-alpine3.24
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env.production}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env.production}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    stop_grace_period: 1m
+    restart: unless-stopped
+    logging: *default-logging
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}?ApplicationName=go-cleany
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?Set TELEGRAM_BOT_TOKEN in .env.production}
+      TELEGRAM_BOT_ENABLED: "true"
+      TELEGRAM_UPDATE_MODE: ${TELEGRAM_UPDATE_MODE:-polling}
+      TELEGRAM_POLLING_TIMEOUT_SECONDS: ${TELEGRAM_POLLING_TIMEOUT_SECONDS:-25}
+      TELEGRAM_POLLING_RETRY_DELAY: ${TELEGRAM_POLLING_RETRY_DELAY:-3s}
+      TELEGRAM_POLLING_DROP_PENDING_UPDATES: ${TELEGRAM_POLLING_DROP_PENDING_UPDATES:-false}
+      TELEGRAM_INIT_DATA_MAX_AGE: ${TELEGRAM_INIT_DATA_MAX_AGE:-1h}
+      TELEGRAM_INIT_DATA_ALLOWED_CLOCK_SKEW: ${TELEGRAM_INIT_DATA_ALLOWED_CLOCK_SKEW:-30s}
+      CLEANER_TELEGRAM_IDS: ${CLEANER_TELEGRAM_IDS:?Set CLEANER_TELEGRAM_IDS in .env.production}
+      ADMIN_TELEGRAM_IDS: ${ADMIN_TELEGRAM_IDS:?Set ADMIN_TELEGRAM_IDS in .env.production}
+      CLEANING_BOOKING_DAYS_AHEAD: ${CLEANING_BOOKING_DAYS_AHEAD:-7}
+      CLEANING_PRICES_REGULAR_STUDIO: ${CLEANING_PRICES_REGULAR_STUDIO:?Set production prices}
+      CLEANING_PRICES_REGULAR_ONE_PLUS_ONE: ${CLEANING_PRICES_REGULAR_ONE_PLUS_ONE:?Set production prices}
+      CLEANING_PRICES_REGULAR_TWO_PLUS_ONE: ${CLEANING_PRICES_REGULAR_TWO_PLUS_ONE:?Set production prices}
+      CLEANING_PRICES_REGULAR_THREE_PLUS_ONE: ${CLEANING_PRICES_REGULAR_THREE_PLUS_ONE:?Set production prices}
+      CLEANING_PRICES_REGULAR_FOUR_PLUS_ONE: ${CLEANING_PRICES_REGULAR_FOUR_PLUS_ONE:?Set production prices}
+      CLEANING_PRICES_REGULAR_DUPLEX_SURCHARGE: ${CLEANING_PRICES_REGULAR_DUPLEX_SURCHARGE:?Set production prices}
+      CLEANING_PRICES_DEEP_STUDIO: ${CLEANING_PRICES_DEEP_STUDIO:?Set production prices}
+      CLEANING_PRICES_DEEP_ONE_PLUS_ONE: ${CLEANING_PRICES_DEEP_ONE_PLUS_ONE:?Set production prices}
+      CLEANING_PRICES_DEEP_TWO_PLUS_ONE: ${CLEANING_PRICES_DEEP_TWO_PLUS_ONE:?Set production prices}
+      CLEANING_PRICES_DEEP_THREE_PLUS_ONE: ${CLEANING_PRICES_DEEP_THREE_PLUS_ONE:?Set production prices}
+      CLEANING_PRICES_DEEP_FOUR_PLUS_ONE: ${CLEANING_PRICES_DEEP_FOUR_PLUS_ONE:?Set production prices}
+      CLEANING_PRICES_DEEP_DUPLEX_SURCHARGE: ${CLEANING_PRICES_DEEP_DUPLEX_SURCHARGE:?Set production prices}
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--XX:MaxRAMPercentage=70.0 -XX:+ExitOnOutOfMemoryError}
+    expose:
+      - "8080"
+    networks:
+      - app
+      - data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    stop_grace_period: 30s
+    restart: unless-stopped
+    logging: *default-logging
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /
+    expose:
+      - "80"
+    networks:
+      - edge
+      - app
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/health | grep -q ok"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+    restart: unless-stopped
+    logging: *default-logging
+
+  caddy:
+    image: caddy:2.11.4-alpine
+    environment:
+      APP_HOST: ${APP_HOST:?Set APP_HOST in .env.production}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env.production}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - edge
+      - app
+    depends_on:
+      frontend:
+        condition: service_healthy
+    restart: unless-stopped
+    logging: *default-logging
+
+networks:
+  edge:
+  app:
+  data:
+    internal: true
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

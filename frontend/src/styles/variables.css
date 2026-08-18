@@ -1,0 +1,29 @@
+:root {
+  color-scheme: light;
+  --color-canvas: #edf7fb;
+  --color-surface: #f9fdff;
+  --color-surface-strong: #ffffff;
+  --color-ink: #173647;
+  --color-muted: #647f8d;
+  --color-line: #cfe2ea;
+  --color-primary: #1685b3;
+  --color-primary-dark: #0b648b;
+  --color-primary-soft: #dceff7;
+  --color-accent: #36a9c4;
+  --color-accent-soft: #dcf2f7;
+  --color-danger: #b84f52;
+  --color-danger-soft: #fae9e9;
+  --color-warning: #a36a18;
+  --color-warning-soft: #fbefd8;
+  --color-info: #317895;
+  --color-info-soft: #def0f6;
+  --shadow-small: 0 6px 18px rgba(38, 91, 113, 0.07);
+  --shadow-medium: 0 18px 46px rgba(28, 76, 97, 0.14);
+  --radius-small: 10px;
+  --radius-medium: 16px;
+  --radius-large: 22px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}

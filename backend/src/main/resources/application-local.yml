@@ -1,0 +1,58 @@
+spring:
+  datasource:
+    url: ${cleany.postgres.url}
+    username: ${cleany.postgres.username}
+    password: ${cleany.postgres.password}
+    driverClassName: org.postgresql.Driver
+
+  jpa:
+    show-sql: true
+
+  liquibase:
+    enabled: true
+    database-change-log-table: cleany_changelog
+    database-change-log-lock-table: cleany_changelog_lock
+
+cleany:
+  postgres:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/cleany?ApplicationName=cleany}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+  local-auth:
+    telegram-user-id: ${LOCAL_TELEGRAM_USER_ID:900001}
+    username: ${LOCAL_TELEGRAM_USERNAME:browser_preview}
+    first-name: ${LOCAL_TELEGRAM_FIRST_NAME:Alex}
+    last-name: ${LOCAL_TELEGRAM_LAST_NAME:}
+
+cleaning:
+  # Local visual placeholders only. They are not approved production prices.
+  booking-days-ahead: 7
+  currency: TRY
+  zone-id: Europe/Istanbul
+  prices:
+    regular:
+      studio: 800
+      one-plus-one: 900
+      two-plus-one: 1100
+      three-plus-one: 1350
+      four-plus-one: 1650
+      duplex-surcharge: 300
+    deep:
+      studio: 1200
+      one-plus-one: 1400
+      two-plus-one: 1700
+      three-plus-one: 2050
+      four-plus-one: 2450
+      duplex-surcharge: 450
+
+cleaner:
+  telegram-ids: ${CLEANER_TELEGRAM_IDS:123456789,987654321}
+
+admin:
+  telegram-ids: ${ADMIN_TELEGRAM_IDS:${LOCAL_TELEGRAM_USER_ID:900001}}
+
+telegram:
+  bot-token: ${TELEGRAM_BOT_TOKEN:local-not-configured}
+  webhook-secret: ${TELEGRAM_WEBHOOK_SECRET:}
+  bot-enabled: ${TELEGRAM_BOT_ENABLED:false}
+  update-mode: ${TELEGRAM_UPDATE_MODE:polling}
