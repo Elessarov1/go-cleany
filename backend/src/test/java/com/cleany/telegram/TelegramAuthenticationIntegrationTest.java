@@ -92,5 +92,34 @@ class TelegramAuthenticationIntegrationTest extends BaseIntegrationTest {
         Assertions.assertEquals(900001L, orders.getFirst().getTelegramUserId());
         Assertions.assertEquals("alex", orders.getFirst().getTelegramUsername());
         Assertions.assertEquals("Alex Cleaner", orders.getFirst().getCustomerName());
+        Assertions.assertEquals("+905551234567", orders.getFirst().getPhone());
+    }
+
+    @Test
+    void orderWithInvalidLocalPhone_validationErrorAndOrderNotStored() throws Exception {
+        String initData = TelegramInitDataTestFactory.signed(BOT_TOKEN, Instant.now(), USER_JSON);
+        LocalDate requestedDate = LocalDate.now(ZoneId.of("Europe/Istanbul")).plusDays(1);
+        String requestBody = """
+                {
+                  "area": "MAHMUTLAR",
+                  "address": "Barbaros Cd. 24",
+                  "apartmentType": "TWO_PLUS_ONE",
+                  "duplex": false,
+                  "cleaningType": "REGULAR",
+                  "requestedDate": "%s",
+                  "phone": "05551234567",
+                  "comment": null
+                }
+                """.formatted(requestedDate);
+
+        mvc.perform(post("/api/v1/orders")
+                        .header("Authorization", "tma " + initData)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("invalid_phone_number"))
+                .andExpect(jsonPath("$.fieldErrors.phone").exists());
+
+        Assertions.assertTrue(orderRepository.findAll().isEmpty());
     }
 }

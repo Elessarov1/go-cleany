@@ -13,6 +13,9 @@ import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.context.ApplicationEventPublisher;
@@ -48,6 +51,7 @@ class CleaningOrderServiceTest {
                 photoRepository,
                 eventRepository,
                 new CleaningPriceService(properties),
+                new PhoneNumberNormalizer(),
                 properties,
                 new CleanerProperties(List.of(CLEANER_ID)),
                 identityProvider,
@@ -81,6 +85,7 @@ class CleaningOrderServiceTest {
         Assertions.assertEquals("TRY", order.getCurrency());
         Assertions.assertEquals(CleaningOrderStatus.NEW, order.getStatus());
         Assertions.assertEquals("Barbaros Cd. 24", order.getAddress());
+        Assertions.assertEquals("+905551234567", order.getPhone());
         var eventCaptor = ArgumentCaptor.forClass(CleaningOrderEvent.class);
         Mockito.verify(eventRepository).save(eventCaptor.capture());
         Assertions.assertAll(
@@ -93,6 +98,41 @@ class CleaningOrderServiceTest {
                 () -> Assertions.assertEquals(CleaningOrderStatus.NEW, eventCaptor.getValue().getToStatus())
         );
         Mockito.verify(eventPublisher).publishEvent(Mockito.any(CleaningOrderCreatedEvent.class));
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "+90 555 123 45 67|+905551234567",
+            "+905551234567|+905551234567",
+            "+7 999 123-45-67|+79991234567",
+            "+90 (555) 123-45-67|+905551234567"
+    })
+    void orderRequest_validInternationalPhone_normalizedBeforeStorage(String rawPhone, String expectedPhone) {
+        Mockito.when(repository.save(Mockito.any(CleaningOrder.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.createOrder(validCommand(rawPhone));
+
+        var captor = ArgumentCaptor.forClass(CleaningOrder.class);
+        Mockito.verify(repository).save(captor.capture());
+        Assertions.assertEquals(expectedPhone, captor.getValue().getPhone());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "05551234567",
+            "9991234567",
+            "+90",
+            "12345",
+            "abc"
+    })
+    void orderRequest_invalidPhone_orderNotCreated(String rawPhone) {
+        Assertions.assertThrows(
+                InvalidPhoneNumberException.class,
+                () -> service.createOrder(validCommand(rawPhone))
+        );
+
+        Mockito.verifyNoInteractions(repository, eventRepository, eventPublisher);
     }
 
     @Test
@@ -247,6 +287,19 @@ class CleaningOrderServiceTest {
                 LocalDate.of(2026, 8, 18),
                 null,
                 NOW
+        );
+    }
+
+    private static CreateCleaningOrderCommand validCommand(String phone) {
+        return new CreateCleaningOrderCommand(
+                ServiceArea.MAHMUTLAR,
+                "Barbaros Cd. 24",
+                ApartmentType.TWO_PLUS_ONE,
+                false,
+                CleaningType.REGULAR,
+                LocalDate.of(2026, 8, 18),
+                phone,
+                null
         );
     }
 

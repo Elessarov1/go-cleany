@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { CleaningApiError } from "../../api/CleaningApi";
 import { useCleaningApi } from "../../api/CleaningApiProvider";
 import { Icon } from "../../components/Icon/Icon";
 import { ServiceInfoDialog } from "../../components/ServiceInfoDialog/ServiceInfoDialog";
@@ -101,7 +102,9 @@ export function CreateOrderPage() {
     if (!form.cleaningType) nextErrors.cleaningType = t("create.validation.cleaningType");
     if (!form.requestedDate) nextErrors.requestedDate = t("create.validation.requestedDate");
     if (!form.address.trim()) nextErrors.address = t("create.validation.address");
-    if (!form.phone.trim()) nextErrors.phone = t("create.validation.phone");
+    if (!/^\+\s*\d/.test(form.phone.trim())) {
+      nextErrors.phone = t("create.validation.phone");
+    }
     return nextErrors;
   };
 
@@ -144,8 +147,22 @@ export function CreateOrderPage() {
 
       const order = await api.createOrder(request);
       navigate(`/orders/${order.id}/created`);
-    } catch {
-      setSubmitError("createOrder");
+    } catch (error) {
+      if (
+        error instanceof CleaningApiError &&
+        (error.code === "invalid_phone_number" || error.fieldErrors.phone)
+      ) {
+        setErrors((current) => ({
+          ...current,
+          phone: t("create.validation.phone"),
+        }));
+        document.getElementById("phone")?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      } else {
+        setSubmitError("createOrder");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -327,10 +344,13 @@ export function CreateOrderPage() {
               type="tel"
               inputMode="tel"
               autoComplete="tel"
+              maxLength={40}
               placeholder={t("create.details.phonePlaceholder")}
               value={form.phone}
               onChange={(event) => updateForm("phone", event.target.value)}
+              aria-describedby="phone-hint"
             />
+            <small id="phone-hint">{t("create.details.phoneHint")}</small>
             {errors.phone ? <p className="field-error">{errors.phone}</p> : null}
           </div>
 

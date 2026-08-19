@@ -51,6 +51,7 @@
       "addressPlaceholder": "Street, building, entrance, apartment",
       "phone": "Phone number",
       "phonePlaceholder": "+90 5xx xxx xx xx",
+      "phoneHint": "Include the country code and start the number with +.",
       "comment": "Comment",
       "commentPlaceholder": "Access details, pets, or anything useful for the cleaner"
     },
@@ -69,7 +70,7 @@
       "cleaningType": "Choose a cleaning type",
       "requestedDate": "Choose a preferred date",
       "address": "Enter the full address",
-      "phone": "Enter a phone number"
+      "phone": "Enter the full phone number with country code, for example +90 555 123 45 67."
     },
     "error": "We could not create the order. Please try again."
   },

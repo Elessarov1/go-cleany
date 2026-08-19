@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.cleany.order.BookingDateNotAvailableException;
 import com.cleany.admin.AdminNotAuthorizedException;
 import com.cleany.order.CleanerNotAuthorizedException;
+import com.cleany.order.InvalidPhoneNumberException;
 import com.cleany.order.InvalidOrderStateException;
 import com.cleany.order.OrderClaimConflictException;
 import com.cleany.order.OrderNotFoundException;
@@ -52,6 +53,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BookingDateNotAvailableException.class)
     ResponseEntity<ApiError> handleBookingDate(BookingDateNotAvailableException exception) {
         return response(HttpStatus.BAD_REQUEST, "booking_date_unavailable", exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(InvalidPhoneNumberException.class)
+    ResponseEntity<ApiError> handleInvalidPhoneNumber(InvalidPhoneNumberException exception) {
+        return response(
+                HttpStatus.BAD_REQUEST,
+                "invalid_phone_number",
+                exception.getMessage(),
+                Map.of("phone", "must be a valid international phone number with country code")
+        );
     }
 
     @ExceptionHandler(OrderNotFoundException.class)

@@ -10,6 +10,12 @@ import {
   type CleaningApi,
 } from "./CleaningApi";
 
+interface ApiErrorResponse {
+  code?: string;
+  message?: string;
+  fieldErrors?: Record<string, string> | null;
+}
+
 export class HttpCleaningApi implements CleaningApi {
   constructor(
     private readonly baseUrl: string,
@@ -78,9 +84,17 @@ export class HttpCleaningApi implements CleaningApi {
     });
 
     if (!response.ok) {
+      let apiError: ApiErrorResponse | null = null;
+      try {
+        apiError = (await response.json()) as ApiErrorResponse;
+      } catch {
+        // Preserve a useful status-only error when the response is not JSON.
+      }
       throw new CleaningApiError(
-        `Request failed with status ${response.status}`,
+        apiError?.message ?? `Request failed with status ${response.status}`,
         response.status,
+        apiError?.code,
+        apiError?.fieldErrors ?? {},
       );
     }
 

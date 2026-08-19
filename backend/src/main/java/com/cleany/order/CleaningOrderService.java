@@ -21,6 +21,7 @@ public class CleaningOrderService {
     private final CleaningOrderPhotoRepository photoRepository;
     private final CleaningOrderEventRepository orderEventRepository;
     private final CleaningPriceService priceService;
+    private final PhoneNumberNormalizer phoneNumberNormalizer;
     private final CleaningProperties cleaningProperties;
     private final CleanerProperties cleanerProperties;
     private final CustomerIdentityProvider identityProvider;
@@ -32,6 +33,7 @@ public class CleaningOrderService {
             CleaningOrderPhotoRepository photoRepository,
             CleaningOrderEventRepository orderEventRepository,
             CleaningPriceService priceService,
+            PhoneNumberNormalizer phoneNumberNormalizer,
             CleaningProperties cleaningProperties,
             CleanerProperties cleanerProperties,
             CustomerIdentityProvider identityProvider,
@@ -42,6 +44,7 @@ public class CleaningOrderService {
         this.photoRepository = photoRepository;
         this.orderEventRepository = orderEventRepository;
         this.priceService = priceService;
+        this.phoneNumberNormalizer = phoneNumberNormalizer;
         this.cleaningProperties = cleaningProperties;
         this.cleanerProperties = cleanerProperties;
         this.identityProvider = identityProvider;
@@ -53,6 +56,7 @@ public class CleaningOrderService {
     public CleaningOrder createOrder(CreateCleaningOrderCommand command) {
         TelegramPrincipal customer = identityProvider.currentCustomer();
         validateRequestedDate(command.requestedDate());
+        String normalizedPhone = phoneNumberNormalizer.normalize(command.phone());
 
         var price = priceService.calculate(
                 command.apartmentType(),
@@ -64,7 +68,7 @@ public class CleaningOrderService {
                 customer.id(),
                 normalizeOptional(customer.username()),
                 customer.displayName(),
-                command.phone().trim(),
+                normalizedPhone,
                 command.area(),
                 command.address().trim(),
                 command.apartmentType(),
