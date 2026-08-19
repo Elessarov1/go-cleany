@@ -6,6 +6,7 @@ interface TelegramUser {
   first_name: string;
   last_name?: string;
   language_code?: string;
+  allows_write_to_pm?: boolean;
 }
 
 interface TelegramWebApp {
@@ -13,6 +14,7 @@ interface TelegramWebApp {
   initDataUnsafe?: {
     user?: TelegramUser;
   };
+  requestWriteAccess(callback?: (allowed: boolean) => void): void;
   ready(): void;
   close(): void;
   openLink(url: string): void;
@@ -35,6 +37,8 @@ function getWebApp(): TelegramWebApp {
 }
 
 export class TelegramPlatform implements Platform {
+  private writeAccessGrantedInSession = false;
+
   getUser(): PlatformUser | null {
     const user = getWebApp().initDataUnsafe?.user;
     if (!user) {
@@ -57,6 +61,29 @@ export class TelegramPlatform implements Platform {
     return getWebApp().initDataUnsafe?.user?.language_code ?? null;
   }
 
+  ensureNotificationAccess(): Promise<boolean> {
+    const webApp = getWebApp();
+    if (
+      this.writeAccessGrantedInSession ||
+      webApp.initDataUnsafe?.user?.allows_write_to_pm === true
+    ) {
+      return Promise.resolve(true);
+    }
+
+    if (typeof webApp.requestWriteAccess !== "function") {
+      return Promise.resolve(false);
+    }
+
+    return new Promise((resolve) => {
+      webApp.requestWriteAccess((allowed) => {
+        if (allowed) {
+          this.writeAccessGrantedInSession = true;
+        }
+        resolve(allowed);
+      });
+    });
+  }
+
   ready(): void {
     getWebApp().ready();
   }
@@ -73,4 +100,3 @@ export class TelegramPlatform implements Platform {
 export function isTelegramWebAppAvailable(): boolean {
   return Boolean(window.Telegram?.WebApp?.initData);
 }
-

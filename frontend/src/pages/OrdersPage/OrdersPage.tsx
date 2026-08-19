@@ -58,7 +58,7 @@ export function OrdersPage() {
       {orders.length === 0 ? (
         <section className="empty-state">
           <div className="empty-state__art" aria-hidden="true">
-            <Icon name="clipboard" size={44} strokeWidth={1.5} />
+            <span className="broom-icon empty-state__broom-icon" />
           </div>
           <h2>{t("orders.emptyTitle")}</h2>
           <p>{t("orders.emptyText")}</p>
@@ -77,7 +77,9 @@ export function OrdersPage() {
                 <OrderStatus status={order.status} />
               </div>
               <div className="order-card__body">
-                <div className="order-card__icon"><Icon name="broom" size={24} /></div>
+                <div className="order-card__icon" aria-hidden="true">
+                  <span className="broom-icon order-card__broom-icon" />
+                </div>
                 <div>
                   <h2>
                     {t(`apartments.${order.apartmentType}`)} · {t(`cleaning.${order.cleaningType}.title`)}

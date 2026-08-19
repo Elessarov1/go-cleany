@@ -13,6 +13,7 @@ import type {
   ServiceArea,
 } from "../../domain/order";
 import { calculateDisplayedPrice, formatPrice } from "../../domain/pricing";
+import { usePlatform } from "../../platform/PlatformProvider";
 import { addDaysToInputValue, todayAsInputValue } from "../../utils/format";
 
 interface FormState {
@@ -34,6 +35,8 @@ type FormField =
   | "address"
   | "phone";
 
+type SubmitError = "notificationAccess" | "createOrder" | null;
+
 const initialForm: FormState = {
   duplex: false,
   requestedDate: "",
@@ -45,6 +48,7 @@ const initialForm: FormState = {
 export function CreateOrderPage() {
   const { t, i18n } = useTranslation();
   const api = useCleaningApi();
+  const platform = usePlatform();
   const navigate = useNavigate();
   const [configuration, setConfiguration] = useState<CleaningConfiguration | null>(null);
   const [configurationError, setConfigurationError] = useState(false);
@@ -53,7 +57,7 @@ export function CreateOrderPage() {
   const [errors, setErrors] = useState<Partial<Record<FormField, string>>>({});
   const [serviceInfo, setServiceInfo] = useState<CleaningType | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState(false);
+  const [submitError, setSubmitError] = useState<SubmitError>(null);
   const locale = i18n.resolvedLanguage === "ru" ? "ru-RU" : "en-GB";
 
   useEffect(() => {
@@ -105,7 +109,7 @@ export function CreateOrderPage() {
     event.preventDefault();
     const nextErrors = validate();
     setErrors(nextErrors);
-    setSubmitError(false);
+    setSubmitError(null);
 
     if (Object.keys(nextErrors).length > 0) {
       document.querySelector(".field-error")?.parentElement?.scrollIntoView({
@@ -132,10 +136,16 @@ export function CreateOrderPage() {
 
     try {
       setIsSubmitting(true);
+      const allowed = await platform.ensureNotificationAccess();
+      if (!allowed) {
+        setSubmitError("notificationAccess");
+        return;
+      }
+
       const order = await api.createOrder(request);
       navigate(`/orders/${order.id}/created`);
     } catch {
-      setSubmitError(true);
+      setSubmitError("createOrder");
     } finally {
       setIsSubmitting(false);
     }
@@ -166,7 +176,7 @@ export function CreateOrderPage() {
           <p>{t("create.subtitle")}</p>
         </div>
         <div className="hero__art" aria-hidden="true">
-          <span className="hero__broom-icon" />
+          <span className="broom-icon hero__broom-icon" />
         </div>
       </section>
 
@@ -360,7 +370,15 @@ export function CreateOrderPage() {
             <span><Icon name="wallet" size={17} /></span>
             <p>{t("create.summary.directPayment")}</p>
           </div>
-          {submitError ? <p className="form-alert" role="alert">{t("create.error")}</p> : null}
+          {submitError ? (
+            <p className="form-alert" role="alert">
+              {t(
+                submitError === "notificationAccess"
+                  ? "create.notificationAccessRequired"
+                  : "create.error",
+              )}
+            </p>
+          ) : null}
           <button
             className="button button--primary button--full button--large"
             type="submit"

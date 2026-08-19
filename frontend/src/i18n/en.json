@@ -62,6 +62,7 @@
     },
     "submit": "Book for {{price}}",
     "submitting": "Creating your order…",
+    "notificationAccessRequired": "Allow bot messages so we can confirm your order and send the photo report.",
     "validation": {
       "area": "Choose an area",
       "apartmentType": "Choose an apartment type",

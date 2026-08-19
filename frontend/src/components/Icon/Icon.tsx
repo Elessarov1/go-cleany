@@ -2,7 +2,6 @@ export type IconName =
   | "admin"
   | "arrow-left"
   | "arrow-right"
-  | "broom"
   | "calendar-plus"
   | "camera"
   | "check"
@@ -68,13 +67,6 @@ export function Icon({ name, size = 22, strokeWidth = 1.8 }: IconProps) {
         <>
           <path d="m3 11 9-8 9 8" />
           <path d="M5 10v10h14V10M9 20v-6h6v6" />
-        </>
-      ) : null}
-      {name === "broom" ? (
-        <>
-          <path d="m14 4 6-2-2 6M18 6 9 15" />
-          <path d="m9 13 3 3-5 5H2v-5l5-5 2 2Z" />
-          <path d="m4 16 3 3M7 13l3 3" />
         </>
       ) : null}
       {name === "wallet" ? (

@@ -164,6 +164,7 @@ h3 {
 
 .hero {
   position: relative;
+  display: grid;
   min-height: 292px;
   margin: -22px -18px 12px;
   padding: 42px 22px 32px;
@@ -171,6 +172,10 @@ h3 {
   background: linear-gradient(135deg, #0c678e 0%, #1685b3 60%, #3ca4c1 100%);
   color: #fff;
   border-radius: 0 0 22px 22px;
+  grid-template-areas:
+    "copy"
+    "art";
+  gap: 22px;
 }
 
 .hero::after {
@@ -184,7 +189,8 @@ h3 {
 .hero__copy {
   position: relative;
   z-index: 2;
-  max-width: 330px;
+  max-width: 360px;
+  grid-area: copy;
 }
 
 .hero .eyebrow {
@@ -209,28 +215,31 @@ h3 {
 }
 
 .hero__art {
-  position: absolute;
+  position: relative;
   z-index: 1;
-  right: 22px;
-  bottom: 28px;
   display: grid;
   width: 108px;
   height: 108px;
   place-items: center;
+  justify-self: end;
   color: #fff;
   background: rgba(255, 255, 255, 0.14);
   border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 22px;
   backdrop-filter: blur(8px);
+  grid-area: art;
 }
 
-.hero__broom-icon {
+.broom-icon {
   display: block;
-  width: 76px;
-  height: 76px;
   background: currentColor;
   mask: url("/assets/icons/broom.svg") center / contain no-repeat;
   -webkit-mask: url("/assets/icons/broom.svg") center / contain no-repeat;
+}
+
+.hero__broom-icon {
+  width: 76px;
+  height: 76px;
 }
 
 .booking-form {
@@ -892,6 +901,11 @@ h3 {
   border-radius: 20px;
 }
 
+.empty-state__broom-icon {
+  width: 62px;
+  height: 62px;
+}
+
 .empty-state h2 {
   margin-bottom: 8px;
   font-size: 22px;
@@ -953,6 +967,11 @@ h3 {
   color: var(--color-primary);
   background: var(--color-primary-soft);
   border-radius: 14px;
+}
+
+.order-card__broom-icon {
+  width: 25px;
+  height: 25px;
 }
 
 .order-card h2 {
@@ -1561,6 +1580,15 @@ h3 {
 
 .admin-timeline .admin-timeline__details {
   color: var(--color-ink);
+}
+
+@media (min-width: 640px) {
+  .hero {
+    align-items: end;
+    grid-template-areas: "copy art";
+    grid-template-columns: minmax(0, 1fr) 108px;
+    column-gap: 18px;
+  }
 }
 
 @media (max-width: 760px) {

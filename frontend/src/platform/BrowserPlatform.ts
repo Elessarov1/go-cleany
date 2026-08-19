@@ -19,6 +19,10 @@ export class BrowserPlatform implements Platform {
     return navigator.language;
   }
 
+  async ensureNotificationAccess(): Promise<boolean> {
+    return true;
+  }
+
   ready(): void {
     // Ordinary browsers require no platform handshake.
   }
@@ -31,4 +35,3 @@ export class BrowserPlatform implements Platform {
     window.open(url, "_blank", "noopener,noreferrer");
   }
 }
-
