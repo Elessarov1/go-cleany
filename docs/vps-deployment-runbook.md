@@ -99,6 +99,8 @@ nano .env.production
 - `CLEANER_TELEGRAM_IDS` — ID клинеров через запятую;
 - `ADMIN_TELEGRAM_IDS` — ID администраторов через запятую;
 - `CLEANING_PRICES_*` — утверждённые цены в TRY.
+- `REFERRAL_*` — ставки и денежные caps реферальной модели; безопасные значения v1 уже находятся
+  в `.env.production.example`.
 
 Production Compose намеренно не включает профиль `local`, `LOCAL_TELEGRAM_USER_ID` и тестовое имя
 `Alex`. Клиент определяется только по проверенному Telegram `initData`.

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { CleaningApiError } from "../../api/CleaningApi";
 import { useCleaningApi } from "../../api/CleaningApiProvider";
@@ -10,6 +10,7 @@ import type { CleaningConfiguration } from "../../domain/configuration";
 import type {
   ApartmentType,
   CleaningType,
+  CleaningOrderQuote,
   CreateCleaningOrderRequest,
   ServiceArea,
 } from "../../domain/order";
@@ -26,6 +27,7 @@ interface FormState {
   address: string;
   phone: string;
   comment: string;
+  referralCode: string;
 }
 
 type FormField =
@@ -34,7 +36,8 @@ type FormField =
   | "cleaningType"
   | "requestedDate"
   | "address"
-  | "phone";
+  | "phone"
+  | "referralCode";
 
 type SubmitError = "notificationAccess" | "createOrder" | null;
 
@@ -44,6 +47,7 @@ const initialForm: FormState = {
   address: "",
   phone: "",
   comment: "",
+  referralCode: "",
 };
 
 export function CreateOrderPage() {
@@ -51,6 +55,7 @@ export function CreateOrderPage() {
   const api = useCleaningApi();
   const platform = usePlatform();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [configuration, setConfiguration] = useState<CleaningConfiguration | null>(null);
   const [configurationError, setConfigurationError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -59,7 +64,20 @@ export function CreateOrderPage() {
   const [serviceInfo, setServiceInfo] = useState<CleaningType | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<SubmitError>(null);
+  const [quote, setQuote] = useState<CleaningOrderQuote | null>(null);
+  const [isQuoteLoading, setIsQuoteLoading] = useState(false);
+  const [quoteReferralError, setQuoteReferralError] = useState(false);
   const locale = i18n.resolvedLanguage === "ru" ? "ru-RU" : "en-GB";
+
+  useEffect(() => {
+    const referralCode = searchParams.get("ref")?.trim();
+    if (referralCode) {
+      setForm((current) => ({
+        ...current,
+        referralCode: referralCode.slice(0, 32).toUpperCase(),
+      }));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let active = true;
@@ -76,7 +94,7 @@ export function CreateOrderPage() {
     };
   }, [api, reloadKey]);
 
-  const price = useMemo(() => {
+  const displayedBasePrice = useMemo(() => {
     if (!configuration || !form.apartmentType || !form.cleaningType) {
       return null;
     }
@@ -87,6 +105,58 @@ export function CreateOrderPage() {
       form.duplex,
     );
   }, [configuration, form.apartmentType, form.cleaningType, form.duplex]);
+
+  useEffect(() => {
+    if (!form.apartmentType || !form.cleaningType) {
+      setQuote(null);
+      setIsQuoteLoading(false);
+      setQuoteReferralError(false);
+      return;
+    }
+
+    let active = true;
+    setQuote(null);
+    setIsQuoteLoading(true);
+    setQuoteReferralError(false);
+    const timeout = window.setTimeout(() => {
+      api.quoteOrder({
+        apartmentType: form.apartmentType!,
+        cleaningType: form.cleaningType!,
+        duplex: form.duplex,
+        referralCode: form.referralCode.trim() || undefined,
+      })
+        .then((value) => {
+          if (active) {
+            setQuote(value);
+            setErrors((current) => ({ ...current, referralCode: undefined }));
+          }
+        })
+        .catch((error) => {
+          if (!active) return;
+          setQuote(null);
+          if (
+            error instanceof CleaningApiError &&
+            (error.code === "referral_not_applicable" || error.fieldErrors.referralCode)
+          ) {
+            setQuoteReferralError(true);
+            setErrors((current) => ({
+              ...current,
+              referralCode: t("create.validation.referralCode"),
+            }));
+          }
+        })
+        .finally(() => {
+          if (active) setIsQuoteLoading(false);
+        });
+    }, 300);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+    };
+  }, [api, form.apartmentType, form.cleaningType, form.duplex, form.referralCode, t]);
+
+  const price = quote?.finalCustomerPrice ?? displayedBasePrice;
 
   const updateForm = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -104,6 +174,9 @@ export function CreateOrderPage() {
     if (!form.address.trim()) nextErrors.address = t("create.validation.address");
     if (!/^\+\s*\d/.test(form.phone.trim())) {
       nextErrors.phone = t("create.validation.phone");
+    }
+    if (form.referralCode.trim() && quoteReferralError) {
+      nextErrors.referralCode = t("create.validation.referralCode");
     }
     return nextErrors;
   };
@@ -135,6 +208,7 @@ export function CreateOrderPage() {
       address: form.address.trim(),
       phone: form.phone.trim(),
       comment: form.comment.trim() || undefined,
+      referralCode: form.referralCode.trim() || undefined,
     };
 
     try {
@@ -157,6 +231,18 @@ export function CreateOrderPage() {
           phone: t("create.validation.phone"),
         }));
         document.getElementById("phone")?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      } else if (
+        error instanceof CleaningApiError &&
+        (error.code === "referral_not_applicable" || error.fieldErrors.referralCode)
+      ) {
+        setErrors((current) => ({
+          ...current,
+          referralCode: t("create.validation.referralCode"),
+        }));
+        document.getElementById("referral-code")?.scrollIntoView({
           behavior: "smooth",
           block: "center",
         });
@@ -366,6 +452,22 @@ export function CreateOrderPage() {
               onChange={(event) => updateForm("comment", event.target.value)}
             />
           </div>
+
+          <div className="field">
+            <label htmlFor="referral-code">
+              {t("create.details.referralCode")} <span>{t("common.optional")}</span>
+            </label>
+            <input
+              id="referral-code"
+              autoComplete="off"
+              maxLength={32}
+              placeholder={t("create.details.referralCodePlaceholder")}
+              value={form.referralCode}
+              onChange={(event) => updateForm("referralCode", event.target.value.toUpperCase())}
+            />
+            <small>{t("create.details.referralCodeHint")}</small>
+            {errors.referralCode ? <p className="field-error">{errors.referralCode}</p> : null}
+          </div>
         </section>
 
         <section className="price-summary">
@@ -381,8 +483,19 @@ export function CreateOrderPage() {
             </div>
             {price !== null ? (
               <div className="price-summary__price">
+                {quote && quote.customerDiscount > 0 ? (
+                  <span className="price-summary__base-price">
+                    {formatPrice(quote.basePrice, quote.currency, locale)}
+                  </span>
+                ) : null}
                 <strong>{formatPrice(price, configuration.currency, locale)}</strong>
-                <small>{t("create.summary.fixed")}</small>
+                <small>
+                  {quote && quote.customerDiscount > 0
+                    ? t("create.summary.discount", {
+                        amount: formatPrice(quote.customerDiscount, quote.currency, locale),
+                      })
+                    : t("create.summary.fixed")}
+                </small>
               </div>
             ) : null}
           </div>
@@ -402,7 +515,7 @@ export function CreateOrderPage() {
           <button
             className="button button--primary button--full button--large"
             type="submit"
-            disabled={isSubmitting || price === null}
+            disabled={isSubmitting || isQuoteLoading || price === null || quoteReferralError}
           >
             {isSubmitting
               ? t("create.submitting")

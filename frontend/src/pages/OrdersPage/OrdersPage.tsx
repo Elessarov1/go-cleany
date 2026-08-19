@@ -5,7 +5,7 @@ import { useCleaningApi } from "../../api/CleaningApiProvider";
 import { Icon } from "../../components/Icon/Icon";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import { OrderStatus } from "../../components/OrderStatus/OrderStatus";
-import type { CleaningOrder } from "../../domain/order";
+import type { CleaningOrder, ReferralSummary } from "../../domain/order";
 import { formatPrice } from "../../domain/pricing";
 import { formatDate } from "../../utils/format";
 
@@ -14,6 +14,8 @@ export function OrdersPage() {
   const api = useCleaningApi();
   const location = useLocation();
   const [orders, setOrders] = useState<CleaningOrder[] | null>(null);
+  const [referral, setReferral] = useState<ReferralSummary | null>(null);
+  const [codeCopied, setCodeCopied] = useState(false);
   const [error, setError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const locale = i18n.resolvedLanguage === "ru" ? "ru-RU" : "en-GB";
@@ -22,9 +24,12 @@ export function OrdersPage() {
     let active = true;
     setError(false);
     setOrders(null);
-    api.getOrders()
-      .then((value) => {
-        if (active) setOrders(value);
+    Promise.all([api.getOrders(), api.getReferralSummary()])
+      .then(([orderList, referralSummary]) => {
+        if (active) {
+          setOrders(orderList);
+          setReferral(referralSummary);
+        }
       })
       .catch(() => {
         if (active) setError(true);
@@ -54,6 +59,38 @@ export function OrdersPage() {
         <h1>{t("orders.title")}</h1>
         <p>{t("orders.subtitle")}</p>
       </header>
+
+      {referral ? (
+        <section className="referral-card">
+          <div>
+            <span className="eyebrow">go-cleany friends</span>
+            <h2>{t("referrals.title")}</h2>
+            <p>{t("referrals.text")}</p>
+          </div>
+          {referral.referralCode ? (
+            <div className="referral-card__code">
+              <span>{t("referrals.codeLabel")}</span>
+              <strong>{referral.referralCode}</strong>
+              <button
+                className="button button--secondary"
+                type="button"
+                onClick={() => {
+                  void navigator.clipboard.writeText(referral.referralCode!)
+                    .then(() => setCodeCopied(true))
+                    .catch(() => setCodeCopied(false));
+                }}
+              >
+                {codeCopied ? t("referrals.copied") : t("referrals.copy")}
+              </button>
+              {referral.availableRewards > 0 ? (
+                <small>{t("referrals.rewards", { count: referral.availableRewards })}</small>
+              ) : null}
+            </div>
+          ) : (
+            <p className="referral-card__locked">{t("referrals.locked")}</p>
+          )}
+        </section>
+      ) : null}
 
       {orders.length === 0 ? (
         <section className="empty-state">

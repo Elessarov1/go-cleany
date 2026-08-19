@@ -10,6 +10,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.cleany.base.BaseIntegrationTest;
+import com.cleany.customer.CustomerAccount;
+import com.cleany.customer.CustomerAccountRepository;
+import com.cleany.finance.AcquisitionSource;
+import com.cleany.finance.CustomerDiscountType;
+import com.cleany.finance.OrderFinancialSnapshot;
 
 class CleaningOrderPhotoReportIntegrationTest extends BaseIntegrationTest {
 
@@ -24,6 +29,9 @@ class CleaningOrderPhotoReportIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private CleaningOrderService orderService;
+
+    @Autowired
+    private CustomerAccountRepository customerAccountRepository;
 
     @BeforeEach
     void cleanDatabase() {
@@ -113,8 +121,12 @@ class CleaningOrderPhotoReportIntegrationTest extends BaseIntegrationTest {
         );
     }
 
-    private static CleaningOrder newOrder(String address) {
+    private CleaningOrder newOrder(String address) {
+        long customerId = customerAccountRepository.save(new CustomerAccount(Instant.now())).getId();
+        BigDecimal basePrice = BigDecimal.valueOf(1100);
+        BigDecimal commission = basePrice.multiply(new BigDecimal("0.15")).setScale(2);
         return new CleaningOrder(
+                customerId,
                 900001L,
                 "customer",
                 "Alex",
@@ -124,7 +136,15 @@ class CleaningOrderPhotoReportIntegrationTest extends BaseIntegrationTest {
                 ApartmentType.TWO_PLUS_ONE,
                 false,
                 CleaningType.REGULAR,
-                BigDecimal.valueOf(1100),
+                new OrderFinancialSnapshot(
+                        basePrice.setScale(2), new BigDecimal("0.15"), commission,
+                        BigDecimal.ZERO.setScale(2), BigDecimal.ZERO.setScale(2), basePrice.setScale(2), commission,
+                        AcquisitionSource.ORGANIC, CustomerDiscountType.NONE
+                ),
+                null,
+                null,
+                null,
+                null,
                 "TRY",
                 LocalDate.now().plusDays(1),
                 null,

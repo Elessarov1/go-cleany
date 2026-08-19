@@ -13,9 +13,13 @@ public interface CleaningOrderRepository extends JpaRepository<CleaningOrder, Lo
 
     List<CleaningOrder> findAllByOrderByCreatedAtDesc();
 
-    List<CleaningOrder> findAllByTelegramUserIdOrderByCreatedAtDesc(long telegramUserId);
+    List<CleaningOrder> findAllByCustomerIdOrderByCreatedAtDesc(long customerId);
 
-    Optional<CleaningOrder> findByIdAndTelegramUserId(long id, long telegramUserId);
+    Optional<CleaningOrder> findByIdAndCustomerId(long id, long customerId);
+
+    boolean existsByCustomerIdAndStatus(long customerId, CleaningOrderStatus status);
+
+    boolean existsByCustomerIdAndStatusIn(long customerId, List<CleaningOrderStatus> statuses);
 
     Optional<CleaningOrder> findByCleanerTelegramUserIdAndReportInputActiveTrue(long cleanerTelegramUserId);
 

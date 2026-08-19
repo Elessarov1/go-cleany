@@ -13,6 +13,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.cleany.base.BaseIntegrationTest;
+import com.cleany.customer.CustomerAccount;
+import com.cleany.customer.CustomerAccountRepository;
+import com.cleany.finance.AcquisitionSource;
+import com.cleany.finance.CustomerDiscountType;
+import com.cleany.finance.OrderFinancialSnapshot;
 
 class CleaningOrderClaimIntegrationTest extends BaseIntegrationTest {
 
@@ -25,6 +30,9 @@ class CleaningOrderClaimIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private CleaningOrderService orderService;
 
+    @Autowired
+    private CustomerAccountRepository customerAccountRepository;
+
     @BeforeEach
     void cleanDatabase() {
         orderRepository.deleteAll();
@@ -32,7 +40,9 @@ class CleaningOrderClaimIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void newOrder_twoCleanersClaimConcurrently_exactlyOneCleanerWins() throws Exception {
+        long customerId = customerAccountRepository.save(new CustomerAccount(Instant.now())).getId();
         CleaningOrder order = orderRepository.save(new CleaningOrder(
+                customerId,
                 900001L,
                 "browser_preview",
                 "Alex",
@@ -42,7 +52,11 @@ class CleaningOrderClaimIntegrationTest extends BaseIntegrationTest {
                 ApartmentType.TWO_PLUS_ONE,
                 false,
                 CleaningType.REGULAR,
-                BigDecimal.valueOf(1100),
+                organicSnapshot(BigDecimal.valueOf(1100)),
+                null,
+                null,
+                null,
+                null,
                 "TRY",
                 LocalDate.now().plusDays(1),
                 null,
@@ -75,6 +89,15 @@ class CleaningOrderClaimIntegrationTest extends BaseIntegrationTest {
         Assertions.assertNotNull(acceptedOrder.getAcceptedAt());
     }
 
+    private static OrderFinancialSnapshot organicSnapshot(BigDecimal basePrice) {
+        BigDecimal commission = basePrice.multiply(new BigDecimal("0.15")).setScale(2);
+        return new OrderFinancialSnapshot(
+                basePrice.setScale(2), new BigDecimal("0.15"), commission,
+                BigDecimal.ZERO.setScale(2), BigDecimal.ZERO.setScale(2), basePrice.setScale(2), commission,
+                AcquisitionSource.ORGANIC, CustomerDiscountType.NONE
+        );
+    }
+
     private boolean claim(
             long orderId,
             long cleanerId,
@@ -91,4 +114,3 @@ class CleaningOrderClaimIntegrationTest extends BaseIntegrationTest {
         }
     }
 }
-

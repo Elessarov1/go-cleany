@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260819-01" author="go-cleany">
+        <createTable tableName="customer_account">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_customer_account" nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="migration_subject" type="VARCHAR(128)"/>
+        </createTable>
+
+        <createTable tableName="customer_external_identity">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_customer_external_identity" nullable="false"/>
+            </column>
+            <column name="customer_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="provider" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="external_subject" type="VARCHAR(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(128)"/>
+            <column name="display_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_seen_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint
+                tableName="customer_external_identity"
+                columnNames="provider, external_subject"
+                constraintName="uk_customer_external_identity_provider_subject"/>
+        <addForeignKeyConstraint
+                baseTableName="customer_external_identity"
+                baseColumnNames="customer_id"
+                constraintName="fk_customer_external_identity_customer"
+                referencedTableName="customer_account"
+                referencedColumnNames="id"
+                onDelete="CASCADE"/>
+        <createIndex tableName="customer_external_identity" indexName="idx_customer_external_identity_customer">
+            <column name="customer_id"/>
+        </createIndex>
+
+        <addColumn tableName="cleaning_order">
+            <column name="customer_id" type="BIGINT"/>
+        </addColumn>
+
+        <sql dbms="postgresql"><![CDATA[
+            insert into customer_account (created_at, migration_subject)
+            select min(created_at), telegram_user_id::text
+              from cleaning_order
+             group by telegram_user_id;
+
+            insert into customer_external_identity (
+                customer_id, provider, external_subject, username, display_name, last_seen_at
+            )
+            select account.id,
+                   'TELEGRAM',
+                   account.migration_subject,
+                   latest.telegram_username,
+                   latest.customer_name,
+                   latest.created_at
+              from customer_account account
+              join lateral (
+                    select telegram_username, customer_name, created_at
+                      from cleaning_order
+                     where telegram_user_id::text = account.migration_subject
+                     order by created_at desc, id desc
+                     limit 1
+              ) latest on true
+             where account.migration_subject is not null;
+
+            update cleaning_order orders
+               set customer_id = account.id
+              from customer_account account
+             where orders.telegram_user_id::text = account.migration_subject;
+        ]]></sql>
+
+        <addNotNullConstraint tableName="cleaning_order" columnName="customer_id" columnDataType="BIGINT"/>
+        <addForeignKeyConstraint
+                baseTableName="cleaning_order"
+                baseColumnNames="customer_id"
+                constraintName="fk_cleaning_order_customer"
+                referencedTableName="customer_account"
+                referencedColumnNames="id"/>
+        <createIndex tableName="cleaning_order" indexName="idx_cleaning_order_customer_id">
+            <column name="customer_id"/>
+        </createIndex>
+        <dropColumn tableName="customer_account" columnName="migration_subject"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="cleaning_order" constraintName="fk_cleaning_order_customer"/>
+            <dropColumn tableName="cleaning_order" columnName="customer_id"/>
+            <dropTable tableName="customer_external_identity"/>
+            <dropTable tableName="customer_account"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="20260819-02" author="go-cleany">
+        <createTable tableName="referral_partner">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_referral_partner" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="referral_code">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_referral_code" nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="owner_type" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="customer_id" type="BIGINT"/>
+            <column name="partner_id" type="BIGINT"/>
+            <column name="active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint tableName="referral_code" columnNames="code" constraintName="uk_referral_code_code"/>
+        <addUniqueConstraint tableName="referral_code" columnNames="customer_id" constraintName="uk_referral_code_customer"/>
+        <addUniqueConstraint tableName="referral_code" columnNames="partner_id" constraintName="uk_referral_code_partner"/>
+        <addForeignKeyConstraint baseTableName="referral_code" baseColumnNames="customer_id"
+                                 constraintName="fk_referral_code_customer" referencedTableName="customer_account"
+                                 referencedColumnNames="id" onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="referral_code" baseColumnNames="partner_id"
+                                 constraintName="fk_referral_code_partner" referencedTableName="referral_partner"
+                                 referencedColumnNames="id" onDelete="CASCADE"/>
+
+        <createTable tableName="referral_reward">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_referral_reward" nullable="false"/>
+            </column>
+            <column name="customer_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source_order_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reserved_order_id" type="BIGINT"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="redeemed_at" type="TIMESTAMP WITH TIME ZONE"/>
+        </createTable>
+        <addUniqueConstraint tableName="referral_reward" columnNames="source_order_id"
+                             constraintName="uk_referral_reward_source_order"/>
+        <addForeignKeyConstraint baseTableName="referral_reward" baseColumnNames="customer_id"
+                                 constraintName="fk_referral_reward_customer" referencedTableName="customer_account"
+                                 referencedColumnNames="id" onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="referral_reward" baseColumnNames="source_order_id"
+                                 constraintName="fk_referral_reward_source_order" referencedTableName="cleaning_order"
+                                 referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="referral_reward" baseColumnNames="reserved_order_id"
+                                 constraintName="fk_referral_reward_reserved_order" referencedTableName="cleaning_order"
+                                 referencedColumnNames="id" onDelete="SET NULL"/>
+        <createIndex tableName="referral_reward" indexName="idx_referral_reward_customer_status">
+            <column name="customer_id"/>
+            <column name="status"/>
+            <column name="created_at"/>
+        </createIndex>
+
+        <createTable tableName="partner_payout">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_partner_payout" nullable="false"/>
+            </column>
+            <column name="partner_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source_order_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount" type="NUMERIC(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="currency" type="VARCHAR(3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="paid_at" type="TIMESTAMP WITH TIME ZONE"/>
+        </createTable>
+        <addUniqueConstraint tableName="partner_payout" columnNames="source_order_id"
+                             constraintName="uk_partner_payout_source_order"/>
+        <addForeignKeyConstraint baseTableName="partner_payout" baseColumnNames="partner_id"
+                                 constraintName="fk_partner_payout_partner" referencedTableName="referral_partner"
+                                 referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="partner_payout" baseColumnNames="source_order_id"
+                                 constraintName="fk_partner_payout_source_order" referencedTableName="cleaning_order"
+                                 referencedColumnNames="id"/>
+        <createIndex tableName="partner_payout" indexName="idx_partner_payout_status_created">
+            <column name="status"/>
+            <column name="created_at"/>
+        </createIndex>
+
+        <sql dbms="postgresql"><![CDATA[
+            alter table referral_code
+                add constraint ck_referral_code_owner_type check (owner_type in ('CUSTOMER', 'PARTNER')),
+                add constraint ck_referral_code_exactly_one_owner check (
+                    (owner_type = 'CUSTOMER' and customer_id is not null and partner_id is null)
+                    or
+                    (owner_type = 'PARTNER' and partner_id is not null and customer_id is null)
+                );
+
+            alter table referral_reward
+                add constraint ck_referral_reward_status check (status in ('AVAILABLE', 'RESERVED', 'REDEEMED'));
+
+            alter table partner_payout
+                add constraint ck_partner_payout_status check (status in ('PAYABLE', 'PAID')),
+                add constraint ck_partner_payout_amount_non_negative check (amount >= 0);
+        ]]></sql>
+
+        <rollback>
+            <dropTable tableName="partner_payout"/>
+            <dropTable tableName="referral_reward"/>
+            <dropTable tableName="referral_code"/>
+            <dropTable tableName="referral_partner"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="20260819-03" author="go-cleany">
+        <addColumn tableName="cleaning_order">
+            <column name="base_price" type="NUMERIC(12,2)"/>
+            <column name="commission_rate" type="NUMERIC(7,6)"/>
+            <column name="base_commission" type="NUMERIC(12,2)"/>
+            <column name="customer_discount" type="NUMERIC(12,2)"/>
+            <column name="partner_payout" type="NUMERIC(12,2)"/>
+            <column name="final_customer_price" type="NUMERIC(12,2)"/>
+            <column name="platform_net" type="NUMERIC(12,2)"/>
+            <column name="acquisition_source" type="VARCHAR(24)"/>
+            <column name="customer_discount_type" type="VARCHAR(32)"/>
+            <column name="referral_code_id" type="BIGINT"/>
+            <column name="referrer_customer_id" type="BIGINT"/>
+            <column name="referral_partner_id" type="BIGINT"/>
+            <column name="applied_reward_id" type="BIGINT"/>
+        </addColumn>
+
+        <sql dbms="postgresql"><![CDATA[
+            update cleaning_order
+               set base_price = price,
+                   commission_rate = 0.150000,
+                   base_commission = round(price * 0.15, 2),
+                   customer_discount = 0,
+                   partner_payout = 0,
+                   final_customer_price = price,
+                   platform_net = round(price * 0.15, 2),
+                   acquisition_source = 'ORGANIC',
+                   customer_discount_type = 'NONE';
+        ]]></sql>
+
+        <addNotNullConstraint tableName="cleaning_order" columnName="base_price" columnDataType="NUMERIC(12,2)"/>
+        <addNotNullConstraint tableName="cleaning_order" columnName="commission_rate" columnDataType="NUMERIC(7,6)"/>
+        <addNotNullConstraint tableName="cleaning_order" columnName="base_commission" columnDataType="NUMERIC(12,2)"/>
+        <addNotNullConstraint tableName="cleaning_order" columnName="customer_discount" columnDataType="NUMERIC(12,2)"/>
+        <addNotNullConstraint tableName="cleaning_order" columnName="partner_payout" columnDataType="NUMERIC(12,2)"/>
+        <addNotNullConstraint tableName="cleaning_order" columnName="final_customer_price" columnDataType="NUMERIC(12,2)"/>
+        <addNotNullConstraint tableName="cleaning_order" columnName="platform_net" columnDataType="NUMERIC(12,2)"/>
+        <addNotNullConstraint tableName="cleaning_order" columnName="acquisition_source" columnDataType="VARCHAR(24)"/>
+        <addNotNullConstraint tableName="cleaning_order" columnName="customer_discount_type" columnDataType="VARCHAR(32)"/>
+
+        <addForeignKeyConstraint baseTableName="cleaning_order" baseColumnNames="referral_code_id"
+                                 constraintName="fk_cleaning_order_referral_code" referencedTableName="referral_code"
+                                 referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="cleaning_order" baseColumnNames="referrer_customer_id"
+                                 constraintName="fk_cleaning_order_referrer_customer" referencedTableName="customer_account"
+                                 referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="cleaning_order" baseColumnNames="referral_partner_id"
+                                 constraintName="fk_cleaning_order_referral_partner" referencedTableName="referral_partner"
+                                 referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="cleaning_order" baseColumnNames="applied_reward_id"
+                                 constraintName="fk_cleaning_order_applied_reward" referencedTableName="referral_reward"
+                                 referencedColumnNames="id"/>
+
+        <sql dbms="postgresql"><![CDATA[
+            alter table cleaning_order
+                add constraint ck_cleaning_order_financial_amounts check (
+                    base_price >= 0 and base_commission >= 0 and customer_discount >= 0
+                    and partner_payout >= 0 and final_customer_price >= 0 and platform_net >= 0
+                ),
+                add constraint ck_cleaning_order_commission_rate
+                    check (commission_rate >= 0 and commission_rate <= 1 and base_commission <= base_price),
+                add constraint ck_cleaning_order_acquisition_source
+                    check (acquisition_source in ('ORGANIC', 'CUSTOMER_REFERRAL', 'PARTNER')),
+                add constraint ck_cleaning_order_customer_discount_type
+                    check (customer_discount_type in ('NONE', 'FRIEND_REFERRAL', 'REFERRER_REWARD', 'PARTNER_REFERRAL')),
+                add constraint ck_cleaning_order_commission_budget
+                    check (customer_discount + partner_payout <= base_commission),
+                add constraint ck_cleaning_order_final_price
+                    check (final_customer_price = base_price - customer_discount and price = final_customer_price),
+                add constraint ck_cleaning_order_platform_net
+                    check (platform_net = base_commission - customer_discount - partner_payout);
+        ]]></sql>
+
+        <rollback>
+            <dropColumn tableName="cleaning_order" columnName="applied_reward_id"/>
+            <dropColumn tableName="cleaning_order" columnName="referral_partner_id"/>
+            <dropColumn tableName="cleaning_order" columnName="referrer_customer_id"/>
+            <dropColumn tableName="cleaning_order" columnName="referral_code_id"/>
+            <dropColumn tableName="cleaning_order" columnName="customer_discount_type"/>
+            <dropColumn tableName="cleaning_order" columnName="acquisition_source"/>
+            <dropColumn tableName="cleaning_order" columnName="platform_net"/>
+            <dropColumn tableName="cleaning_order" columnName="final_customer_price"/>
+            <dropColumn tableName="cleaning_order" columnName="partner_payout"/>
+            <dropColumn tableName="cleaning_order" columnName="customer_discount"/>
+            <dropColumn tableName="cleaning_order" columnName="base_commission"/>
+            <dropColumn tableName="cleaning_order" columnName="commission_rate"/>
+            <dropColumn tableName="cleaning_order" columnName="base_price"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

@@ -10,7 +10,7 @@ public record CreateCleaningOrderCommand(
         CleaningType cleaningType,
         LocalDate requestedDate,
         String phone,
-        String comment
+        String comment,
+        String referralCode
 ) {
 }
-

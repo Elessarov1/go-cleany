@@ -26,7 +26,9 @@ class CleaningOrderBotMessageFactoryTest {
         Mockito.when(order.getApartmentType()).thenReturn(ApartmentType.TWO_PLUS_ONE);
         Mockito.when(order.isDuplex()).thenReturn(false);
         Mockito.when(order.getCleaningType()).thenReturn(CleaningType.REGULAR);
-        Mockito.when(order.getPrice()).thenReturn(BigDecimal.valueOf(1100));
+        Mockito.when(order.getFinalCustomerPrice()).thenReturn(BigDecimal.valueOf(1100));
+        Mockito.when(order.getBasePrice()).thenReturn(BigDecimal.valueOf(1100));
+        Mockito.when(order.getBaseCommission()).thenReturn(BigDecimal.valueOf(165));
         Mockito.when(order.getCurrency()).thenReturn("TRY");
         Mockito.when(order.getAddress()).thenReturn("Barbaros Cd. 24");
         Mockito.when(order.getPhone()).thenReturn("+90 555 123 45 67");

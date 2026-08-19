@@ -77,6 +77,7 @@ public class AdminQueryService {
                 .toList();
         return new AdminOrderDetailsResponse(
                 CleaningOrderResponse.from(order),
+                AdminOrderFinancialResponse.from(order),
                 photoRepository.countByOrderId(orderId),
                 events
         );

@@ -22,6 +22,7 @@ import com.cleany.order.InvalidPhoneNumberException;
 import com.cleany.order.InvalidOrderStateException;
 import com.cleany.order.OrderClaimConflictException;
 import com.cleany.order.OrderNotFoundException;
+import com.cleany.referral.ReferralNotApplicableException;
 import com.cleany.telegram.CustomerAuthenticationRequiredException;
 import com.cleany.telegram.bot.TelegramWebhookAuthenticationException;
 
@@ -62,6 +63,16 @@ public class GlobalExceptionHandler {
                 "invalid_phone_number",
                 exception.getMessage(),
                 Map.of("phone", "must be a valid international phone number with country code")
+        );
+    }
+
+    @ExceptionHandler(ReferralNotApplicableException.class)
+    ResponseEntity<ApiError> handleReferralNotApplicable(ReferralNotApplicableException exception) {
+        return response(
+                HttpStatus.BAD_REQUEST,
+                "referral_not_applicable",
+                exception.getMessage(),
+                Map.of("referralCode", exception.getMessage())
         );
     }
 

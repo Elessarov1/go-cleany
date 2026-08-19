@@ -1,15 +1,24 @@
 import type { CleaningConfiguration } from "../domain/configuration";
-import type { AdminDashboard, AdminOrderDetails } from "../domain/admin";
+import type {
+  AdminDashboard,
+  AdminOrderDetails,
+  AdminReferralOverview,
+  PartnerPayout,
+  ReferralPartner,
+} from "../domain/admin";
 import { calculateDisplayedPrice } from "../domain/pricing";
 import type {
   CleaningOrder,
+  CleaningOrderQuote,
+  CleaningOrderQuoteRequest,
   CleaningOrderStatus,
   CreateCleaningOrderRequest,
+  ReferralSummary,
 } from "../domain/order";
 import type { Platform } from "../platform/Platform";
 import { CleaningApiError, type CleaningApi } from "./CleaningApi";
 
-const STORAGE_KEY = "cleany.mock.orders.v1";
+const STORAGE_KEY = "cleany.mock.orders.v2";
 
 export const mockConfiguration: CleaningConfiguration = {
   areas: ["MAHMUTLAR", "KARGICAK", "KESTEL"],
@@ -59,6 +68,10 @@ function createScenarioOrder(status: CleaningOrderStatus): CleaningOrder {
     duplex: false,
     cleaningType: "REGULAR",
     price: 1100,
+    basePrice: 1100,
+    customerDiscount: 0,
+    finalCustomerPrice: 1100,
+    customerDiscountType: "NONE",
     currency: "TRY",
     requestedDate: dateFromToday(2),
     customerComment: "The key is with security.",
@@ -161,6 +174,17 @@ export class MockCleaningApi implements CleaningApi {
     const order = await this.getOrder(id);
     const details: AdminOrderDetails = {
       order,
+      financial: {
+        basePrice: order.basePrice,
+        commissionRate: 0.15,
+        baseCommission: order.basePrice * 0.15,
+        customerDiscount: order.customerDiscount,
+        partnerPayout: 0,
+        finalCustomerPrice: order.finalCustomerPrice,
+        platformNet: order.basePrice * 0.15 - order.customerDiscount,
+        acquisitionSource: "ORGANIC",
+        customerDiscountType: order.customerDiscountType,
+      },
       photoCount: order.photoCount ?? 0,
       events: [
         {
@@ -194,8 +218,43 @@ export class MockCleaningApi implements CleaningApi {
     return simulateNetwork(details);
   }
 
+  getAdminReferralOverview(): Promise<AdminReferralOverview> {
+    return simulateNetwork({ partners: [], payouts: [] });
+  }
+
+  createReferralPartner(name: string): Promise<ReferralPartner> {
+    return simulateNetwork({
+      id: Date.now(),
+      name,
+      referralCode: "GCPREVIEW1",
+      active: true,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  markPartnerPayoutPaid(id: number): Promise<PartnerPayout> {
+    return Promise.reject(new CleaningApiError(`Payout ${id} not found`, 404));
+  }
+
   getConfiguration(): Promise<CleaningConfiguration> {
     return simulateNetwork(mockConfiguration);
+  }
+
+  quoteOrder(request: CleaningOrderQuoteRequest): Promise<CleaningOrderQuote> {
+    const basePrice = calculateDisplayedPrice(
+      mockConfiguration,
+      request.apartmentType,
+      request.cleaningType,
+      request.duplex,
+    );
+    const customerDiscount = request.referralCode ? basePrice * 0.15 : 0;
+    return simulateNetwork({
+      basePrice,
+      customerDiscount,
+      finalCustomerPrice: basePrice - customerDiscount,
+      customerDiscountType: request.referralCode ? "FRIEND_REFERRAL" : "NONE",
+      currency: mockConfiguration.currency,
+    });
   }
 
   async createOrder(
@@ -205,6 +264,7 @@ export class MockCleaningApi implements CleaningApi {
     if (!user) {
       throw new CleaningApiError("Mock user is unavailable", 401);
     }
+    const quote = await this.quoteOrder(request);
 
     const order: CleaningOrder = {
       id: Date.now(),
@@ -217,12 +277,11 @@ export class MockCleaningApi implements CleaningApi {
       apartmentType: request.apartmentType,
       duplex: request.duplex,
       cleaningType: request.cleaningType,
-      price: calculateDisplayedPrice(
-        mockConfiguration,
-        request.apartmentType,
-        request.cleaningType,
-        request.duplex,
-      ),
+      price: quote.finalCustomerPrice,
+      basePrice: quote.basePrice,
+      customerDiscount: quote.customerDiscount,
+      finalCustomerPrice: quote.finalCustomerPrice,
+      customerDiscountType: quote.customerDiscountType,
       currency: mockConfiguration.currency,
       requestedDate: request.requestedDate,
       customerComment: request.comment?.trim() || undefined,
@@ -232,6 +291,14 @@ export class MockCleaningApi implements CleaningApi {
 
     writeStoredOrders([order, ...readStoredOrders()]);
     return simulateNetwork(order);
+  }
+
+  getReferralSummary(): Promise<ReferralSummary> {
+    return simulateNetwork({
+      referralCode: "GCPREVIEW1",
+      availableRewards: 1,
+      referralProgramUnlocked: true,
+    });
   }
 
   getOrders(): Promise<CleaningOrder[]> {

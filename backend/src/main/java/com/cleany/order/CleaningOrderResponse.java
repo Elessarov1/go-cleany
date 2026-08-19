@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
+import com.cleany.finance.CustomerDiscountType;
+
 public record CleaningOrderResponse(
         long id,
         long telegramUserId,
@@ -16,6 +18,10 @@ public record CleaningOrderResponse(
         boolean duplex,
         CleaningType cleaningType,
         BigDecimal price,
+        BigDecimal basePrice,
+        BigDecimal customerDiscount,
+        BigDecimal finalCustomerPrice,
+        CustomerDiscountType customerDiscountType,
         String currency,
         LocalDate requestedDate,
         String customerComment,
@@ -40,6 +46,10 @@ public record CleaningOrderResponse(
                 order.isDuplex(),
                 order.getCleaningType(),
                 order.getPrice(),
+                order.getBasePrice(),
+                order.getCustomerDiscount(),
+                order.getFinalCustomerPrice(),
+                order.getCustomerDiscountType(),
                 order.getCurrency(),
                 order.getRequestedDate(),
                 order.getCustomerComment(),

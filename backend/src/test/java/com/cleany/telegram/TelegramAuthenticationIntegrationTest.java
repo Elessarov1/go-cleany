@@ -93,6 +93,9 @@ class TelegramAuthenticationIntegrationTest extends BaseIntegrationTest {
         Assertions.assertEquals("alex", orders.getFirst().getTelegramUsername());
         Assertions.assertEquals("Alex Cleaner", orders.getFirst().getCustomerName());
         Assertions.assertEquals("+905551234567", orders.getFirst().getPhone());
+        Assertions.assertTrue(orders.getFirst().getCustomerId() > 0);
+        Assertions.assertEquals("1100.00", orders.getFirst().getBasePrice().toPlainString());
+        Assertions.assertEquals("165.00", orders.getFirst().getBaseCommission().toPlainString());
     }
 
     @Test

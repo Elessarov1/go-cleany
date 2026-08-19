@@ -53,12 +53,16 @@
       "phonePlaceholder": "+90 5xx xxx xx xx",
       "phoneHint": "Include the country code and start the number with +.",
       "comment": "Comment",
-      "commentPlaceholder": "Access details, pets, or anything useful for the cleaner"
+      "commentPlaceholder": "Access details, pets, or anything useful for the cleaner",
+      "referralCode": "Referral code",
+      "referralCodePlaceholder": "For example, GC7K9P2M4Q",
+      "referralCodeHint": "The same code works for customer invitations and partner referrals."
     },
     "summary": {
       "title": "Your cleaning",
       "pending": "Select the apartment and cleaning type to see the price",
       "fixed": "Fixed price",
+      "discount": "{{amount}} discount applied",
       "directPayment": "Pay the cleaner directly after cleaning. go-cleany does not process your payment."
     },
     "submit": "Book for {{price}}",
@@ -70,7 +74,8 @@
       "cleaningType": "Choose a cleaning type",
       "requestedDate": "Choose a preferred date",
       "address": "Enter the full address",
-      "phone": "Enter the full phone number with country code, for example +90 555 123 45 67."
+      "phone": "Enter the full phone number with country code, for example +90 555 123 45 67.",
+      "referralCode": "Check the referral code or remove it"
     },
     "error": "We could not create the order. Please try again."
   },
@@ -131,6 +136,16 @@
     "open": "View details",
     "loadError": "We could not load your orders."
   },
+  "referrals": {
+    "title": "Invite friends",
+    "text": "Your friend gets 15% off their first cleaning. After completion, you get 10% off one future order.",
+    "codeLabel": "Your code",
+    "copy": "Copy",
+    "copied": "Copied",
+    "rewards_one": "{{count}} 10% discount available",
+    "rewards_other": "{{count}} 10% discounts available",
+    "locked": "Your referral code will appear after your first completed cleaning."
+  },
   "details": {
     "eyebrow": "Order #{{id}}",
     "title": "Cleaning details",
@@ -141,6 +156,7 @@
     "address": "Address",
     "apartment": "Apartment",
     "phone": "Phone",
+    "discount": "Discount",
     "customerComment": "Your comment",
     "cleanerComment": "Cleaner comment",
     "photoReport": "Photo report",
@@ -160,6 +176,7 @@
     "text": "The cleaner will confirm the order. We will notify you in Telegram.",
     "date": "Preferred date",
     "price": "Fixed price",
+    "discount": "{{amount}} discount applied",
     "details": "View order details",
     "another": "Book another cleaning"
   },
@@ -200,11 +217,32 @@
       "all": "All",
       "empty": "There are no orders with this status."
     },
+    "referrals": {
+      "title": "Partners and payouts",
+      "subtitle": "Codes are channel-independent and are not tied to Telegram.",
+      "partnerName": "Partner name",
+      "create": "Add partner",
+      "code": "Code",
+      "noPartners": "No partners yet.",
+      "payouts": "Payouts",
+      "noPayouts": "No payouts yet.",
+      "payable": "Payable",
+      "paid": "Paid",
+      "markPaid": "Mark as paid"
+    },
     "orderEyebrow": "Order #{{id}}",
     "orderTitle": "Order record",
     "customer": "Customer",
     "cleaner": "Cleaner Telegram ID",
     "notAssigned": "Not assigned",
+    "financial": {
+      "basePrice": "Base price",
+      "baseCommission": "Commission pool",
+      "customerDiscount": "Customer discount",
+      "partnerPayout": "Partner payout",
+      "platformNet": "Platform net",
+      "acquisitionSource": "Acquisition source"
+    },
     "history": {
       "title": "Order history",
       "subtitle": "Events are retained in an append-only log."

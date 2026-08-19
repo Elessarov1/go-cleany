@@ -1,9 +1,18 @@
 import type { Platform } from "../platform/Platform";
 import type { CleaningConfiguration } from "../domain/configuration";
-import type { AdminDashboard, AdminOrderDetails } from "../domain/admin";
+import type {
+  AdminDashboard,
+  AdminOrderDetails,
+  AdminReferralOverview,
+  PartnerPayout,
+  ReferralPartner,
+} from "../domain/admin";
 import type {
   CleaningOrder,
+  CleaningOrderQuote,
+  CleaningOrderQuoteRequest,
   CreateCleaningOrderRequest,
+  ReferralSummary,
 } from "../domain/order";
 import {
   CleaningApiError,
@@ -42,8 +51,32 @@ export class HttpCleaningApi implements CleaningApi {
     return this.request(`/api/v1/admin/orders/${id}`);
   }
 
+  getAdminReferralOverview(): Promise<AdminReferralOverview> {
+    return this.request("/api/v1/admin/referrals");
+  }
+
+  createReferralPartner(name: string): Promise<ReferralPartner> {
+    return this.request("/api/v1/admin/referrals/partners", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    });
+  }
+
+  markPartnerPayoutPaid(id: number): Promise<PartnerPayout> {
+    return this.request(`/api/v1/admin/referrals/payouts/${id}/paid`, {
+      method: "POST",
+    });
+  }
+
   getConfiguration(): Promise<CleaningConfiguration> {
     return this.request("/api/v1/config");
+  }
+
+  quoteOrder(request: CleaningOrderQuoteRequest): Promise<CleaningOrderQuote> {
+    return this.request("/api/v1/orders/quote", {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
   }
 
   createOrder(request: CreateCleaningOrderRequest): Promise<CleaningOrder> {
@@ -51,6 +84,10 @@ export class HttpCleaningApi implements CleaningApi {
       method: "POST",
       body: JSON.stringify(request),
     });
+  }
+
+  getReferralSummary(): Promise<ReferralSummary> {
+    return this.request("/api/v1/referrals/me");
   }
 
   getOrders(): Promise<CleaningOrder[]> {

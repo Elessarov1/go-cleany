@@ -22,9 +22,14 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import com.cleany.configuration.CleanerProperties;
 import com.cleany.configuration.CleaningProperties;
+import com.cleany.customer.CurrentCustomer;
+import com.cleany.customer.CustomerAccountService;
+import com.cleany.finance.AcquisitionSource;
+import com.cleany.finance.CustomerDiscountType;
+import com.cleany.finance.OrderFinancialSnapshot;
 import com.cleany.pricing.CleaningPriceService;
-import com.cleany.telegram.CustomerIdentityProvider;
-import com.cleany.telegram.TelegramPrincipal;
+import com.cleany.referral.OrderReferralPlan;
+import com.cleany.referral.ReferralService;
 
 class CleaningOrderServiceTest {
 
@@ -35,6 +40,8 @@ class CleaningOrderServiceTest {
     private CleaningOrderPhotoRepository photoRepository;
     private CleaningOrderEventRepository eventRepository;
     private ApplicationEventPublisher eventPublisher;
+    private CustomerAccountService customerAccountService;
+    private ReferralService referralService;
     private CleaningOrderService service;
 
     @BeforeEach
@@ -43,9 +50,24 @@ class CleaningOrderServiceTest {
         photoRepository = Mockito.mock(CleaningOrderPhotoRepository.class);
         eventRepository = Mockito.mock(CleaningOrderEventRepository.class);
         eventPublisher = Mockito.mock(ApplicationEventPublisher.class);
+        customerAccountService = Mockito.mock(CustomerAccountService.class);
+        referralService = Mockito.mock(ReferralService.class);
         CleaningProperties properties = properties();
-        CustomerIdentityProvider identityProvider = () ->
-                new TelegramPrincipal(900001L, "browser_preview", "Alex", null);
+        Mockito.when(customerAccountService.currentCustomer()).thenReturn(
+                new CurrentCustomer(77L, 900001L, "browser_preview", "Alex")
+        );
+        Mockito.when(referralService.planForCreation(
+                Mockito.eq(77L),
+                Mockito.nullable(String.class),
+                Mockito.any(BigDecimal.class),
+                Mockito.anyBoolean()
+        )).thenAnswer(invocation -> new OrderReferralPlan(
+                organicSnapshot(invocation.getArgument(2)),
+                null,
+                null,
+                null,
+                null
+        ));
         service = new CleaningOrderService(
                 repository,
                 photoRepository,
@@ -54,7 +76,8 @@ class CleaningOrderServiceTest {
                 new PhoneNumberNormalizer(),
                 properties,
                 new CleanerProperties(List.of(CLEANER_ID)),
-                identityProvider,
+                customerAccountService,
+                referralService,
                 Clock.fixed(NOW, ZoneOffset.UTC),
                 eventPublisher
         );
@@ -72,7 +95,8 @@ class CleaningOrderServiceTest {
                 CleaningType.REGULAR,
                 LocalDate.of(2026, 8, 18),
                 " +90 555 123 45 67 ",
-                " Key with security "
+                " Key with security ",
+                null
         );
 
         service.createOrder(command);
@@ -80,8 +104,10 @@ class CleaningOrderServiceTest {
         var captor = ArgumentCaptor.forClass(CleaningOrder.class);
         Mockito.verify(repository).save(captor.capture());
         CleaningOrder order = captor.getValue();
+        Assertions.assertEquals(77L, order.getCustomerId());
         Assertions.assertEquals(900001L, order.getTelegramUserId());
         Assertions.assertEquals(0, order.getPrice().compareTo(BigDecimal.valueOf(1400)));
+        Assertions.assertEquals(0, order.getBaseCommission().compareTo(new BigDecimal("210.00")));
         Assertions.assertEquals("TRY", order.getCurrency());
         Assertions.assertEquals(CleaningOrderStatus.NEW, order.getStatus());
         Assertions.assertEquals("Barbaros Cd. 24", order.getAddress());
@@ -145,6 +171,7 @@ class CleaningOrderServiceTest {
                 CleaningType.REGULAR,
                 LocalDate.of(2026, 8, 25),
                 "+90 555",
+                null,
                 null
         );
 
@@ -273,6 +300,7 @@ class CleaningOrderServiceTest {
 
     private static CleaningOrder sampleOrder() {
         return new CleaningOrder(
+                77L,
                 900001L,
                 "browser_preview",
                 "Alex",
@@ -282,7 +310,11 @@ class CleaningOrderServiceTest {
                 ApartmentType.TWO_PLUS_ONE,
                 false,
                 CleaningType.REGULAR,
-                BigDecimal.valueOf(1100),
+                organicSnapshot(BigDecimal.valueOf(1100)),
+                null,
+                null,
+                null,
+                null,
                 "TRY",
                 LocalDate.of(2026, 8, 18),
                 null,
@@ -299,7 +331,23 @@ class CleaningOrderServiceTest {
                 CleaningType.REGULAR,
                 LocalDate.of(2026, 8, 18),
                 phone,
+                null,
                 null
+        );
+    }
+
+    private static OrderFinancialSnapshot organicSnapshot(BigDecimal basePrice) {
+        BigDecimal commission = basePrice.multiply(new BigDecimal("0.15")).setScale(2);
+        return new OrderFinancialSnapshot(
+                basePrice.setScale(2),
+                new BigDecimal("0.15"),
+                commission,
+                BigDecimal.ZERO.setScale(2),
+                BigDecimal.ZERO.setScale(2),
+                basePrice.setScale(2),
+                commission,
+                AcquisitionSource.ORGANIC,
+                CustomerDiscountType.NONE
         );
     }
 

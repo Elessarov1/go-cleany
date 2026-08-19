@@ -45,6 +45,20 @@ cleaning:
       four-plus-one: 2450
       duplex-surcharge: 450
 
+referral:
+  financial:
+    commission-rate: ${REFERRAL_COMMISSION_RATE:0.15}
+    customer:
+      friend-discount-rate: ${REFERRAL_FRIEND_DISCOUNT_RATE:0.15}
+      friend-max-discount: ${REFERRAL_FRIEND_MAX_DISCOUNT:2000}
+      referrer-reward-rate: ${REFERRAL_REFERRER_REWARD_RATE:0.10}
+      referrer-max-discount: ${REFERRAL_REFERRER_MAX_DISCOUNT:2000}
+    partner:
+      customer-discount-rate: ${REFERRAL_PARTNER_CUSTOMER_DISCOUNT_RATE:0.05}
+      customer-max-discount: ${REFERRAL_PARTNER_CUSTOMER_MAX_DISCOUNT:2000}
+      payout-rate: ${REFERRAL_PARTNER_PAYOUT_RATE:0.10}
+      max-payout: ${REFERRAL_PARTNER_MAX_PAYOUT:2000}
+
 cleaner:
   telegram-ids: ${CLEANER_TELEGRAM_IDS:123456789,987654321}
 

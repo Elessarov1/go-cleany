@@ -6,6 +6,7 @@ import com.cleany.order.CleaningOrderResponse;
 
 public record AdminOrderDetailsResponse(
         CleaningOrderResponse order,
+        AdminOrderFinancialResponse financial,
         long photoCount,
         List<AdminOrderEventResponse> events
 ) {

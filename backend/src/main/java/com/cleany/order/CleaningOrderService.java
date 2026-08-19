@@ -10,12 +10,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.configuration.CleanerProperties;
 import com.cleany.configuration.CleaningProperties;
+import com.cleany.customer.CurrentCustomer;
+import com.cleany.customer.CustomerAccountService;
 import com.cleany.pricing.CleaningPriceService;
-import com.cleany.telegram.CustomerIdentityProvider;
-import com.cleany.telegram.TelegramPrincipal;
+import com.cleany.referral.OrderReferralPlan;
+import com.cleany.referral.ReferralService;
 
 @Service
 public class CleaningOrderService {
+
+    private static final List<CleaningOrderStatus> ACTIVE_STATUSES = List.of(
+            CleaningOrderStatus.NEW,
+            CleaningOrderStatus.ACCEPTED,
+            CleaningOrderStatus.AWAITING_REPORT
+    );
 
     private final CleaningOrderRepository orderRepository;
     private final CleaningOrderPhotoRepository photoRepository;
@@ -24,7 +32,8 @@ public class CleaningOrderService {
     private final PhoneNumberNormalizer phoneNumberNormalizer;
     private final CleaningProperties cleaningProperties;
     private final CleanerProperties cleanerProperties;
-    private final CustomerIdentityProvider identityProvider;
+    private final CustomerAccountService customerAccountService;
+    private final ReferralService referralService;
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -36,7 +45,8 @@ public class CleaningOrderService {
             PhoneNumberNormalizer phoneNumberNormalizer,
             CleaningProperties cleaningProperties,
             CleanerProperties cleanerProperties,
-            CustomerIdentityProvider identityProvider,
+            CustomerAccountService customerAccountService,
+            ReferralService referralService,
             Clock clock,
             ApplicationEventPublisher eventPublisher
     ) {
@@ -47,26 +57,36 @@ public class CleaningOrderService {
         this.phoneNumberNormalizer = phoneNumberNormalizer;
         this.cleaningProperties = cleaningProperties;
         this.cleanerProperties = cleanerProperties;
-        this.identityProvider = identityProvider;
+        this.customerAccountService = customerAccountService;
+        this.referralService = referralService;
         this.clock = clock;
         this.eventPublisher = eventPublisher;
     }
 
     @Transactional
     public CleaningOrder createOrder(CreateCleaningOrderCommand command) {
-        TelegramPrincipal customer = identityProvider.currentCustomer();
+        CurrentCustomer customer = customerAccountService.currentCustomer();
+        customerAccountService.lock(customer.id());
         validateRequestedDate(command.requestedDate());
         String normalizedPhone = phoneNumberNormalizer.normalize(command.phone());
 
-        var price = priceService.calculate(
+        var basePrice = priceService.calculate(
                 command.apartmentType(),
                 command.cleaningType(),
                 command.duplex()
         );
+        boolean firstOrder = isAcquisitionEligible(customer.id());
+        OrderReferralPlan referralPlan = referralService.planForCreation(
+                customer.id(),
+                command.referralCode(),
+                basePrice,
+                firstOrder
+        );
 
         var order = new CleaningOrder(
                 customer.id(),
-                normalizeOptional(customer.username()),
+                customer.telegramUserId(),
+                customer.telegramUsername(),
                 customer.displayName(),
                 normalizedPhone,
                 command.area(),
@@ -74,51 +94,81 @@ public class CleaningOrderService {
                 command.apartmentType(),
                 command.duplex(),
                 command.cleaningType(),
-                price,
+                referralPlan.financialSnapshot(),
+                referralPlan.referralCodeId(),
+                referralPlan.referrerCustomerId(),
+                referralPlan.partnerId(),
+                referralPlan.rewardId(),
                 cleaningProperties.currency().getCurrencyCode(),
                 command.requestedDate(),
                 normalizeOptional(command.comment()),
                 clock.instant()
         );
         CleaningOrder savedOrder = orderRepository.save(order);
+        if (referralPlan.rewardId() != null) {
+            referralService.reserveReward(referralPlan, savedOrder.getId());
+        }
         recordEvent(
                 savedOrder,
                 OrderEventType.CREATED,
                 null,
                 CleaningOrderStatus.NEW,
                 OrderActorType.CUSTOMER,
-                customer.id(),
+                customer.telegramUserId(),
                 null
         );
         eventPublisher.publishEvent(new CleaningOrderCreatedEvent(savedOrder));
         return savedOrder;
     }
 
-    @Transactional(readOnly = true)
-    public List<CleaningOrder> getCurrentCustomerOrders() {
-        long customerId = identityProvider.currentCustomer().id();
-        return orderRepository.findAllByTelegramUserIdOrderByCreatedAtDesc(customerId);
+    @Transactional
+    public CleaningOrderQuoteResponse quoteOrder(CleaningOrderQuoteRequest request) {
+        CurrentCustomer customer = customerAccountService.currentCustomer();
+        var basePrice = priceService.calculate(
+                request.apartmentType(),
+                request.cleaningType(),
+                request.duplex()
+        );
+        boolean firstOrder = isAcquisitionEligible(customer.id());
+        var plan = referralService.quote(
+                customer.id(),
+                request.referralCode(),
+                basePrice,
+                firstOrder
+        );
+        return CleaningOrderQuoteResponse.from(
+                plan.financialSnapshot(),
+                cleaningProperties.currency().getCurrencyCode()
+        );
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
+    public List<CleaningOrder> getCurrentCustomerOrders() {
+        long customerId = customerAccountService.currentCustomer().id();
+        return orderRepository.findAllByCustomerIdOrderByCreatedAtDesc(customerId);
+    }
+
+    @Transactional
     public CleaningOrder getCurrentCustomerOrder(long orderId) {
-        long customerId = identityProvider.currentCustomer().id();
+        long customerId = customerAccountService.currentCustomer().id();
         return findCustomerOrder(orderId, customerId);
     }
 
     @Transactional
     public CleaningOrder cancelCurrentCustomerOrder(long orderId) {
-        long customerId = identityProvider.currentCustomer().id();
+        CurrentCustomer customer = customerAccountService.currentCustomer();
+        long customerId = customer.id();
         var order = findCustomerOrder(orderId, customerId);
         CleaningOrderStatus previousStatus = order.getStatus();
         order.cancelByCustomer();
+        referralService.releaseReward(order);
         recordEvent(
                 order,
                 OrderEventType.CANCELLED_BY_CUSTOMER,
                 previousStatus,
                 CleaningOrderStatus.CANCELLED,
                 OrderActorType.CUSTOMER,
-                customerId,
+                customer.telegramUserId(),
                 null
         );
         return order;
@@ -258,6 +308,7 @@ public class CleaningOrderService {
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
         CleaningOrderStatus previousStatus = order.getStatus();
         order.cancelByCleaner(cleanerTelegramUserId);
+        referralService.releaseReward(order);
         recordEvent(
                 order,
                 OrderEventType.CANCELLED_BY_CLEANER,
@@ -299,6 +350,7 @@ public class CleaningOrderService {
                 null,
                 completedAt
         ));
+        referralService.completeOrder(order);
         return order;
     }
 
@@ -341,7 +393,7 @@ public class CleaningOrderService {
     }
 
     private CleaningOrder findCustomerOrder(long orderId, long customerId) {
-        return orderRepository.findByIdAndTelegramUserId(orderId, customerId)
+        return orderRepository.findByIdAndCustomerId(orderId, customerId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
     }
 
@@ -351,6 +403,11 @@ public class CleaningOrderService {
         if (requestedDate.isBefore(today) || requestedDate.isAfter(latest)) {
             throw new BookingDateNotAvailableException(requestedDate, today, latest);
         }
+    }
+
+    private boolean isAcquisitionEligible(long customerId) {
+        return !orderRepository.existsByCustomerIdAndStatus(customerId, CleaningOrderStatus.COMPLETED)
+                && !orderRepository.existsByCustomerIdAndStatusIn(customerId, ACTIVE_STATUSES);
     }
 
     private void requireConfiguredCleaner(long cleanerTelegramUserId) {

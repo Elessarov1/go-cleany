@@ -57,6 +57,13 @@ export function OrderCreatedPage() {
           <div>
             <span>{t("created.price")}</span>
             <strong>{formatPrice(order.price, order.currency, locale)}</strong>
+            {order.customerDiscount > 0 ? (
+              <small>
+                {t("created.discount", {
+                  amount: formatPrice(order.customerDiscount, order.currency, locale),
+                })}
+              </small>
+            ) : null}
           </div>
         </div>
       </section>

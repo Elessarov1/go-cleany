@@ -94,6 +94,7 @@ public class AdminBotMessageFactory {
 
     public String order(AdminOrderDetailsResponse details) {
         var order = details.order();
+        var financial = details.financial();
         StringBuilder message = new StringBuilder()
                 .append("🧾 Заказ №").append(order.id()).append("\n\n")
                 .append("Статус: ").append(status(order.status())).append("\n")
@@ -102,7 +103,12 @@ public class AdminBotMessageFactory {
                 .append("Район: ").append(area(order.area().name())).append("\n")
                 .append("Адрес: ").append(order.address()).append("\n")
                 .append("Дата: ").append(DATE_FORMATTER.format(order.requestedDate())).append("\n")
-                .append("Стоимость: ").append(price(order.price(), order.currency())).append("\n")
+                .append("К оплате клиентом: ").append(price(financial.finalCustomerPrice(), order.currency())).append("\n")
+                .append("Базовая цена: ").append(price(financial.basePrice(), order.currency())).append("\n")
+                .append("Скидка клиенту: ").append(price(financial.customerDiscount(), order.currency())).append("\n")
+                .append("Выплата партнёру: ").append(price(financial.partnerPayout(), order.currency())).append("\n")
+                .append("Доход платформы: ").append(price(financial.platformNet(), order.currency())).append("\n")
+                .append("Источник: ").append(financial.acquisitionSource()).append("\n")
                 .append("Клинер: ")
                 .append(order.cleanerTelegramUserId() == null ? "не назначен" : order.cleanerTelegramUserId())
                 .append("\n")

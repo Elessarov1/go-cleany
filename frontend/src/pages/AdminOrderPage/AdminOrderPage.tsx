@@ -43,6 +43,7 @@ export function AdminOrderPage() {
   }
 
   const order = details.order;
+  const financial = details.financial;
 
   return (
     <div className="page page--admin-order">
@@ -75,6 +76,12 @@ export function AdminOrderPage() {
           <div><dt>Telegram ID</dt><dd>{order.telegramUserId}</dd></div>
           <div><dt>{t("admin.cleaner")}</dt><dd>{order.cleanerTelegramUserId ?? t("admin.notAssigned")}</dd></div>
           <div><dt>{t("details.photoReport")}</dt><dd>{details.photoCount}</dd></div>
+          <div><dt>{t("admin.financial.basePrice")}</dt><dd>{formatPrice(financial.basePrice, order.currency, locale)}</dd></div>
+          <div><dt>{t("admin.financial.baseCommission")}</dt><dd>{formatPrice(financial.baseCommission, order.currency, locale)}</dd></div>
+          <div><dt>{t("admin.financial.customerDiscount")}</dt><dd>{formatPrice(financial.customerDiscount, order.currency, locale)}</dd></div>
+          <div><dt>{t("admin.financial.partnerPayout")}</dt><dd>{formatPrice(financial.partnerPayout, order.currency, locale)}</dd></div>
+          <div><dt>{t("admin.financial.platformNet")}</dt><dd>{formatPrice(financial.platformNet, order.currency, locale)}</dd></div>
+          <div><dt>{t("admin.financial.acquisitionSource")}</dt><dd>{financial.acquisitionSource}</dd></div>
           <div><dt>{t("details.customerComment")}</dt><dd>{order.customerComment || t("common.notProvided")}</dd></div>
           {order.cleanerComment ? (
             <div><dt>{t("details.cleanerComment")}</dt><dd>{order.cleanerComment}</dd></div>

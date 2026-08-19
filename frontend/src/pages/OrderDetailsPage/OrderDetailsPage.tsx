@@ -83,7 +83,12 @@ export function OrderDetailsPage() {
             <span>{t("details.cleaning")}</span>
             <h2>{t(`cleaning.${order.cleaningType}.title`)}</h2>
           </div>
-          <strong>{formatPrice(order.price, order.currency, locale)}</strong>
+          <div className="details-card__price-value">
+            {order.customerDiscount > 0 ? (
+              <span>{formatPrice(order.basePrice, order.currency, locale)}</span>
+            ) : null}
+            <strong>{formatPrice(order.finalCustomerPrice, order.currency, locale)}</strong>
+          </div>
         </div>
         <dl className="detail-list">
           <div><dt>{t("details.date")}</dt><dd>{formatDate(order.requestedDate, locale)}</dd></div>
@@ -97,6 +102,12 @@ export function OrderDetailsPage() {
             </dd>
           </div>
           <div><dt>{t("details.phone")}</dt><dd>{order.phone}</dd></div>
+          {order.customerDiscount > 0 ? (
+            <div>
+              <dt>{t("details.discount")}</dt>
+              <dd>−{formatPrice(order.customerDiscount, order.currency, locale)}</dd>
+            </div>
+          ) : null}
           <div><dt>{t("details.customerComment")}</dt><dd>{order.customerComment || t("common.notProvided")}</dd></div>
           {order.cleanerComment ? (
             <div><dt>{t("details.cleanerComment")}</dt><dd>{order.cleanerComment}</dd></div>

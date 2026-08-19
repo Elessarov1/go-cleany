@@ -12,14 +12,14 @@ import java.util.stream.Collectors;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-final class TelegramInitDataTestFactory {
+public final class TelegramInitDataTestFactory {
 
     private static final String HMAC_ALGORITHM = "HmacSHA256";
 
     private TelegramInitDataTestFactory() {
     }
 
-    static String signed(String botToken, Instant authDate, String userJson) {
+    public static String signed(String botToken, Instant authDate, String userJson) {
         Map<String, String> fields = new TreeMap<>();
         fields.put("auth_date", Long.toString(authDate.getEpochSecond()));
         fields.put("query_id", "AAExampleQuery");

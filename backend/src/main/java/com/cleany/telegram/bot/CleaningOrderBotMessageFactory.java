@@ -30,7 +30,8 @@ public class CleaningOrderBotMessageFactory {
                 🏠 %s
                 🧽 %s
 
-                💰 %s
+                💰 К оплате клиентом: %s
+                Доход клинера: %s
 
                 Адрес:
                 %s
@@ -46,7 +47,11 @@ public class CleaningOrderBotMessageFactory {
                 area(order.getArea()),
                 apartment(order.getApartmentType(), order.isDuplex()),
                 cleaning(order.getCleaningType()),
-                price(order.getPrice(), order.getCurrency()),
+                price(order.getFinalCustomerPrice(), order.getCurrency()),
+                price(
+                        order.getBasePrice().subtract(order.getBaseCommission()),
+                        order.getCurrency()
+                ),
                 order.getAddress(),
                 order.getPhone(),
                 valueOrDash(order.getCustomerComment())

@@ -9,6 +9,14 @@ export type ApartmentType =
 
 export type CleaningType = "REGULAR" | "DEEP";
 
+export type AcquisitionSource = "ORGANIC" | "CUSTOMER_REFERRAL" | "PARTNER";
+
+export type CustomerDiscountType =
+  | "NONE"
+  | "FRIEND_REFERRAL"
+  | "REFERRER_REWARD"
+  | "PARTNER_REFERRAL";
+
 export type CleaningOrderStatus =
   | "NEW"
   | "ACCEPTED"
@@ -26,6 +34,22 @@ export interface CreateCleaningOrderRequest {
   requestedDate: string;
   phone: string;
   comment?: string;
+  referralCode?: string;
+}
+
+export interface CleaningOrderQuoteRequest {
+  apartmentType: ApartmentType;
+  duplex: boolean;
+  cleaningType: CleaningType;
+  referralCode?: string;
+}
+
+export interface CleaningOrderQuote {
+  basePrice: number;
+  customerDiscount: number;
+  finalCustomerPrice: number;
+  customerDiscountType: CustomerDiscountType;
+  currency: string;
 }
 
 export interface CleaningOrder {
@@ -40,6 +64,10 @@ export interface CleaningOrder {
   duplex: boolean;
   cleaningType: CleaningType;
   price: number;
+  basePrice: number;
+  customerDiscount: number;
+  finalCustomerPrice: number;
+  customerDiscountType: CustomerDiscountType;
   currency: string;
   requestedDate: string;
   customerComment?: string;
@@ -52,3 +80,8 @@ export interface CleaningOrder {
   photoCount?: number;
 }
 
+export interface ReferralSummary {
+  referralCode?: string;
+  availableRewards: number;
+  referralProgramUnlocked: boolean;
+}

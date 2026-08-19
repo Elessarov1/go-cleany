@@ -5,7 +5,7 @@ import { useCleaningApi } from "../../api/CleaningApiProvider";
 import { Icon } from "../../components/Icon/Icon";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import { OrderStatus } from "../../components/OrderStatus/OrderStatus";
-import type { AdminDashboard } from "../../domain/admin";
+import type { AdminDashboard, AdminReferralOverview } from "../../domain/admin";
 import type { CleaningOrderStatus } from "../../domain/order";
 import { formatPrice } from "../../domain/pricing";
 import { formatDate } from "../../utils/format";
@@ -16,6 +16,9 @@ export function AdminDashboardPage() {
   const { t, i18n } = useTranslation();
   const api = useCleaningApi();
   const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
+  const [referrals, setReferrals] = useState<AdminReferralOverview | null>(null);
+  const [partnerName, setPartnerName] = useState("");
+  const [referralActionPending, setReferralActionPending] = useState(false);
   const [error, setError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
@@ -25,9 +28,12 @@ export function AdminDashboardPage() {
     let active = true;
     setDashboard(null);
     setError(false);
-    api.getAdminDashboard()
-      .then((value) => {
-        if (active) setDashboard(value);
+    Promise.all([api.getAdminDashboard(), api.getAdminReferralOverview()])
+      .then(([dashboardValue, referralValue]) => {
+        if (active) {
+          setDashboard(dashboardValue);
+          setReferrals(referralValue);
+        }
       })
       .catch(() => {
         if (active) setError(true);
@@ -36,6 +42,33 @@ export function AdminDashboardPage() {
       active = false;
     };
   }, [api, reloadKey]);
+
+  const createPartner = async () => {
+    const name = partnerName.trim();
+    if (!name) return;
+    try {
+      setReferralActionPending(true);
+      await api.createReferralPartner(name);
+      setPartnerName("");
+      setReferrals(await api.getAdminReferralOverview());
+    } catch {
+      setError(true);
+    } finally {
+      setReferralActionPending(false);
+    }
+  };
+
+  const markPayoutPaid = async (payoutId: number) => {
+    try {
+      setReferralActionPending(true);
+      await api.markPartnerPayoutPaid(payoutId);
+      setReferrals(await api.getAdminReferralOverview());
+    } catch {
+      setError(true);
+    } finally {
+      setReferralActionPending(false);
+    }
+  };
 
   const orders = useMemo(() => {
     if (!dashboard) return [];
@@ -96,6 +129,79 @@ export function AdminDashboardPage() {
           <strong>{formatPrice(stats.completedAmount, stats.currency, locale)}</strong>
         </article>
       </section>
+
+      {referrals ? (
+        <section className="admin-orders admin-referrals">
+          <div className="admin-section-heading">
+            <div>
+              <h2>{t("admin.referrals.title")}</h2>
+              <p>{t("admin.referrals.subtitle")}</p>
+            </div>
+            <Icon name="user" size={24} />
+          </div>
+
+          <div className="admin-referrals__create">
+            <input
+              maxLength={255}
+              placeholder={t("admin.referrals.partnerName")}
+              value={partnerName}
+              onChange={(event) => setPartnerName(event.target.value)}
+            />
+            <button
+              className="button button--secondary"
+              type="button"
+              disabled={referralActionPending || !partnerName.trim()}
+              onClick={() => void createPartner()}
+            >
+              {t("admin.referrals.create")}
+            </button>
+          </div>
+
+          {referrals.partners.length === 0 ? (
+            <p className="admin-orders__empty">{t("admin.referrals.noPartners")}</p>
+          ) : (
+            <div className="admin-referrals__list">
+              {referrals.partners.map((partner) => (
+                <div className="admin-referral-row" key={partner.id}>
+                  <strong>{partner.name}</strong>
+                  <span>{t("admin.referrals.code")}</span>
+                  <code>{partner.referralCode}</code>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <h3>{t("admin.referrals.payouts")}</h3>
+          {referrals.payouts.length === 0 ? (
+            <p className="admin-orders__empty">{t("admin.referrals.noPayouts")}</p>
+          ) : (
+            <div className="admin-referrals__list">
+              {referrals.payouts.map((payout) => (
+                <div className="admin-referral-row admin-referral-row--payout" key={payout.id}>
+                  <div>
+                    <strong>{payout.partnerName}</strong>
+                    <small>#{payout.sourceOrderId}</small>
+                  </div>
+                  <b>{formatPrice(payout.amount, payout.currency, locale)}</b>
+                  <span>
+                    {t(`admin.referrals.${payout.status === "PAID" ? "paid" : "payable"}`)}
+                  </span>
+                  {payout.status === "PAYABLE" ? (
+                    <button
+                      className="button button--secondary"
+                      type="button"
+                      disabled={referralActionPending}
+                      onClick={() => void markPayoutPaid(payout.id)}
+                    >
+                      {t("admin.referrals.markPaid")}
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      ) : null}
 
       <section className="admin-orders">
         <div className="admin-section-heading">

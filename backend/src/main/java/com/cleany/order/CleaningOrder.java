@@ -14,6 +14,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import com.cleany.finance.AcquisitionSource;
+import com.cleany.finance.CustomerDiscountType;
+import com.cleany.finance.OrderFinancialSnapshot;
+
 @Entity
 @Table(name = "cleaning_order")
 public class CleaningOrder {
@@ -21,6 +25,9 @@ public class CleaningOrder {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "customer_id", nullable = false)
+    private long customerId;
 
     @Column(name = "telegram_user_id", nullable = false)
     private long telegramUserId;
@@ -54,6 +61,47 @@ public class CleaningOrder {
 
     @Column(name = "price", nullable = false, precision = 12, scale = 2)
     private BigDecimal price;
+
+    @Column(name = "base_price", nullable = false, precision = 12, scale = 2)
+    private BigDecimal basePrice;
+
+    @Column(name = "commission_rate", nullable = false, precision = 7, scale = 6)
+    private BigDecimal commissionRate;
+
+    @Column(name = "base_commission", nullable = false, precision = 12, scale = 2)
+    private BigDecimal baseCommission;
+
+    @Column(name = "customer_discount", nullable = false, precision = 12, scale = 2)
+    private BigDecimal customerDiscount;
+
+    @Column(name = "partner_payout", nullable = false, precision = 12, scale = 2)
+    private BigDecimal partnerPayout;
+
+    @Column(name = "final_customer_price", nullable = false, precision = 12, scale = 2)
+    private BigDecimal finalCustomerPrice;
+
+    @Column(name = "platform_net", nullable = false, precision = 12, scale = 2)
+    private BigDecimal platformNet;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "acquisition_source", nullable = false, length = 24)
+    private AcquisitionSource acquisitionSource;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "customer_discount_type", nullable = false, length = 32)
+    private CustomerDiscountType customerDiscountType;
+
+    @Column(name = "referral_code_id")
+    private Long referralCodeId;
+
+    @Column(name = "referrer_customer_id")
+    private Long referrerCustomerId;
+
+    @Column(name = "referral_partner_id")
+    private Long referralPartnerId;
+
+    @Column(name = "applied_reward_id")
+    private Long appliedRewardId;
 
     @Column(name = "currency", nullable = false, length = 3)
     private String currency;
@@ -90,6 +138,7 @@ public class CleaningOrder {
     }
 
     CleaningOrder(
+            long customerId,
             long telegramUserId,
             String telegramUsername,
             String customerName,
@@ -99,12 +148,17 @@ public class CleaningOrder {
             ApartmentType apartmentType,
             boolean duplex,
             CleaningType cleaningType,
-            BigDecimal price,
+            OrderFinancialSnapshot financialSnapshot,
+            Long referralCodeId,
+            Long referrerCustomerId,
+            Long referralPartnerId,
+            Long appliedRewardId,
             String currency,
             LocalDate requestedDate,
             String customerComment,
             Instant createdAt
     ) {
+        this.customerId = customerId;
         this.telegramUserId = telegramUserId;
         this.telegramUsername = telegramUsername;
         this.customerName = Objects.requireNonNull(customerName);
@@ -114,7 +168,21 @@ public class CleaningOrder {
         this.apartmentType = Objects.requireNonNull(apartmentType);
         this.duplex = duplex;
         this.cleaningType = Objects.requireNonNull(cleaningType);
-        this.price = Objects.requireNonNull(price);
+        var financials = Objects.requireNonNull(financialSnapshot);
+        this.basePrice = financials.basePrice();
+        this.commissionRate = financials.commissionRate();
+        this.baseCommission = financials.baseCommission();
+        this.customerDiscount = financials.customerDiscount();
+        this.partnerPayout = financials.partnerPayout();
+        this.finalCustomerPrice = financials.finalCustomerPrice();
+        this.platformNet = financials.platformNet();
+        this.acquisitionSource = financials.acquisitionSource();
+        this.customerDiscountType = financials.customerDiscountType();
+        this.price = financials.finalCustomerPrice();
+        this.referralCodeId = referralCodeId;
+        this.referrerCustomerId = referrerCustomerId;
+        this.referralPartnerId = referralPartnerId;
+        this.appliedRewardId = appliedRewardId;
         this.currency = Objects.requireNonNull(currency);
         this.requestedDate = Objects.requireNonNull(requestedDate);
         this.customerComment = customerComment;
@@ -197,6 +265,10 @@ public class CleaningOrder {
         return id;
     }
 
+    public long getCustomerId() {
+        return customerId;
+    }
+
     public long getTelegramUserId() {
         return telegramUserId;
     }
@@ -235,6 +307,58 @@ public class CleaningOrder {
 
     public BigDecimal getPrice() {
         return price;
+    }
+
+    public BigDecimal getBasePrice() {
+        return basePrice;
+    }
+
+    public BigDecimal getCommissionRate() {
+        return commissionRate;
+    }
+
+    public BigDecimal getBaseCommission() {
+        return baseCommission;
+    }
+
+    public BigDecimal getCustomerDiscount() {
+        return customerDiscount;
+    }
+
+    public BigDecimal getPartnerPayout() {
+        return partnerPayout;
+    }
+
+    public BigDecimal getFinalCustomerPrice() {
+        return finalCustomerPrice;
+    }
+
+    public BigDecimal getPlatformNet() {
+        return platformNet;
+    }
+
+    public AcquisitionSource getAcquisitionSource() {
+        return acquisitionSource;
+    }
+
+    public CustomerDiscountType getCustomerDiscountType() {
+        return customerDiscountType;
+    }
+
+    public Long getReferralCodeId() {
+        return referralCodeId;
+    }
+
+    public Long getReferrerCustomerId() {
+        return referrerCustomerId;
+    }
+
+    public Long getReferralPartnerId() {
+        return referralPartnerId;
+    }
+
+    public Long getAppliedRewardId() {
+        return appliedRewardId;
     }
 
     public String getCurrency() {

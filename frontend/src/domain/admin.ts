@@ -1,7 +1,9 @@
 import type {
+  AcquisitionSource,
   CleaningOrder,
   CleaningOrderStatus,
   CleaningType,
+  CustomerDiscountType,
   ServiceArea,
 } from "./order";
 
@@ -60,6 +62,46 @@ export interface AdminOrderEvent {
 
 export interface AdminOrderDetails {
   order: CleaningOrder;
+  financial: AdminOrderFinancial;
   photoCount: number;
   events: AdminOrderEvent[];
+}
+
+export interface AdminOrderFinancial {
+  basePrice: number;
+  commissionRate: number;
+  baseCommission: number;
+  customerDiscount: number;
+  partnerPayout: number;
+  finalCustomerPrice: number;
+  platformNet: number;
+  acquisitionSource: AcquisitionSource;
+  customerDiscountType: CustomerDiscountType;
+}
+
+export type PartnerPayoutStatus = "PAYABLE" | "PAID";
+
+export interface ReferralPartner {
+  id: number;
+  name: string;
+  referralCode: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface PartnerPayout {
+  id: number;
+  partnerId: number;
+  partnerName: string;
+  sourceOrderId: number;
+  amount: number;
+  currency: string;
+  status: PartnerPayoutStatus;
+  createdAt: string;
+  paidAt?: string;
+}
+
+export interface AdminReferralOverview {
+  partners: ReferralPartner[];
+  payouts: PartnerPayout[];
 }

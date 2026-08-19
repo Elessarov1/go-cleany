@@ -34,6 +34,13 @@ public class CleaningOrderController {
                 .body(response);
     }
 
+    @PostMapping("/quote")
+    public CleaningOrderQuoteResponse quoteOrder(
+            @Valid @RequestBody CleaningOrderQuoteRequest request
+    ) {
+        return orderService.quoteOrder(request);
+    }
+
     @GetMapping
     public List<CleaningOrderResponse> getOrders() {
         return orderService.getCurrentCustomerOrders().stream()
@@ -51,4 +58,3 @@ public class CleaningOrderController {
         return CleaningOrderResponse.from(orderService.cancelCurrentCustomerOrder(id));
     }
 }
-
