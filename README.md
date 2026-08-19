@@ -48,6 +48,9 @@ small release/rollback scripts are included under `deploy/`. Follow the
 [VPS deployment runbook](docs/vps-deployment-runbook.md). Telegram remains on long polling, so one
 backend instance must own the bot token.
 
+After the first manual launch, [staging continuous deployment](docs/staging-continuous-deployment.md)
+can deploy each tested `main` revision automatically through GitHub Actions and SSH.
+
 ## Product constraints
 
 - Frontend UI remains independent from Telegram.

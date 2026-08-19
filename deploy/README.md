@@ -29,3 +29,6 @@ endpoint. A rollback never reverses Liquibase changes; migrations must remain ba
 
 Follow the complete [VPS deployment runbook](../docs/vps-deployment-runbook.md) for the first server
 setup, temporary HTTPS without a purchased domain, Telegram configuration, backups, and releases.
+After the first manual deployment, follow the
+[staging continuous deployment runbook](../docs/staging-continuous-deployment.md) to run
+`release.sh` automatically after successful GitHub Actions checks on `main`.
