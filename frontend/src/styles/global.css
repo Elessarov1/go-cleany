@@ -165,9 +165,9 @@ h3 {
 .hero {
   position: relative;
   display: grid;
-  min-height: 292px;
+  min-height: 235px;
   margin: -22px -18px 12px;
-  padding: 42px 22px 32px;
+  padding: 30px 20px 22px;
   overflow: hidden;
   background: linear-gradient(135deg, #0c678e 0%, #1685b3 60%, #3ca4c1 100%);
   color: #fff;
@@ -175,7 +175,7 @@ h3 {
   grid-template-areas:
     "copy"
     "art";
-  gap: 22px;
+  gap: 12px;
 }
 
 .hero::after {
@@ -199,8 +199,8 @@ h3 {
 
 .hero h1 {
   max-width: 360px;
-  margin-bottom: 14px;
-  font-size: clamp(36px, 10vw, 48px);
+  margin-bottom: 10px;
+  font-size: clamp(31px, 8.5vw, 42px);
   font-weight: 780;
   letter-spacing: -0.055em;
   line-height: 0.98;
@@ -210,16 +210,16 @@ h3 {
   max-width: 320px;
   margin-bottom: 0;
   color: rgba(255, 255, 255, 0.76);
-  font-size: 15px;
-  line-height: 1.55;
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .hero__art {
   position: relative;
   z-index: 1;
   display: grid;
-  width: 108px;
-  height: 108px;
+  width: 82px;
+  height: 82px;
   place-items: center;
   justify-self: end;
   color: #fff;
@@ -238,8 +238,8 @@ h3 {
 }
 
 .hero__broom-icon {
-  width: 76px;
-  height: 76px;
+  width: 58px;
+  height: 58px;
 }
 
 .booking-form {
@@ -1810,8 +1810,8 @@ h3 {
   .hero {
     align-items: end;
     grid-template-areas: "copy art";
-    grid-template-columns: minmax(0, 1fr) 108px;
-    column-gap: 18px;
+    grid-template-columns: minmax(0, 1fr) 82px;
+    column-gap: 16px;
   }
 }
 
@@ -1825,8 +1825,22 @@ h3 {
 }
 
 @media (max-width: 370px) {
+  .hero {
+    padding-top: 26px;
+  }
+
   .hero h1 {
-    font-size: 34px;
+    font-size: 30px;
+  }
+
+  .hero__art {
+    width: 72px;
+    height: 72px;
+  }
+
+  .hero__broom-icon {
+    width: 50px;
+    height: 50px;
   }
 
   .choice-grid--areas {
