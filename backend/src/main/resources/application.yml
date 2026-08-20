@@ -77,6 +77,11 @@ onsite-issue:
   max-photo-size: ${ONSITE_ISSUE_MAX_PHOTO_SIZE:5MB}
   supported-content-types: ${ONSITE_ISSUE_SUPPORTED_CONTENT_TYPES:image/jpeg,image/png}
 
+data-retention:
+  enabled: ${DATA_CLEANUP_ENABLED:true}
+  days: ${DATA_RETENTION_DAYS:7}
+  cron: "${DATA_CLEANUP_CRON:0 30 3 * * *}"
+
 cleaner:
   telegram-ids: ${CLEANER_TELEGRAM_IDS:}
 

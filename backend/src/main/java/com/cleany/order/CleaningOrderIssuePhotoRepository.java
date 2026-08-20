@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -43,4 +44,16 @@ public interface CleaningOrderIssuePhotoRepository extends JpaRepository<Cleanin
     boolean existsByIssueReport_IdAndTelegramFileUniqueId(long issueReportId, String telegramFileUniqueId);
 
     long countByIssueReport_Id(long issueReportId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            delete from CleaningOrderIssuePhoto photo
+             where photo.issueReport.id in (
+                 select report.id
+                   from CleaningOrderIssueReport report
+                  where report.order.id in :orderIds
+                    and report.resolvedAt is not null
+             )
+            """)
+    int deleteResolvedByOrderIds(@Param("orderIds") List<Long> orderIds);
 }

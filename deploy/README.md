@@ -16,7 +16,7 @@ The operational entry points are deliberately small:
 # Show container and public health status
 ./deploy/scripts/status.sh
 
-# Create an explicit PostgreSQL backup
+# Create a PostgreSQL backup and prune expired completed dumps
 ./deploy/scripts/backup.sh
 
 # Roll application code back to the previously deployed revision
@@ -26,6 +26,9 @@ The operational entry points are deliberately small:
 `deploy.sh` validates configuration, builds images, creates a database backup when PostgreSQL is
 already running, starts the stack, waits for container health checks, and verifies the public HTTPS
 endpoint. A rollback never reverses Liquibase changes; migrations must remain backward-compatible.
+The backend cleans old terminal-order audit/photo payloads on its configured schedule. `backup.sh`
+prunes only `go-cleany-*.dump` files after a new non-empty backup succeeds; both retention windows
+default to seven days and can be changed in `.env.production`.
 
 Follow the complete [VPS deployment runbook](../docs/vps-deployment-runbook.md) for the first server
 setup, temporary HTTPS without a purchased domain, Telegram configuration, backups, and releases.

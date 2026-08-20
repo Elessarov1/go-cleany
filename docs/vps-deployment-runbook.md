@@ -101,6 +101,9 @@ nano .env.production
 - `CLEANING_PRICES_*` — утверждённые цены в TRY.
 - `REFERRAL_*` — ставки и денежные caps реферальной модели; безопасные значения v1 уже находятся
   в `.env.production.example`.
+- `DATA_RETENTION_DAYS` — срок хранения audit trail и фотографий терминальных заказов, по умолчанию 7 дней;
+- `DATA_CLEANUP_ENABLED` — аварийный выключатель scheduled cleanup;
+- `GO_CLEANY_BACKUP_RETENTION_DAYS` — срок хранения завершённых PostgreSQL dump-файлов, по умолчанию 7 дней.
 
 Production Compose намеренно не включает профиль `local`, `LOCAL_TELEGRAM_USER_ID` и тестовое имя
 `Alex`. Клиент определяется только по проверенному Telegram `initData`.
@@ -171,9 +174,21 @@ cd /opt/go-cleany
 ls -lh backups
 ```
 
-Файлы имеют PostgreSQL custom format. Регулярно копируйте их на другое физическое хранилище: backup
-на том же VPS не защищает от потери сервера. Автоматическое удаление старых копий намеренно не
-включено — задайте retention только после подключения внешнего хранилища.
+Файлы имеют PostgreSQL custom format. После успешного создания нового непустого dump скрипт удаляет
+в этой же директории завершённые файлы `go-cleany-*.dump`, которые старше
+`GO_CLEANY_BACKUP_RETENTION_DAYS`. Новый dump и файлы `*.partial` pruning не затрагивает. Retention
+можно изменить в `.env.production`; каталог можно переопределить через `GO_CLEANY_BACKUP_DIR`.
+
+Backend раз в сутки в `03:30` по `cleaning.zone-id` очищает для старых терминальных заказов audit
+events, completion photos и binary evidence разрешённых onsite-инцидентов. Сам заказ, финансовый
+snapshot и metadata инцидента сохраняются. Проверить результат и длительность job можно в логах:
+
+```bash
+docker compose --env-file .env.production -f compose.prod.yaml logs backend | grep 'Data retention cleanup'
+```
+
+Регулярно копируйте dump-файлы на другое физическое хранилище: backup на том же VPS не защищает от
+потери сервера. Внешнее хранилище должно иметь собственную retention policy.
 
 Вернуть предыдущую версию application-кода:
 

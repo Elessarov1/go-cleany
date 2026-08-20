@@ -59,6 +59,11 @@ onsite-issue:
   max-photo-size: 5MB
   supported-content-types: image/jpeg,image/png
 
+data-retention:
+  enabled: false
+  days: 7
+  cron: "0 30 3 * * *"
+
 cleaner:
   telegram-ids:
     - 123456789
