@@ -12,6 +12,8 @@ import com.cleany.admin.AdminAccessService;
 import com.cleany.admin.AdminDashboardResponse;
 import com.cleany.admin.AdminQueryService;
 import com.cleany.admin.AdminStatsResponse;
+import com.cleany.configuration.AdminProperties;
+import com.cleany.order.OnsiteIssueReason;
 import com.cleany.telegram.bot.TelegramBotClient.InlineKeyboard;
 
 class TelegramAdminBotServiceTest {
@@ -30,7 +32,13 @@ class TelegramAdminBotServiceTest {
         queryService = Mockito.mock(AdminQueryService.class);
         messageFactory = Mockito.mock(AdminBotMessageFactory.class);
         botClient = Mockito.mock(TelegramBotClient.class);
-        service = new TelegramAdminBotService(accessService, queryService, messageFactory, botClient);
+        service = new TelegramAdminBotService(
+                accessService,
+                new AdminProperties(List.of(ADMIN_ID, 900002L)),
+                queryService,
+                messageFactory,
+                botClient
+        );
     }
 
     @Test
@@ -78,5 +86,16 @@ class TelegramAdminBotServiceTest {
                 InlineKeyboard.empty()
         );
         Mockito.verifyNoInteractions(queryService);
+    }
+
+    @Test
+    void onsiteIssue_allConfiguredAdminsReceiveAlert() {
+        Mockito.when(messageFactory.onsiteIssueAlert(43L, OnsiteIssueReason.ACCESS_PROBLEM))
+                .thenReturn("onsite-issue-alert");
+
+        service.notifyOnsiteIssue(43L, OnsiteIssueReason.ACCESS_PROBLEM);
+
+        Mockito.verify(botClient).sendMessage(ADMIN_ID, "onsite-issue-alert", InlineKeyboard.empty());
+        Mockito.verify(botClient).sendMessage(900002L, "onsite-issue-alert", InlineKeyboard.empty());
     }
 }

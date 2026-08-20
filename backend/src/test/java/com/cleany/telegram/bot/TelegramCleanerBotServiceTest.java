@@ -390,6 +390,7 @@ class TelegramCleanerBotServiceTest {
         deliveryOrder.verify(botClient).sendPhoto(CUSTOMER_ID, "evidence-3");
         deliveryOrder.verify(botClient).sendMessage(CUSTOMER_ID, "order-paused", InlineKeyboard.empty());
         deliveryOrder.verify(onsiteIssueService).recordCustomerNotified(43L, CLEANER_ID);
+        Mockito.verify(adminBotService).notifyOnsiteIssue(43L, OnsiteIssueReason.ADDRESS_MISMATCH);
     }
 
     private static TelegramUpdate update(long cleanerId, String data) {

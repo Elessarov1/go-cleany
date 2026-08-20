@@ -375,6 +375,7 @@ public class TelegramCleanerBotService {
         OnsiteIssueDelivery delivery = onsiteIssueService.submit(orderId, cleanerId);
         CleaningOrder order = delivery.order();
         safeAnswer(callbackId, "Отчёт сохранён. Уведомляем клиента.", false);
+        adminBotService.notifyOnsiteIssue(orderId, delivery.reason());
 
         botClient.sendMessage(
                 order.getTelegramUserId(),

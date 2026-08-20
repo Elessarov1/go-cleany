@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 
 import com.cleany.admin.AdminAccessService;
 import com.cleany.admin.AdminQueryService;
+import com.cleany.configuration.AdminProperties;
+import com.cleany.order.OnsiteIssueReason;
 import com.cleany.order.OrderNotFoundException;
 
 @ConditionalOnProperty(prefix = "telegram", name = "bot-enabled", havingValue = "true")
@@ -16,20 +18,28 @@ public class TelegramAdminBotService {
     private static final Logger log = LoggerFactory.getLogger(TelegramAdminBotService.class);
 
     private final AdminAccessService accessService;
+    private final AdminProperties adminProperties;
     private final AdminQueryService queryService;
     private final AdminBotMessageFactory messageFactory;
     private final TelegramBotClient botClient;
 
     public TelegramAdminBotService(
             AdminAccessService accessService,
+            AdminProperties adminProperties,
             AdminQueryService queryService,
             AdminBotMessageFactory messageFactory,
             TelegramBotClient botClient
     ) {
         this.accessService = accessService;
+        this.adminProperties = adminProperties;
         this.queryService = queryService;
         this.messageFactory = messageFactory;
         this.botClient = botClient;
+    }
+
+    public void notifyOnsiteIssue(long orderId, OnsiteIssueReason reason) {
+        String message = messageFactory.onsiteIssueAlert(orderId, reason);
+        adminProperties.telegramIds().forEach(adminId -> safeSend(adminId, message));
     }
 
     public boolean handleIfSupported(long telegramUserId, String text) {

@@ -15,6 +15,7 @@ import com.cleany.admin.AdminOrderSummaryResponse;
 import com.cleany.admin.AdminStatsResponse;
 import com.cleany.configuration.CleaningProperties;
 import com.cleany.order.CleaningOrderStatus;
+import com.cleany.order.OnsiteIssueReason;
 import com.cleany.order.OrderActorType;
 import com.cleany.order.OrderEventType;
 
@@ -92,6 +93,18 @@ public class AdminBotMessageFactory {
         return limit(message.toString().strip());
     }
 
+    public String onsiteIssueAlert(long orderId, OnsiteIssueReason reason) {
+        return """
+                ⚠️ Заказ №%d приостановлен
+
+                Клинер сообщил о проблеме на объекте.
+                Причина: %s
+
+                Посмотрите подробности и фотографии в карточке заказа в админке.
+                Для просмотра истории в боте: /order %d
+                """.formatted(orderId, onsiteIssueReason(reason), orderId).strip();
+    }
+
     public String order(AdminOrderDetailsResponse details) {
         var order = details.order();
         var financial = details.financial();
@@ -166,6 +179,17 @@ public class AdminBotMessageFactory {
             case CLEANER -> "клинер";
             case ADMIN -> "администратор";
             case SYSTEM -> "система";
+        };
+    }
+
+    private static String onsiteIssueReason(OnsiteIssueReason reason) {
+        return switch (reason) {
+            case APARTMENT_SIZE_MISMATCH -> "размер квартиры не соответствует заявке";
+            case CLEANING_TYPE_MISMATCH -> "требуется другой тип уборки";
+            case HEAVY_CONTAMINATION -> "сильное загрязнение или пост-ремонтное состояние";
+            case ACCESS_PROBLEM -> "нет доступа в квартиру";
+            case ADDRESS_MISMATCH -> "адрес или объект не соответствует заявке";
+            case OTHER -> "другие существенные условия";
         };
     }
 
