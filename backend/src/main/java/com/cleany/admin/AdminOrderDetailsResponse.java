@@ -8,6 +8,7 @@ public record AdminOrderDetailsResponse(
         CleaningOrderResponse order,
         AdminOrderFinancialResponse financial,
         long photoCount,
+        AdminOnsiteIssueResponse onsiteIssue,
         List<AdminOrderEventResponse> events
 ) {
 }

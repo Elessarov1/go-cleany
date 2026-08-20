@@ -1,5 +1,6 @@
 import type { Platform } from "../platform/Platform";
 import type { CleaningConfiguration } from "../domain/configuration";
+import type { CustomerProfile } from "../domain/customer";
 import type {
   AdminDashboard,
   AdminOrderDetails,
@@ -51,6 +52,17 @@ export class HttpCleaningApi implements CleaningApi {
     return this.request(`/api/v1/admin/orders/${id}`);
   }
 
+  getAdminIssuePhoto(orderId: number, photoId: number): Promise<Blob> {
+    return this.requestBlob(`/api/v1/admin/orders/${orderId}/issues/photos/${photoId}`);
+  }
+
+  resolveAdminIssue(orderId: number, resolutionComment: string): Promise<AdminOrderDetails> {
+    return this.request(`/api/v1/admin/orders/${orderId}/issues/resolve`, {
+      method: "POST",
+      body: JSON.stringify({ resolutionComment }),
+    });
+  }
+
   getAdminReferralOverview(): Promise<AdminReferralOverview> {
     return this.request("/api/v1/admin/referrals");
   }
@@ -70,6 +82,10 @@ export class HttpCleaningApi implements CleaningApi {
 
   getConfiguration(): Promise<CleaningConfiguration> {
     return this.request("/api/v1/config");
+  }
+
+  getCurrentCustomerProfile(): Promise<CustomerProfile> {
+    return this.request("/api/v1/customers/me");
   }
 
   quoteOrder(request: CleaningOrderQuoteRequest): Promise<CleaningOrderQuote> {
@@ -136,5 +152,22 @@ export class HttpCleaningApi implements CleaningApi {
     }
 
     return (await response.json()) as T;
+  }
+
+  private async requestBlob(path: string): Promise<Blob> {
+    const headers = new Headers({ Accept: "image/jpeg, image/png" });
+    const authData = this.platform.getAuthData();
+    if (authData) {
+      headers.set("Authorization", `tma ${authData}`);
+    }
+
+    const response = await fetch(`${this.baseUrl}${path}`, { headers });
+    if (!response.ok) {
+      throw new CleaningApiError(
+        `Request failed with status ${response.status}`,
+        response.status,
+      );
+    }
+    return response.blob();
   }
 }

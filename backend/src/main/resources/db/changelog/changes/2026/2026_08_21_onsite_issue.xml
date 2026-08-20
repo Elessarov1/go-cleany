@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260821-01" author="go-cleany">
+        <sql dbms="postgresql"><![CDATA[
+            alter table cleaning_order drop constraint ck_cleaning_order_status;
+            alter table cleaning_order
+                add constraint ck_cleaning_order_status check (
+                    status in ('NEW', 'ACCEPTED', 'AWAITING_REPORT', 'ONSITE_ISSUE_REPORTED',
+                               'COMPLETED', 'REJECTED', 'CANCELLED')
+                );
+
+            alter table cleaning_order_event drop constraint ck_cleaning_order_event_type;
+            alter table cleaning_order_event drop constraint ck_cleaning_order_event_actor;
+            alter table cleaning_order_event drop constraint ck_cleaning_order_event_from_status;
+            alter table cleaning_order_event drop constraint ck_cleaning_order_event_to_status;
+
+            alter table cleaning_order_event
+                add constraint ck_cleaning_order_event_type check (
+                    event_type in ('IMPORTED', 'CREATED', 'ACCEPTED', 'REPORT_STARTED',
+                                   'PHOTO_ADDED', 'COMMENT_UPDATED', 'ONSITE_ISSUE_REPORTED',
+                                   'ISSUE_PHOTO_ADDED', 'ISSUE_REPORT_SUBMITTED',
+                                   'ISSUE_CUSTOMER_NOTIFIED', 'ISSUE_RESOLVED', 'COMPLETED',
+                                   'CANCELLED_BY_CUSTOMER', 'CANCELLED_BY_CLEANER')
+                ),
+                add constraint ck_cleaning_order_event_actor
+                    check (actor_type in ('CUSTOMER', 'CLEANER', 'ADMIN', 'SYSTEM')),
+                add constraint ck_cleaning_order_event_from_status check (
+                    from_status is null or from_status in
+                    ('NEW', 'ACCEPTED', 'AWAITING_REPORT', 'ONSITE_ISSUE_REPORTED',
+                     'COMPLETED', 'REJECTED', 'CANCELLED')
+                ),
+                add constraint ck_cleaning_order_event_to_status check (
+                    to_status in ('NEW', 'ACCEPTED', 'AWAITING_REPORT', 'ONSITE_ISSUE_REPORTED',
+                                  'COMPLETED', 'REJECTED', 'CANCELLED')
+                );
+        ]]></sql>
+
+        <createTable tableName="cleaning_order_issue_report">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_cleaning_order_issue_report" nullable="false"/>
+            </column>
+            <column name="order_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="cleaner_telegram_user_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="reason" type="VARCHAR(40)"><constraints nullable="false"/></column>
+            <column name="comment" type="VARCHAR(1000)"/>
+            <column name="input_active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="submitted_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="resolved_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="resolved_by" type="BIGINT"/>
+            <column name="resolution_comment" type="VARCHAR(1000)"/>
+        </createTable>
+
+        <addUniqueConstraint tableName="cleaning_order_issue_report" columnNames="order_id"
+                             constraintName="uq_cleaning_order_issue_report_order"/>
+        <addForeignKeyConstraint baseTableName="cleaning_order_issue_report" baseColumnNames="order_id"
+                                 constraintName="fk_cleaning_order_issue_report_order"
+                                 referencedTableName="cleaning_order" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="cleaning_order_issue_report" indexName="idx_issue_report_cleaner_active">
+            <column name="cleaner_telegram_user_id"/>
+            <column name="input_active"/>
+        </createIndex>
+
+        <createTable tableName="cleaning_order_issue_photo">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_cleaning_order_issue_photo" nullable="false"/>
+            </column>
+            <column name="issue_report_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="telegram_file_id" type="VARCHAR(512)"><constraints nullable="false"/></column>
+            <column name="telegram_file_unique_id" type="VARCHAR(255)"><constraints nullable="false"/></column>
+            <column name="content" type="BYTEA"><constraints nullable="false"/></column>
+            <column name="content_type" type="VARCHAR(64)"><constraints nullable="false"/></column>
+            <column name="size_bytes" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="sha256" type="VARCHAR(64)"><constraints nullable="false"/></column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="cleaning_order_issue_photo" baseColumnNames="issue_report_id"
+                                 constraintName="fk_cleaning_order_issue_photo_report"
+                                 referencedTableName="cleaning_order_issue_report" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addUniqueConstraint tableName="cleaning_order_issue_photo"
+                             columnNames="issue_report_id, telegram_file_unique_id"
+                             constraintName="uq_cleaning_order_issue_photo_file"/>
+        <createIndex tableName="cleaning_order_issue_photo" indexName="idx_issue_photo_report">
+            <column name="issue_report_id"/>
+            <column name="created_at"/>
+        </createIndex>
+
+        <sql dbms="postgresql"><![CDATA[
+            create unique index uq_issue_report_active_per_cleaner
+                on cleaning_order_issue_report (cleaner_telegram_user_id)
+                where input_active = true and submitted_at is null;
+
+            alter table cleaning_order_issue_report
+                add constraint ck_issue_report_reason check (
+                    reason in ('APARTMENT_SIZE_MISMATCH', 'CLEANING_TYPE_MISMATCH',
+                               'HEAVY_CONTAMINATION', 'ACCESS_PROBLEM', 'ADDRESS_MISMATCH', 'OTHER')
+                ),
+                add constraint ck_issue_report_resolution check (
+                    (resolved_at is null and resolved_by is null and resolution_comment is null)
+                    or
+                    (resolved_at is not null and resolved_by is not null and resolution_comment is not null)
+                );
+
+            alter table cleaning_order_issue_photo
+                add constraint ck_issue_photo_size check (size_bytes > 0),
+                add constraint ck_issue_photo_content_type check (content_type in ('image/jpeg', 'image/png')),
+                add constraint ck_issue_photo_sha256 check (sha256 ~ '^[0-9a-f]{64}$');
+        ]]></sql>
+
+        <rollback>
+            <dropTable tableName="cleaning_order_issue_photo"/>
+            <dropTable tableName="cleaning_order_issue_report"/>
+            <sql dbms="postgresql"><![CDATA[
+                alter table cleaning_order drop constraint ck_cleaning_order_status;
+                alter table cleaning_order
+                    add constraint ck_cleaning_order_status check (
+                        status in ('NEW', 'ACCEPTED', 'AWAITING_REPORT', 'COMPLETED', 'REJECTED', 'CANCELLED')
+                    );
+
+                alter table cleaning_order_event drop constraint ck_cleaning_order_event_type;
+                alter table cleaning_order_event drop constraint ck_cleaning_order_event_actor;
+                alter table cleaning_order_event drop constraint ck_cleaning_order_event_from_status;
+                alter table cleaning_order_event drop constraint ck_cleaning_order_event_to_status;
+                alter table cleaning_order_event
+                    add constraint ck_cleaning_order_event_type check (
+                        event_type in ('IMPORTED', 'CREATED', 'ACCEPTED', 'REPORT_STARTED',
+                                       'PHOTO_ADDED', 'COMMENT_UPDATED', 'COMPLETED',
+                                       'CANCELLED_BY_CUSTOMER', 'CANCELLED_BY_CLEANER')
+                    ),
+                    add constraint ck_cleaning_order_event_actor
+                        check (actor_type in ('CUSTOMER', 'CLEANER', 'SYSTEM')),
+                    add constraint ck_cleaning_order_event_from_status check (
+                        from_status is null or from_status in
+                        ('NEW', 'ACCEPTED', 'AWAITING_REPORT', 'COMPLETED', 'REJECTED', 'CANCELLED')
+                    ),
+                    add constraint ck_cleaning_order_event_to_status check (
+                        to_status in ('NEW', 'ACCEPTED', 'AWAITING_REPORT', 'COMPLETED', 'REJECTED', 'CANCELLED')
+                    );
+            ]]></sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

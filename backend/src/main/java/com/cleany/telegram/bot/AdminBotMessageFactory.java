@@ -134,6 +134,7 @@ public class AdminBotMessageFactory {
             case NEW -> "ожидает клинера";
             case ACCEPTED -> "принят";
             case AWAITING_REPORT -> "ожидает отчёт";
+            case ONSITE_ISSUE_REPORTED -> "проблема на объекте";
             case COMPLETED -> "выполнен";
             case REJECTED -> "отклонён";
             case CANCELLED -> "отменён";
@@ -148,6 +149,11 @@ public class AdminBotMessageFactory {
             case REPORT_STARTED -> "начат фотоотчёт";
             case PHOTO_ADDED -> "добавлена фотография";
             case COMMENT_UPDATED -> "обновлён комментарий";
+            case ONSITE_ISSUE_REPORTED -> "сообщено о проблеме на объекте";
+            case ISSUE_PHOTO_ADDED -> "добавлено фотодоказательство";
+            case ISSUE_REPORT_SUBMITTED -> "отчёт о проблеме подтверждён";
+            case ISSUE_CUSTOMER_NOTIFIED -> "клиент уведомлён о проблеме";
+            case ISSUE_RESOLVED -> "проблема закрыта администратором";
             case COMPLETED -> "заказ выполнен";
             case CANCELLED_BY_CUSTOMER -> "отменён клиентом";
             case CANCELLED_BY_CLEANER -> "отменён клинером";
@@ -158,6 +164,7 @@ public class AdminBotMessageFactory {
         return switch (actorType) {
             case CUSTOMER -> "клиент";
             case CLEANER -> "клинер";
+            case ADMIN -> "администратор";
             case SYSTEM -> "система";
         };
     }

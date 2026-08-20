@@ -8,16 +8,23 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.cleany.configuration.CleanerProperties;
+import com.cleany.customer.CustomerAccountService;
+import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.order.CleaningOrder;
 import com.cleany.order.CleaningOrderReport;
 import com.cleany.order.CleaningOrderReportProgress;
 import com.cleany.order.CleaningOrderService;
 import com.cleany.order.OrderClaimConflictException;
+import com.cleany.order.OnsiteIssueDelivery;
+import com.cleany.order.OnsiteIssueProgress;
+import com.cleany.order.OnsiteIssueReason;
+import com.cleany.order.OnsiteIssueService;
 import com.cleany.order.PhotoReportEmptyException;
 import com.cleany.telegram.bot.TelegramBotClient.InlineButton;
 import com.cleany.telegram.bot.TelegramBotClient.InlineKeyboard;
 import com.cleany.telegram.bot.TelegramUpdate.CallbackQuery;
 import com.cleany.telegram.bot.TelegramUpdate.Chat;
+import com.cleany.telegram.bot.TelegramUpdate.Contact;
 import com.cleany.telegram.bot.TelegramUpdate.Message;
 import com.cleany.telegram.bot.TelegramUpdate.PhotoSize;
 import com.cleany.telegram.bot.TelegramUpdate.TelegramUser;
@@ -32,6 +39,8 @@ class TelegramCleanerBotServiceTest {
     private CleaningOrderBotMessageFactory messageFactory;
     private TelegramBotClient botClient;
     private TelegramAdminBotService adminBotService;
+    private CustomerAccountService customerAccountService;
+    private OnsiteIssueService onsiteIssueService;
     private TelegramCleanerBotService cleanerBotService;
 
     @BeforeEach
@@ -40,12 +49,16 @@ class TelegramCleanerBotServiceTest {
         messageFactory = Mockito.mock(CleaningOrderBotMessageFactory.class);
         botClient = Mockito.mock(TelegramBotClient.class);
         adminBotService = Mockito.mock(TelegramAdminBotService.class);
+        customerAccountService = Mockito.mock(CustomerAccountService.class);
+        onsiteIssueService = Mockito.mock(OnsiteIssueService.class);
         cleanerBotService = new TelegramCleanerBotService(
                 new CleanerProperties(List.of(CLEANER_ID, OTHER_CLEANER_ID)),
                 orderService,
                 messageFactory,
                 botClient,
-                adminBotService
+                adminBotService,
+                customerAccountService,
+                onsiteIssueService
         );
     }
 
@@ -228,6 +241,25 @@ class TelegramCleanerBotServiceTest {
     }
 
     @Test
+    void ownTelegramContact_phoneSavedForCustomerProfile() {
+        cleanerBotService.handle(contactUpdate(777L, "customer", "Alex", "Customer", "905551234567"));
+
+        Mockito.verify(customerAccountService).savePhoneForExternalIdentity(
+                ExternalIdentityProvider.TELEGRAM,
+                "777",
+                "customer",
+                "Alex Customer",
+                "+905551234567"
+        );
+        Mockito.verify(botClient).sendMessage(
+                777L,
+                "Номер телефона сохранён и будет подставлен в форму заказа.",
+                InlineKeyboard.empty()
+        );
+        Mockito.verifyNoInteractions(orderService);
+    }
+
+    @Test
     void reportCallback_photosDeliveredBeforeOrderCompleted() {
         CleaningOrder order = order(43L, CUSTOMER_ID, CLEANER_ID);
         Mockito.when(order.getCleanerComment()).thenReturn("Everything is ready");
@@ -294,6 +326,72 @@ class TelegramCleanerBotServiceTest {
         );
     }
 
+    @Test
+    void activeOnsiteIssue_photoDownloadedAndStoredAsEvidence() {
+        byte[] content = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xD9};
+        OnsiteIssueProgress progress = new OnsiteIssueProgress(
+                43L,
+                OnsiteIssueReason.HEAVY_CONTAMINATION,
+                1L,
+                true,
+                false
+        );
+        InlineKeyboard keyboard = InlineKeyboard.empty();
+        Mockito.when(onsiteIssueService.hasActiveDraft(CLEANER_ID)).thenReturn(true);
+        Mockito.when(botClient.downloadFile("large-file")).thenReturn(content);
+        Mockito.when(onsiteIssueService.addPhoto(
+                CLEANER_ID,
+                "large-file",
+                "large-unique",
+                content,
+                "Everything is ready"
+        )).thenReturn(progress);
+        Mockito.when(messageFactory.onsiteIssueProgress(progress)).thenReturn("issue-progress");
+        Mockito.when(messageFactory.onsiteIssueSubmitKeyboard(progress)).thenReturn(keyboard);
+
+        cleanerBotService.handle(photoUpdate(CLEANER_ID));
+
+        var processingOrder = Mockito.inOrder(botClient, onsiteIssueService);
+        processingOrder.verify(botClient).downloadFile("large-file");
+        processingOrder.verify(onsiteIssueService).addPhoto(
+                CLEANER_ID,
+                "large-file",
+                "large-unique",
+                content,
+                "Everything is ready"
+        );
+        processingOrder.verify(botClient).sendMessage(CLEANER_ID, "issue-progress", keyboard);
+        Mockito.verifyNoInteractions(orderService);
+    }
+
+    @Test
+    void onsiteIssueSubmit_customerReceivesReasonCommentAndEvidenceBeforeNotificationAudit() {
+        CleaningOrder order = order(43L, CUSTOMER_ID, CLEANER_ID);
+        OnsiteIssueDelivery delivery = new OnsiteIssueDelivery(
+                order,
+                OnsiteIssueReason.ADDRESS_MISMATCH,
+                "Wrong address",
+                List.of("evidence-1", "evidence-2", "evidence-3")
+        );
+        Mockito.when(onsiteIssueService.submit(43L, CLEANER_ID)).thenReturn(delivery);
+        Mockito.when(messageFactory.customerOnsiteIssueReport(
+                OnsiteIssueReason.ADDRESS_MISMATCH,
+                "Wrong address"
+        )).thenReturn("issue-report");
+        Mockito.when(messageFactory.customerOnsiteIssuePaused()).thenReturn("order-paused");
+
+        cleanerBotService.handle(update(CLEANER_ID, "order:issue_submit:43"));
+
+        var deliveryOrder = Mockito.inOrder(onsiteIssueService, botClient);
+        deliveryOrder.verify(onsiteIssueService).submit(43L, CLEANER_ID);
+        deliveryOrder.verify(botClient).sendMessage(CUSTOMER_ID, "issue-report", InlineKeyboard.empty());
+        deliveryOrder.verify(botClient).sendPhoto(CUSTOMER_ID, "evidence-1");
+        deliveryOrder.verify(botClient).sendPhoto(CUSTOMER_ID, "evidence-2");
+        deliveryOrder.verify(botClient).sendPhoto(CUSTOMER_ID, "evidence-3");
+        deliveryOrder.verify(botClient).sendMessage(CUSTOMER_ID, "order-paused", InlineKeyboard.empty());
+        deliveryOrder.verify(onsiteIssueService).recordCustomerNotified(43L, CLEANER_ID);
+    }
+
     private static TelegramUpdate update(long cleanerId, String data) {
         return new TelegramUpdate(
                 1L,
@@ -319,7 +417,8 @@ class TelegramCleanerBotServiceTest {
                         List.of(
                                 new PhotoSize("small-file", "small-unique", 90, 90, 1200L),
                                 new PhotoSize("large-file", "large-unique", 1280, 960, 250000L)
-                        )
+                        ),
+                        null
                 )
         );
     }
@@ -334,7 +433,30 @@ class TelegramCleanerBotServiceTest {
                         new Chat(cleanerId, "private"),
                         text,
                         null,
-                        List.of()
+                        List.of(),
+                        null
+                )
+        );
+    }
+
+    private static TelegramUpdate contactUpdate(
+            long userId,
+            String username,
+            String firstName,
+            String lastName,
+            String phone
+    ) {
+        return new TelegramUpdate(
+                4L,
+                null,
+                new Message(
+                        57L,
+                        new TelegramUser(userId, username, firstName, lastName),
+                        new Chat(userId, "private"),
+                        null,
+                        null,
+                        List.of(),
+                        new Contact(phone, userId)
                 )
         );
     }

@@ -53,6 +53,12 @@ referral:
       payout-rate: 0.10
       max-payout: 2000
 
+onsite-issue:
+  min-photos: 3
+  max-photos: 8
+  max-photo-size: 5MB
+  supported-content-types: image/jpeg,image/png
+
 cleaner:
   telegram-ids:
     - 123456789

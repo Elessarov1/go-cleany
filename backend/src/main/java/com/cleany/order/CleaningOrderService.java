@@ -22,7 +22,8 @@ public class CleaningOrderService {
     private static final List<CleaningOrderStatus> ACTIVE_STATUSES = List.of(
             CleaningOrderStatus.NEW,
             CleaningOrderStatus.ACCEPTED,
-            CleaningOrderStatus.AWAITING_REPORT
+            CleaningOrderStatus.AWAITING_REPORT,
+            CleaningOrderStatus.ONSITE_ISSUE_REPORTED
     );
 
     private final CleaningOrderRepository orderRepository;
@@ -69,6 +70,7 @@ public class CleaningOrderService {
         customerAccountService.lock(customer.id());
         validateRequestedDate(command.requestedDate());
         String normalizedPhone = phoneNumberNormalizer.normalize(command.phone());
+        customerAccountService.updatePhone(customer.id(), normalizedPhone);
 
         var basePrice = priceService.calculate(
                 command.apartmentType(),

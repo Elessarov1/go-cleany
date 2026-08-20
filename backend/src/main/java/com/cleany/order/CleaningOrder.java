@@ -225,6 +225,23 @@ public class CleaningOrder {
         reportInputActive = true;
     }
 
+    void requireCanReportOnsiteIssue(long cleanerId) {
+        requireAssignedCleaner(cleanerId);
+        requireStatus(CleaningOrderStatus.ACCEPTED, "report an onsite issue");
+    }
+
+    void reportOnsiteIssue(long cleanerId) {
+        requireCanReportOnsiteIssue(cleanerId);
+        reportInputActive = false;
+        status = CleaningOrderStatus.ONSITE_ISSUE_REPORTED;
+    }
+
+    void resolveOnsiteIssue() {
+        requireStatus(CleaningOrderStatus.ONSITE_ISSUE_REPORTED, "resolve an onsite issue");
+        reportInputActive = false;
+        status = CleaningOrderStatus.CANCELLED;
+    }
+
     void updateCleanerComment(long cleanerId, String comment) {
         requireReportAccess(cleanerId);
         cleanerComment = comment;

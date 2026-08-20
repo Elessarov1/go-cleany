@@ -80,4 +80,30 @@ class TelegramUpdateTest {
                 )
         );
     }
+
+    @Test
+    void contactMessageJson_phoneAndOwnerDeserialized() {
+        String json = """
+                {
+                  "update_id": 10003,
+                  "message": {
+                    "message_id": 57,
+                    "from": {"id": 777, "first_name": "Alex"},
+                    "chat": {"id": 777, "type": "private"},
+                    "contact": {
+                      "phone_number": "+905551234567",
+                      "first_name": "Alex",
+                      "user_id": 777
+                    }
+                  }
+                }
+                """;
+
+        TelegramUpdate update = new ObjectMapper().readValue(json, TelegramUpdate.class);
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals("+905551234567", update.message().contact().phoneNumber()),
+                () -> Assertions.assertEquals(Long.valueOf(777L), update.message().contact().userId())
+        );
+    }
 }

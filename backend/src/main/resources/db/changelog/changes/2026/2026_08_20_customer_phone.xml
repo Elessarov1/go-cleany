@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260820-01" author="go-cleany">
+        <addColumn tableName="customer_account">
+            <column name="phone" type="VARCHAR(40)"/>
+        </addColumn>
+
+        <sql dbms="postgresql"><![CDATA[
+            update customer_account customer
+               set phone = (
+                    select orders.phone
+                      from cleaning_order orders
+                     where orders.customer_id = customer.id
+                     order by orders.created_at desc, orders.id desc
+                     limit 1
+               );
+        ]]></sql>
+
+        <rollback>
+            <dropColumn tableName="customer_account" columnName="phone"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

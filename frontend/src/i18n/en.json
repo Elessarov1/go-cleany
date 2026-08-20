@@ -73,6 +73,7 @@
       "apartmentType": "Choose an apartment type",
       "cleaningType": "Choose a cleaning type",
       "requestedDate": "Choose a preferred date",
+      "pastDate": "Choose today or a future date.",
       "address": "Enter the full address",
       "phone": "Enter the full phone number with country code, for example +90 555 123 45 67.",
       "referralCode": "Check the referral code or remove it"
@@ -184,6 +185,7 @@
     "NEW": "Waiting for a cleaner",
     "ACCEPTED": "Confirmed",
     "AWAITING_REPORT": "Cleaning finished",
+    "ONSITE_ISSUE_REPORTED": "Onsite issue",
     "COMPLETED": "Completed",
     "REJECTED": "Unavailable",
     "CANCELLED": "Cancelled",
@@ -191,10 +193,19 @@
       "NEW": "Your order has been sent to the cleaning team.",
       "ACCEPTED": "A cleaner has accepted your order and may contact you about the time.",
       "AWAITING_REPORT": "The cleaner is preparing your photo report.",
+      "ONSITE_ISSUE_REPORTED": "The order is paused while the onsite situation is reviewed.",
       "COMPLETED": "The cleaning and photo report are complete.",
       "REJECTED": "Unfortunately, the team cannot fulfil this order.",
       "CANCELLED": "This order has been cancelled."
     }
+  },
+  "onsiteReasons": {
+    "APARTMENT_SIZE_MISMATCH": "Apartment size does not match the order",
+    "CLEANING_TYPE_MISMATCH": "A different cleaning type is required",
+    "HEAVY_CONTAMINATION": "Heavy contamination or post-renovation condition",
+    "ACCESS_PROBLEM": "The apartment cannot be accessed",
+    "ADDRESS_MISMATCH": "The address or property does not match the order",
+    "OTHER": "Other material difference"
   },
   "admin": {
     "eyebrow": "go-cleany / operations",
@@ -243,6 +254,24 @@
       "platformNet": "Platform net",
       "acquisitionSource": "Acquisition source"
     },
+    "onsiteIssue": {
+      "eyebrow": "Resolution required",
+      "title": "Onsite issue",
+      "reason": "Reason",
+      "cleaner": "Reported by cleaner",
+      "reportedAt": "Reported at",
+      "comment": "Cleaner comment",
+      "evidence": "Evidence photos",
+      "resolution": "Admin resolution",
+      "resolutionComment": "Resolution comment",
+      "resolutionPlaceholder": "Describe the decision and any follow-up actions",
+      "resolve": "Close order",
+      "resolving": "Closing…",
+      "resolvedBy": "admin",
+      "resolveError": "Enter a resolution comment and try again.",
+      "photoError": "Photo could not be loaded",
+      "photoAlt": "Evidence photo #{{id}}"
+    },
     "history": {
       "title": "Order history",
       "subtitle": "Events are retained in an append-only log."
@@ -254,6 +283,11 @@
       "REPORT_STARTED": "Photo report started",
       "PHOTO_ADDED": "Photo added",
       "COMMENT_UPDATED": "Cleaner comment updated",
+      "ONSITE_ISSUE_REPORTED": "Cleaner reported an onsite issue",
+      "ISSUE_PHOTO_ADDED": "Evidence photo added",
+      "ISSUE_REPORT_SUBMITTED": "Onsite issue report submitted",
+      "ISSUE_CUSTOMER_NOTIFIED": "Customer received the onsite issue report",
+      "ISSUE_RESOLVED": "Issue resolved by admin",
       "COMPLETED": "Order completed",
       "CANCELLED_BY_CUSTOMER": "Order cancelled by customer",
       "CANCELLED_BY_CLEANER": "Order cancelled by cleaner"
@@ -261,6 +295,7 @@
     "actors": {
       "CUSTOMER": "customer",
       "CLEANER": "cleaner",
+      "ADMIN": "admin",
       "SYSTEM": "system"
     },
     "loadError": "The administrative statistics could not be loaded.",
@@ -279,6 +314,7 @@
       "NEW": "New order",
       "ACCEPTED": "Accepted",
       "AWAITING_REPORT": "Awaiting report",
+      "ONSITE_ISSUE_REPORTED": "Onsite issue",
       "COMPLETED": "Completed",
       "REJECTED": "Rejected",
       "CANCELLED": "Cancelled"

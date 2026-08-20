@@ -15,6 +15,7 @@ const scenarios: PreviewScenario[] = [
   "NEW",
   "ACCEPTED",
   "AWAITING_REPORT",
+  "ONSITE_ISSUE_REPORTED",
   "COMPLETED",
   "REJECTED",
   "CANCELLED",
@@ -100,4 +101,3 @@ export function PreviewPanel() {
     </aside>
   );
 }
-

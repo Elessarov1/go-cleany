@@ -15,6 +15,7 @@ interface TelegramWebApp {
     user?: TelegramUser;
   };
   requestWriteAccess(callback?: (allowed: boolean) => void): void;
+  requestContact?(callback?: (shared: boolean) => void): void;
   ready(): void;
   close(): void;
   openLink(url: string): void;
@@ -38,6 +39,7 @@ function getWebApp(): TelegramWebApp {
 
 export class TelegramPlatform implements Platform {
   private writeAccessGrantedInSession = false;
+  private phoneRequestedInSession = false;
 
   getUser(): PlatformUser | null {
     const user = getWebApp().initDataUnsafe?.user;
@@ -81,6 +83,21 @@ export class TelegramPlatform implements Platform {
         }
         resolve(allowed);
       });
+    });
+  }
+
+  requestPhoneNumber(): Promise<boolean> {
+    const webApp = getWebApp();
+    if (
+      this.phoneRequestedInSession ||
+      typeof webApp.requestContact !== "function"
+    ) {
+      return Promise.resolve(false);
+    }
+
+    this.phoneRequestedInSession = true;
+    return new Promise((resolve) => {
+      webApp.requestContact!((shared) => resolve(shared));
     });
   }
 

@@ -1,4 +1,5 @@
 import type { CleaningConfiguration } from "../domain/configuration";
+import type { CustomerProfile } from "../domain/customer";
 import type {
   AdminDashboard,
   AdminOrderDetails,
@@ -18,10 +19,13 @@ export interface CleaningApi {
   hasAdminAccess(): Promise<boolean>;
   getAdminDashboard(limit?: number): Promise<AdminDashboard>;
   getAdminOrder(id: number): Promise<AdminOrderDetails>;
+  getAdminIssuePhoto(orderId: number, photoId: number): Promise<Blob>;
+  resolveAdminIssue(orderId: number, resolutionComment: string): Promise<AdminOrderDetails>;
   getAdminReferralOverview(): Promise<AdminReferralOverview>;
   createReferralPartner(name: string): Promise<ReferralPartner>;
   markPartnerPayoutPaid(id: number): Promise<PartnerPayout>;
   getConfiguration(): Promise<CleaningConfiguration>;
+  getCurrentCustomerProfile(): Promise<CustomerProfile>;
   quoteOrder(request: CleaningOrderQuoteRequest): Promise<CleaningOrderQuote>;
   createOrder(request: CreateCleaningOrderRequest): Promise<CleaningOrder>;
   getReferralSummary(): Promise<ReferralSummary>;

@@ -19,11 +19,15 @@ public class HttpTelegramBotClient implements TelegramBotClient {
 
     private final RestClient restClient;
     private final String botApiEndpoint;
+    private final String fileApiEndpoint;
 
     public HttpTelegramBotClient(RestClient.Builder restClientBuilder, TelegramProperties properties) {
         restClient = restClientBuilder.build();
         botApiEndpoint = withoutTrailingSlash(properties.apiBaseUrl().toString())
                 + "/bot"
+                + properties.botToken();
+        fileApiEndpoint = withoutTrailingSlash(properties.apiBaseUrl().toString())
+                + "/file/bot"
                 + properties.botToken();
     }
 
@@ -63,6 +67,38 @@ public class HttpTelegramBotClient implements TelegramBotClient {
                 "chat_id", chatId,
                 "photo", telegramFileId
         ), TelegramApiResponse.class);
+    }
+
+    @Override
+    public byte[] downloadFile(String telegramFileId) {
+        TelegramFileResponse response = invoke(
+                "getFile",
+                Map.of("file_id", telegramFileId),
+                TelegramFileResponse.class
+        );
+        String filePath = response.result() == null ? null : response.result().filePath();
+        if (filePath == null
+                || filePath.isBlank()
+                || filePath.startsWith("/")
+                || filePath.contains("..")) {
+            throw new TelegramBotApiException("Telegram getFile returned an invalid file path");
+        }
+        try {
+            byte[] content = restClient.get()
+                    .uri(fileApiEndpoint + "/" + filePath)
+                    .retrieve()
+                    .body(byte[].class);
+            if (content == null) {
+                throw new TelegramBotApiException("Telegram file download returned an empty response");
+            }
+            return content;
+        } catch (TelegramBotApiException exception) {
+            throw exception;
+        } catch (RestClientException exception) {
+            throw new TelegramBotApiException(
+                    "Telegram file download failed: " + exception.getClass().getSimpleName()
+            );
+        }
     }
 
     @Override
@@ -135,6 +171,20 @@ public class HttpTelegramBotClient implements TelegramBotClient {
             String description,
             List<TelegramUpdate> result
     ) implements ApiResponse {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record TelegramFileResponse(
+            boolean ok,
+            String description,
+            TelegramFileResult result
+    ) implements ApiResponse {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record TelegramFileResult(
+            @com.fasterxml.jackson.annotation.JsonProperty("file_path") String filePath
+    ) {
     }
 
     private interface ApiResponse {

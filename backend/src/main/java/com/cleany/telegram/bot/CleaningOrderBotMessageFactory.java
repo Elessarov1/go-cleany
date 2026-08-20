@@ -11,6 +11,8 @@ import com.cleany.order.ApartmentType;
 import com.cleany.order.CleaningOrder;
 import com.cleany.order.CleaningOrderReportProgress;
 import com.cleany.order.CleaningType;
+import com.cleany.order.OnsiteIssueProgress;
+import com.cleany.order.OnsiteIssueReason;
 import com.cleany.order.ServiceArea;
 import com.cleany.telegram.bot.TelegramBotClient.InlineButton;
 import com.cleany.telegram.bot.TelegramBotClient.InlineKeyboard;
@@ -91,10 +93,84 @@ public class CleaningOrderBotMessageFactory {
                         callback("finish", order.getId())
                 )),
                 List.of(InlineButton.callback(
+                        "⚠️ Сообщить о проблеме на объекте",
+                        callback("issue", order.getId())
+                )),
+                List.of(InlineButton.callback(
                         "❌ Отменить заказ",
                         callback("cancel", order.getId())
                 ))
         );
+    }
+
+    public InlineKeyboard onsiteIssueReasonKeyboard(long orderId) {
+        return new InlineKeyboard(List.of(
+                reasonRow(orderId, OnsiteIssueReason.APARTMENT_SIZE_MISMATCH),
+                reasonRow(orderId, OnsiteIssueReason.CLEANING_TYPE_MISMATCH),
+                reasonRow(orderId, OnsiteIssueReason.HEAVY_CONTAMINATION),
+                reasonRow(orderId, OnsiteIssueReason.ACCESS_PROBLEM),
+                reasonRow(orderId, OnsiteIssueReason.ADDRESS_MISMATCH),
+                reasonRow(orderId, OnsiteIssueReason.OTHER)
+        ));
+    }
+
+    public String onsiteIssueStarted(OnsiteIssueProgress progress) {
+        return """
+                ⚠️ Проблема на объекте для заказа №%d
+
+                Причина: %s
+
+                Отправьте от 3 до 8 подтверждающих фотографий.
+                Затем отправьте обязательный комментарий отдельным сообщением
+                или подписью к фотографии.
+
+                До подтверждения заказ останется принятым.
+                """.formatted(progress.orderId(), onsiteIssueReason(progress.reason())).strip();
+    }
+
+    public String onsiteIssueProgress(OnsiteIssueProgress progress) {
+        String comment = progress.commentPresent() ? "сохранён" : "ещё не добавлен";
+        String readiness = progress.readyToSubmit()
+                ? "Отчёт готов к подтверждению."
+                : "Для подтверждения нужны минимум 3 фотографии и комментарий.";
+        return "Фото: " + progress.photoCount() + ". Комментарий: " + comment + ".\n" + readiness;
+    }
+
+    public InlineKeyboard onsiteIssueSubmitKeyboard(OnsiteIssueProgress progress) {
+        if (!progress.readyToSubmit()) {
+            return InlineKeyboard.empty();
+        }
+        return InlineKeyboard.ofRows(List.of(InlineButton.callback(
+                "⚠️ Подтвердить отчёт о проблеме",
+                callback("issue_submit", progress.orderId())
+        )));
+    }
+
+    public String customerOnsiteIssueReport(OnsiteIssueReason reason, String comment) {
+        return """
+                Клинер сообщил о проблеме на объекте.
+
+                Причина:
+                %s
+
+                Комментарий:
+                %s
+                """.formatted(onsiteIssueReason(reason), comment).strip();
+    }
+
+    public String customerOnsiteIssuePaused() {
+        return "Заказ приостановлен. Мы рассмотрим ситуацию и свяжемся с вами.";
+    }
+
+    public String onsiteIssueReason(OnsiteIssueReason reason) {
+        return switch (reason) {
+            case APARTMENT_SIZE_MISMATCH -> "Размер квартиры не соответствует заявке";
+            case CLEANING_TYPE_MISMATCH -> "Требуется другой тип уборки";
+            case HEAVY_CONTAMINATION -> "Сильное загрязнение или пост-ремонтное состояние";
+            case ACCESS_PROBLEM -> "Нет доступа в квартиру";
+            case ADDRESS_MISMATCH -> "Адрес или объект не соответствует заявке";
+            case OTHER -> "Другие существенные условия";
+        };
     }
 
     public String awaitingPhotoReport(CleaningOrder order) {
@@ -155,6 +231,13 @@ public class CleaningOrderBotMessageFactory {
 
     private static String callback(String action, long orderId) {
         return "order:" + action + ":" + orderId;
+    }
+
+    private List<InlineButton> reasonRow(long orderId, OnsiteIssueReason reason) {
+        return List.of(InlineButton.callback(
+                onsiteIssueReason(reason),
+                "order:issue_reason:" + reason + ":" + orderId
+        ));
     }
 
     private static String area(ServiceArea area) {

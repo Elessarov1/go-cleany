@@ -1,4 +1,5 @@
 import type { CleaningConfiguration } from "../domain/configuration";
+import type { CustomerProfile } from "../domain/customer";
 import type {
   AdminDashboard,
   AdminOrderDetails,
@@ -41,9 +42,10 @@ const scenarioIds: Record<CleaningOrderStatus, number> = {
   NEW: 101,
   ACCEPTED: 102,
   AWAITING_REPORT: 103,
-  COMPLETED: 104,
-  REJECTED: 105,
-  CANCELLED: 106,
+  ONSITE_ISSUE_REPORTED: 104,
+  COMPLETED: 105,
+  REJECTED: 106,
+  CANCELLED: 107,
 };
 
 function dateFromToday(offset: number): string {
@@ -54,7 +56,12 @@ function dateFromToday(offset: number): string {
 
 function createScenarioOrder(status: CleaningOrderStatus): CleaningOrder {
   const createdAt = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const accepted = ["ACCEPTED", "AWAITING_REPORT", "COMPLETED"].includes(status);
+  const accepted = [
+    "ACCEPTED",
+    "AWAITING_REPORT",
+    "ONSITE_ISSUE_REPORTED",
+    "COMPLETED",
+  ].includes(status);
 
   return {
     id: scenarioIds[status],
@@ -110,6 +117,7 @@ function getPreviewScenario(): PreviewScenario | null {
     "NEW",
     "ACCEPTED",
     "AWAITING_REPORT",
+    "ONSITE_ISSUE_REPORTED",
     "COMPLETED",
     "REJECTED",
     "CANCELLED",
@@ -159,7 +167,9 @@ export class MockCleaningApi implements CleaningApi {
         ordersToday: orders.filter((order) => order.createdAt.slice(0, 10) === today).length,
         newOrders: orders.filter((order) => order.status === "NEW").length,
         activeOrders: orders.filter((order) =>
-          order.status === "ACCEPTED" || order.status === "AWAITING_REPORT"
+          order.status === "ACCEPTED" ||
+          order.status === "AWAITING_REPORT" ||
+          order.status === "ONSITE_ISSUE_REPORTED"
         ).length,
         completedOrders: completed.length,
         cancelledOrders: orders.filter((order) => order.status === "CANCELLED").length,
@@ -186,6 +196,23 @@ export class MockCleaningApi implements CleaningApi {
         customerDiscountType: order.customerDiscountType,
       },
       photoCount: order.photoCount ?? 0,
+      onsiteIssue: order.status === "ONSITE_ISSUE_REPORTED" ? {
+        id: 71,
+        reason: "HEAVY_CONTAMINATION",
+        cleanerTelegramUserId: order.cleanerTelegramUserId ?? 123_456_789,
+        reportedAt: new Date().toISOString(),
+        comment: "Фактическое состояние требует генеральной уборки.",
+        photos: [1, 2, 3].map((photoId) => ({
+          id: photoId,
+          contentType: "image/jpeg",
+          sizeBytes: 1837291,
+          sha256: `${photoId}`.repeat(64),
+          createdAt: new Date().toISOString(),
+        })),
+        resolvedAt: null,
+        resolvedBy: null,
+        resolutionComment: null,
+      } : null,
       events: [
         {
           id: 1,
@@ -218,6 +245,34 @@ export class MockCleaningApi implements CleaningApi {
     return simulateNetwork(details);
   }
 
+  getAdminIssuePhoto(_orderId: number, photoId: number): Promise<Blob> {
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="640" height="420">
+        <rect width="100%" height="100%" fill="#e4f4fb"/>
+        <text x="50%" y="50%" text-anchor="middle" fill="#176b87" font-size="28">
+          Evidence ${photoId}
+        </text>
+      </svg>`;
+    return simulateNetwork(new Blob([svg], { type: "image/svg+xml" }));
+  }
+
+  async resolveAdminIssue(orderId: number, resolutionComment: string): Promise<AdminOrderDetails> {
+    const details = await this.getAdminOrder(orderId);
+    if (!details.onsiteIssue) {
+      throw new CleaningApiError("Onsite issue not found", 404);
+    }
+    return simulateNetwork({
+      ...details,
+      order: { ...details.order, status: "CANCELLED" },
+      onsiteIssue: {
+        ...details.onsiteIssue,
+        resolvedAt: new Date().toISOString(),
+        resolvedBy: 900_001,
+        resolutionComment,
+      },
+    });
+  }
+
   getAdminReferralOverview(): Promise<AdminReferralOverview> {
     return simulateNetwork({ partners: [], payouts: [] });
   }
@@ -238,6 +293,10 @@ export class MockCleaningApi implements CleaningApi {
 
   getConfiguration(): Promise<CleaningConfiguration> {
     return simulateNetwork(mockConfiguration);
+  }
+
+  getCurrentCustomerProfile(): Promise<CustomerProfile> {
+    return simulateNetwork({ phone: readStoredOrders()[0]?.phone ?? null });
   }
 
   quoteOrder(request: CleaningOrderQuoteRequest): Promise<CleaningOrderQuote> {

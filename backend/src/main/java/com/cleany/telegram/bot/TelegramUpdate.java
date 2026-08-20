@@ -36,7 +36,8 @@ public record TelegramUpdate(
             Chat chat,
             String text,
             String caption,
-            List<PhotoSize> photo
+            List<PhotoSize> photo,
+            Contact contact
     ) {
 
         public Message {
@@ -46,6 +47,13 @@ public record TelegramUpdate(
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Chat(long id, String type) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Contact(
+            @JsonProperty("phone_number") String phoneNumber,
+            @JsonProperty("user_id") Long userId
+    ) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

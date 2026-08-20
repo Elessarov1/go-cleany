@@ -81,6 +81,41 @@ export function CreateOrderPage() {
 
   useEffect(() => {
     let active = true;
+
+    const fillPhone = (phone?: string | null): boolean => {
+      if (!active || !phone) return false;
+      setForm((current) => current.phone.trim()
+        ? current
+        : { ...current, phone });
+      return true;
+    };
+
+    const loadPhone = async () => {
+      try {
+        const profile = await api.getCurrentCustomerProfile();
+        if (fillPhone(profile.phone)) return;
+
+        const shared = await platform.requestPhoneNumber();
+        if (!active || !shared) return;
+
+        for (let attempt = 0; attempt < 10 && active; attempt += 1) {
+          await new Promise((resolve) => window.setTimeout(resolve, 500));
+          const refreshedProfile = await api.getCurrentCustomerProfile();
+          if (fillPhone(refreshedProfile.phone)) return;
+        }
+      } catch {
+        // Phone prefill is optional and must not block manual order creation.
+      }
+    };
+
+    void loadPhone();
+    return () => {
+      active = false;
+    };
+  }, [api, platform]);
+
+  useEffect(() => {
+    let active = true;
     setConfigurationError(false);
     api.getConfiguration()
       .then((value) => {
@@ -170,7 +205,11 @@ export function CreateOrderPage() {
     if (!form.area) nextErrors.area = t("create.validation.area");
     if (!form.apartmentType) nextErrors.apartmentType = t("create.validation.apartmentType");
     if (!form.cleaningType) nextErrors.cleaningType = t("create.validation.cleaningType");
-    if (!form.requestedDate) nextErrors.requestedDate = t("create.validation.requestedDate");
+    if (!form.requestedDate) {
+      nextErrors.requestedDate = t("create.validation.requestedDate");
+    } else if (form.requestedDate < todayAsInputValue()) {
+      nextErrors.requestedDate = t("create.validation.pastDate");
+    }
     if (!form.address.trim()) nextErrors.address = t("create.validation.address");
     if (!/^\+\s*\d/.test(form.phone.trim())) {
       nextErrors.phone = t("create.validation.phone");
@@ -231,6 +270,18 @@ export function CreateOrderPage() {
           phone: t("create.validation.phone"),
         }));
         document.getElementById("phone")?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      } else if (
+        error instanceof CleaningApiError &&
+        (error.code === "booking_date_unavailable" || error.fieldErrors.requestedDate)
+      ) {
+        setErrors((current) => ({
+          ...current,
+          requestedDate: t("create.validation.pastDate"),
+        }));
+        document.getElementById("requested-date")?.scrollIntoView({
           behavior: "smooth",
           block: "center",
         });

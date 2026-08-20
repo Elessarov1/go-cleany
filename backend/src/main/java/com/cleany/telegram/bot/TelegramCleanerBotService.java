@@ -9,6 +9,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import com.cleany.configuration.CleanerProperties;
+import com.cleany.customer.CustomerAccountService;
+import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.order.CleanerNotAuthorizedException;
 import com.cleany.order.CleaningOrder;
 import com.cleany.order.CleaningOrderReport;
@@ -16,11 +18,18 @@ import com.cleany.order.CleaningOrderReportProgress;
 import com.cleany.order.CleaningOrderService;
 import com.cleany.order.InvalidPhotoReportInputException;
 import com.cleany.order.InvalidOrderStateException;
+import com.cleany.order.InvalidOnsiteIssueException;
+import com.cleany.order.InvalidPhoneNumberException;
+import com.cleany.order.OnsiteIssueDelivery;
+import com.cleany.order.OnsiteIssueProgress;
+import com.cleany.order.OnsiteIssueReason;
+import com.cleany.order.OnsiteIssueService;
 import com.cleany.order.OrderClaimConflictException;
 import com.cleany.order.OrderNotFoundException;
 import com.cleany.order.PhotoReportEmptyException;
 import com.cleany.order.ReportCollectionNotActiveException;
 import com.cleany.telegram.bot.TelegramUpdate.CallbackQuery;
+import com.cleany.telegram.bot.TelegramUpdate.Contact;
 import com.cleany.telegram.bot.TelegramUpdate.Message;
 import com.cleany.telegram.bot.TelegramUpdate.PhotoSize;
 
@@ -29,21 +38,29 @@ import com.cleany.telegram.bot.TelegramUpdate.PhotoSize;
 public class TelegramCleanerBotService {
 
     private static final Logger log = LoggerFactory.getLogger(TelegramCleanerBotService.class);
-    private static final Pattern CALLBACK_PATTERN =
-            Pattern.compile("order:(accept|skip|finish|cancel|report):([1-9][0-9]*)");
+    private static final Pattern CALLBACK_PATTERN = Pattern.compile(
+            "order:(accept|skip|finish|cancel|report|issue|issue_submit):([1-9][0-9]*)"
+    );
+    private static final Pattern ISSUE_REASON_CALLBACK_PATTERN = Pattern.compile(
+            "order:issue_reason:([A-Z_]+):([1-9][0-9]*)"
+    );
 
     private final CleanerProperties cleanerProperties;
     private final CleaningOrderService orderService;
     private final CleaningOrderBotMessageFactory messageFactory;
     private final TelegramBotClient botClient;
     private final TelegramAdminBotService adminBotService;
+    private final CustomerAccountService customerAccountService;
+    private final OnsiteIssueService onsiteIssueService;
 
     public TelegramCleanerBotService(
             CleanerProperties cleanerProperties,
             CleaningOrderService orderService,
             CleaningOrderBotMessageFactory messageFactory,
             TelegramBotClient botClient,
-            TelegramAdminBotService adminBotService
+            TelegramAdminBotService adminBotService,
+            CustomerAccountService customerAccountService,
+            OnsiteIssueService onsiteIssueService
     ) {
         if (cleanerProperties.telegramIds().isEmpty()) {
             throw new IllegalArgumentException(
@@ -55,6 +72,8 @@ public class TelegramCleanerBotService {
         this.messageFactory = messageFactory;
         this.botClient = botClient;
         this.adminBotService = adminBotService;
+        this.customerAccountService = customerAccountService;
+        this.onsiteIssueService = onsiteIssueService;
     }
 
     public void handle(TelegramUpdate update) {
@@ -92,6 +111,14 @@ public class TelegramCleanerBotService {
                 case "finish" -> finish(callback.id(), action.orderId(), cleanerId);
                 case "cancel" -> cancel(callback.id(), action.orderId(), cleanerId);
                 case "report" -> deliverReport(callback.id(), action.orderId(), cleanerId);
+                case "issue" -> startOnsiteIssue(callback.id(), action.orderId(), cleanerId);
+                case "issue_reason" -> selectOnsiteIssueReason(
+                        callback.id(),
+                        action.orderId(),
+                        cleanerId,
+                        action.reason()
+                );
+                case "issue_submit" -> submitOnsiteIssue(callback.id(), action.orderId(), cleanerId);
                 default -> safeAnswer(callback.id(), "Это действие не поддерживается.", true);
             }
         } catch (OrderNotFoundException exception) {
@@ -102,6 +129,8 @@ public class TelegramCleanerBotService {
             safeAnswer(callback.id(), "Это действие больше недоступно.", true);
         } catch (PhotoReportEmptyException exception) {
             safeAnswer(callback.id(), "Перед отправкой отчёта добавьте хотя бы одну фотографию.", true);
+        } catch (InvalidOnsiteIssueException exception) {
+            safeAnswer(callback.id(), onsiteIssueError(exception), true);
         }
     }
 
@@ -114,6 +143,10 @@ public class TelegramCleanerBotService {
         }
 
         long cleanerId = message.from().id();
+        if (message.contact() != null) {
+            saveCustomerContact(message);
+            return;
+        }
         if (isCommand(message.text(), "/start")) {
             safeSend(cleanerId, "Бот go-cleany запущен. Отправьте /whoami, чтобы узнать свой Telegram ID.");
             return;
@@ -130,6 +163,10 @@ public class TelegramCleanerBotService {
         }
 
         try {
+            if (onsiteIssueService.hasActiveDraft(cleanerId)) {
+                handleOnsiteIssueInput(cleanerId, message);
+                return;
+            }
             PhotoSize photo = largestPhoto(message);
             if (photo != null) {
                 CleaningOrderReportProgress progress = orderService.addPhotoToActiveReport(
@@ -169,7 +206,80 @@ public class TelegramCleanerBotService {
             safeSend(cleanerId, "Комментарий клинера должен содержать от 1 до 1000 символов.");
         } catch (CleanerNotAuthorizedException | InvalidOrderStateException exception) {
             safeSend(cleanerId, "У вас нет доступа к этому фотоотчёту.");
+        } catch (InvalidOnsiteIssueException exception) {
+            safeSend(cleanerId, onsiteIssueError(exception));
         }
+    }
+
+    private void handleOnsiteIssueInput(long cleanerId, Message message) {
+        PhotoSize photo = largestPhoto(message);
+        OnsiteIssueProgress progress;
+        if (photo != null) {
+            byte[] content;
+            try {
+                content = botClient.downloadFile(photo.fileId());
+            } catch (TelegramBotApiException exception) {
+                log.error("Telegram evidence download failed for cleaner {}", cleanerId, exception);
+                safeSend(cleanerId, "Не удалось загрузить фотографию из Telegram. Попробуйте отправить её ещё раз.");
+                return;
+            }
+            progress = onsiteIssueService.addPhoto(
+                    cleanerId,
+                    photo.fileId(),
+                    photo.fileUniqueId(),
+                    content,
+                    message.caption()
+            );
+        } else if (message.text() != null
+                && !message.text().isBlank()
+                && !message.text().startsWith("/")) {
+            progress = onsiteIssueService.updateComment(cleanerId, message.text());
+        } else {
+            return;
+        }
+
+        safeSend(
+                cleanerId,
+                messageFactory.onsiteIssueProgress(progress),
+                messageFactory.onsiteIssueSubmitKeyboard(progress),
+                progress.orderId()
+        );
+    }
+
+    private void saveCustomerContact(Message message) {
+        Contact contact = message.contact();
+        if (contact.userId() == null || contact.userId() != message.from().id()) {
+            return;
+        }
+
+        try {
+            customerAccountService.savePhoneForExternalIdentity(
+                    ExternalIdentityProvider.TELEGRAM,
+                    Long.toString(message.from().id()),
+                    message.from().username(),
+                    displayName(message.from()),
+                    asInternationalPhone(contact.phoneNumber())
+            );
+            safeSend(message.from().id(), "Номер телефона сохранён и будет подставлен в форму заказа.");
+        } catch (InvalidPhoneNumberException exception) {
+            log.warn("Telegram sent an invalid contact phone for user {}", message.from().id());
+            safeSend(message.from().id(), "Не удалось распознать номер телефона. Введите его в форме вручную.");
+        }
+    }
+
+    private static String displayName(TelegramUpdate.TelegramUser user) {
+        String firstName = user.firstName() == null ? "" : user.firstName().trim();
+        String lastName = user.lastName() == null ? "" : user.lastName().trim();
+        String fullName = (firstName + " " + lastName).trim();
+        return fullName.isEmpty() ? "Telegram user " + user.id() : fullName;
+    }
+
+    private static String asInternationalPhone(String phone) {
+        if (phone == null) {
+            return null;
+        }
+        String normalized = phone.trim();
+        return normalized.startsWith("+") ? normalized : "+" + normalized;
     }
 
     private void accept(String callbackId, long orderId, long cleanerId) {
@@ -234,6 +344,55 @@ public class TelegramCleanerBotService {
         safeSend(cleanerId, "✅ Отчёт по заказу №" + orderId + " отправлен клиенту.", orderId);
     }
 
+    private void startOnsiteIssue(String callbackId, long orderId, long cleanerId) {
+        onsiteIssueService.start(orderId, cleanerId);
+        safeAnswer(callbackId, "Выберите причину проблемы.", false);
+        safeSend(
+                cleanerId,
+                "Выберите причину, по которой уборку невозможно начать:",
+                messageFactory.onsiteIssueReasonKeyboard(orderId),
+                orderId
+        );
+    }
+
+    private void selectOnsiteIssueReason(
+            String callbackId,
+            long orderId,
+            long cleanerId,
+            OnsiteIssueReason reason
+    ) {
+        OnsiteIssueProgress progress = onsiteIssueService.selectReason(orderId, cleanerId, reason);
+        safeAnswer(callbackId, "Причина сохранена.", false);
+        safeSend(
+                cleanerId,
+                messageFactory.onsiteIssueStarted(progress),
+                messageFactory.onsiteIssueSubmitKeyboard(progress),
+                orderId
+        );
+    }
+
+    private void submitOnsiteIssue(String callbackId, long orderId, long cleanerId) {
+        OnsiteIssueDelivery delivery = onsiteIssueService.submit(orderId, cleanerId);
+        CleaningOrder order = delivery.order();
+        safeAnswer(callbackId, "Отчёт сохранён. Уведомляем клиента.", false);
+
+        botClient.sendMessage(
+                order.getTelegramUserId(),
+                messageFactory.customerOnsiteIssueReport(delivery.reason(), delivery.comment()),
+                TelegramBotClient.InlineKeyboard.empty()
+        );
+        for (String telegramFileId : delivery.telegramFileIds()) {
+            botClient.sendPhoto(order.getTelegramUserId(), telegramFileId);
+        }
+        botClient.sendMessage(
+                order.getTelegramUserId(),
+                messageFactory.customerOnsiteIssuePaused(),
+                TelegramBotClient.InlineKeyboard.empty()
+        );
+        onsiteIssueService.recordCustomerNotified(orderId, cleanerId);
+        safeSend(cleanerId, "⚠️ Отчёт по заказу №" + orderId + " сохранён и отправлен клиенту.", orderId);
+    }
+
     private void safeSend(long chatId, String text, long orderId) {
         safeSend(chatId, text, TelegramBotClient.InlineKeyboard.empty(), orderId);
     }
@@ -271,12 +430,24 @@ public class TelegramCleanerBotService {
         if (callbackData == null) {
             return null;
         }
+        var reasonMatcher = ISSUE_REASON_CALLBACK_PATTERN.matcher(callbackData);
+        if (reasonMatcher.matches()) {
+            try {
+                return new CallbackAction(
+                        "issue_reason",
+                        Long.parseLong(reasonMatcher.group(2)),
+                        OnsiteIssueReason.valueOf(reasonMatcher.group(1))
+                );
+            } catch (IllegalArgumentException exception) {
+                return null;
+            }
+        }
         var matcher = CALLBACK_PATTERN.matcher(callbackData);
         if (!matcher.matches()) {
             return null;
         }
         try {
-            return new CallbackAction(matcher.group(1), Long.parseLong(matcher.group(2)));
+            return new CallbackAction(matcher.group(1), Long.parseLong(matcher.group(2)), null);
         } catch (NumberFormatException exception) {
             return null;
         }
@@ -298,6 +469,19 @@ public class TelegramCleanerBotService {
         return text.equals(expectedCommand) || text.startsWith(expectedCommand + "@");
     }
 
-    private record CallbackAction(String name, long orderId) {
+    private static String onsiteIssueError(InvalidOnsiteIssueException exception) {
+        return switch (exception.getProblem()) {
+            case REASON_REQUIRED -> "Выберите причину проблемы на объекте.";
+            case COMMENT_REQUIRED -> "Добавьте обязательный комментарий к проблеме.";
+            case MIN_PHOTOS_REQUIRED -> "Для отчёта нужно минимум 3 фотографии.";
+            case MAX_PHOTOS_EXCEEDED -> "Можно приложить не более 8 фотографий.";
+            case PHOTO_EMPTY -> "Фотография пуста или не содержит данных.";
+            case PHOTO_TOO_LARGE -> "Размер фотографии превышает 5 МБ.";
+            case PHOTO_TYPE_UNSUPPORTED -> "Поддерживаются только фотографии JPEG и PNG.";
+            case COLLECTION_NOT_ACTIVE -> "Нет активного отчёта о проблеме на объекте.";
+        };
+    }
+
+    private record CallbackAction(String name, long orderId, OnsiteIssueReason reason) {
     }
 }

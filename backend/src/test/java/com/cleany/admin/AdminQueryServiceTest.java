@@ -16,6 +16,8 @@ import org.mockito.Mockito;
 import com.cleany.configuration.CleaningProperties;
 import com.cleany.order.CleaningOrder;
 import com.cleany.order.CleaningOrderEventRepository;
+import com.cleany.order.CleaningOrderIssuePhotoRepository;
+import com.cleany.order.CleaningOrderIssueReportRepository;
 import com.cleany.order.CleaningOrderPhotoRepository;
 import com.cleany.order.CleaningOrderRepository;
 import com.cleany.order.CleaningOrderStatus;
@@ -41,6 +43,8 @@ class AdminQueryServiceTest {
                 orderRepository,
                 Mockito.mock(CleaningOrderEventRepository.class),
                 Mockito.mock(CleaningOrderPhotoRepository.class),
+                Mockito.mock(CleaningOrderIssueReportRepository.class),
+                Mockito.mock(CleaningOrderIssuePhotoRepository.class),
                 properties,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
@@ -52,17 +56,18 @@ class AdminQueryServiceTest {
         var active = order(2L, CleaningOrderStatus.ACCEPTED, "900", NOW.minusSeconds(7200));
         var awaitingReport = order(3L, CleaningOrderStatus.AWAITING_REPORT, "800", NOW.minusSeconds(9000));
         var cancelled = order(4L, CleaningOrderStatus.CANCELLED, "1200", NOW.minusSeconds(172800));
+        var onsiteIssue = order(5L, CleaningOrderStatus.ONSITE_ISSUE_REPORTED, "1700", NOW.minusSeconds(10800));
         Mockito.when(orderRepository.findAllByOrderByCreatedAtDesc())
-                .thenReturn(List.of(completed, active, awaitingReport, cancelled));
+                .thenReturn(List.of(completed, active, awaitingReport, onsiteIssue, cancelled));
 
         AdminDashboardResponse result = queryService.getDashboard(ADMIN_ID, 2);
 
         Mockito.verify(accessService).requireAdmin(ADMIN_ID);
         Assertions.assertAll(
                 () -> Assertions.assertEquals(2, result.recentOrders().size()),
-                () -> Assertions.assertEquals(4, result.stats().totalOrders()),
-                () -> Assertions.assertEquals(3, result.stats().ordersToday()),
-                () -> Assertions.assertEquals(2, result.stats().activeOrders()),
+                () -> Assertions.assertEquals(5, result.stats().totalOrders()),
+                () -> Assertions.assertEquals(4, result.stats().ordersToday()),
+                () -> Assertions.assertEquals(3, result.stats().activeOrders()),
                 () -> Assertions.assertEquals(1, result.stats().completedOrders()),
                 () -> Assertions.assertEquals(1, result.stats().cancelledOrders()),
                 () -> Assertions.assertEquals(0, result.stats().completedAmount().compareTo(BigDecimal.valueOf(1100))),

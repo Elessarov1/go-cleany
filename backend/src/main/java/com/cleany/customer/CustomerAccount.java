@@ -21,6 +21,9 @@ public class CustomerAccount {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "phone", length = 40)
+    private String phone;
+
     protected CustomerAccount() {
     }
 
@@ -34,5 +37,13 @@ public class CustomerAccount {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    void updatePhone(String phone) {
+        this.phone = Objects.requireNonNull(phone);
     }
 }

@@ -10,6 +10,7 @@ export interface Platform {
   getAuthData(): string | null;
   getLanguage(): string | null;
   ensureNotificationAccess(): Promise<boolean>;
+  requestPhoneNumber(): Promise<boolean>;
   ready(): void;
   close(): void;
   openExternalLink(url: string): void;

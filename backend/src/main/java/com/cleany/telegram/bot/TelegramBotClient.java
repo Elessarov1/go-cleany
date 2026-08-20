@@ -14,6 +14,8 @@ public interface TelegramBotClient {
 
     void sendPhoto(long chatId, String telegramFileId);
 
+    byte[] downloadFile(String telegramFileId);
+
     void answerCallbackQuery(String callbackQueryId, String text, boolean showAlert);
 
     default void sendMessage(long chatId, String text) {

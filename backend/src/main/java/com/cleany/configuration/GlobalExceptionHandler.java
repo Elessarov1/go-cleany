@@ -20,6 +20,7 @@ import com.cleany.admin.AdminNotAuthorizedException;
 import com.cleany.order.CleanerNotAuthorizedException;
 import com.cleany.order.InvalidPhoneNumberException;
 import com.cleany.order.InvalidOrderStateException;
+import com.cleany.order.InvalidOnsiteIssueException;
 import com.cleany.order.OrderClaimConflictException;
 import com.cleany.order.OrderNotFoundException;
 import com.cleany.referral.ReferralNotApplicableException;
@@ -53,7 +54,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BookingDateNotAvailableException.class)
     ResponseEntity<ApiError> handleBookingDate(BookingDateNotAvailableException exception) {
-        return response(HttpStatus.BAD_REQUEST, "booking_date_unavailable", exception.getMessage(), Map.of());
+        return response(
+                HttpStatus.BAD_REQUEST,
+                "booking_date_unavailable",
+                exception.getMessage(),
+                Map.of("requestedDate", exception.getMessage())
+        );
     }
 
     @ExceptionHandler(InvalidPhoneNumberException.class)
@@ -73,6 +79,16 @@ public class GlobalExceptionHandler {
                 "referral_not_applicable",
                 exception.getMessage(),
                 Map.of("referralCode", exception.getMessage())
+        );
+    }
+
+    @ExceptionHandler(InvalidOnsiteIssueException.class)
+    ResponseEntity<ApiError> handleInvalidOnsiteIssue(InvalidOnsiteIssueException exception) {
+        return response(
+                HttpStatus.BAD_REQUEST,
+                "invalid_onsite_issue",
+                exception.getMessage(),
+                Map.of()
         );
     }
 

@@ -1,0 +1,12 @@
+package com.cleany.order;
+
+public enum OnsiteIssueProblem {
+    REASON_REQUIRED,
+    COMMENT_REQUIRED,
+    MIN_PHOTOS_REQUIRED,
+    MAX_PHOTOS_EXCEEDED,
+    PHOTO_EMPTY,
+    PHOTO_TOO_LARGE,
+    PHOTO_TYPE_UNSUPPORTED,
+    COLLECTION_NOT_ACTIVE
+}

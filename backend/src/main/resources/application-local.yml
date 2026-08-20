@@ -59,6 +59,12 @@ referral:
       payout-rate: ${REFERRAL_PARTNER_PAYOUT_RATE:0.10}
       max-payout: ${REFERRAL_PARTNER_MAX_PAYOUT:2000}
 
+onsite-issue:
+  min-photos: ${ONSITE_ISSUE_MIN_PHOTOS:3}
+  max-photos: ${ONSITE_ISSUE_MAX_PHOTOS:8}
+  max-photo-size: ${ONSITE_ISSUE_MAX_PHOTO_SIZE:5MB}
+  supported-content-types: ${ONSITE_ISSUE_SUPPORTED_CONTENT_TYPES:image/jpeg,image/png}
+
 cleaner:
   telegram-ids: ${CLEANER_TELEGRAM_IDS:123456789,987654321}
 

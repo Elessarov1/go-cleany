@@ -14,11 +14,44 @@ export type OrderEventType =
   | "REPORT_STARTED"
   | "PHOTO_ADDED"
   | "COMMENT_UPDATED"
+  | "ONSITE_ISSUE_REPORTED"
+  | "ISSUE_PHOTO_ADDED"
+  | "ISSUE_REPORT_SUBMITTED"
+  | "ISSUE_CUSTOMER_NOTIFIED"
+  | "ISSUE_RESOLVED"
   | "COMPLETED"
   | "CANCELLED_BY_CUSTOMER"
   | "CANCELLED_BY_CLEANER";
 
-export type OrderActorType = "CUSTOMER" | "CLEANER" | "SYSTEM";
+export type OrderActorType = "CUSTOMER" | "CLEANER" | "ADMIN" | "SYSTEM";
+
+export type OnsiteIssueReason =
+  | "APARTMENT_SIZE_MISMATCH"
+  | "CLEANING_TYPE_MISMATCH"
+  | "HEAVY_CONTAMINATION"
+  | "ACCESS_PROBLEM"
+  | "ADDRESS_MISMATCH"
+  | "OTHER";
+
+export interface AdminIssuePhoto {
+  id: number;
+  contentType: string;
+  sizeBytes: number;
+  sha256: string;
+  createdAt: string;
+}
+
+export interface AdminOnsiteIssue {
+  id: number;
+  reason: OnsiteIssueReason;
+  cleanerTelegramUserId: number;
+  reportedAt: string;
+  comment: string;
+  photos: AdminIssuePhoto[];
+  resolvedAt: string | null;
+  resolvedBy: number | null;
+  resolutionComment: string | null;
+}
 
 export interface AdminStats {
   totalOrders: number;
@@ -64,6 +97,7 @@ export interface AdminOrderDetails {
   order: CleaningOrder;
   financial: AdminOrderFinancial;
   photoCount: number;
+  onsiteIssue: AdminOnsiteIssue | null;
   events: AdminOrderEvent[];
 }
 

@@ -23,6 +23,10 @@ export class BrowserPlatform implements Platform {
     return true;
   }
 
+  async requestPhoneNumber(): Promise<boolean> {
+    return false;
+  }
+
   ready(): void {
     // Ordinary browsers require no platform handshake.
   }

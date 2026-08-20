@@ -96,6 +96,11 @@ class TelegramAuthenticationIntegrationTest extends BaseIntegrationTest {
         Assertions.assertTrue(orders.getFirst().getCustomerId() > 0);
         Assertions.assertEquals("1100.00", orders.getFirst().getBasePrice().toPlainString());
         Assertions.assertEquals("165.00", orders.getFirst().getBaseCommission().toPlainString());
+
+        mvc.perform(get("/api/v1/customers/me")
+                        .header("Authorization", "tma " + initData))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.phone").value("+905551234567"));
     }
 
     @Test
