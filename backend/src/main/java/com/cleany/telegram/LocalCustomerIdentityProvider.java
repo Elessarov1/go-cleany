@@ -17,7 +17,8 @@ public class LocalCustomerIdentityProvider implements CustomerIdentityProvider {
                 properties.telegramUserId(),
                 properties.username(),
                 properties.firstName(),
-                properties.lastName()
+                properties.lastName(),
+                properties.languageCode()
         );
     }
 
@@ -26,4 +27,3 @@ public class LocalCustomerIdentityProvider implements CustomerIdentityProvider {
         return principal;
     }
 }
-

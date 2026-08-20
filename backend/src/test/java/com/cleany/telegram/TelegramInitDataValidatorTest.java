@@ -51,6 +51,22 @@ class TelegramInitDataValidatorTest {
         Assertions.assertEquals("alex", principal.username());
         Assertions.assertEquals("Alex", principal.firstName());
         Assertions.assertEquals("Cleaner", principal.lastName());
+        Assertions.assertNull(principal.languageCode());
+    }
+
+    @Test
+    void signedUserLanguage_availableOnTrustedPrincipal() {
+        String initData = TelegramInitDataTestFactory.signed(
+                BOT_TOKEN,
+                NOW,
+                """
+                        {"id":900001,"first_name":"Alex","language_code":"en-US"}
+                        """.strip()
+        );
+
+        TelegramPrincipal principal = validator.validate(initData);
+
+        Assertions.assertEquals("en-US", principal.languageCode());
     }
 
     @Test

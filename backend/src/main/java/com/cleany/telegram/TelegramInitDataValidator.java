@@ -136,7 +136,8 @@ public class TelegramInitDataValidator {
                 id.longValue(),
                 optionalText(user, "username"),
                 firstName.textValue(),
-                optionalText(user, "last_name")
+                optionalText(user, "last_name"),
+                optionalText(user, "language_code")
         );
     }
 

@@ -36,6 +36,9 @@ public class CustomerExternalIdentity {
     @Column(name = "display_name", nullable = false, length = 255)
     private String displayName;
 
+    @Column(name = "language_code", length = 16)
+    private String languageCode;
+
     @Column(name = "last_seen_at", nullable = false)
     private Instant lastSeenAt;
 
@@ -48,6 +51,7 @@ public class CustomerExternalIdentity {
             String externalSubject,
             String username,
             String displayName,
+            String languageCode,
             Instant lastSeenAt
     ) {
         this.customerId = customerId;
@@ -55,16 +59,26 @@ public class CustomerExternalIdentity {
         this.externalSubject = Objects.requireNonNull(externalSubject);
         this.username = username;
         this.displayName = Objects.requireNonNull(displayName);
+        this.languageCode = languageCode;
         this.lastSeenAt = Objects.requireNonNull(lastSeenAt);
     }
 
-    void refresh(String username, String displayName, Instant seenAt) {
+    void refresh(String username, String displayName, String languageCode, Instant seenAt) {
         this.username = username;
         this.displayName = Objects.requireNonNull(displayName);
+        this.languageCode = languageCode;
         this.lastSeenAt = Objects.requireNonNull(seenAt);
     }
 
     public long getCustomerId() {
         return customerId;
+    }
+
+    public String getExternalSubject() {
+        return externalSubject;
+    }
+
+    public String getLanguageCode() {
+        return languageCode;
     }
 }

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260822-01" author="go-cleany">
+        <addColumn tableName="customer_external_identity">
+            <column name="language_code" type="VARCHAR(16)"/>
+        </addColumn>
+
+        <rollback>
+            <dropColumn tableName="customer_external_identity" columnName="language_code"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

@@ -40,7 +40,8 @@ public class CustomerAccountService {
                 ExternalIdentityProvider.TELEGRAM,
                 externalSubject,
                 principal.username(),
-                principal.displayName()
+                principal.displayName(),
+                principal.languageCode()
         );
 
         return new CurrentCustomer(
@@ -72,13 +73,15 @@ public class CustomerAccountService {
             String externalSubject,
             String username,
             String displayName,
+            String languageCode,
             String rawPhone
     ) {
         CustomerAccount account = resolveAccount(
                 provider,
                 requireExternalSubject(externalSubject),
                 username,
-                displayName
+                displayName,
+                languageCode
         );
         account.updatePhone(phoneNumberNormalizer.normalize(rawPhone));
     }
@@ -93,7 +96,8 @@ public class CustomerAccountService {
             ExternalIdentityProvider provider,
             String externalSubject,
             String username,
-            String displayName
+            String displayName,
+            String languageCode
     ) {
         var now = clock.instant();
         var existingIdentity = externalIdentityRepository.findByProviderAndExternalSubject(
@@ -102,7 +106,12 @@ public class CustomerAccountService {
         );
         if (existingIdentity.isPresent()) {
             CustomerExternalIdentity identity = existingIdentity.get();
-            identity.refresh(normalizeOptional(username), normalizeDisplayName(displayName, externalSubject), now);
+            identity.refresh(
+                    normalizeOptional(username),
+                    normalizeDisplayName(displayName, externalSubject),
+                    normalizeLanguageCode(languageCode),
+                    now
+            );
             return accountRepository.findById(identity.getCustomerId())
                     .orElseThrow(() -> new IllegalStateException(
                             "Customer account not found: " + identity.getCustomerId()
@@ -116,6 +125,7 @@ public class CustomerAccountService {
                 externalSubject,
                 normalizeOptional(username),
                 normalizeDisplayName(displayName, externalSubject),
+                normalizeLanguageCode(languageCode),
                 now
         ));
         return account;
@@ -135,5 +145,14 @@ public class CustomerAccountService {
 
     private static String normalizeOptional(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private static String normalizeLanguageCode(String value) {
+        String normalized = normalizeOptional(value);
+        if (normalized == null) {
+            return null;
+        }
+        normalized = normalized.toLowerCase(java.util.Locale.ROOT).replace('_', '-');
+        return normalized.length() <= 16 ? normalized : normalized.substring(0, 16);
     }
 }

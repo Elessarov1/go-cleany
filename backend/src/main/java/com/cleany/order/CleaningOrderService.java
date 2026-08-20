@@ -14,6 +14,7 @@ import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountService;
 import com.cleany.pricing.CleaningPriceService;
 import com.cleany.referral.OrderReferralPlan;
+import com.cleany.referral.ReferralUnlockedEvent;
 import com.cleany.referral.ReferralService;
 
 @Service
@@ -339,6 +340,11 @@ public class CleaningOrderService {
         requireConfiguredCleaner(cleanerTelegramUserId);
         var order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
+        order.requireReportAccess(cleanerTelegramUserId);
+        boolean firstCompletedOrder = !orderRepository.existsByCustomerIdAndStatus(
+                order.getCustomerId(),
+                CleaningOrderStatus.COMPLETED
+        );
         CleaningOrderStatus previousStatus = order.getStatus();
         var completedAt = clock.instant();
         order.complete(cleanerTelegramUserId, normalizeCleanerComment(cleanerComment), completedAt);
@@ -352,7 +358,10 @@ public class CleaningOrderService {
                 null,
                 completedAt
         ));
-        referralService.completeOrder(order);
+        String referralCode = referralService.completeOrder(order);
+        if (firstCompletedOrder) {
+            eventPublisher.publishEvent(new ReferralUnlockedEvent(order.getCustomerId(), referralCode));
+        }
         return order;
     }
 

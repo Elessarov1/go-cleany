@@ -249,6 +249,7 @@ class TelegramCleanerBotServiceTest {
                 "777",
                 "customer",
                 "Alex Customer",
+                "ru",
                 "+905551234567"
         );
         Mockito.verify(botClient).sendMessage(
@@ -398,7 +399,7 @@ class TelegramCleanerBotServiceTest {
                 1L,
                 new CallbackQuery(
                         "callback-1",
-                        new TelegramUser(cleanerId, null, "Cleaner", null),
+                        new TelegramUser(cleanerId, null, "Cleaner", null, "ru"),
                         data
                 ),
                 null
@@ -411,7 +412,7 @@ class TelegramCleanerBotServiceTest {
                 null,
                 new Message(
                         55L,
-                        new TelegramUser(cleanerId, null, "Cleaner", null),
+                        new TelegramUser(cleanerId, null, "Cleaner", null, "ru"),
                         new Chat(cleanerId, "private"),
                         null,
                         "Everything is ready",
@@ -430,7 +431,7 @@ class TelegramCleanerBotServiceTest {
                 null,
                 new Message(
                         56L,
-                        new TelegramUser(cleanerId, null, "Cleaner", null),
+                        new TelegramUser(cleanerId, null, "Cleaner", null, "ru"),
                         new Chat(cleanerId, "private"),
                         text,
                         null,
@@ -452,7 +453,7 @@ class TelegramCleanerBotServiceTest {
                 null,
                 new Message(
                         57L,
-                        new TelegramUser(userId, username, firstName, lastName),
+                        new TelegramUser(userId, username, firstName, lastName, "ru"),
                         new Chat(userId, "private"),
                         null,
                         null,

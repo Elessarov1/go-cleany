@@ -10,4 +10,9 @@ public interface CustomerExternalIdentityRepository extends JpaRepository<Custom
             ExternalIdentityProvider provider,
             String externalSubject
     );
+
+    Optional<CustomerExternalIdentity> findByCustomerIdAndProvider(
+            long customerId,
+            ExternalIdentityProvider provider
+    );
 }

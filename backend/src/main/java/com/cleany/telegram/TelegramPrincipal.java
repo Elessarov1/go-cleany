@@ -7,7 +7,8 @@ public record TelegramPrincipal(
         long id,
         String username,
         String firstName,
-        String lastName
+        String lastName,
+        String languageCode
 ) {
 
     public String displayName() {
@@ -17,4 +18,3 @@ public record TelegramPrincipal(
         return name.isBlank() ? "Telegram user " + id : name;
     }
 }
-

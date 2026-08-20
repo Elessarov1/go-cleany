@@ -7,7 +7,7 @@ public record LocalAuthProperties(
         long telegramUserId,
         String username,
         String firstName,
-        String lastName
+        String lastName,
+        String languageCode
 ) {
 }
-

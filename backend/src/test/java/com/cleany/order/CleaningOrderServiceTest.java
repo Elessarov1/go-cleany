@@ -29,6 +29,7 @@ import com.cleany.finance.CustomerDiscountType;
 import com.cleany.finance.OrderFinancialSnapshot;
 import com.cleany.pricing.CleaningPriceService;
 import com.cleany.referral.OrderReferralPlan;
+import com.cleany.referral.ReferralUnlockedEvent;
 import com.cleany.referral.ReferralService;
 
 class CleaningOrderServiceTest {
@@ -230,6 +231,8 @@ class CleaningOrderServiceTest {
 
         Assertions.assertSame(order, result);
         Mockito.verify(order).cancelByCleaner(CLEANER_ID);
+        Mockito.verify(eventPublisher, Mockito.never())
+                .publishEvent(Mockito.isA(ReferralUnlockedEvent.class));
     }
 
     @Test
@@ -296,6 +299,43 @@ class CleaningOrderServiceTest {
                 () -> service.getReportForDelivery(43L, CLEANER_ID)
         );
         Mockito.verify(order).requireReportAccess(CLEANER_ID);
+    }
+
+    @Test
+    void firstCompletedOrder_referralUnlockEventPublished() {
+        CleaningOrder order = Mockito.mock(CleaningOrder.class);
+        Mockito.when(order.getId()).thenReturn(43L);
+        Mockito.when(order.getCustomerId()).thenReturn(77L);
+        Mockito.when(order.getStatus()).thenReturn(CleaningOrderStatus.AWAITING_REPORT);
+        Mockito.when(repository.findById(43L)).thenReturn(Optional.of(order));
+        Mockito.when(repository.existsByCustomerIdAndStatus(77L, CleaningOrderStatus.COMPLETED))
+                .thenReturn(false);
+        Mockito.when(referralService.completeOrder(order)).thenReturn("ALEX7K2");
+
+        service.completeOrder(43L, CLEANER_ID, "Done");
+
+        var eventCaptor = ArgumentCaptor.forClass(ReferralUnlockedEvent.class);
+        Mockito.verify(eventPublisher).publishEvent(eventCaptor.capture());
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(77L, eventCaptor.getValue().customerId()),
+                () -> Assertions.assertEquals("ALEX7K2", eventCaptor.getValue().referralCode())
+        );
+    }
+
+    @Test
+    void laterCompletedOrder_referralUnlockEventNotPublishedAgain() {
+        CleaningOrder order = Mockito.mock(CleaningOrder.class);
+        Mockito.when(order.getCustomerId()).thenReturn(77L);
+        Mockito.when(order.getStatus()).thenReturn(CleaningOrderStatus.AWAITING_REPORT);
+        Mockito.when(repository.findById(43L)).thenReturn(Optional.of(order));
+        Mockito.when(repository.existsByCustomerIdAndStatus(77L, CleaningOrderStatus.COMPLETED))
+                .thenReturn(true);
+        Mockito.when(referralService.completeOrder(order)).thenReturn("ALEX7K2");
+
+        service.completeOrder(43L, CLEANER_ID, null);
+
+        Mockito.verify(eventPublisher, Mockito.never())
+                .publishEvent(Mockito.isA(ReferralUnlockedEvent.class));
     }
 
     private static CleaningOrder sampleOrder() {

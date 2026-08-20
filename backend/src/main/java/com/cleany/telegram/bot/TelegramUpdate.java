@@ -25,7 +25,8 @@ public record TelegramUpdate(
             long id,
             String username,
             @JsonProperty("first_name") String firstName,
-            @JsonProperty("last_name") String lastName
+            @JsonProperty("last_name") String lastName,
+            @JsonProperty("language_code") String languageCode
     ) {
     }
 

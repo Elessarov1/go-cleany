@@ -23,6 +23,7 @@ cleany:
     username: ${LOCAL_TELEGRAM_USERNAME:browser_preview}
     first-name: ${LOCAL_TELEGRAM_FIRST_NAME:Alex}
     last-name: ${LOCAL_TELEGRAM_LAST_NAME:}
+    language-code: ${LOCAL_TELEGRAM_LANGUAGE_CODE:ru}
 
 cleaning:
   # Local visual placeholders only. They are not approved production prices.

@@ -258,6 +258,7 @@ public class TelegramCleanerBotService {
                     Long.toString(message.from().id()),
                     message.from().username(),
                     displayName(message.from()),
+                    message.from().languageCode(),
                     asInternationalPhone(contact.phoneNumber())
             );
             safeSend(message.from().id(), "Номер телефона сохранён и будет подставлен в форму заказа.");

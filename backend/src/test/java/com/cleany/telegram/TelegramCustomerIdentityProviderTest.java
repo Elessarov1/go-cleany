@@ -12,7 +12,7 @@ class TelegramCustomerIdentityProviderTest {
         var request = new MockHttpServletRequest();
         request.addHeader("Authorization", "tma signed-init-data");
         var validator = Mockito.mock(TelegramInitDataValidator.class);
-        var expected = new TelegramPrincipal(900001L, "alex", "Alex", null);
+        var expected = new TelegramPrincipal(900001L, "alex", "Alex", null, "ru");
         Mockito.when(validator.validate("signed-init-data")).thenReturn(expected);
 
         var provider = new TelegramCustomerIdentityProvider(request, validator);

@@ -88,7 +88,11 @@ class TelegramUpdateTest {
                   "update_id": 10003,
                   "message": {
                     "message_id": 57,
-                    "from": {"id": 777, "first_name": "Alex"},
+                    "from": {
+                      "id": 777,
+                      "first_name": "Alex",
+                      "language_code": "en"
+                    },
                     "chat": {"id": 777, "type": "private"},
                     "contact": {
                       "phone_number": "+905551234567",
@@ -102,6 +106,7 @@ class TelegramUpdateTest {
         TelegramUpdate update = new ObjectMapper().readValue(json, TelegramUpdate.class);
 
         Assertions.assertAll(
+                () -> Assertions.assertEquals("en", update.message().from().languageCode()),
                 () -> Assertions.assertEquals("+905551234567", update.message().contact().phoneNumber()),
                 () -> Assertions.assertEquals(Long.valueOf(777L), update.message().contact().userId())
         );

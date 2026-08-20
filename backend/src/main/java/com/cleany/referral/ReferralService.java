@@ -84,7 +84,7 @@ public class ReferralService {
     }
 
     @Transactional
-    public void completeOrder(CleaningOrder order) {
+    public String completeOrder(CleaningOrder order) {
         if (order.getAppliedRewardId() != null) {
             ReferralReward reward = rewardRepository.findById(order.getAppliedRewardId())
                     .orElseThrow(() -> new ReferralNotApplicableException("Referral reward not found"));
@@ -98,7 +98,7 @@ public class ReferralService {
                 // No acquisition-side reward.
             }
         }
-        ensureCustomerReferralCode(order.getCustomerId());
+        return ensureCustomerReferralCode(order.getCustomerId()).getCode();
     }
 
     @Transactional
