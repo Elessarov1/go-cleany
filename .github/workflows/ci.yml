@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -49,7 +50,7 @@ jobs:
   deploy_staging:
     name: Deploy staging
     if: >-
-      github.event_name == 'push' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       github.ref == 'refs/heads/main' &&
       vars.STAGING_DEPLOY_ENABLED == 'true'
     needs:
@@ -79,11 +80,29 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
           ssh-keygen -y -f ~/.ssh/id_ed25519 </dev/null >/dev/null
 
+      - name: Validate staging access lists
+        env:
+          CLEANER_TELEGRAM_IDS: ${{ vars.CLEANER_TELEGRAM_IDS }}
+          ADMIN_TELEGRAM_IDS: ${{ vars.ADMIN_TELEGRAM_IDS }}
+        run: |
+          : "${CLEANER_TELEGRAM_IDS:?Missing CLEANER_TELEGRAM_IDS staging variable}"
+          : "${ADMIN_TELEGRAM_IDS:?Missing ADMIN_TELEGRAM_IDS staging variable}"
+          [[ "$CLEANER_TELEGRAM_IDS" =~ ^[0-9]+(,[0-9]+)*$ ]] || {
+            echo "CLEANER_TELEGRAM_IDS must be comma-separated numeric Telegram IDs without spaces." >&2
+            exit 1
+          }
+          [[ "$ADMIN_TELEGRAM_IDS" =~ ^[0-9]+(,[0-9]+)*$ ]] || {
+            echo "ADMIN_TELEGRAM_IDS must be comma-separated numeric Telegram IDs without spaces." >&2
+            exit 1
+          }
+
       - name: Deploy exact revision
         env:
           SSH_HOST: ${{ vars.STAGING_SSH_HOST }}
           SSH_PORT: ${{ vars.STAGING_SSH_PORT }}
           SSH_USER: ${{ vars.STAGING_SSH_USER }}
+          CLEANER_TELEGRAM_IDS: ${{ vars.CLEANER_TELEGRAM_IDS }}
+          ADMIN_TELEGRAM_IDS: ${{ vars.ADMIN_TELEGRAM_IDS }}
         run: |
           : "${SSH_HOST:?Missing STAGING_SSH_HOST}"
           : "${SSH_PORT:?Missing STAGING_SSH_PORT}"
@@ -97,4 +116,4 @@ jobs:
             -i ~/.ssh/id_ed25519 \
             -p "$SSH_PORT" \
             "$SSH_USER@$SSH_HOST" \
-            "cd /opt/go-cleany && ./deploy/scripts/release.sh '$GITHUB_SHA'"
+            "cd /opt/go-cleany && CLEANER_TELEGRAM_IDS='$CLEANER_TELEGRAM_IDS' ADMIN_TELEGRAM_IDS='$ADMIN_TELEGRAM_IDS' ./deploy/scripts/release.sh '$GITHUB_SHA'"
