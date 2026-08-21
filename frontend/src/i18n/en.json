@@ -244,6 +244,7 @@
     "orderEyebrow": "Order #{{id}}",
     "orderTitle": "Order record",
     "customer": "Customer",
+    "communicationIdentity": "Communication identity ID",
     "cleaner": "Cleaner Telegram ID",
     "notAssigned": "Not assigned",
     "financial": {

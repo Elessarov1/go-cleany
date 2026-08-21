@@ -6,8 +6,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.order.PhoneNumberNormalizer;
-import com.cleany.telegram.CustomerIdentityProvider;
-import com.cleany.telegram.TelegramPrincipal;
 
 @Service
 public class CustomerAccountService {
@@ -34,29 +32,34 @@ public class CustomerAccountService {
 
     @Transactional
     public CurrentCustomer currentCustomer() {
-        TelegramPrincipal principal = identityProvider.currentCustomer();
-        String externalSubject = Long.toString(principal.id());
-        CustomerAccount account = resolveAccount(
-                ExternalIdentityProvider.TELEGRAM,
-                externalSubject,
-                principal.username(),
-                principal.displayName(),
-                principal.languageCode()
+        AuthenticatedCustomerIdentity authenticatedIdentity = identityProvider.currentIdentity();
+        ResolvedCustomer resolved = resolveAccount(
+                authenticatedIdentity.provider(),
+                authenticatedIdentity.externalSubject(),
+                authenticatedIdentity.username(),
+                authenticatedIdentity.displayName(),
+                authenticatedIdentity.languageCode()
         );
+        CustomerExternalIdentity externalIdentity = resolved.externalIdentity();
 
         return new CurrentCustomer(
-                account.getId(),
-                principal.id(),
-                normalizeOptional(principal.username()),
-                principal.displayName()
+                resolved.account().getId(),
+                requireIdentityId(externalIdentity),
+                externalIdentity.getProvider(),
+                externalIdentity.getExternalSubject(),
+                externalIdentity.getUsername(),
+                externalIdentity.getDisplayName(),
+                externalIdentity.getLanguageCode()
         );
     }
 
     @Transactional
     public CustomerProfileResponse currentProfile() {
         CurrentCustomer customer = currentCustomer();
-        CustomerAccount account = accountRepository.findById(customer.id())
-                .orElseThrow(() -> new IllegalStateException("Customer account not found: " + customer.id()));
+        CustomerAccount account = accountRepository.findById(customer.customerId())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Customer account not found: " + customer.customerId()
+                ));
         return new CustomerProfileResponse(account.getPhone());
     }
 
@@ -82,7 +85,7 @@ public class CustomerAccountService {
                 username,
                 displayName,
                 languageCode
-        );
+        ).account();
         account.updatePhone(phoneNumberNormalizer.normalize(rawPhone));
     }
 
@@ -92,7 +95,7 @@ public class CustomerAccountService {
                 .orElseThrow(() -> new IllegalStateException("Customer account not found: " + customerId));
     }
 
-    private CustomerAccount resolveAccount(
+    private ResolvedCustomer resolveAccount(
             ExternalIdentityProvider provider,
             String externalSubject,
             String username,
@@ -112,14 +115,15 @@ public class CustomerAccountService {
                     normalizeLanguageCode(languageCode),
                     now
             );
-            return accountRepository.findById(identity.getCustomerId())
+            CustomerAccount account = accountRepository.findById(identity.getCustomerId())
                     .orElseThrow(() -> new IllegalStateException(
                             "Customer account not found: " + identity.getCustomerId()
                     ));
+            return new ResolvedCustomer(account, identity);
         }
 
         CustomerAccount account = accountRepository.save(new CustomerAccount(now));
-        externalIdentityRepository.save(new CustomerExternalIdentity(
+        CustomerExternalIdentity identity = externalIdentityRepository.save(new CustomerExternalIdentity(
                 account.getId(),
                 provider,
                 externalSubject,
@@ -128,7 +132,14 @@ public class CustomerAccountService {
                 normalizeLanguageCode(languageCode),
                 now
         ));
-        return account;
+        return new ResolvedCustomer(account, identity);
+    }
+
+    private static long requireIdentityId(CustomerExternalIdentity identity) {
+        if (identity.getId() == null) {
+            throw new IllegalStateException("Persisted external identity has no id");
+        }
+        return identity.getId();
     }
 
     private static String requireExternalSubject(String value) {
@@ -154,5 +165,11 @@ public class CustomerAccountService {
         }
         normalized = normalized.toLowerCase(java.util.Locale.ROOT).replace('_', '-');
         return normalized.length() <= 16 ? normalized : normalized.substring(0, 16);
+    }
+
+    private record ResolvedCustomer(
+            CustomerAccount account,
+            CustomerExternalIdentity externalIdentity
+    ) {
     }
 }

@@ -10,6 +10,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import lombok.RequiredArgsConstructor;
+
 @Component
 @ConditionalOnProperty(
         prefix = "data-retention",
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Component;
         havingValue = "true",
         matchIfMissing = true
 )
+@RequiredArgsConstructor
 public class DataRetentionCleanupJob {
 
     private static final Logger log = LoggerFactory.getLogger(DataRetentionCleanupJob.class);
@@ -24,16 +27,6 @@ public class DataRetentionCleanupJob {
     private final DataRetentionProperties properties;
     private final DataRetentionCleanupService cleanupService;
     private final Clock clock;
-
-    public DataRetentionCleanupJob(
-            DataRetentionProperties properties,
-            DataRetentionCleanupService cleanupService,
-            Clock clock
-    ) {
-        this.properties = properties;
-        this.cleanupService = cleanupService;
-        this.clock = clock;
-    }
 
     @Scheduled(cron = "${data-retention.cron}", zone = "${cleaning.zone-id}")
     public void run() {
@@ -44,12 +37,13 @@ public class DataRetentionCleanupJob {
             log.info(
                     "Data retention cleanup completed: cutoff={}, eligibleOrders={}, "
                             + "deletedIssuePhotos={}, deletedCompletionPhotos={}, "
-                            + "deletedAuditEvents={}, durationMs={}",
+                            + "deletedAuditEvents={}, deletedMediaAssets={}, durationMs={}",
                     result.cutoff(),
                     result.eligibleOrderCount(),
                     result.deletedIssuePhotoCount(),
                     result.deletedCompletionPhotoCount(),
                     result.deletedAuditEventCount(),
+                    result.deletedMediaAssetCount(),
                     elapsedMillis(startedAt)
             );
         } catch (RuntimeException exception) {

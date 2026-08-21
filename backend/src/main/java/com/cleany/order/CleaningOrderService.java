@@ -12,6 +12,10 @@ import com.cleany.configuration.CleanerProperties;
 import com.cleany.configuration.CleaningProperties;
 import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountService;
+import com.cleany.media.ImageMediaTypeDetector;
+import com.cleany.media.MediaProvider;
+import com.cleany.media.MediaProviderReferenceService;
+import com.cleany.media.MediaUpload;
 import com.cleany.pricing.CleaningPriceService;
 import com.cleany.referral.OrderReferralPlan;
 import com.cleany.referral.ReferralUnlockedEvent;
@@ -36,6 +40,7 @@ public class CleaningOrderService {
     private final CleanerProperties cleanerProperties;
     private final CustomerAccountService customerAccountService;
     private final ReferralService referralService;
+    private final MediaProviderReferenceService mediaProviderReferenceService;
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -49,6 +54,7 @@ public class CleaningOrderService {
             CleanerProperties cleanerProperties,
             CustomerAccountService customerAccountService,
             ReferralService referralService,
+            MediaProviderReferenceService mediaProviderReferenceService,
             Clock clock,
             ApplicationEventPublisher eventPublisher
     ) {
@@ -61,6 +67,7 @@ public class CleaningOrderService {
         this.cleanerProperties = cleanerProperties;
         this.customerAccountService = customerAccountService;
         this.referralService = referralService;
+        this.mediaProviderReferenceService = mediaProviderReferenceService;
         this.clock = clock;
         this.eventPublisher = eventPublisher;
     }
@@ -68,28 +75,27 @@ public class CleaningOrderService {
     @Transactional
     public CleaningOrder createOrder(CreateCleaningOrderCommand command) {
         CurrentCustomer customer = customerAccountService.currentCustomer();
-        customerAccountService.lock(customer.id());
+        customerAccountService.lock(customer.customerId());
         validateRequestedDate(command.requestedDate());
         String normalizedPhone = phoneNumberNormalizer.normalize(command.phone());
-        customerAccountService.updatePhone(customer.id(), normalizedPhone);
+        customerAccountService.updatePhone(customer.customerId(), normalizedPhone);
 
         var basePrice = priceService.calculate(
                 command.apartmentType(),
                 command.cleaningType(),
                 command.duplex()
         );
-        boolean firstOrder = isAcquisitionEligible(customer.id());
+        boolean firstOrder = isAcquisitionEligible(customer.customerId());
         OrderReferralPlan referralPlan = referralService.planForCreation(
-                customer.id(),
+                customer.customerId(),
                 command.referralCode(),
                 basePrice,
                 firstOrder
         );
 
         var order = new CleaningOrder(
-                customer.id(),
-                customer.telegramUserId(),
-                customer.telegramUsername(),
+                customer.customerId(),
+                customer.externalIdentityId(),
                 customer.displayName(),
                 normalizedPhone,
                 command.area(),
@@ -117,7 +123,7 @@ public class CleaningOrderService {
                 null,
                 CleaningOrderStatus.NEW,
                 OrderActorType.CUSTOMER,
-                customer.telegramUserId(),
+                null,
                 null
         );
         eventPublisher.publishEvent(new CleaningOrderCreatedEvent(savedOrder));
@@ -132,9 +138,9 @@ public class CleaningOrderService {
                 request.cleaningType(),
                 request.duplex()
         );
-        boolean firstOrder = isAcquisitionEligible(customer.id());
+        boolean firstOrder = isAcquisitionEligible(customer.customerId());
         var plan = referralService.quote(
-                customer.id(),
+                customer.customerId(),
                 request.referralCode(),
                 basePrice,
                 firstOrder
@@ -147,20 +153,20 @@ public class CleaningOrderService {
 
     @Transactional
     public List<CleaningOrder> getCurrentCustomerOrders() {
-        long customerId = customerAccountService.currentCustomer().id();
+        long customerId = customerAccountService.currentCustomer().customerId();
         return orderRepository.findAllByCustomerIdOrderByCreatedAtDesc(customerId);
     }
 
     @Transactional
     public CleaningOrder getCurrentCustomerOrder(long orderId) {
-        long customerId = customerAccountService.currentCustomer().id();
+        long customerId = customerAccountService.currentCustomer().customerId();
         return findCustomerOrder(orderId, customerId);
     }
 
     @Transactional
     public CleaningOrder cancelCurrentCustomerOrder(long orderId) {
         CurrentCustomer customer = customerAccountService.currentCustomer();
-        long customerId = customer.id();
+        long customerId = customer.customerId();
         var order = findCustomerOrder(orderId, customerId);
         CleaningOrderStatus previousStatus = order.getStatus();
         order.cancelByCustomer();
@@ -171,7 +177,7 @@ public class CleaningOrderService {
                 previousStatus,
                 CleaningOrderStatus.CANCELLED,
                 OrderActorType.CUSTOMER,
-                customer.telegramUserId(),
+                null,
                 null
         );
         return order;
@@ -203,6 +209,11 @@ public class CleaningOrderService {
                 null,
                 acceptedAt
         ));
+        eventPublisher.publishEvent(new CleaningOrderCustomerEvent.Accepted(
+                order.getId(),
+                order.getCustomerId(),
+                order.getCommunicationIdentityId()
+        ));
         return order;
     }
 
@@ -232,14 +243,32 @@ public class CleaningOrderService {
             long cleanerTelegramUserId,
             String telegramFileId,
             String telegramFileUniqueId,
+            byte[] content,
             String caption
     ) {
         CleaningOrder order = findActiveReport(cleanerTelegramUserId);
         String fileId = requireValue(telegramFileId, 512, "Telegram photo file_id");
         String uniqueId = requireValue(telegramFileUniqueId, 255, "Telegram photo file_unique_id");
+        String contentType = ImageMediaTypeDetector.detect(content)
+                .orElseThrow(() -> new InvalidCompletionPhotoException(
+                        "Completion report photo must be JPEG or PNG"
+                ));
+        var providerMedia = mediaProviderReferenceService.resolveOrStore(
+                new MediaUpload(content, contentType),
+                MediaProvider.TELEGRAM,
+                fileId,
+                uniqueId
+        );
 
-        if (!photoRepository.existsByOrderIdAndTelegramFileUniqueId(order.getId(), uniqueId)) {
-            photoRepository.save(new CleaningOrderPhoto(order, fileId, uniqueId, clock.instant()));
+        if (!photoRepository.existsByOrderIdAndMediaAssetId(
+                order.getId(),
+                providerMedia.media().mediaId()
+        )) {
+            photoRepository.save(new CleaningOrderPhoto(
+                    order,
+                    providerMedia.media().mediaId(),
+                    clock.instant()
+            ));
             recordEvent(
                     order,
                     OrderEventType.PHOTO_ADDED,
@@ -295,13 +324,13 @@ public class CleaningOrderService {
         CleaningOrder order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
         order.requireReportAccess(cleanerTelegramUserId);
-        List<String> fileIds = photoRepository.findAllByOrderIdOrderByCreatedAt(orderId).stream()
-                .map(CleaningOrderPhoto::getTelegramFileId)
+        List<Long> mediaIds = photoRepository.findAllByOrderIdOrderByCreatedAt(orderId).stream()
+                .map(CleaningOrderPhoto::getMediaAssetId)
                 .toList();
-        if (fileIds.isEmpty()) {
+        if (mediaIds.isEmpty()) {
             throw new PhotoReportEmptyException(orderId);
         }
-        return new CleaningOrderReport(order, fileIds);
+        return new CleaningOrderReport(order, mediaIds);
     }
 
     @Transactional
@@ -321,6 +350,11 @@ public class CleaningOrderService {
                 cleanerTelegramUserId,
                 null
         );
+        eventPublisher.publishEvent(new CleaningOrderCustomerEvent.Cancelled(
+                order.getId(),
+                order.getCustomerId(),
+                order.getCommunicationIdentityId()
+        ));
         return order;
     }
 
@@ -359,8 +393,17 @@ public class CleaningOrderService {
                 completedAt
         ));
         String referralCode = referralService.completeOrder(order);
+        eventPublisher.publishEvent(new CleaningOrderCustomerEvent.Completed(
+                order.getId(),
+                order.getCustomerId(),
+                order.getCommunicationIdentityId()
+        ));
         if (firstCompletedOrder) {
-            eventPublisher.publishEvent(new ReferralUnlockedEvent(order.getCustomerId(), referralCode));
+            eventPublisher.publishEvent(new ReferralUnlockedEvent(
+                    order.getCustomerId(),
+                    order.getCommunicationIdentityId(),
+                    referralCode
+            ));
         }
         return order;
     }

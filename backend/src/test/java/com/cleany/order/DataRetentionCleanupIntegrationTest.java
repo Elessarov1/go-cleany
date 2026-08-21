@@ -13,11 +13,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.cleany.base.BaseIntegrationTest;
-import com.cleany.customer.CustomerAccount;
 import com.cleany.customer.CustomerAccountRepository;
+import com.cleany.customer.CustomerExternalIdentityRepository;
+import com.cleany.customer.CustomerIdentityTestFixture;
 import com.cleany.finance.AcquisitionSource;
 import com.cleany.finance.CustomerDiscountType;
 import com.cleany.finance.OrderFinancialSnapshot;
+import com.cleany.media.MediaAssetRepository;
+import com.cleany.media.MediaProvider;
+import com.cleany.media.MediaProviderReferenceRepository;
+import com.cleany.media.MediaProviderReferenceService;
+import com.cleany.media.MediaUpload;
 import com.cleany.retention.DataRetentionCleanupResult;
 import com.cleany.retention.DataRetentionCleanupService;
 
@@ -46,6 +52,18 @@ class DataRetentionCleanupIntegrationTest extends BaseIntegrationTest {
     private CustomerAccountRepository customerAccountRepository;
 
     @Autowired
+    private CustomerExternalIdentityRepository customerIdentityRepository;
+
+    @Autowired
+    private MediaAssetRepository mediaAssetRepository;
+
+    @Autowired
+    private MediaProviderReferenceRepository mediaProviderReferenceRepository;
+
+    @Autowired
+    private MediaProviderReferenceService mediaProviderReferenceService;
+
+    @Autowired
     private DataRetentionCleanupService cleanupService;
 
     @Autowired
@@ -60,6 +78,8 @@ class DataRetentionCleanupIntegrationTest extends BaseIntegrationTest {
         eventRepository.deleteAll();
         orderRepository.deleteAll();
         customerAccountRepository.deleteAll();
+        mediaProviderReferenceRepository.deleteAll();
+        mediaAssetRepository.deleteAll();
     }
 
     @Test
@@ -82,6 +102,9 @@ class DataRetentionCleanupIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertEquals(1, firstRun.deletedIssuePhotoCount()),
                 () -> Assertions.assertEquals(2, firstRun.deletedCompletionPhotoCount()),
                 () -> Assertions.assertEquals(3, firstRun.deletedAuditEventCount()),
+                () -> Assertions.assertEquals(3, firstRun.deletedMediaAssetCount()),
+                () -> Assertions.assertEquals(3L, mediaAssetRepository.count()),
+                () -> Assertions.assertEquals(3L, mediaProviderReferenceRepository.count()),
                 () -> Assertions.assertEquals(1L,
                         issuePhotoRepository.countByIssueReport_Id(activeIssue.reportId())),
                 () -> Assertions.assertEquals(1,
@@ -122,7 +145,8 @@ class DataRetentionCleanupIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertEquals(0, secondRun.eligibleOrderCount()),
                 () -> Assertions.assertEquals(0, secondRun.deletedIssuePhotoCount()),
                 () -> Assertions.assertEquals(0, secondRun.deletedCompletionPhotoCount()),
-                () -> Assertions.assertEquals(0, secondRun.deletedAuditEventCount())
+                () -> Assertions.assertEquals(0, secondRun.deletedAuditEventCount()),
+                () -> Assertions.assertEquals(0, secondRun.deletedMediaAssetCount())
         );
     }
 
@@ -141,13 +165,10 @@ class DataRetentionCleanupIntegrationTest extends BaseIntegrationTest {
             report.updateComment("Access is unavailable");
             report.submit(createdAt);
             report = issueReportRepository.save(report);
-            issuePhotoRepository.save(new CleaningOrderIssuePhoto(
+            issuePhotoRepository.save(issuePhoto(
                     report,
                     "active-issue-file",
                     "active-issue-unique",
-                    JPEG,
-                    "image/jpeg",
-                    "1".repeat(64),
                     createdAt
             ));
             eventRepository.save(new CleaningOrderEvent(
@@ -222,13 +243,10 @@ class DataRetentionCleanupIntegrationTest extends BaseIntegrationTest {
             report.submit(resolvedAt.minus(Duration.ofHours(1)));
             report.resolve(ADMIN_ID, "Resolved incident", resolvedAt);
             report = issueReportRepository.save(report);
-            issuePhotoRepository.save(new CleaningOrderIssuePhoto(
+            issuePhotoRepository.save(issuePhoto(
                     report,
                     "issue-file",
                     "issue-unique",
-                    JPEG,
-                    "image/jpeg",
-                    "0".repeat(64),
                     resolvedAt.minus(Duration.ofHours(1))
             ));
 
@@ -264,23 +282,50 @@ class DataRetentionCleanupIntegrationTest extends BaseIntegrationTest {
     }
 
     private CleaningOrderPhoto completionPhoto(CleaningOrder order, Instant createdAt) {
+        var providerMedia = mediaProviderReferenceService.resolveOrStore(
+                new MediaUpload(JPEG, "image/jpeg"),
+                MediaProvider.TELEGRAM,
+                "completion-file-" + order.getId(),
+                "completion-unique-" + order.getId()
+        );
         return new CleaningOrderPhoto(
                 order,
-                "completion-file-" + order.getId(),
-                "completion-unique-" + order.getId(),
+                providerMedia.media().mediaId(),
+                createdAt
+        );
+    }
+
+    private CleaningOrderIssuePhoto issuePhoto(
+            CleaningOrderIssueReport report,
+            String telegramFileId,
+            String telegramFileUniqueId,
+            Instant createdAt
+    ) {
+        var providerMedia = mediaProviderReferenceService.resolveOrStore(
+                new MediaUpload(JPEG, "image/jpeg"),
+                MediaProvider.TELEGRAM,
+                telegramFileId,
+                telegramFileUniqueId
+        );
+        return new CleaningOrderIssuePhoto(
+                report,
+                providerMedia.media().mediaId(),
                 createdAt
         );
     }
 
     private CleaningOrder newOrder(Instant createdAt) {
-        long customerId = customerAccountRepository.save(new CustomerAccount(createdAt)).getId();
+        var customer = CustomerIdentityTestFixture.telegramIdentity(
+                customerAccountRepository,
+                customerIdentityRepository,
+                createdAt
+        );
         BigDecimal basePrice = BigDecimal.valueOf(1100);
         BigDecimal commission = basePrice.multiply(new BigDecimal("0.15")).setScale(2);
         return new CleaningOrder(
-                customerId,
-                700000L + customerId,
-                "customer" + customerId,
-                "Customer " + customerId,
+                customer.customerId(),
+                customer.externalIdentityId(),
+                "Customer " + customer.customerId(),
                 "+90 555 123 45 67",
                 ServiceArea.MAHMUTLAR,
                 "Barbaros Cd. 24",

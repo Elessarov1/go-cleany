@@ -10,12 +10,14 @@ import org.springframework.stereotype.Service;
 
 import com.cleany.configuration.CleanerProperties;
 import com.cleany.customer.CustomerAccountService;
+import com.cleany.customer.CustomerExternalIdentityRepository;
 import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.order.CleanerNotAuthorizedException;
 import com.cleany.order.CleaningOrder;
 import com.cleany.order.CleaningOrderReport;
 import com.cleany.order.CleaningOrderReportProgress;
 import com.cleany.order.CleaningOrderService;
+import com.cleany.order.InvalidCompletionPhotoException;
 import com.cleany.order.InvalidPhotoReportInputException;
 import com.cleany.order.InvalidOrderStateException;
 import com.cleany.order.InvalidOnsiteIssueException;
@@ -51,6 +53,7 @@ public class TelegramCleanerBotService {
     private final TelegramBotClient botClient;
     private final TelegramAdminBotService adminBotService;
     private final CustomerAccountService customerAccountService;
+    private final CustomerExternalIdentityRepository customerIdentityRepository;
     private final OnsiteIssueService onsiteIssueService;
 
     public TelegramCleanerBotService(
@@ -60,6 +63,7 @@ public class TelegramCleanerBotService {
             TelegramBotClient botClient,
             TelegramAdminBotService adminBotService,
             CustomerAccountService customerAccountService,
+            CustomerExternalIdentityRepository customerIdentityRepository,
             OnsiteIssueService onsiteIssueService
     ) {
         if (cleanerProperties.telegramIds().isEmpty()) {
@@ -73,6 +77,7 @@ public class TelegramCleanerBotService {
         this.botClient = botClient;
         this.adminBotService = adminBotService;
         this.customerAccountService = customerAccountService;
+        this.customerIdentityRepository = customerIdentityRepository;
         this.onsiteIssueService = onsiteIssueService;
     }
 
@@ -169,10 +174,22 @@ public class TelegramCleanerBotService {
             }
             PhotoSize photo = largestPhoto(message);
             if (photo != null) {
+                byte[] content;
+                try {
+                    content = botClient.downloadFile(photo.fileId());
+                } catch (TelegramBotApiException exception) {
+                    log.error("Telegram completion photo download failed for cleaner {}", cleanerId, exception);
+                    safeSend(
+                            cleanerId,
+                            "Не удалось загрузить фотографию из Telegram. Попробуйте отправить её ещё раз."
+                    );
+                    return;
+                }
                 CleaningOrderReportProgress progress = orderService.addPhotoToActiveReport(
                         cleanerId,
                         photo.fileId(),
                         photo.fileUniqueId(),
+                        content,
                         message.caption()
                 );
                 safeSend(
@@ -202,6 +219,8 @@ public class TelegramCleanerBotService {
             }
         } catch (ReportCollectionNotActiveException exception) {
             safeSend(cleanerId, "Нет активного фотоотчёта. Сначала нажмите «Завершить уборку» в принятом заказе.");
+        } catch (InvalidCompletionPhotoException exception) {
+            safeSend(cleanerId, "Фотография для отчёта должна быть в формате JPEG или PNG.");
         } catch (InvalidPhotoReportInputException exception) {
             safeSend(cleanerId, "Комментарий клинера должен содержать от 1 до 1000 символов.");
         } catch (CleanerNotAuthorizedException | InvalidOrderStateException exception) {
@@ -286,14 +305,14 @@ public class TelegramCleanerBotService {
     private void accept(String callbackId, long orderId, long cleanerId) {
         try {
             CleaningOrder order = orderService.acceptOrder(orderId, cleanerId);
+            long customerChatId = requireTelegramCustomerChatId(order);
             safeAnswer(callbackId, "Заказ №" + orderId + " принят вами.", false);
             safeSend(
                     cleanerId,
                     messageFactory.acceptedOrder(order),
-                    messageFactory.acceptedOrderKeyboard(order),
+                    messageFactory.acceptedOrderKeyboard(order, customerChatId),
                     orderId
             );
-            safeSend(order.getTelegramUserId(), "Ваш заказ на уборку подтверждён ✅", orderId);
         } catch (OrderClaimConflictException exception) {
             CleaningOrder order = orderService.getOrderForConfiguredCleaner(orderId, cleanerId);
             String message;
@@ -316,31 +335,15 @@ public class TelegramCleanerBotService {
     }
 
     private void cancel(String callbackId, long orderId, long cleanerId) {
-        CleaningOrder order = orderService.cancelOrderByCleaner(orderId, cleanerId);
+        orderService.cancelOrderByCleaner(orderId, cleanerId);
         safeAnswer(callbackId, "Заказ №" + orderId + " отменён.", false);
         safeSend(cleanerId, "❌ Заказ №" + orderId + " отменён.", orderId);
-        safeSend(order.getTelegramUserId(), "Заказ отменён.", orderId);
     }
 
     private void deliverReport(String callbackId, long orderId, long cleanerId) {
         CleaningOrderReport report = orderService.getReportForDelivery(orderId, cleanerId);
         CleaningOrder order = report.order();
         safeAnswer(callbackId, "Отправляем отчёт клиенту.", false);
-
-        botClient.sendMessage(
-                order.getTelegramUserId(),
-                messageFactory.customerReportHeader(order),
-                TelegramBotClient.InlineKeyboard.empty()
-        );
-        for (String telegramFileId : report.telegramFileIds()) {
-            botClient.sendPhoto(order.getTelegramUserId(), telegramFileId);
-        }
-        botClient.sendMessage(
-                order.getTelegramUserId(),
-                messageFactory.customerReportComment(order),
-                TelegramBotClient.InlineKeyboard.empty()
-        );
-
         orderService.completeOrder(orderId, cleanerId, order.getCleanerComment());
         safeSend(cleanerId, "✅ Отчёт по заказу №" + orderId + " отправлен клиенту.", orderId);
     }
@@ -374,25 +377,35 @@ public class TelegramCleanerBotService {
 
     private void submitOnsiteIssue(String callbackId, long orderId, long cleanerId) {
         OnsiteIssueDelivery delivery = onsiteIssueService.submit(orderId, cleanerId);
-        CleaningOrder order = delivery.order();
         safeAnswer(callbackId, "Отчёт сохранён. Уведомляем клиента.", false);
         adminBotService.notifyOnsiteIssue(orderId, delivery.reason());
-
-        botClient.sendMessage(
-                order.getTelegramUserId(),
-                messageFactory.customerOnsiteIssueReport(delivery.reason(), delivery.comment()),
-                TelegramBotClient.InlineKeyboard.empty()
-        );
-        for (String telegramFileId : delivery.telegramFileIds()) {
-            botClient.sendPhoto(order.getTelegramUserId(), telegramFileId);
-        }
-        botClient.sendMessage(
-                order.getTelegramUserId(),
-                messageFactory.customerOnsiteIssuePaused(),
-                TelegramBotClient.InlineKeyboard.empty()
-        );
-        onsiteIssueService.recordCustomerNotified(orderId, cleanerId);
         safeSend(cleanerId, "⚠️ Отчёт по заказу №" + orderId + " сохранён и отправлен клиенту.", orderId);
+    }
+
+    private long requireTelegramCustomerChatId(CleaningOrder order) {
+        var identity = customerIdentityRepository.findByIdAndCustomerId(
+                order.getCommunicationIdentityId(),
+                order.getCustomerId()
+        ).orElseThrow(() -> new IllegalStateException(
+                "Communication identity is unavailable for order " + order.getId()
+        ));
+        if (identity.getProvider() != ExternalIdentityProvider.TELEGRAM) {
+            throw new IllegalStateException(
+                    "Telegram delivery is unavailable for order " + order.getId()
+            );
+        }
+        try {
+            long telegramUserId = Long.parseLong(identity.getExternalSubject());
+            if (telegramUserId <= 0) {
+                throw new NumberFormatException("Telegram user id must be positive");
+            }
+            return telegramUserId;
+        } catch (NumberFormatException exception) {
+            throw new IllegalStateException(
+                    "Telegram communication identity is invalid for order " + order.getId(),
+                    exception
+            );
+        }
     }
 
     private void safeSend(long chatId, String text, long orderId) {

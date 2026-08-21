@@ -1,6 +1,10 @@
 package com.cleany.notification;
 
+import com.cleany.customer.ExternalIdentityProvider;
+
 public interface CustomerNotificationSender {
 
-    void sendReferralUnlocked(long customerId, String referralCode);
+    ExternalIdentityProvider provider();
+
+    void send(CommunicationTarget target, CustomerNotification notification);
 }

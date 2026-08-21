@@ -246,6 +246,7 @@
     "orderEyebrow": "Заказ #{{id}}",
     "orderTitle": "Карточка заказа",
     "customer": "Клиент",
+    "communicationIdentity": "ID канала связи",
     "cleaner": "Telegram ID клинера",
     "notAssigned": "Не назначен",
     "financial": {

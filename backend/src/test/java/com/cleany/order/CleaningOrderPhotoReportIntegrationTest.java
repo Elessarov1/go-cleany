@@ -5,21 +5,28 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.cleany.base.BaseIntegrationTest;
-import com.cleany.customer.CustomerAccount;
 import com.cleany.customer.CustomerAccountRepository;
+import com.cleany.customer.CustomerExternalIdentityRepository;
+import com.cleany.customer.CustomerIdentityTestFixture;
 import com.cleany.finance.AcquisitionSource;
 import com.cleany.finance.CustomerDiscountType;
 import com.cleany.finance.OrderFinancialSnapshot;
+import com.cleany.media.MediaAssetRepository;
+import com.cleany.media.MediaProvider;
+import com.cleany.media.MediaProviderReferenceRepository;
+import com.cleany.media.MediaStorage;
 
 class CleaningOrderPhotoReportIntegrationTest extends BaseIntegrationTest {
 
     private static final long CLEANER_ID = 123456789L;
     private static final long OTHER_CLEANER_ID = 987654321L;
+    private static final byte[] JPEG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xD9};
 
     @Autowired
     private CleaningOrderRepository orderRepository;
@@ -33,10 +40,25 @@ class CleaningOrderPhotoReportIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private CustomerAccountRepository customerAccountRepository;
 
+    @Autowired
+    private CustomerExternalIdentityRepository customerIdentityRepository;
+
+    @Autowired
+    private MediaAssetRepository mediaAssetRepository;
+
+    @Autowired
+    private MediaProviderReferenceRepository mediaProviderReferenceRepository;
+
+    @Autowired
+    private MediaStorage mediaStorage;
+
     @BeforeEach
+    @AfterEach
     void cleanDatabase() {
         photoRepository.deleteAll();
         orderRepository.deleteAll();
+        mediaProviderReferenceRepository.deleteAll();
+        mediaAssetRepository.deleteAll();
     }
 
     @Test
@@ -51,12 +73,14 @@ class CleaningOrderPhotoReportIntegrationTest extends BaseIntegrationTest {
                 CLEANER_ID,
                 "telegram-file-1",
                 "telegram-unique-1",
+                JPEG,
                 null
         );
         CleaningOrderReportProgress duplicatePhoto = orderService.addPhotoToActiveReport(
                 CLEANER_ID,
                 "telegram-file-1-new-reference",
                 "telegram-unique-1",
+                JPEG,
                 null
         );
         CleaningOrderReportProgress comment = orderService.updateActiveReportComment(
@@ -64,13 +88,34 @@ class CleaningOrderPhotoReportIntegrationTest extends BaseIntegrationTest {
                 "Everything is ready"
         );
         CleaningOrderReport report = orderService.getReportForDelivery(order.getId(), CLEANER_ID);
+        CleaningOrderPhoto storedPhoto = photoRepository
+                .findAllByOrderIdOrderByCreatedAt(order.getId())
+                .getFirst();
+        var storedMedia = mediaStorage.get(storedPhoto.getMediaAssetId());
 
         Assertions.assertAll(
                 () -> Assertions.assertEquals(1L, firstPhoto.photoCount()),
                 () -> Assertions.assertEquals(1L, duplicatePhoto.photoCount()),
                 () -> Assertions.assertTrue(comment.commentPresent()),
-                () -> Assertions.assertEquals(1, report.telegramFileIds().size()),
-                () -> Assertions.assertEquals("telegram-file-1", report.telegramFileIds().getFirst())
+                () -> Assertions.assertEquals(1, report.mediaIds().size()),
+                () -> Assertions.assertEquals(
+                        storedPhoto.getMediaAssetId(),
+                        report.mediaIds().getFirst()
+                ),
+                () -> Assertions.assertEquals(1L, mediaAssetRepository.count()),
+                () -> Assertions.assertEquals(1L, mediaProviderReferenceRepository.count()),
+                () -> Assertions.assertArrayEquals(JPEG, storedMedia.content()),
+                () -> Assertions.assertEquals("image/jpeg", storedMedia.contentType()),
+                () -> Assertions.assertEquals(
+                        storedPhoto.getMediaAssetId(),
+                        mediaProviderReferenceRepository
+                                .findByProviderAndExternalUniqueId(
+                                        MediaProvider.TELEGRAM,
+                                        "telegram-unique-1"
+                                )
+                                .orElseThrow()
+                                .getMediaAssetId()
+                )
         );
 
         orderService.completeOrder(order.getId(), CLEANER_ID, report.order().getCleanerComment());
@@ -122,13 +167,16 @@ class CleaningOrderPhotoReportIntegrationTest extends BaseIntegrationTest {
     }
 
     private CleaningOrder newOrder(String address) {
-        long customerId = customerAccountRepository.save(new CustomerAccount(Instant.now())).getId();
+        var customer = CustomerIdentityTestFixture.telegramIdentity(
+                customerAccountRepository,
+                customerIdentityRepository,
+                Instant.now()
+        );
         BigDecimal basePrice = BigDecimal.valueOf(1100);
         BigDecimal commission = basePrice.multiply(new BigDecimal("0.15")).setScale(2);
         return new CleaningOrder(
-                customerId,
-                900001L,
-                "customer",
+                customer.customerId(),
+                customer.externalIdentityId(),
                 "Alex",
                 "+90 555 123 45 67",
                 ServiceArea.MAHMUTLAR,

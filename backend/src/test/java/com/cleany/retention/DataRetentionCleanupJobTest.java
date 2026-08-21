@@ -17,7 +17,7 @@ class DataRetentionCleanupJobTest {
         DataRetentionCleanupService service = Mockito.mock(DataRetentionCleanupService.class);
         Instant expectedCutoff = Instant.parse("2026-08-14T12:00:00Z");
         Mockito.when(service.cleanup(expectedCutoff)).thenReturn(
-                new DataRetentionCleanupResult(expectedCutoff, 0, 0, 0, 0)
+                new DataRetentionCleanupResult(expectedCutoff, 0, 0, 0, 0, 0)
         );
         var job = job(service);
 

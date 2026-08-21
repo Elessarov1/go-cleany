@@ -7,6 +7,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Currency;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,8 +15,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.cleany.configuration.CleaningProperties;
+import com.cleany.media.MediaContent;
+import com.cleany.media.MediaStorage;
 import com.cleany.order.CleaningOrder;
 import com.cleany.order.CleaningOrderEventRepository;
+import com.cleany.order.CleaningOrderIssuePhoto;
 import com.cleany.order.CleaningOrderIssuePhotoRepository;
 import com.cleany.order.CleaningOrderIssueReportRepository;
 import com.cleany.order.CleaningOrderPhotoRepository;
@@ -29,12 +33,16 @@ class AdminQueryServiceTest {
 
     private AdminAccessService accessService;
     private CleaningOrderRepository orderRepository;
+    private CleaningOrderIssuePhotoRepository issuePhotoRepository;
+    private MediaStorage mediaStorage;
     private AdminQueryService queryService;
 
     @BeforeEach
     void setUp() {
         accessService = Mockito.mock(AdminAccessService.class);
         orderRepository = Mockito.mock(CleaningOrderRepository.class);
+        issuePhotoRepository = Mockito.mock(CleaningOrderIssuePhotoRepository.class);
+        mediaStorage = Mockito.mock(MediaStorage.class);
         CleaningProperties properties = Mockito.mock(CleaningProperties.class);
         Mockito.when(properties.zoneId()).thenReturn(ZoneId.of("Europe/Istanbul"));
         Mockito.when(properties.currency()).thenReturn(Currency.getInstance("TRY"));
@@ -44,9 +52,36 @@ class AdminQueryServiceTest {
                 Mockito.mock(CleaningOrderEventRepository.class),
                 Mockito.mock(CleaningOrderPhotoRepository.class),
                 Mockito.mock(CleaningOrderIssueReportRepository.class),
-                Mockito.mock(CleaningOrderIssuePhotoRepository.class),
+                issuePhotoRepository,
+                mediaStorage,
                 properties,
                 Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+    }
+
+    @Test
+    void issueEvidenceDownload_readsCanonicalMediaStorageContent() {
+        CleaningOrderIssuePhoto photo = Mockito.mock(CleaningOrderIssuePhoto.class);
+        Mockito.when(accessService.requireCurrentAdmin()).thenReturn(ADMIN_ID);
+        Mockito.when(issuePhotoRepository
+                .findByIdAndIssueReport_Order_IdAndIssueReport_SubmittedAtIsNotNull(55L, 43L))
+                .thenReturn(Optional.of(photo));
+        Mockito.when(photo.getMediaAssetId()).thenReturn(71L);
+        Mockito.when(mediaStorage.get(71L)).thenReturn(new MediaContent(
+                71L,
+                new byte[]{1, 2, 3},
+                "image/jpeg",
+                3L,
+                "a".repeat(64),
+                NOW
+        ));
+
+        AdminIssuePhotoContent result = queryService.getCurrentAdminIssuePhoto(43L, 55L);
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals("image/jpeg", result.contentType()),
+                () -> Assertions.assertArrayEquals(new byte[]{1, 2, 3}, result.content()),
+                () -> Mockito.verify(mediaStorage).get(71L)
         );
     }
 

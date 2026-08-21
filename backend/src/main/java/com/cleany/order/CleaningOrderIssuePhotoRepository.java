@@ -15,9 +15,9 @@ public interface CleaningOrderIssuePhotoRepository extends JpaRepository<Cleanin
     @Query("""
             select new com.cleany.order.CleaningOrderIssuePhotoMetadata(
                 photo.id,
-                photo.contentType,
-                photo.sizeBytes,
-                photo.sha256,
+                photo.mediaAsset.contentType,
+                photo.mediaAsset.sizeBytes,
+                photo.mediaAsset.sha256,
                 photo.createdAt
             )
               from CleaningOrderIssuePhoto photo
@@ -28,20 +28,12 @@ public interface CleaningOrderIssuePhotoRepository extends JpaRepository<Cleanin
             @Param("issueReportId") long issueReportId
     );
 
-    @Query("""
-            select photo.telegramFileId
-              from CleaningOrderIssuePhoto photo
-             where photo.issueReport.id = :issueReportId
-             order by photo.createdAt asc, photo.id asc
-            """)
-    List<String> findTelegramFileIdsByIssueReportId(@Param("issueReportId") long issueReportId);
-
     Optional<CleaningOrderIssuePhoto> findByIdAndIssueReport_Order_IdAndIssueReport_SubmittedAtIsNotNull(
             long id,
             long orderId
     );
 
-    boolean existsByIssueReport_IdAndTelegramFileUniqueId(long issueReportId, String telegramFileUniqueId);
+    boolean existsByIssueReport_IdAndMediaAssetId(long issueReportId, long mediaAssetId);
 
     long countByIssueReport_Id(long issueReportId);
 

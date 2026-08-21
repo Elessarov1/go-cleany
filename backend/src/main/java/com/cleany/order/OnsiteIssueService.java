@@ -1,15 +1,18 @@
 package com.cleany.order;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
-import java.util.HexFormat;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.configuration.CleanerProperties;
 import com.cleany.configuration.OnsiteIssueProperties;
+import com.cleany.media.ImageMediaTypeDetector;
+import com.cleany.media.MediaProvider;
+import com.cleany.media.MediaProviderReferenceService;
+import com.cleany.media.MediaUpload;
 import com.cleany.referral.ReferralService;
 
 @Service
@@ -24,7 +27,9 @@ public class OnsiteIssueService {
     private final CleanerProperties cleanerProperties;
     private final OnsiteIssueProperties properties;
     private final ReferralService referralService;
+    private final MediaProviderReferenceService mediaProviderReferenceService;
     private final Clock clock;
+    private final ApplicationEventPublisher eventPublisher;
 
     public OnsiteIssueService(
             CleaningOrderRepository orderRepository,
@@ -34,7 +39,9 @@ public class OnsiteIssueService {
             CleanerProperties cleanerProperties,
             OnsiteIssueProperties properties,
             ReferralService referralService,
-            Clock clock
+            MediaProviderReferenceService mediaProviderReferenceService,
+            Clock clock,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.orderRepository = orderRepository;
         this.reportRepository = reportRepository;
@@ -43,7 +50,9 @@ public class OnsiteIssueService {
         this.cleanerProperties = cleanerProperties;
         this.properties = properties;
         this.referralService = referralService;
+        this.mediaProviderReferenceService = mediaProviderReferenceService;
         this.clock = clock;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -99,7 +108,18 @@ public class OnsiteIssueService {
         String fileId = requireValue(telegramFileId, 512, "Telegram photo file_id");
         String uniqueId = requireValue(telegramFileUniqueId, 255, "Telegram photo file_unique_id");
 
-        if (!photoRepository.existsByIssueReport_IdAndTelegramFileUniqueId(report.getId(), uniqueId)) {
+        ValidatedPhoto photo = validatePhoto(content);
+        var providerMedia = mediaProviderReferenceService.resolveOrStore(
+                new MediaUpload(content, photo.contentType()),
+                MediaProvider.TELEGRAM,
+                fileId,
+                uniqueId
+        );
+
+        if (!photoRepository.existsByIssueReport_IdAndMediaAssetId(
+                report.getId(),
+                providerMedia.media().mediaId()
+        )) {
             long currentCount = photoRepository.countByIssueReport_Id(report.getId());
             if (currentCount >= properties.maxPhotos()) {
                 throw invalid(
@@ -107,14 +127,9 @@ public class OnsiteIssueService {
                         "Onsite issue report cannot contain more than " + properties.maxPhotos() + " photos"
                 );
             }
-            ValidatedPhoto photo = validatePhoto(content);
             CleaningOrderIssuePhoto saved = photoRepository.save(new CleaningOrderIssuePhoto(
                     report,
-                    fileId,
-                    uniqueId,
-                    content,
-                    photo.contentType(),
-                    sha256(content),
+                    providerMedia.media().mediaId(),
                     clock.instant()
             ));
             recordEvent(
@@ -195,10 +210,16 @@ public class OnsiteIssueService {
                 cleanerTelegramUserId,
                 "reason=" + report.getReason() + "; photos=" + photoCount
         );
+        eventPublisher.publishEvent(new CleaningOrderCustomerEvent.OnsiteIssueReported(
+                order.getId(),
+                order.getCustomerId(),
+                order.getCommunicationIdentityId(),
+                cleanerTelegramUserId
+        ));
         return delivery(report);
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordCustomerNotified(long orderId, long cleanerTelegramUserId) {
         CleaningOrderIssueReport report = reportRepository.findByOrder_IdAndSubmittedAtIsNotNull(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
@@ -212,7 +233,7 @@ public class OnsiteIssueService {
                 CleaningOrderStatus.ONSITE_ISSUE_REPORTED,
                 OrderActorType.SYSTEM,
                 null,
-                "Onsite issue report delivered to customer via Telegram"
+                "Onsite issue report delivered to customer"
         );
     }
 
@@ -274,12 +295,10 @@ public class OnsiteIssueService {
     }
 
     private OnsiteIssueDelivery delivery(CleaningOrderIssueReport report) {
-        var fileIds = photoRepository.findTelegramFileIdsByIssueReportId(report.getId());
         return new OnsiteIssueDelivery(
                 report.getOrder(),
                 report.getReason(),
-                report.getComment(),
-                fileIds
+                report.getComment()
         );
     }
 
@@ -293,7 +312,7 @@ public class OnsiteIssueService {
                     "Evidence photo exceeds " + properties.maxPhotoSize()
             );
         }
-        String contentType = detectContentType(content);
+        String contentType = ImageMediaTypeDetector.detect(content).orElse(null);
         if (contentType == null || !properties.supportedContentTypes().contains(contentType)) {
             throw invalid(
                     OnsiteIssueProblem.PHOTO_TYPE_UNSUPPORTED,
@@ -301,33 +320,6 @@ public class OnsiteIssueService {
             );
         }
         return new ValidatedPhoto(contentType);
-    }
-
-    private static String detectContentType(byte[] content) {
-        if (content.length >= 3
-                && Byte.toUnsignedInt(content[0]) == 0xFF
-                && Byte.toUnsignedInt(content[1]) == 0xD8
-                && Byte.toUnsignedInt(content[2]) == 0xFF) {
-            return "image/jpeg";
-        }
-        byte[] pngSignature = {(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
-        if (content.length >= pngSignature.length) {
-            for (int index = 0; index < pngSignature.length; index++) {
-                if (content[index] != pngSignature[index]) {
-                    return null;
-                }
-            }
-            return "image/png";
-        }
-        return null;
-    }
-
-    private static String sha256(byte[] content) {
-        try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 is unavailable", exception);
-        }
     }
 
     private static String normalizeComment(String value, boolean required) {

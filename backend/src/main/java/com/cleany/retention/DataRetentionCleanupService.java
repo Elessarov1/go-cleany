@@ -7,48 +7,44 @@ import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cleany.media.MediaOrphanCleanupService;
 import com.cleany.order.CleaningOrderEventRepository;
 import com.cleany.order.CleaningOrderIssuePhotoRepository;
 import com.cleany.order.CleaningOrderPhotoRepository;
 import com.cleany.order.CleaningOrderRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class DataRetentionCleanupService {
 
     private final CleaningOrderRepository orderRepository;
     private final CleaningOrderIssuePhotoRepository issuePhotoRepository;
     private final CleaningOrderPhotoRepository completionPhotoRepository;
     private final CleaningOrderEventRepository eventRepository;
-
-    public DataRetentionCleanupService(
-            CleaningOrderRepository orderRepository,
-            CleaningOrderIssuePhotoRepository issuePhotoRepository,
-            CleaningOrderPhotoRepository completionPhotoRepository,
-            CleaningOrderEventRepository eventRepository
-    ) {
-        this.orderRepository = orderRepository;
-        this.issuePhotoRepository = issuePhotoRepository;
-        this.completionPhotoRepository = completionPhotoRepository;
-        this.eventRepository = eventRepository;
-    }
+    private final MediaOrphanCleanupService mediaOrphanCleanupService;
 
     @Transactional
     public DataRetentionCleanupResult cleanup(Instant cutoff) {
         Objects.requireNonNull(cutoff, "cutoff");
         List<Long> orderIds = orderRepository.findRetentionEligibleOrderIds(cutoff);
-        if (orderIds.isEmpty()) {
-            return new DataRetentionCleanupResult(cutoff, 0, 0, 0, 0);
+        int completionPhotos = 0;
+        int issuePhotos = 0;
+        int auditEvents = 0;
+        if (!orderIds.isEmpty()) {
+            completionPhotos = completionPhotoRepository.deleteByOrderIds(orderIds);
+            issuePhotos = issuePhotoRepository.deleteResolvedByOrderIds(orderIds);
+            auditEvents = eventRepository.deleteByOrderIds(orderIds);
         }
-
-        int issuePhotos = issuePhotoRepository.deleteResolvedByOrderIds(orderIds);
-        int completionPhotos = completionPhotoRepository.deleteByOrderIds(orderIds);
-        int auditEvents = eventRepository.deleteByOrderIds(orderIds);
+        int mediaAssets = mediaOrphanCleanupService.deleteUnreferenced();
         return new DataRetentionCleanupResult(
                 cutoff,
                 orderIds.size(),
                 issuePhotos,
                 completionPhotos,
-                auditEvents
+                auditEvents,
+                mediaAssets
         );
     }
 }

@@ -1,57 +1,100 @@
 package com.cleany.telegram.bot;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.List;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import com.cleany.customer.CustomerExternalIdentityRepository;
 import com.cleany.customer.ExternalIdentityProvider;
+import com.cleany.media.MediaProvider;
+import com.cleany.media.MediaProviderReferenceData;
+import com.cleany.media.MediaProviderReferenceService;
+import com.cleany.notification.CommunicationTarget;
+import com.cleany.notification.CustomerNotification;
 import com.cleany.notification.CustomerNotificationSender;
+import com.cleany.notification.ReferralUnlockedCustomerNotification;
+import com.cleany.order.CleaningOrderCustomerNotification;
+
+import lombok.RequiredArgsConstructor;
 
 @ConditionalOnProperty(prefix = "telegram", name = "bot-enabled", havingValue = "true")
 @Component
+@RequiredArgsConstructor
 public class TelegramCustomerNotificationSender implements CustomerNotificationSender {
 
-    private static final Logger log = LoggerFactory.getLogger(TelegramCustomerNotificationSender.class);
-
-    private final CustomerExternalIdentityRepository identityRepository;
     private final TelegramCustomerNotificationMessageFactory messageFactory;
+    private final CleaningOrderBotMessageFactory cleaningMessageFactory;
     private final TelegramBotClient botClient;
+    private final MediaProviderReferenceService mediaProviderReferenceService;
 
-    public TelegramCustomerNotificationSender(
-            CustomerExternalIdentityRepository identityRepository,
-            TelegramCustomerNotificationMessageFactory messageFactory,
-            TelegramBotClient botClient
-    ) {
-        this.identityRepository = identityRepository;
-        this.messageFactory = messageFactory;
-        this.botClient = botClient;
+    @Override
+    public ExternalIdentityProvider provider() {
+        return ExternalIdentityProvider.TELEGRAM;
     }
 
     @Override
-    public void sendReferralUnlocked(long customerId, String referralCode) {
-        var identity = identityRepository.findByCustomerIdAndProvider(
-                customerId,
-                ExternalIdentityProvider.TELEGRAM
-        );
-        if (identity.isEmpty()) {
-            log.warn("Telegram identity is unavailable for referral unlock customer {}", customerId);
-            return;
+    public void send(CommunicationTarget target, CustomerNotification notification) {
+        if (target.provider() != provider()) {
+            throw new IllegalArgumentException("Telegram sender received a non-Telegram target");
         }
 
         long telegramUserId;
         try {
-            telegramUserId = Long.parseLong(identity.get().getExternalSubject());
+            telegramUserId = Long.parseLong(target.externalSubject());
+            if (telegramUserId <= 0) {
+                throw new NumberFormatException("Telegram user id must be positive");
+            }
         } catch (NumberFormatException exception) {
-            log.error("Telegram identity is invalid for referral unlock customer {}", customerId);
-            return;
+            throw new IllegalArgumentException("Telegram target external subject is invalid", exception);
         }
 
-        botClient.sendMessage(
-                telegramUserId,
-                messageFactory.referralUnlocked(referralCode, identity.get().getLanguageCode()),
-                TelegramBotClient.InlineKeyboard.empty()
+        if (notification instanceof ReferralUnlockedCustomerNotification unlocked) {
+            sendMessage(
+                    telegramUserId,
+                    messageFactory.referralUnlocked(
+                            unlocked.referralCode(),
+                            target.languageCode()
+                    )
+            );
+            return;
+        }
+        if (notification instanceof CleaningOrderCustomerNotification.Accepted) {
+            sendMessage(telegramUserId, cleaningMessageFactory.customerOrderAccepted());
+            return;
+        }
+        if (notification instanceof CleaningOrderCustomerNotification.Cancelled) {
+            sendMessage(telegramUserId, cleaningMessageFactory.customerOrderCancelled());
+            return;
+        }
+        if (notification instanceof CleaningOrderCustomerNotification.Completed completed) {
+            var photos = telegramPhotos(completed.mediaIds());
+            sendMessage(telegramUserId, cleaningMessageFactory.customerReportHeader(completed));
+            photos.forEach(photo -> botClient.sendPhoto(telegramUserId, photo.externalId()));
+            sendMessage(telegramUserId, cleaningMessageFactory.customerReportComment(completed));
+            return;
+        }
+        if (notification instanceof CleaningOrderCustomerNotification.OnsiteIssueReported issue) {
+            var photos = telegramPhotos(issue.mediaIds());
+            sendMessage(
+                    telegramUserId,
+                    cleaningMessageFactory.customerOnsiteIssueReport(issue.reason(), issue.comment())
+            );
+            photos.forEach(photo -> botClient.sendPhoto(telegramUserId, photo.externalId()));
+            sendMessage(telegramUserId, cleaningMessageFactory.customerOnsiteIssuePaused());
+            return;
+        }
+        throw new IllegalArgumentException(
+                "Unsupported Telegram customer notification: " + notification.getClass().getName()
         );
+    }
+
+    private void sendMessage(long telegramUserId, String message) {
+        botClient.sendMessage(telegramUserId, message, TelegramBotClient.InlineKeyboard.empty());
+    }
+
+    private List<MediaProviderReferenceData> telegramPhotos(List<Long> mediaIds) {
+        return mediaIds.stream()
+                .map(mediaId -> mediaProviderReferenceService.require(mediaId, MediaProvider.TELEGRAM))
+                .toList();
     }
 }

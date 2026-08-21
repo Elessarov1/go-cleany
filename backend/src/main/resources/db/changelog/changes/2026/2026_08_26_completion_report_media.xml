@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260826-01" author="go-cleany">
+        <comment>
+            Store completion report photos as canonical media assets.
+            Pilot data is disposable, so existing completion photos are intentionally removed.
+        </comment>
+
+        <delete tableName="cleaning_order_photo"/>
+
+        <dropUniqueConstraint
+                tableName="cleaning_order_photo"
+                constraintName="uq_cleaning_order_photo_file"/>
+        <dropColumn tableName="cleaning_order_photo" columnName="telegram_file_id"/>
+        <dropColumn tableName="cleaning_order_photo" columnName="telegram_file_unique_id"/>
+
+        <addColumn tableName="cleaning_order_photo">
+            <column name="media_asset_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addForeignKeyConstraint
+                baseTableName="cleaning_order_photo"
+                baseColumnNames="media_asset_id"
+                constraintName="fk_cleaning_order_photo_media"
+                referencedTableName="media_asset"
+                referencedColumnNames="id"
+                onDelete="RESTRICT"/>
+        <addUniqueConstraint
+                tableName="cleaning_order_photo"
+                columnNames="order_id, media_asset_id"
+                constraintName="uq_cleaning_order_photo_media"/>
+        <createIndex tableName="cleaning_order_photo" indexName="idx_cleaning_order_photo_media">
+            <column name="media_asset_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

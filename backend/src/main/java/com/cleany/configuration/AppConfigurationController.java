@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/config")
+@RequestMapping("/api/v1/cleaning/configuration")
 public class AppConfigurationController {
 
     private final AppConfigurationService configurationService;
@@ -19,4 +19,3 @@ public class AppConfigurationController {
         return configurationService.getConfiguration();
     }
 }
-

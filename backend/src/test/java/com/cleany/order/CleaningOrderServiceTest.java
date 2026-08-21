@@ -24,9 +24,16 @@ import com.cleany.configuration.CleanerProperties;
 import com.cleany.configuration.CleaningProperties;
 import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountService;
+import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.finance.AcquisitionSource;
 import com.cleany.finance.CustomerDiscountType;
 import com.cleany.finance.OrderFinancialSnapshot;
+import com.cleany.media.MediaProvider;
+import com.cleany.media.MediaProviderReferenceData;
+import com.cleany.media.MediaProviderReferenceService;
+import com.cleany.media.MediaUpload;
+import com.cleany.media.StoredMedia;
+import com.cleany.media.StoredProviderMedia;
 import com.cleany.pricing.CleaningPriceService;
 import com.cleany.referral.OrderReferralPlan;
 import com.cleany.referral.ReferralUnlockedEvent;
@@ -36,6 +43,7 @@ class CleaningOrderServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-08-17T09:00:00Z");
     private static final long CLEANER_ID = 123456789L;
+    private static final byte[] JPEG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xD9};
 
     private CleaningOrderRepository repository;
     private CleaningOrderPhotoRepository photoRepository;
@@ -43,6 +51,7 @@ class CleaningOrderServiceTest {
     private ApplicationEventPublisher eventPublisher;
     private CustomerAccountService customerAccountService;
     private ReferralService referralService;
+    private MediaProviderReferenceService mediaProviderReferenceService;
     private CleaningOrderService service;
 
     @BeforeEach
@@ -53,9 +62,18 @@ class CleaningOrderServiceTest {
         eventPublisher = Mockito.mock(ApplicationEventPublisher.class);
         customerAccountService = Mockito.mock(CustomerAccountService.class);
         referralService = Mockito.mock(ReferralService.class);
+        mediaProviderReferenceService = Mockito.mock(MediaProviderReferenceService.class);
         CleaningProperties properties = properties();
         Mockito.when(customerAccountService.currentCustomer()).thenReturn(
-                new CurrentCustomer(77L, 900001L, "browser_preview", "Alex")
+                new CurrentCustomer(
+                        77L,
+                        88L,
+                        ExternalIdentityProvider.WHATSAPP,
+                        "905551234567",
+                        null,
+                        "Alex",
+                        "ru"
+                )
         );
         Mockito.when(referralService.planForCreation(
                 Mockito.eq(77L),
@@ -79,13 +97,14 @@ class CleaningOrderServiceTest {
                 new CleanerProperties(List.of(CLEANER_ID)),
                 customerAccountService,
                 referralService,
+                mediaProviderReferenceService,
                 Clock.fixed(NOW, ZoneOffset.UTC),
                 eventPublisher
         );
     }
 
     @Test
-    void orderRequest_trustedCustomer_priceAndIdentityStoredFromBackend() {
+    void orderRequest_channelNeutralCustomer_priceAndCommunicationIdentityStoredFromBackend() {
         Mockito.when(repository.save(Mockito.any(CleaningOrder.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         var command = new CreateCleaningOrderCommand(
@@ -106,7 +125,7 @@ class CleaningOrderServiceTest {
         Mockito.verify(repository).save(captor.capture());
         CleaningOrder order = captor.getValue();
         Assertions.assertEquals(77L, order.getCustomerId());
-        Assertions.assertEquals(900001L, order.getTelegramUserId());
+        Assertions.assertEquals(88L, order.getCommunicationIdentityId());
         Assertions.assertEquals(0, order.getPrice().compareTo(BigDecimal.valueOf(1400)));
         Assertions.assertEquals(0, order.getBaseCommission().compareTo(new BigDecimal("210.00")));
         Assertions.assertEquals("TRY", order.getCurrency());
@@ -118,10 +137,7 @@ class CleaningOrderServiceTest {
         Assertions.assertAll(
                 () -> Assertions.assertEquals(OrderEventType.CREATED, eventCaptor.getValue().getEventType()),
                 () -> Assertions.assertEquals(OrderActorType.CUSTOMER, eventCaptor.getValue().getActorType()),
-                () -> Assertions.assertEquals(
-                        Long.valueOf(900001L),
-                        eventCaptor.getValue().getActorTelegramUserId()
-                ),
+                () -> Assertions.assertNull(eventCaptor.getValue().getActorTelegramUserId()),
                 () -> Assertions.assertEquals(CleaningOrderStatus.NEW, eventCaptor.getValue().getToStatus())
         );
         Mockito.verify(eventPublisher).publishEvent(Mockito.any(CleaningOrderCreatedEvent.class));
@@ -184,7 +200,10 @@ class CleaningOrderServiceTest {
 
     @Test
     void newOrder_configuredCleanerClaims_orderAcceptedByConditionalUpdate() {
-        CleaningOrder acceptedOrder = sampleOrder();
+        CleaningOrder acceptedOrder = Mockito.mock(CleaningOrder.class);
+        Mockito.when(acceptedOrder.getId()).thenReturn(43L);
+        Mockito.when(acceptedOrder.getCustomerId()).thenReturn(77L);
+        Mockito.when(acceptedOrder.getCommunicationIdentityId()).thenReturn(88L);
         Mockito.when(repository.claimNewOrder(
                 43L,
                 CLEANER_ID,
@@ -203,6 +222,9 @@ class CleaningOrderServiceTest {
                 NOW,
                 CleaningOrderStatus.NEW,
                 CleaningOrderStatus.ACCEPTED
+        );
+        Mockito.verify(eventPublisher).publishEvent(
+                new CleaningOrderCustomerEvent.Accepted(43L, 77L, 88L)
         );
     }
 
@@ -225,12 +247,19 @@ class CleaningOrderServiceTest {
     @Test
     void acceptedOrder_assignedCleanerCancels_orderCancelled() {
         CleaningOrder order = Mockito.mock(CleaningOrder.class);
+        Mockito.when(order.getId()).thenReturn(43L);
+        Mockito.when(order.getCustomerId()).thenReturn(77L);
+        Mockito.when(order.getCommunicationIdentityId()).thenReturn(88L);
+        Mockito.when(order.getStatus()).thenReturn(CleaningOrderStatus.ACCEPTED);
         Mockito.when(repository.findById(43L)).thenReturn(Optional.of(order));
 
         CleaningOrder result = service.cancelOrderByCleaner(43L, CLEANER_ID);
 
         Assertions.assertSame(order, result);
         Mockito.verify(order).cancelByCleaner(CLEANER_ID);
+        Mockito.verify(eventPublisher).publishEvent(
+                new CleaningOrderCustomerEvent.Cancelled(43L, 77L, 88L)
+        );
         Mockito.verify(eventPublisher, Mockito.never())
                 .publishEvent(Mockito.isA(ReferralUnlockedEvent.class));
     }
@@ -264,7 +293,13 @@ class CleaningOrderServiceTest {
         Mockito.when(order.getCleanerComment()).thenReturn("Looks good");
         Mockito.when(repository.findByCleanerTelegramUserIdAndReportInputActiveTrue(CLEANER_ID))
                 .thenReturn(Optional.of(order));
-        Mockito.when(photoRepository.existsByOrderIdAndTelegramFileUniqueId(43L, "unique-1"))
+        Mockito.when(mediaProviderReferenceService.resolveOrStore(
+                Mockito.any(MediaUpload.class),
+                Mockito.eq(MediaProvider.TELEGRAM),
+                Mockito.eq("file-1"),
+                Mockito.eq("unique-1")
+        )).thenReturn(providerMedia(71L, "file-1", "unique-1"));
+        Mockito.when(photoRepository.existsByOrderIdAndMediaAssetId(43L, 71L))
                 .thenReturn(false);
         Mockito.when(photoRepository.countByOrderId(43L)).thenReturn(1L);
 
@@ -272,20 +307,40 @@ class CleaningOrderServiceTest {
                 CLEANER_ID,
                 "file-1",
                 "unique-1",
+                JPEG,
                 " Looks good "
         );
 
         var photoCaptor = ArgumentCaptor.forClass(CleaningOrderPhoto.class);
         Mockito.verify(photoRepository).save(photoCaptor.capture());
         Assertions.assertAll(
-                () -> Assertions.assertEquals("file-1", photoCaptor.getValue().getTelegramFileId()),
-                () -> Assertions.assertEquals("unique-1", photoCaptor.getValue().getTelegramFileUniqueId()),
+                () -> Assertions.assertEquals(71L, photoCaptor.getValue().getMediaAssetId()),
                 () -> Assertions.assertEquals(43L, progress.orderId()),
                 () -> Assertions.assertEquals(1L, progress.photoCount()),
                 () -> Assertions.assertTrue(progress.commentPresent())
         );
         Mockito.verify(order).requireReportAccess(CLEANER_ID);
         Mockito.verify(order).updateCleanerComment(CLEANER_ID, "Looks good");
+    }
+
+    @Test
+    void activeReport_unsupportedPhotoRejectedBeforeStorage() {
+        CleaningOrder order = Mockito.mock(CleaningOrder.class);
+        Mockito.when(repository.findByCleanerTelegramUserIdAndReportInputActiveTrue(CLEANER_ID))
+                .thenReturn(Optional.of(order));
+
+        Assertions.assertThrows(
+                InvalidCompletionPhotoException.class,
+                () -> service.addPhotoToActiveReport(
+                        CLEANER_ID,
+                        "file-1",
+                        "unique-1",
+                        new byte[]{1, 2, 3},
+                        null
+                )
+        );
+
+        Mockito.verifyNoInteractions(mediaProviderReferenceService, photoRepository);
     }
 
     @Test
@@ -306,6 +361,7 @@ class CleaningOrderServiceTest {
         CleaningOrder order = Mockito.mock(CleaningOrder.class);
         Mockito.when(order.getId()).thenReturn(43L);
         Mockito.when(order.getCustomerId()).thenReturn(77L);
+        Mockito.when(order.getCommunicationIdentityId()).thenReturn(88L);
         Mockito.when(order.getStatus()).thenReturn(CleaningOrderStatus.AWAITING_REPORT);
         Mockito.when(repository.findById(43L)).thenReturn(Optional.of(order));
         Mockito.when(repository.existsByCustomerIdAndStatus(77L, CleaningOrderStatus.COMPLETED))
@@ -315,9 +371,13 @@ class CleaningOrderServiceTest {
         service.completeOrder(43L, CLEANER_ID, "Done");
 
         var eventCaptor = ArgumentCaptor.forClass(ReferralUnlockedEvent.class);
+        Mockito.verify(eventPublisher).publishEvent(
+                new CleaningOrderCustomerEvent.Completed(43L, 77L, 88L)
+        );
         Mockito.verify(eventPublisher).publishEvent(eventCaptor.capture());
         Assertions.assertAll(
                 () -> Assertions.assertEquals(77L, eventCaptor.getValue().customerId()),
+                () -> Assertions.assertEquals(88L, eventCaptor.getValue().communicationIdentityId()),
                 () -> Assertions.assertEquals("ALEX7K2", eventCaptor.getValue().referralCode())
         );
     }
@@ -325,7 +385,9 @@ class CleaningOrderServiceTest {
     @Test
     void laterCompletedOrder_referralUnlockEventNotPublishedAgain() {
         CleaningOrder order = Mockito.mock(CleaningOrder.class);
+        Mockito.when(order.getId()).thenReturn(43L);
         Mockito.when(order.getCustomerId()).thenReturn(77L);
+        Mockito.when(order.getCommunicationIdentityId()).thenReturn(88L);
         Mockito.when(order.getStatus()).thenReturn(CleaningOrderStatus.AWAITING_REPORT);
         Mockito.when(repository.findById(43L)).thenReturn(Optional.of(order));
         Mockito.when(repository.existsByCustomerIdAndStatus(77L, CleaningOrderStatus.COMPLETED))
@@ -334,15 +396,39 @@ class CleaningOrderServiceTest {
 
         service.completeOrder(43L, CLEANER_ID, null);
 
+        Mockito.verify(eventPublisher).publishEvent(
+                new CleaningOrderCustomerEvent.Completed(43L, 77L, 88L)
+        );
         Mockito.verify(eventPublisher, Mockito.never())
                 .publishEvent(Mockito.isA(ReferralUnlockedEvent.class));
+    }
+
+    private static StoredProviderMedia providerMedia(
+            long mediaId,
+            String externalId,
+            String externalUniqueId
+    ) {
+        var stored = new StoredMedia(
+                mediaId,
+                "image/jpeg",
+                JPEG.length,
+                "a".repeat(64),
+                NOW
+        );
+        var reference = new MediaProviderReferenceData(
+                mediaId,
+                MediaProvider.TELEGRAM,
+                externalId,
+                externalUniqueId,
+                NOW
+        );
+        return new StoredProviderMedia(stored, reference);
     }
 
     private static CleaningOrder sampleOrder() {
         return new CleaningOrder(
                 77L,
-                900001L,
-                "browser_preview",
+                88L,
                 "Alex",
                 "+90 555",
                 ServiceArea.MAHMUTLAR,

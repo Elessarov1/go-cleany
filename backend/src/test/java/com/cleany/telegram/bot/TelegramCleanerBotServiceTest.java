@@ -1,14 +1,16 @@
 package com.cleany.telegram.bot;
 
 import java.util.List;
+import java.util.Optional;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.cleany.configuration.CleanerProperties;
 import com.cleany.customer.CustomerAccountService;
+import com.cleany.customer.CustomerExternalIdentity;
+import com.cleany.customer.CustomerExternalIdentityRepository;
 import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.order.CleaningOrder;
 import com.cleany.order.CleaningOrderReport;
@@ -34,12 +36,16 @@ class TelegramCleanerBotServiceTest {
     private static final long CLEANER_ID = 101L;
     private static final long OTHER_CLEANER_ID = 102L;
     private static final long CUSTOMER_ID = 900001L;
+    private static final long CUSTOMER_ACCOUNT_ID = 77L;
+    private static final long COMMUNICATION_ID = 501L;
+    private static final byte[] JPEG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xD9};
 
     private CleaningOrderService orderService;
     private CleaningOrderBotMessageFactory messageFactory;
     private TelegramBotClient botClient;
     private TelegramAdminBotService adminBotService;
     private CustomerAccountService customerAccountService;
+    private CustomerExternalIdentityRepository customerIdentityRepository;
     private OnsiteIssueService onsiteIssueService;
     private TelegramCleanerBotService cleanerBotService;
 
@@ -50,7 +56,16 @@ class TelegramCleanerBotServiceTest {
         botClient = Mockito.mock(TelegramBotClient.class);
         adminBotService = Mockito.mock(TelegramAdminBotService.class);
         customerAccountService = Mockito.mock(CustomerAccountService.class);
+        customerIdentityRepository = Mockito.mock(CustomerExternalIdentityRepository.class);
         onsiteIssueService = Mockito.mock(OnsiteIssueService.class);
+        CustomerExternalIdentity customerIdentity = Mockito.mock(CustomerExternalIdentity.class);
+        Mockito.when(customerIdentity.getProvider()).thenReturn(ExternalIdentityProvider.TELEGRAM);
+        Mockito.when(customerIdentity.getExternalSubject()).thenReturn(Long.toString(CUSTOMER_ID));
+        Mockito.when(customerIdentityRepository.findByIdAndCustomerId(
+                COMMUNICATION_ID,
+                CUSTOMER_ACCOUNT_ID
+        ))
+                .thenReturn(Optional.of(customerIdentity));
         cleanerBotService = new TelegramCleanerBotService(
                 new CleanerProperties(List.of(CLEANER_ID, OTHER_CLEANER_ID)),
                 orderService,
@@ -58,6 +73,7 @@ class TelegramCleanerBotServiceTest {
                 botClient,
                 adminBotService,
                 customerAccountService,
+                customerIdentityRepository,
                 onsiteIssueService
         );
     }
@@ -83,14 +99,14 @@ class TelegramCleanerBotServiceTest {
     }
 
     @Test
-    void acceptCallback_firstCleanerWins_customerAndCleanerNotified() {
-        CleaningOrder order = order(43L, CUSTOMER_ID, CLEANER_ID);
+    void acceptCallback_firstCleanerWins_cleanerNotifiedAndCustomerDeliveryDelegated() {
+        CleaningOrder order = order(43L, CLEANER_ID);
         InlineKeyboard keyboard = InlineKeyboard.ofRows(List.of(
                 InlineButton.callback("Finish", "order:finish:43")
         ));
         Mockito.when(orderService.acceptOrder(43L, CLEANER_ID)).thenReturn(order);
         Mockito.when(messageFactory.acceptedOrder(order)).thenReturn("accepted-message");
-        Mockito.when(messageFactory.acceptedOrderKeyboard(order)).thenReturn(keyboard);
+        Mockito.when(messageFactory.acceptedOrderKeyboard(order, CUSTOMER_ID)).thenReturn(keyboard);
 
         cleanerBotService.handle(update(CLEANER_ID, "order:accept:43"));
 
@@ -100,16 +116,16 @@ class TelegramCleanerBotServiceTest {
                 false
         );
         Mockito.verify(botClient).sendMessage(CLEANER_ID, "accepted-message", keyboard);
-        Mockito.verify(botClient).sendMessage(
-                CUSTOMER_ID,
-                "Ваш заказ на уборку подтверждён ✅",
-                InlineKeyboard.empty()
+        Mockito.verify(botClient, Mockito.never()).sendMessage(
+                Mockito.eq(CUSTOMER_ID),
+                Mockito.anyString(),
+                Mockito.any()
         );
     }
 
     @Test
     void acceptCallback_secondCleanerLosesRace_conflictReported() {
-        CleaningOrder acceptedOrder = order(43L, CUSTOMER_ID, OTHER_CLEANER_ID);
+        CleaningOrder acceptedOrder = order(43L, OTHER_CLEANER_ID);
         Mockito.when(orderService.acceptOrder(43L, CLEANER_ID))
                 .thenThrow(new OrderClaimConflictException(43L));
         Mockito.when(orderService.getOrderForConfiguredCleaner(43L, CLEANER_ID))
@@ -131,7 +147,7 @@ class TelegramCleanerBotServiceTest {
 
     @Test
     void finishCallback_assignedOrderMovedToAwaitingReport() {
-        CleaningOrder order = order(43L, CUSTOMER_ID, CLEANER_ID);
+        CleaningOrder order = order(43L, CLEANER_ID);
         Mockito.when(orderService.markAwaitingReport(43L, CLEANER_ID)).thenReturn(order);
         Mockito.when(messageFactory.awaitingPhotoReport(order)).thenReturn("send-photos");
 
@@ -142,17 +158,22 @@ class TelegramCleanerBotServiceTest {
     }
 
     @Test
-    void cancelCallback_assignedOrderCancelled_customerNotified() {
-        CleaningOrder order = order(43L, CUSTOMER_ID, CLEANER_ID);
+    void cancelCallback_assignedOrderCancelled_customerDeliveryDelegated() {
+        CleaningOrder order = order(43L, CLEANER_ID);
         Mockito.when(orderService.cancelOrderByCleaner(43L, CLEANER_ID)).thenReturn(order);
 
         cleanerBotService.handle(update(CLEANER_ID, "order:cancel:43"));
 
         Mockito.verify(orderService).cancelOrderByCleaner(43L, CLEANER_ID);
         Mockito.verify(botClient).sendMessage(
-                CUSTOMER_ID,
-                "Заказ отменён.",
+                CLEANER_ID,
+                "❌ Заказ №43 отменён.",
                 InlineKeyboard.empty()
+        );
+        Mockito.verify(botClient, Mockito.never()).sendMessage(
+                Mockito.eq(CUSTOMER_ID),
+                Mockito.anyString(),
+                Mockito.any()
         );
     }
 
@@ -178,8 +199,10 @@ class TelegramCleanerBotServiceTest {
                 CLEANER_ID,
                 "large-file",
                 "large-unique",
+                JPEG,
                 "Everything is ready"
         )).thenReturn(progress);
+        Mockito.when(botClient.downloadFile("large-file")).thenReturn(JPEG);
         Mockito.when(messageFactory.photoSaved(progress)).thenReturn("photo-saved");
         Mockito.when(messageFactory.reportReadyKeyboard(43L)).thenReturn(keyboard);
 
@@ -189,9 +212,32 @@ class TelegramCleanerBotServiceTest {
                 CLEANER_ID,
                 "large-file",
                 "large-unique",
+                JPEG,
                 "Everything is ready"
         );
+        Mockito.verify(botClient).downloadFile("large-file");
         Mockito.verify(botClient).sendMessage(CLEANER_ID, "photo-saved", keyboard);
+    }
+
+    @Test
+    void photoMessage_telegramDownloadFailureDoesNotStoreReportPhoto() {
+        Mockito.when(botClient.downloadFile("large-file"))
+                .thenThrow(new TelegramBotApiException("download failed"));
+
+        cleanerBotService.handle(photoUpdate(CLEANER_ID));
+
+        Mockito.verify(orderService, Mockito.never()).addPhotoToActiveReport(
+                Mockito.anyLong(),
+                Mockito.anyString(),
+                Mockito.anyString(),
+                Mockito.any(byte[].class),
+                Mockito.nullable(String.class)
+        );
+        Mockito.verify(botClient).sendMessage(
+                CLEANER_ID,
+                "Не удалось загрузить фотографию из Telegram. Попробуйте отправить её ещё раз.",
+                InlineKeyboard.empty()
+        );
     }
 
     @Test
@@ -261,49 +307,24 @@ class TelegramCleanerBotServiceTest {
     }
 
     @Test
-    void reportCallback_photosDeliveredBeforeOrderCompleted() {
-        CleaningOrder order = order(43L, CUSTOMER_ID, CLEANER_ID);
+    void reportCallback_orderCompletedAndCustomerDeliveryDelegated() {
+        CleaningOrder order = order(43L, CLEANER_ID);
         Mockito.when(order.getCleanerComment()).thenReturn("Everything is ready");
         Mockito.when(orderService.getReportForDelivery(43L, CLEANER_ID))
-                .thenReturn(new CleaningOrderReport(order, List.of("file-1", "file-2")));
-        Mockito.when(messageFactory.customerReportHeader(order)).thenReturn("report-header");
-        Mockito.when(messageFactory.customerReportComment(order)).thenReturn("report-comment");
+                .thenReturn(new CleaningOrderReport(order, List.of(71L, 72L)));
 
         cleanerBotService.handle(update(CLEANER_ID, "order:report:43"));
 
-        var deliveryOrder = Mockito.inOrder(botClient, orderService);
-        deliveryOrder.verify(botClient).sendMessage(
-                CUSTOMER_ID,
-                "report-header",
-                InlineKeyboard.empty()
-        );
-        deliveryOrder.verify(botClient).sendPhoto(CUSTOMER_ID, "file-1");
-        deliveryOrder.verify(botClient).sendPhoto(CUSTOMER_ID, "file-2");
-        deliveryOrder.verify(botClient).sendMessage(
-                CUSTOMER_ID,
-                "report-comment",
-                InlineKeyboard.empty()
-        );
+        var deliveryOrder = Mockito.inOrder(orderService);
+        deliveryOrder.verify(orderService).getReportForDelivery(43L, CLEANER_ID);
         deliveryOrder.verify(orderService).completeOrder(43L, CLEANER_ID, "Everything is ready");
-    }
-
-    @Test
-    void reportCallback_photoDeliveryFails_orderNotCompleted() {
-        CleaningOrder order = order(43L, CUSTOMER_ID, CLEANER_ID);
-        Mockito.when(orderService.getReportForDelivery(43L, CLEANER_ID))
-                .thenReturn(new CleaningOrderReport(order, List.of("file-1")));
-        Mockito.when(messageFactory.customerReportHeader(order)).thenReturn("report-header");
-        Mockito.doThrow(new TelegramBotApiException("delivery failed"))
-                .when(botClient).sendPhoto(CUSTOMER_ID, "file-1");
-
-        Assertions.assertThrows(
-                TelegramBotApiException.class,
-                () -> cleanerBotService.handle(update(CLEANER_ID, "order:report:43"))
+        Mockito.verify(botClient, Mockito.never()).sendPhoto(
+                Mockito.eq(CUSTOMER_ID),
+                Mockito.anyString()
         );
-
-        Mockito.verify(orderService, Mockito.never()).completeOrder(
-                Mockito.anyLong(),
-                Mockito.anyLong(),
+        Mockito.verify(botClient, Mockito.never()).sendMessage(
+                Mockito.eq(CUSTOMER_ID),
+                Mockito.anyString(),
                 Mockito.any()
         );
     }
@@ -366,32 +387,32 @@ class TelegramCleanerBotServiceTest {
     }
 
     @Test
-    void onsiteIssueSubmit_customerReceivesReasonCommentAndEvidenceBeforeNotificationAudit() {
-        CleaningOrder order = order(43L, CUSTOMER_ID, CLEANER_ID);
+    void onsiteIssueSubmit_adminNotifiedAndCustomerDeliveryDelegated() {
+        CleaningOrder order = order(43L, CLEANER_ID);
         OnsiteIssueDelivery delivery = new OnsiteIssueDelivery(
                 order,
                 OnsiteIssueReason.ADDRESS_MISMATCH,
-                "Wrong address",
-                List.of("evidence-1", "evidence-2", "evidence-3")
+                "Wrong address"
         );
         Mockito.when(onsiteIssueService.submit(43L, CLEANER_ID)).thenReturn(delivery);
-        Mockito.when(messageFactory.customerOnsiteIssueReport(
-                OnsiteIssueReason.ADDRESS_MISMATCH,
-                "Wrong address"
-        )).thenReturn("issue-report");
-        Mockito.when(messageFactory.customerOnsiteIssuePaused()).thenReturn("order-paused");
 
         cleanerBotService.handle(update(CLEANER_ID, "order:issue_submit:43"));
 
-        var deliveryOrder = Mockito.inOrder(onsiteIssueService, botClient);
-        deliveryOrder.verify(onsiteIssueService).submit(43L, CLEANER_ID);
-        deliveryOrder.verify(botClient).sendMessage(CUSTOMER_ID, "issue-report", InlineKeyboard.empty());
-        deliveryOrder.verify(botClient).sendPhoto(CUSTOMER_ID, "evidence-1");
-        deliveryOrder.verify(botClient).sendPhoto(CUSTOMER_ID, "evidence-2");
-        deliveryOrder.verify(botClient).sendPhoto(CUSTOMER_ID, "evidence-3");
-        deliveryOrder.verify(botClient).sendMessage(CUSTOMER_ID, "order-paused", InlineKeyboard.empty());
-        deliveryOrder.verify(onsiteIssueService).recordCustomerNotified(43L, CLEANER_ID);
+        Mockito.verify(onsiteIssueService).submit(43L, CLEANER_ID);
         Mockito.verify(adminBotService).notifyOnsiteIssue(43L, OnsiteIssueReason.ADDRESS_MISMATCH);
+        Mockito.verify(onsiteIssueService, Mockito.never()).recordCustomerNotified(
+                Mockito.anyLong(),
+                Mockito.anyLong()
+        );
+        Mockito.verify(botClient, Mockito.never()).sendPhoto(
+                Mockito.eq(CUSTOMER_ID),
+                Mockito.anyString()
+        );
+        Mockito.verify(botClient, Mockito.never()).sendMessage(
+                Mockito.eq(CUSTOMER_ID),
+                Mockito.anyString(),
+                Mockito.any()
+        );
     }
 
     private static TelegramUpdate update(long cleanerId, String data) {
@@ -463,10 +484,11 @@ class TelegramCleanerBotServiceTest {
         );
     }
 
-    private static CleaningOrder order(long orderId, long customerId, long cleanerId) {
+    private static CleaningOrder order(long orderId, long cleanerId) {
         CleaningOrder order = Mockito.mock(CleaningOrder.class);
         Mockito.when(order.getId()).thenReturn(orderId);
-        Mockito.when(order.getTelegramUserId()).thenReturn(customerId);
+        Mockito.when(order.getCustomerId()).thenReturn(CUSTOMER_ACCOUNT_ID);
+        Mockito.when(order.getCommunicationIdentityId()).thenReturn(COMMUNICATION_ID);
         Mockito.when(order.getCleanerTelegramUserId()).thenReturn(cleanerId);
         return order;
     }

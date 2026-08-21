@@ -23,7 +23,7 @@ public class ReferralController {
 
     @GetMapping("/me")
     public ReferralSummaryResponse getCurrentCustomerReferralSummary() {
-        long customerId = customerAccountService.currentCustomer().id();
+        long customerId = customerAccountService.currentCustomer().customerId();
         return referralService.getSummary(customerId);
     }
 }

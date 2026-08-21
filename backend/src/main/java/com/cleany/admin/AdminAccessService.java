@@ -3,7 +3,8 @@ package com.cleany.admin;
 import org.springframework.stereotype.Service;
 
 import com.cleany.configuration.AdminProperties;
-import com.cleany.telegram.CustomerIdentityProvider;
+import com.cleany.customer.CustomerIdentityProvider;
+import com.cleany.customer.ExternalIdentityProvider;
 
 @Service
 public class AdminAccessService {
@@ -24,7 +25,16 @@ public class AdminAccessService {
     }
 
     public long requireCurrentAdmin() {
-        long telegramUserId = identityProvider.currentCustomer().id();
+        var identity = identityProvider.currentIdentity();
+        if (identity.provider() != ExternalIdentityProvider.TELEGRAM) {
+            throw new AdminNotAuthorizedException();
+        }
+        long telegramUserId;
+        try {
+            telegramUserId = Long.parseLong(identity.externalSubject());
+        } catch (NumberFormatException exception) {
+            throw new AdminNotAuthorizedException();
+        }
         requireAdmin(telegramUserId);
         return telegramUserId;
     }
