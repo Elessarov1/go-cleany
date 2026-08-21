@@ -190,7 +190,10 @@ class CleaningOrderServiceTest {
 
     @Test
     void newOrder_configuredCleanerClaims_orderAcceptedByConditionalUpdate() {
-        CleaningOrder acceptedOrder = sampleOrder();
+        CleaningOrder acceptedOrder = Mockito.mock(CleaningOrder.class);
+        Mockito.when(acceptedOrder.getId()).thenReturn(43L);
+        Mockito.when(acceptedOrder.getCustomerId()).thenReturn(77L);
+        Mockito.when(acceptedOrder.getCommunicationIdentityId()).thenReturn(88L);
         Mockito.when(repository.claimNewOrder(
                 43L,
                 CLEANER_ID,
@@ -209,6 +212,9 @@ class CleaningOrderServiceTest {
                 NOW,
                 CleaningOrderStatus.NEW,
                 CleaningOrderStatus.ACCEPTED
+        );
+        Mockito.verify(eventPublisher).publishEvent(
+                new CleaningOrderCustomerEvent.Accepted(43L, 77L, 88L)
         );
     }
 
@@ -231,12 +237,19 @@ class CleaningOrderServiceTest {
     @Test
     void acceptedOrder_assignedCleanerCancels_orderCancelled() {
         CleaningOrder order = Mockito.mock(CleaningOrder.class);
+        Mockito.when(order.getId()).thenReturn(43L);
+        Mockito.when(order.getCustomerId()).thenReturn(77L);
+        Mockito.when(order.getCommunicationIdentityId()).thenReturn(88L);
+        Mockito.when(order.getStatus()).thenReturn(CleaningOrderStatus.ACCEPTED);
         Mockito.when(repository.findById(43L)).thenReturn(Optional.of(order));
 
         CleaningOrder result = service.cancelOrderByCleaner(43L, CLEANER_ID);
 
         Assertions.assertSame(order, result);
         Mockito.verify(order).cancelByCleaner(CLEANER_ID);
+        Mockito.verify(eventPublisher).publishEvent(
+                new CleaningOrderCustomerEvent.Cancelled(43L, 77L, 88L)
+        );
         Mockito.verify(eventPublisher, Mockito.never())
                 .publishEvent(Mockito.isA(ReferralUnlockedEvent.class));
     }
@@ -322,6 +335,9 @@ class CleaningOrderServiceTest {
         service.completeOrder(43L, CLEANER_ID, "Done");
 
         var eventCaptor = ArgumentCaptor.forClass(ReferralUnlockedEvent.class);
+        Mockito.verify(eventPublisher).publishEvent(
+                new CleaningOrderCustomerEvent.Completed(43L, 77L, 88L)
+        );
         Mockito.verify(eventPublisher).publishEvent(eventCaptor.capture());
         Assertions.assertAll(
                 () -> Assertions.assertEquals(77L, eventCaptor.getValue().customerId()),
@@ -333,7 +349,9 @@ class CleaningOrderServiceTest {
     @Test
     void laterCompletedOrder_referralUnlockEventNotPublishedAgain() {
         CleaningOrder order = Mockito.mock(CleaningOrder.class);
+        Mockito.when(order.getId()).thenReturn(43L);
         Mockito.when(order.getCustomerId()).thenReturn(77L);
+        Mockito.when(order.getCommunicationIdentityId()).thenReturn(88L);
         Mockito.when(order.getStatus()).thenReturn(CleaningOrderStatus.AWAITING_REPORT);
         Mockito.when(repository.findById(43L)).thenReturn(Optional.of(order));
         Mockito.when(repository.existsByCustomerIdAndStatus(77L, CleaningOrderStatus.COMPLETED))
@@ -342,6 +360,9 @@ class CleaningOrderServiceTest {
 
         service.completeOrder(43L, CLEANER_ID, null);
 
+        Mockito.verify(eventPublisher).publishEvent(
+                new CleaningOrderCustomerEvent.Completed(43L, 77L, 88L)
+        );
         Mockito.verify(eventPublisher, Mockito.never())
                 .publishEvent(Mockito.isA(ReferralUnlockedEvent.class));
     }

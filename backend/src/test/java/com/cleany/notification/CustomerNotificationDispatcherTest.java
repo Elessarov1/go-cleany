@@ -34,20 +34,44 @@ class CustomerNotificationDispatcherTest {
         );
         var notification = new ReferralUnlockedCustomerNotification("ALEX7K2");
 
-        dispatcher.send(77L, 88L, notification);
+        boolean delivered = dispatcher.send(77L, 88L, notification);
 
-        Mockito.verify(whatsappSender).send(
-                new CommunicationTarget(
-                        77L,
-                        88L,
-                        ExternalIdentityProvider.WHATSAPP,
-                        "905551234567",
-                        "ru"
-                ),
-                notification
+        Assertions.assertAll(
+                () -> Assertions.assertTrue(delivered),
+                () -> Mockito.verify(whatsappSender).send(
+                        new CommunicationTarget(
+                                77L,
+                                88L,
+                                ExternalIdentityProvider.WHATSAPP,
+                                "905551234567",
+                                "ru"
+                        ),
+                        notification
+                )
         );
         Mockito.verify(telegramSender, Mockito.never())
                 .send(Mockito.any(), Mockito.any());
+    }
+
+    @Test
+    void providerWithoutSender_deliveryReportedAsUnavailable() {
+        CustomerExternalIdentityRepository identityRepository =
+                Mockito.mock(CustomerExternalIdentityRepository.class);
+        CustomerExternalIdentity identity = Mockito.mock(CustomerExternalIdentity.class);
+        Mockito.when(identityRepository.findByIdAndCustomerId(88L, 77L))
+                .thenReturn(Optional.of(identity));
+        Mockito.when(identity.getCustomerId()).thenReturn(77L);
+        Mockito.when(identity.getProvider()).thenReturn(ExternalIdentityProvider.WHATSAPP);
+        Mockito.when(identity.getExternalSubject()).thenReturn("905551234567");
+        var dispatcher = new CustomerNotificationDispatcher(identityRepository, List.of());
+
+        boolean delivered = dispatcher.send(
+                77L,
+                88L,
+                new ReferralUnlockedCustomerNotification("ALEX7K2")
+        );
+
+        Assertions.assertFalse(delivered);
     }
 
     @Test

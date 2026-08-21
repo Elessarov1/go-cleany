@@ -42,7 +42,7 @@ public class CustomerNotificationDispatcher {
         this.senders = Map.copyOf(sendersByProvider);
     }
 
-    public void send(
+    public boolean send(
             long customerId,
             long communicationIdentityId,
             CustomerNotification notification
@@ -67,8 +67,9 @@ public class CustomerNotificationDispatcher {
                     target.provider(),
                     target.externalIdentityId()
             );
-            return;
+            return false;
         }
         sender.send(target, notification);
+        return true;
     }
 }

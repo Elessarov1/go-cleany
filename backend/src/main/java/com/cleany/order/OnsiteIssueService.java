@@ -5,7 +5,9 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.util.HexFormat;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.configuration.CleanerProperties;
@@ -25,6 +27,7 @@ public class OnsiteIssueService {
     private final OnsiteIssueProperties properties;
     private final ReferralService referralService;
     private final Clock clock;
+    private final ApplicationEventPublisher eventPublisher;
 
     public OnsiteIssueService(
             CleaningOrderRepository orderRepository,
@@ -34,7 +37,8 @@ public class OnsiteIssueService {
             CleanerProperties cleanerProperties,
             OnsiteIssueProperties properties,
             ReferralService referralService,
-            Clock clock
+            Clock clock,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.orderRepository = orderRepository;
         this.reportRepository = reportRepository;
@@ -44,6 +48,7 @@ public class OnsiteIssueService {
         this.properties = properties;
         this.referralService = referralService;
         this.clock = clock;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -195,10 +200,16 @@ public class OnsiteIssueService {
                 cleanerTelegramUserId,
                 "reason=" + report.getReason() + "; photos=" + photoCount
         );
+        eventPublisher.publishEvent(new CleaningOrderCustomerEvent.OnsiteIssueReported(
+                order.getId(),
+                order.getCustomerId(),
+                order.getCommunicationIdentityId(),
+                cleanerTelegramUserId
+        ));
         return delivery(report);
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordCustomerNotified(long orderId, long cleanerTelegramUserId) {
         CleaningOrderIssueReport report = reportRepository.findByOrder_IdAndSubmittedAtIsNotNull(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
@@ -212,7 +223,7 @@ public class OnsiteIssueService {
                 CleaningOrderStatus.ONSITE_ISSUE_REPORTED,
                 OrderActorType.SYSTEM,
                 null,
-                "Onsite issue report delivered to customer via Telegram"
+                "Onsite issue report delivered to customer"
         );
     }
 

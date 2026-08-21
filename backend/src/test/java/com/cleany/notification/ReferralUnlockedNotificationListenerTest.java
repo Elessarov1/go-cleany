@@ -28,13 +28,11 @@ class ReferralUnlockedNotificationListenerTest {
     @Test
     void dispatcherFailure_doesNotEscapeAfterCommitListener() {
         CustomerNotificationDispatcher dispatcher = Mockito.mock(CustomerNotificationDispatcher.class);
-        Mockito.doThrow(new IllegalStateException("Telegram unavailable"))
-                .when(dispatcher)
-                .send(
+        Mockito.when(dispatcher.send(
                         Mockito.eq(77L),
                         Mockito.eq(88L),
                         Mockito.any(ReferralUnlockedCustomerNotification.class)
-                );
+                )).thenThrow(new IllegalStateException("Telegram unavailable"));
         var listener = new ReferralUnlockedNotificationListener(dispatcher);
 
         Assertions.assertDoesNotThrow(

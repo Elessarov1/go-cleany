@@ -2,6 +2,7 @@ package com.cleany.telegram.bot;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -9,6 +10,7 @@ import org.mockito.Mockito;
 
 import com.cleany.order.ApartmentType;
 import com.cleany.order.CleaningOrder;
+import com.cleany.order.CleaningOrderCustomerNotification;
 import com.cleany.order.CleaningOrderReportProgress;
 import com.cleany.order.CleaningType;
 import com.cleany.order.ServiceArea;
@@ -83,16 +85,20 @@ class CleaningOrderBotMessageFactoryTest {
 
     @Test
     void reportReady_customerMessageAndCallbackRendered() {
-        CleaningOrder order = Mockito.mock(CleaningOrder.class);
-        Mockito.when(order.getApartmentType()).thenReturn(ApartmentType.TWO_PLUS_ONE);
-        Mockito.when(order.getArea()).thenReturn(ServiceArea.MAHMUTLAR);
-        Mockito.when(order.getRequestedDate()).thenReturn(LocalDate.of(2026, 8, 18));
-        Mockito.when(order.getCleanerComment()).thenReturn("Everything is ready");
+        var notification = new CleaningOrderCustomerNotification.Completed(
+                43L,
+                ApartmentType.TWO_PLUS_ONE,
+                false,
+                ServiceArea.MAHMUTLAR,
+                LocalDate.of(2026, 8, 18),
+                "Everything is ready",
+                List.of()
+        );
         var progress = new CleaningOrderReportProgress(43L, 2L, true);
 
         String saved = messageFactory.photoSaved(progress);
-        String header = messageFactory.customerReportHeader(order);
-        String comment = messageFactory.customerReportComment(order);
+        String header = messageFactory.customerReportHeader(notification);
+        String comment = messageFactory.customerReportComment(notification);
         var keyboard = messageFactory.reportReadyKeyboard(43L);
 
         Assertions.assertAll(

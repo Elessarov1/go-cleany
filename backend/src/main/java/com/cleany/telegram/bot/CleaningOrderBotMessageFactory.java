@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import com.cleany.order.ApartmentType;
 import com.cleany.order.CleaningOrder;
+import com.cleany.order.CleaningOrderCustomerNotification;
 import com.cleany.order.CleaningOrderReportProgress;
 import com.cleany.order.CleaningType;
 import com.cleany.order.OnsiteIssueProgress;
@@ -80,6 +81,14 @@ public class CleaningOrderBotMessageFactory {
                 order.getPhone(),
                 order.getAddress()
         ).strip();
+    }
+
+    public String customerOrderAccepted() {
+        return "Ваш заказ на уборку подтверждён ✅";
+    }
+
+    public String customerOrderCancelled() {
+        return "Заказ отменён.";
     }
 
     public InlineKeyboard acceptedOrderKeyboard(CleaningOrder order, long customerTelegramUserId) {
@@ -211,7 +220,7 @@ public class CleaningOrderBotMessageFactory {
         )));
     }
 
-    public String customerReportHeader(CleaningOrder order) {
+    public String customerReportHeader(CleaningOrderCustomerNotification.Completed notification) {
         return """
                 🧹 Уборка завершена ✅
 
@@ -219,14 +228,14 @@ public class CleaningOrderBotMessageFactory {
                 %s
                 %s
                 """.formatted(
-                apartment(order.getApartmentType(), order.isDuplex()),
-                area(order.getArea()),
-                DATE_FORMATTER.format(order.getRequestedDate())
+                apartment(notification.apartmentType(), notification.duplex()),
+                area(notification.area()),
+                DATE_FORMATTER.format(notification.requestedDate())
         ).strip();
     }
 
-    public String customerReportComment(CleaningOrder order) {
-        return "Комментарий клинера:\n" + valueOrDash(order.getCleanerComment());
+    public String customerReportComment(CleaningOrderCustomerNotification.Completed notification) {
+        return "Комментарий клинера:\n" + valueOrDash(notification.cleanerComment());
     }
 
     private static String callback(String action, long orderId) {

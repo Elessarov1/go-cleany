@@ -298,7 +298,6 @@ public class TelegramCleanerBotService {
                     messageFactory.acceptedOrderKeyboard(order, customerChatId),
                     orderId
             );
-            safeSend(customerChatId, "Ваш заказ на уборку подтверждён ✅", orderId);
         } catch (OrderClaimConflictException exception) {
             CleaningOrder order = orderService.getOrderForConfiguredCleaner(orderId, cleanerId);
             String message;
@@ -321,33 +320,15 @@ public class TelegramCleanerBotService {
     }
 
     private void cancel(String callbackId, long orderId, long cleanerId) {
-        CleaningOrder order = orderService.cancelOrderByCleaner(orderId, cleanerId);
-        long customerChatId = requireTelegramCustomerChatId(order);
+        orderService.cancelOrderByCleaner(orderId, cleanerId);
         safeAnswer(callbackId, "Заказ №" + orderId + " отменён.", false);
         safeSend(cleanerId, "❌ Заказ №" + orderId + " отменён.", orderId);
-        safeSend(customerChatId, "Заказ отменён.", orderId);
     }
 
     private void deliverReport(String callbackId, long orderId, long cleanerId) {
         CleaningOrderReport report = orderService.getReportForDelivery(orderId, cleanerId);
         CleaningOrder order = report.order();
-        long customerChatId = requireTelegramCustomerChatId(order);
         safeAnswer(callbackId, "Отправляем отчёт клиенту.", false);
-
-        botClient.sendMessage(
-                customerChatId,
-                messageFactory.customerReportHeader(order),
-                TelegramBotClient.InlineKeyboard.empty()
-        );
-        for (String telegramFileId : report.telegramFileIds()) {
-            botClient.sendPhoto(customerChatId, telegramFileId);
-        }
-        botClient.sendMessage(
-                customerChatId,
-                messageFactory.customerReportComment(order),
-                TelegramBotClient.InlineKeyboard.empty()
-        );
-
         orderService.completeOrder(orderId, cleanerId, order.getCleanerComment());
         safeSend(cleanerId, "✅ Отчёт по заказу №" + orderId + " отправлен клиенту.", orderId);
     }
@@ -381,25 +362,8 @@ public class TelegramCleanerBotService {
 
     private void submitOnsiteIssue(String callbackId, long orderId, long cleanerId) {
         OnsiteIssueDelivery delivery = onsiteIssueService.submit(orderId, cleanerId);
-        CleaningOrder order = delivery.order();
-        long customerChatId = requireTelegramCustomerChatId(order);
         safeAnswer(callbackId, "Отчёт сохранён. Уведомляем клиента.", false);
         adminBotService.notifyOnsiteIssue(orderId, delivery.reason());
-
-        botClient.sendMessage(
-                customerChatId,
-                messageFactory.customerOnsiteIssueReport(delivery.reason(), delivery.comment()),
-                TelegramBotClient.InlineKeyboard.empty()
-        );
-        for (String telegramFileId : delivery.telegramFileIds()) {
-            botClient.sendPhoto(customerChatId, telegramFileId);
-        }
-        botClient.sendMessage(
-                customerChatId,
-                messageFactory.customerOnsiteIssuePaused(),
-                TelegramBotClient.InlineKeyboard.empty()
-        );
-        onsiteIssueService.recordCustomerNotified(orderId, cleanerId);
         safeSend(cleanerId, "⚠️ Отчёт по заказу №" + orderId + " сохранён и отправлен клиенту.", orderId);
     }
 

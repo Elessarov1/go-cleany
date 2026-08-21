@@ -1,4 +1,4 @@
 package com.cleany.notification;
 
-public sealed interface CustomerNotification permits ReferralUnlockedCustomerNotification {
+public interface CustomerNotification {
 }

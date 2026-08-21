@@ -202,6 +202,11 @@ public class CleaningOrderService {
                 null,
                 acceptedAt
         ));
+        eventPublisher.publishEvent(new CleaningOrderCustomerEvent.Accepted(
+                order.getId(),
+                order.getCustomerId(),
+                order.getCommunicationIdentityId()
+        ));
         return order;
     }
 
@@ -320,6 +325,11 @@ public class CleaningOrderService {
                 cleanerTelegramUserId,
                 null
         );
+        eventPublisher.publishEvent(new CleaningOrderCustomerEvent.Cancelled(
+                order.getId(),
+                order.getCustomerId(),
+                order.getCommunicationIdentityId()
+        ));
         return order;
     }
 
@@ -358,6 +368,11 @@ public class CleaningOrderService {
                 completedAt
         ));
         String referralCode = referralService.completeOrder(order);
+        eventPublisher.publishEvent(new CleaningOrderCustomerEvent.Completed(
+                order.getId(),
+                order.getCustomerId(),
+                order.getCommunicationIdentityId()
+        ));
         if (firstCompletedOrder) {
             eventPublisher.publishEvent(new ReferralUnlockedEvent(
                     order.getCustomerId(),
