@@ -157,7 +157,7 @@ class ReferralFinancialModelIntegrationTest extends BaseIntegrationTest {
                 }
                 """.formatted(requestedDate, referralCode);
 
-        return mvc.perform(post("/api/v1/orders")
+        return mvc.perform(post("/api/v1/cleaning/orders")
                 .header("Authorization", "tma " + initData)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody));

@@ -81,7 +81,7 @@ export class HttpCleaningApi implements CleaningApi {
   }
 
   getConfiguration(): Promise<CleaningConfiguration> {
-    return this.request("/api/v1/config");
+    return this.request("/api/v1/cleaning/configuration");
   }
 
   getCurrentCustomerProfile(): Promise<CustomerProfile> {
@@ -89,14 +89,14 @@ export class HttpCleaningApi implements CleaningApi {
   }
 
   quoteOrder(request: CleaningOrderQuoteRequest): Promise<CleaningOrderQuote> {
-    return this.request("/api/v1/orders/quote", {
+    return this.request("/api/v1/cleaning/orders/quote", {
       method: "POST",
       body: JSON.stringify(request),
     });
   }
 
   createOrder(request: CreateCleaningOrderRequest): Promise<CleaningOrder> {
-    return this.request("/api/v1/orders", {
+    return this.request("/api/v1/cleaning/orders", {
       method: "POST",
       body: JSON.stringify(request),
     });
@@ -107,15 +107,15 @@ export class HttpCleaningApi implements CleaningApi {
   }
 
   getOrders(): Promise<CleaningOrder[]> {
-    return this.request("/api/v1/orders");
+    return this.request("/api/v1/cleaning/orders");
   }
 
   getOrder(id: number): Promise<CleaningOrder> {
-    return this.request(`/api/v1/orders/${id}`);
+    return this.request(`/api/v1/cleaning/orders/${id}`);
   }
 
   cancelOrder(id: number): Promise<CleaningOrder> {
-    return this.request(`/api/v1/orders/${id}/cancel`, { method: "POST" });
+    return this.request(`/api/v1/cleaning/orders/${id}/cancel`, { method: "POST" });
   }
 
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {

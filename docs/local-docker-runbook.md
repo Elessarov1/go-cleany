@@ -78,12 +78,12 @@ docker compose --env-file .env.docker logs -f backend
 ```powershell
 docker compose --env-file .env.docker ps
 (Invoke-RestMethod http://localhost:8080/actuator/health).status
-Invoke-RestMethod http://localhost:5173/api/v1/config
+Invoke-RestMethod http://localhost:5173/api/v1/cleaning/configuration
 Invoke-WebRequest http://localhost:5173/health -UseBasicParsing
 ```
 
 Ожидаемый статус backend — `UP`, а все три контейнера в `docker compose ps` должны стать
-`healthy`. Ответ `/api/v1/config` через порт frontend дополнительно подтверждает, что Nginx
+`healthy`. Ответ `/api/v1/cleaning/configuration` через порт frontend дополнительно подтверждает, что Nginx
 правильно проксирует backend.
 
 Откройте приложение в браузере: <http://localhost:5173>. Контейнерный frontend использует реальный

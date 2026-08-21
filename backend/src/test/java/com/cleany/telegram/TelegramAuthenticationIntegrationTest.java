@@ -17,8 +17,10 @@ import com.cleany.customer.CustomerExternalIdentityRepository;
 import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.order.CleaningOrderRepository;
 
+import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -46,13 +48,13 @@ class TelegramAuthenticationIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void configurationWithoutAuthentication_publicResponseReturned() throws Exception {
-        mvc.perform(get("/api/v1/config"))
+        mvc.perform(get("/api/v1/cleaning/configuration"))
                 .andExpect(status().isOk());
     }
 
     @Test
     void ordersWithoutAuthentication_unauthorizedResponseReturned() throws Exception {
-        mvc.perform(get("/api/v1/orders"))
+        mvc.perform(get("/api/v1/cleaning/orders"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("authentication_required"));
     }
@@ -62,7 +64,7 @@ class TelegramAuthenticationIntegrationTest extends BaseIntegrationTest {
         String validInitData = TelegramInitDataTestFactory.signed(BOT_TOKEN, Instant.now(), USER_JSON);
         String tamperedInitData = validInitData.replace("Alex", "Mallory");
 
-        mvc.perform(get("/api/v1/orders")
+        mvc.perform(get("/api/v1/cleaning/orders")
                         .header("Authorization", "tma " + tamperedInitData))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("authentication_required"));
@@ -85,11 +87,12 @@ class TelegramAuthenticationIntegrationTest extends BaseIntegrationTest {
                 }
                 """.formatted(requestedDate);
 
-        mvc.perform(post("/api/v1/orders")
+        mvc.perform(post("/api/v1/cleaning/orders")
                         .header("Authorization", "tma " + initData)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isCreated())
+                .andExpect(header().string("Location", startsWith("/api/v1/cleaning/orders/")))
                 .andExpect(jsonPath("$.status").value("NEW"))
                 .andExpect(jsonPath("$.communicationIdentityId").isNumber());
 
@@ -131,7 +134,7 @@ class TelegramAuthenticationIntegrationTest extends BaseIntegrationTest {
                 }
                 """.formatted(requestedDate);
 
-        mvc.perform(post("/api/v1/orders")
+        mvc.perform(post("/api/v1/cleaning/orders")
                         .header("Authorization", "tma " + initData)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))

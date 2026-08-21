@@ -14,8 +14,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/orders")
+@RequestMapping(CleaningOrderController.BASE_PATH)
 public class CleaningOrderController {
+
+    static final String BASE_PATH = "/api/v1/cleaning/orders";
 
     private final CleaningOrderService orderService;
 
@@ -30,7 +32,7 @@ public class CleaningOrderController {
         var order = orderService.createOrder(request.toCommand());
         var response = CleaningOrderResponse.from(order);
         return ResponseEntity
-                .created(URI.create("/api/v1/orders/" + order.getId()))
+                .created(URI.create(BASE_PATH + "/" + order.getId()))
                 .body(response);
     }
 
