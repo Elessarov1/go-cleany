@@ -11,7 +11,7 @@ public interface CleaningOrderPhotoRepository extends JpaRepository<CleaningOrde
 
     List<CleaningOrderPhoto> findAllByOrderIdOrderByCreatedAt(long orderId);
 
-    boolean existsByOrderIdAndTelegramFileUniqueId(long orderId, String telegramFileUniqueId);
+    boolean existsByOrderIdAndMediaAssetId(long orderId, long mediaAssetId);
 
     long countByOrderId(long orderId);
 

@@ -12,6 +12,10 @@ import com.cleany.configuration.CleanerProperties;
 import com.cleany.configuration.CleaningProperties;
 import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountService;
+import com.cleany.media.ImageMediaTypeDetector;
+import com.cleany.media.MediaProvider;
+import com.cleany.media.MediaProviderReferenceService;
+import com.cleany.media.MediaUpload;
 import com.cleany.pricing.CleaningPriceService;
 import com.cleany.referral.OrderReferralPlan;
 import com.cleany.referral.ReferralUnlockedEvent;
@@ -36,6 +40,7 @@ public class CleaningOrderService {
     private final CleanerProperties cleanerProperties;
     private final CustomerAccountService customerAccountService;
     private final ReferralService referralService;
+    private final MediaProviderReferenceService mediaProviderReferenceService;
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -49,6 +54,7 @@ public class CleaningOrderService {
             CleanerProperties cleanerProperties,
             CustomerAccountService customerAccountService,
             ReferralService referralService,
+            MediaProviderReferenceService mediaProviderReferenceService,
             Clock clock,
             ApplicationEventPublisher eventPublisher
     ) {
@@ -61,6 +67,7 @@ public class CleaningOrderService {
         this.cleanerProperties = cleanerProperties;
         this.customerAccountService = customerAccountService;
         this.referralService = referralService;
+        this.mediaProviderReferenceService = mediaProviderReferenceService;
         this.clock = clock;
         this.eventPublisher = eventPublisher;
     }
@@ -236,14 +243,32 @@ public class CleaningOrderService {
             long cleanerTelegramUserId,
             String telegramFileId,
             String telegramFileUniqueId,
+            byte[] content,
             String caption
     ) {
         CleaningOrder order = findActiveReport(cleanerTelegramUserId);
         String fileId = requireValue(telegramFileId, 512, "Telegram photo file_id");
         String uniqueId = requireValue(telegramFileUniqueId, 255, "Telegram photo file_unique_id");
+        String contentType = ImageMediaTypeDetector.detect(content)
+                .orElseThrow(() -> new InvalidCompletionPhotoException(
+                        "Completion report photo must be JPEG or PNG"
+                ));
+        var providerMedia = mediaProviderReferenceService.resolveOrStore(
+                new MediaUpload(content, contentType),
+                MediaProvider.TELEGRAM,
+                fileId,
+                uniqueId
+        );
 
-        if (!photoRepository.existsByOrderIdAndTelegramFileUniqueId(order.getId(), uniqueId)) {
-            photoRepository.save(new CleaningOrderPhoto(order, fileId, uniqueId, clock.instant()));
+        if (!photoRepository.existsByOrderIdAndMediaAssetId(
+                order.getId(),
+                providerMedia.media().mediaId()
+        )) {
+            photoRepository.save(new CleaningOrderPhoto(
+                    order,
+                    providerMedia.media().mediaId(),
+                    clock.instant()
+            ));
             recordEvent(
                     order,
                     OrderEventType.PHOTO_ADDED,
@@ -300,7 +325,9 @@ public class CleaningOrderService {
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
         order.requireReportAccess(cleanerTelegramUserId);
         List<String> fileIds = photoRepository.findAllByOrderIdOrderByCreatedAt(orderId).stream()
-                .map(CleaningOrderPhoto::getTelegramFileId)
+                .map(CleaningOrderPhoto::getMediaAssetId)
+                .map(mediaId -> mediaProviderReferenceService.require(mediaId, MediaProvider.TELEGRAM))
+                .map(reference -> reference.externalId())
                 .toList();
         if (fileIds.isEmpty()) {
             throw new PhotoReportEmptyException(orderId);

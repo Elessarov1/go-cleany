@@ -25,11 +25,8 @@ public class CleaningOrderPhoto {
     @JoinColumn(name = "order_id", nullable = false)
     private CleaningOrder order;
 
-    @Column(name = "telegram_file_id", nullable = false, length = 512)
-    private String telegramFileId;
-
-    @Column(name = "telegram_file_unique_id", nullable = false, length = 255)
-    private String telegramFileUniqueId;
+    @Column(name = "media_asset_id", nullable = false)
+    private long mediaAssetId;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -39,13 +36,14 @@ public class CleaningOrderPhoto {
 
     public CleaningOrderPhoto(
             CleaningOrder order,
-            String telegramFileId,
-            String telegramFileUniqueId,
+            long mediaAssetId,
             Instant createdAt
     ) {
         this.order = Objects.requireNonNull(order);
-        this.telegramFileId = Objects.requireNonNull(telegramFileId);
-        this.telegramFileUniqueId = Objects.requireNonNull(telegramFileUniqueId);
+        if (mediaAssetId <= 0) {
+            throw new IllegalArgumentException("mediaAssetId must be positive");
+        }
+        this.mediaAssetId = mediaAssetId;
         this.createdAt = Objects.requireNonNull(createdAt);
     }
 
@@ -57,12 +55,8 @@ public class CleaningOrderPhoto {
         return order;
     }
 
-    public String getTelegramFileId() {
-        return telegramFileId;
-    }
-
-    public String getTelegramFileUniqueId() {
-        return telegramFileUniqueId;
+    public long getMediaAssetId() {
+        return mediaAssetId;
     }
 
     public Instant getCreatedAt() {

@@ -278,10 +278,15 @@ class DataRetentionCleanupIntegrationTest extends BaseIntegrationTest {
     }
 
     private CleaningOrderPhoto completionPhoto(CleaningOrder order, Instant createdAt) {
+        var providerMedia = mediaProviderReferenceService.resolveOrStore(
+                new MediaUpload(JPEG, "image/jpeg"),
+                MediaProvider.TELEGRAM,
+                "completion-file-" + order.getId(),
+                "completion-unique-" + order.getId()
+        );
         return new CleaningOrderPhoto(
                 order,
-                "completion-file-" + order.getId(),
-                "completion-unique-" + order.getId(),
+                providerMedia.media().mediaId(),
                 createdAt
         );
     }

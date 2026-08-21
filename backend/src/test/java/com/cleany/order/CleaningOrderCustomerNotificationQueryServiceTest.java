@@ -8,6 +8,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import com.cleany.media.MediaProvider;
+import com.cleany.media.MediaProviderReferenceData;
+import com.cleany.media.MediaProviderReferenceService;
 import com.cleany.notification.ExternalMediaReference;
 
 class CleaningOrderCustomerNotificationQueryServiceTest {
@@ -19,12 +22,15 @@ class CleaningOrderCustomerNotificationQueryServiceTest {
             Mockito.mock(CleaningOrderIssueReportRepository.class);
     private final CleaningOrderIssuePhotoRepository issuePhotoRepository =
             Mockito.mock(CleaningOrderIssuePhotoRepository.class);
+    private final MediaProviderReferenceService mediaProviderReferenceService =
+            Mockito.mock(MediaProviderReferenceService.class);
     private final CleaningOrderCustomerNotificationQueryService service =
             new CleaningOrderCustomerNotificationQueryService(
                     orderRepository,
                     completionPhotoRepository,
                     issueReportRepository,
-                    issuePhotoRepository
+                    issuePhotoRepository,
+                    mediaProviderReferenceService
             );
 
     @Test
@@ -38,8 +44,12 @@ class CleaningOrderCustomerNotificationQueryServiceTest {
         Mockito.when(order.getArea()).thenReturn(ServiceArea.MAHMUTLAR);
         Mockito.when(order.getRequestedDate()).thenReturn(LocalDate.of(2026, 8, 18));
         Mockito.when(order.getCleanerComment()).thenReturn("Готово");
-        Mockito.when(firstPhoto.getTelegramFileId()).thenReturn("photo-1");
-        Mockito.when(secondPhoto.getTelegramFileId()).thenReturn("photo-2");
+        Mockito.when(firstPhoto.getMediaAssetId()).thenReturn(71L);
+        Mockito.when(secondPhoto.getMediaAssetId()).thenReturn(72L);
+        Mockito.when(mediaProviderReferenceService.require(71L, MediaProvider.TELEGRAM))
+                .thenReturn(providerReference(71L, "photo-1", "unique-1"));
+        Mockito.when(mediaProviderReferenceService.require(72L, MediaProvider.TELEGRAM))
+                .thenReturn(providerReference(72L, "photo-2", "unique-2"));
         Mockito.when(completionPhotoRepository.findAllByOrderIdOrderByCreatedAt(43L))
                 .thenReturn(List.of(firstPhoto, secondPhoto));
 
@@ -80,6 +90,20 @@ class CleaningOrderCustomerNotificationQueryServiceTest {
                 () -> Assertions.assertEquals(OnsiteIssueReason.ACCESS_PROBLEM, notification.reason()),
                 () -> Assertions.assertEquals("Нет ключа", notification.comment()),
                 () -> Assertions.assertEquals(List.of(71L), notification.mediaIds())
+        );
+    }
+
+    private static MediaProviderReferenceData providerReference(
+            long mediaId,
+            String externalId,
+            String externalUniqueId
+    ) {
+        return new MediaProviderReferenceData(
+                mediaId,
+                MediaProvider.TELEGRAM,
+                externalId,
+                externalUniqueId,
+                java.time.Instant.parse("2026-08-21T12:00:00Z")
         );
     }
 }

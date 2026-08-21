@@ -38,6 +38,7 @@ class TelegramCleanerBotServiceTest {
     private static final long CUSTOMER_ID = 900001L;
     private static final long CUSTOMER_ACCOUNT_ID = 77L;
     private static final long COMMUNICATION_ID = 501L;
+    private static final byte[] JPEG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xD9};
 
     private CleaningOrderService orderService;
     private CleaningOrderBotMessageFactory messageFactory;
@@ -198,8 +199,10 @@ class TelegramCleanerBotServiceTest {
                 CLEANER_ID,
                 "large-file",
                 "large-unique",
+                JPEG,
                 "Everything is ready"
         )).thenReturn(progress);
+        Mockito.when(botClient.downloadFile("large-file")).thenReturn(JPEG);
         Mockito.when(messageFactory.photoSaved(progress)).thenReturn("photo-saved");
         Mockito.when(messageFactory.reportReadyKeyboard(43L)).thenReturn(keyboard);
 
@@ -209,9 +212,32 @@ class TelegramCleanerBotServiceTest {
                 CLEANER_ID,
                 "large-file",
                 "large-unique",
+                JPEG,
                 "Everything is ready"
         );
+        Mockito.verify(botClient).downloadFile("large-file");
         Mockito.verify(botClient).sendMessage(CLEANER_ID, "photo-saved", keyboard);
+    }
+
+    @Test
+    void photoMessage_telegramDownloadFailureDoesNotStoreReportPhoto() {
+        Mockito.when(botClient.downloadFile("large-file"))
+                .thenThrow(new TelegramBotApiException("download failed"));
+
+        cleanerBotService.handle(photoUpdate(CLEANER_ID));
+
+        Mockito.verify(orderService, Mockito.never()).addPhotoToActiveReport(
+                Mockito.anyLong(),
+                Mockito.anyString(),
+                Mockito.anyString(),
+                Mockito.any(byte[].class),
+                Mockito.nullable(String.class)
+        );
+        Mockito.verify(botClient).sendMessage(
+                CLEANER_ID,
+                "Не удалось загрузить фотографию из Telegram. Попробуйте отправить её ещё раз.",
+                InlineKeyboard.empty()
+        );
     }
 
     @Test

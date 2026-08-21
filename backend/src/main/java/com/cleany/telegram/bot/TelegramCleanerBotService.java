@@ -17,6 +17,7 @@ import com.cleany.order.CleaningOrder;
 import com.cleany.order.CleaningOrderReport;
 import com.cleany.order.CleaningOrderReportProgress;
 import com.cleany.order.CleaningOrderService;
+import com.cleany.order.InvalidCompletionPhotoException;
 import com.cleany.order.InvalidPhotoReportInputException;
 import com.cleany.order.InvalidOrderStateException;
 import com.cleany.order.InvalidOnsiteIssueException;
@@ -173,10 +174,22 @@ public class TelegramCleanerBotService {
             }
             PhotoSize photo = largestPhoto(message);
             if (photo != null) {
+                byte[] content;
+                try {
+                    content = botClient.downloadFile(photo.fileId());
+                } catch (TelegramBotApiException exception) {
+                    log.error("Telegram completion photo download failed for cleaner {}", cleanerId, exception);
+                    safeSend(
+                            cleanerId,
+                            "Не удалось загрузить фотографию из Telegram. Попробуйте отправить её ещё раз."
+                    );
+                    return;
+                }
                 CleaningOrderReportProgress progress = orderService.addPhotoToActiveReport(
                         cleanerId,
                         photo.fileId(),
                         photo.fileUniqueId(),
+                        content,
                         message.caption()
                 );
                 safeSend(
@@ -206,6 +219,8 @@ public class TelegramCleanerBotService {
             }
         } catch (ReportCollectionNotActiveException exception) {
             safeSend(cleanerId, "Нет активного фотоотчёта. Сначала нажмите «Завершить уборку» в принятом заказе.");
+        } catch (InvalidCompletionPhotoException exception) {
+            safeSend(cleanerId, "Фотография для отчёта должна быть в формате JPEG или PNG.");
         } catch (InvalidPhotoReportInputException exception) {
             safeSend(cleanerId, "Комментарий клинера должен содержать от 1 до 1000 символов.");
         } catch (CleanerNotAuthorizedException | InvalidOrderStateException exception) {

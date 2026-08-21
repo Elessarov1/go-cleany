@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.configuration.CleanerProperties;
 import com.cleany.configuration.OnsiteIssueProperties;
+import com.cleany.media.ImageMediaTypeDetector;
 import com.cleany.media.MediaProvider;
 import com.cleany.media.MediaProviderReferenceService;
 import com.cleany.media.MediaUpload;
@@ -311,7 +312,7 @@ public class OnsiteIssueService {
                     "Evidence photo exceeds " + properties.maxPhotoSize()
             );
         }
-        String contentType = detectContentType(content);
+        String contentType = ImageMediaTypeDetector.detect(content).orElse(null);
         if (contentType == null || !properties.supportedContentTypes().contains(contentType)) {
             throw invalid(
                     OnsiteIssueProblem.PHOTO_TYPE_UNSUPPORTED,
@@ -319,25 +320,6 @@ public class OnsiteIssueService {
             );
         }
         return new ValidatedPhoto(contentType);
-    }
-
-    private static String detectContentType(byte[] content) {
-        if (content.length >= 3
-                && Byte.toUnsignedInt(content[0]) == 0xFF
-                && Byte.toUnsignedInt(content[1]) == 0xD8
-                && Byte.toUnsignedInt(content[2]) == 0xFF) {
-            return "image/jpeg";
-        }
-        byte[] pngSignature = {(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
-        if (content.length >= pngSignature.length) {
-            for (int index = 0; index < pngSignature.length; index++) {
-                if (content[index] != pngSignature[index]) {
-                    return null;
-                }
-            }
-            return "image/png";
-        }
-        return null;
     }
 
     private static String normalizeComment(String value, boolean required) {
