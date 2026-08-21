@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260824-01" author="go-cleany">
+        <comment>
+            Introduce platform-owned binary media and separate references to external media providers.
+            Existing cleaning photo tables are intentionally left unchanged for a later expand/contract migration.
+        </comment>
+
+        <createTable tableName="media_asset">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_media_asset" nullable="false"/>
+            </column>
+            <column name="content" type="BYTEA"><constraints nullable="false"/></column>
+            <column name="content_type" type="VARCHAR(100)"><constraints nullable="false"/></column>
+            <column name="size_bytes" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="sha256" type="VARCHAR(64)"><constraints nullable="false"/></column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+
+        <createTable tableName="media_provider_reference">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_media_provider_reference" nullable="false"/>
+            </column>
+            <column name="media_asset_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="provider" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="external_id" type="VARCHAR(512)"><constraints nullable="false"/></column>
+            <column name="external_unique_id" type="VARCHAR(255)"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="media_provider_reference"
+                baseColumnNames="media_asset_id"
+                constraintName="fk_media_provider_reference_asset"
+                referencedTableName="media_asset"
+                referencedColumnNames="id"
+                onDelete="RESTRICT"/>
+        <addUniqueConstraint
+                tableName="media_provider_reference"
+                columnNames="provider, external_id"
+                constraintName="uq_media_provider_reference_external_id"/>
+        <addUniqueConstraint
+                tableName="media_provider_reference"
+                columnNames="provider, external_unique_id"
+                constraintName="uq_media_provider_reference_external_unique"/>
+        <createIndex tableName="media_provider_reference" indexName="idx_media_provider_reference_asset">
+            <column name="media_asset_id"/>
+        </createIndex>
+
+        <sql dbms="postgresql"><![CDATA[
+            alter table media_asset
+                add constraint ck_media_asset_content check (octet_length(content) > 0),
+                add constraint ck_media_asset_content_type check (btrim(content_type) <> ''),
+                add constraint ck_media_asset_size check (
+                    size_bytes > 0 and size_bytes = octet_length(content)
+                ),
+                add constraint ck_media_asset_sha256 check (sha256 ~ '^[0-9a-f]{64}$');
+
+            alter table media_provider_reference
+                add constraint ck_media_provider_reference_provider check (
+                    provider in ('TELEGRAM', 'WHATSAPP')
+                ),
+                add constraint ck_media_provider_reference_external_id check (
+                    btrim(external_id) <> ''
+                ),
+                add constraint ck_media_provider_reference_external_unique check (
+                    external_unique_id is null or btrim(external_unique_id) <> ''
+                );
+        ]]></sql>
+
+        <rollback>
+            <dropTable tableName="media_provider_reference"/>
+            <dropTable tableName="media_asset"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

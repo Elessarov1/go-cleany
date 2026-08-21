@@ -4,6 +4,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.cleany.customer.ExternalIdentityProvider;
+import com.cleany.media.MediaProvider;
 import com.cleany.notification.CommunicationTarget;
 import com.cleany.notification.CustomerNotification;
 import com.cleany.notification.CustomerNotificationSender;
@@ -96,7 +97,7 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
 
     private void validateTelegramMedia(Iterable<ExternalMediaReference> media) {
         for (ExternalMediaReference reference : media) {
-            if (reference.provider() != provider()) {
+            if (reference.provider() != MediaProvider.TELEGRAM) {
                 throw new IllegalArgumentException("Telegram sender received non-Telegram media");
             }
         }

@@ -2,10 +2,10 @@ package com.cleany.notification;
 
 import java.util.Objects;
 
-import com.cleany.customer.ExternalIdentityProvider;
+import com.cleany.media.MediaProvider;
 
 public record ExternalMediaReference(
-        ExternalIdentityProvider provider,
+        MediaProvider provider,
         String externalId
 ) {
 
@@ -18,6 +18,6 @@ public record ExternalMediaReference(
     }
 
     public static ExternalMediaReference telegram(String externalId) {
-        return new ExternalMediaReference(ExternalIdentityProvider.TELEGRAM, externalId);
+        return new ExternalMediaReference(MediaProvider.TELEGRAM, externalId);
     }
 }

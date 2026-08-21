@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.cleany.customer.ExternalIdentityProvider;
+import com.cleany.media.MediaProvider;
 import com.cleany.notification.CommunicationTarget;
 import com.cleany.notification.ExternalMediaReference;
 import com.cleany.notification.ReferralUnlockedCustomerNotification;
@@ -141,6 +142,36 @@ class TelegramCustomerNotificationSenderTest {
         order.verify(botClient).sendPhoto(900001L, "photo-1");
         order.verify(botClient).sendPhoto(900001L, "photo-2");
         order.verify(botClient).sendMessage(900001L, "comment", TelegramBotClient.InlineKeyboard.empty());
+    }
+
+    @Test
+    void completedCleaningReport_withAnotherProviderMediaRejectedBeforePartialDelivery() {
+        TelegramCustomerNotificationMessageFactory messageFactory =
+                Mockito.mock(TelegramCustomerNotificationMessageFactory.class);
+        CleaningOrderBotMessageFactory cleaningMessageFactory =
+                Mockito.mock(CleaningOrderBotMessageFactory.class);
+        TelegramBotClient botClient = Mockito.mock(TelegramBotClient.class);
+        var notification = new CleaningOrderCustomerNotification.Completed(
+                43L,
+                ApartmentType.TWO_PLUS_ONE,
+                false,
+                ServiceArea.MAHMUTLAR,
+                LocalDate.of(2026, 8, 18),
+                null,
+                List.of(new ExternalMediaReference(MediaProvider.WHATSAPP, "media-1"))
+        );
+        var sender = new TelegramCustomerNotificationSender(
+                messageFactory,
+                cleaningMessageFactory,
+                botClient
+        );
+
+        Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> sender.send(telegramTarget(), notification)
+        );
+
+        Mockito.verifyNoInteractions(messageFactory, cleaningMessageFactory, botClient);
     }
 
     @Test
