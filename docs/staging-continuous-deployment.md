@@ -4,16 +4,19 @@
 автоматическую цепочку:
 
 ```text
-push в main
+push в main ИЛИ ручной Run workflow
   -> backend и frontend CI выполняются параллельно
   -> deploy_staging запускается только после двух успешных jobs
   -> GitHub Actions подключается к VPS по SSH
+  -> GitHub staging variables передают актуальные cleaner/admin Telegram IDs
   -> release.sh разворачивает точный commit SHA
   -> backup, Docker build, health checks
 ```
 
-Application secrets из `.env.production` остаются только на VPS. В GitHub сохраняются лишь отдельный
-SSH-ключ для деплоя и проверенный host key сервера.
+Чувствительные application secrets (`TELEGRAM_BOT_TOKEN`, пароль PostgreSQL и т.д.) остаются в
+`.env.production` только на VPS. Списки Telegram ID клинеров и администраторов для staging управляются
+через GitHub Environment variables, чтобы их можно было менять перед демо без SSH на сервер и без
+коммита в репозиторий.
 
 ## 1. Предварительные условия
 
@@ -87,34 +90,27 @@ ssh-keygen -t ed25519 -C "go-cleany-staging-actions" -f $keyPath
 Get-Content "$keyPath.pub"
 ```
 
-Для этого automation-ключа оставьте passphrase пустой: GitHub runner не сможет вводить её
-интерактивно. Приватный файл никому не отправляйте и никогда не помещайте в репозиторий.
+Для automation-ключа оставьте passphrase пустой. Приватный файл никогда не помещайте в репозиторий.
 
-На VPS откройте `~/.ssh/authorized_keys` пользователя деплоя и добавьте публичную строку с
-ограничениями:
+На VPS добавьте публичную строку в `~/.ssh/authorized_keys` пользователя деплоя:
 
 ```text
 restrict ssh-ed25519 AAAA... go-cleany-staging-actions
 ```
 
-Затем проверьте права:
+Затем:
 
 ```bash
 chmod 700 ~/.ssh
 chmod 600 ~/.ssh/authorized_keys
 ```
 
-Опция `restrict` запрещает forwarding, PTY и ряд дополнительных SSH-возможностей, но ключ всё равно
-может выполнять команды от имени пользователя деплоя. Храните его как production credential.
-
-Пользователь из группы `docker` фактически имеет root-level возможности. Для staging допустимо
-использовать текущего отдельного deploy-пользователя, но не добавляйте этот ключ личному или root
-аккаунту без необходимости.
+Пользователь из группы `docker` фактически имеет root-level возможности, поэтому этот ключ является
+deployment credential.
 
 ## 4. Получить и проверить SSH host key VPS
 
-Workflow использует `StrictHostKeyChecking=yes`. Это защищает подключение от подмены сервера и требует
-заранее сохранить настоящий host key.
+Workflow использует `StrictHostKeyChecking=yes`.
 
 На VPS покажите fingerprint:
 
@@ -122,105 +118,127 @@ Workflow использует `StrictHostKeyChecking=yes`. Это защищае
 sudo ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
 ```
 
-На доверенном компьютере получите публичную строку, подставив реальный host и SSH-порт:
+На доверенном компьютере:
 
 ```bash
 ssh-keyscan -H -p 22 YOUR_VPS_HOST > go-cleany-staging-known-hosts
 ssh-keygen -lf go-cleany-staging-known-hosts
 ```
 
-Сравните fingerprint с результатом на VPS. Только после совпадения используйте содержимое файла
-`go-cleany-staging-known-hosts` как GitHub secret. Один `ssh-keyscan` без проверки fingerprint не
-подтверждает подлинность сервера.
+Сравните fingerprint и только после совпадения используйте содержимое файла как GitHub secret.
 
-## 5. Создать GitHub Environment
+## 5. GitHub Environment `staging`
 
-В GitHub откройте:
+В GitHub:
 
 ```text
-Repository -> Settings -> Environments -> New environment
+Repository -> Settings -> Environments -> staging
 ```
 
-Создайте environment с точным именем:
-
-```text
-staging
-```
-
-Добавьте Environment secrets:
+### Environment secrets
 
 | Secret | Значение |
 | --- | --- |
-| `STAGING_SSH_PRIVATE_KEY` | Полное содержимое приватного `go-cleany-staging-actions` |
-| `STAGING_SSH_KNOWN_HOSTS` | Проверенная строка или строки из `go-cleany-staging-known-hosts` |
+| `STAGING_SSH_PRIVATE_KEY` | приватный `go-cleany-staging-actions` |
+| `STAGING_SSH_KNOWN_HOSTS` | проверенный SSH host key VPS |
 
-Добавьте Environment variables:
+### Environment variables
 
 | Variable | Пример |
 | --- | --- |
 | `STAGING_SSH_HOST` | `203.0.113.10` или hostname VPS |
 | `STAGING_SSH_PORT` | `22` |
 | `STAGING_SSH_USER` | пользователь-владелец `/opt/go-cleany` |
+| `CLEANER_TELEGRAM_IDS` | `123456789,987654321` |
+| `ADMIN_TELEGRAM_IDS` | `123456789,555555555` |
 
-Отдельно откройте:
+`CLEANER_TELEGRAM_IDS` и `ADMIN_TELEGRAM_IDS` должны содержать только numeric Telegram IDs через
+запятую, без пробелов. Workflow валидирует этот формат до SSH/deploy.
+
+Эти два значения передаются `release.sh` как process environment и имеют приоритет над одноимёнными
+fallback-значениями из `.env.production` при Docker Compose interpolation. Файл `.env.production` на
+VPS не переписывается.
+
+Такой подход позволяет менять демо-роли непосредственно в GitHub и затем передеплоить staging.
+
+Отдельно в:
 
 ```text
 Repository -> Settings -> Secrets and variables -> Actions -> Variables
 ```
 
-Добавьте repository variables:
+хранятся repository variables:
 
 | Variable | Значение |
 | --- | --- |
-| `STAGING_URL` | `https://go-cleany-203-0-113-10.nip.io` или актуальный URL стенда |
-| `STAGING_DEPLOY_ENABLED` | Пока не создавайте; значение `true` включит автоматические выкладки |
+| `STAGING_URL` | публичный URL стенда |
+| `STAGING_DEPLOY_ENABLED` | `true` включает staging deploy job |
 
-`STAGING_DEPLOY_ENABLED` намеренно является repository variable: условие job вычисляется до запуска
-runner и до загрузки environment-level variables. Пока переменная отсутствует, `deploy_staging`
-безопасно пропускается, поэтому workflow можно отправить в GitHub до завтрашней настройки сервера.
-
-Если environment secrets недоступны на текущем GitHub-плане, создайте значения с теми же именами в
-`Settings -> Secrets and variables -> Actions`. Workflow использует стандартные `secrets` и `vars`,
-поэтому repository-level значения также подходят.
-
-Для полностью автоматического staging не включайте required approval. Ограничьте deployment branch
-веткой `main`, если такая настройка доступна. Для будущего production создайте отдельный environment с
-ручным подтверждением.
+`STAGING_DEPLOY_ENABLED` остаётся repository variable, поскольку условие job вычисляется до загрузки
+staging environment.
 
 ## 6. Как работает workflow
 
-В `.github/workflows/ci.yml` job `deploy_staging`:
+`deploy_staging`:
 
-1. выполняется только для `push` в `main`, но не для pull request;
-2. зависит от `backend` и `frontend` через `needs`;
-3. получает secrets только в staging environment;
-4. проверяет формат приватного SSH-ключа;
-5. подключается только к серверу из проверенного `known_hosts`;
-6. вызывает `./deploy/scripts/release.sh "$GITHUB_SHA"`.
+1. запускается для `push` в `main` или ручного `workflow_dispatch` на `main`;
+2. ждёт успешные `backend` и `frontend` jobs;
+3. загружает `staging` environment;
+4. валидирует SSH credentials;
+5. валидирует `CLEANER_TELEGRAM_IDS` и `ADMIN_TELEGRAM_IDS`;
+6. подключается к VPS через проверенный host key;
+7. передаёт оба списка ID в process environment remote command;
+8. вызывает `./deploy/scripts/release.sh "$GITHUB_SHA"`.
 
-Передаётся точный SHA, прошедший CI. Даже если во время деплоя в `main` появится следующий commit,
-сервер не переключится на непроверенную версию.
+В Docker Compose shell/process environment имеет приоритет над `--env-file`, поэтому backend
+контейнер получает именно значения, заданные в GitHub для этого deploy.
 
-`concurrency` разрешает только одну staging-выкладку одновременно. Активный deploy не отменяется новым
-push, поскольку прерывание между Liquibase, backup и Docker Compose может оставить неудобное для
-диагностики состояние.
+Передаётся точный SHA, прошедший CI. `concurrency` разрешает только одну staging-выкладку одновременно.
 
-## 7. Первый автоматический запуск
+## 7. Изменить роли перед демо
 
-После настройки и проверки всех secrets и variables создайте repository variable:
+Откройте:
+
+```text
+Repository -> Settings -> Environments -> staging
+```
+
+Измените, например:
+
+```text
+CLEANER_TELEGRAM_IDS=111111111,222222222
+ADMIN_TELEGRAM_IDS=111111111,333333333
+```
+
+Затем откройте:
+
+```text
+Repository -> Actions -> CI -> Run workflow
+```
+
+Выберите ветку:
+
+```text
+main
+```
+
+и запустите workflow.
+
+Новый commit для изменения ролей не нужен. Workflow снова прогонит backend/frontend проверки и
+передеплоит текущий `main` с новым набором staging access IDs.
+
+После deploy участникам демо достаточно заново открыть Mini App/бот. Backend уже будет работать с
+новыми списками ролей.
+
+## 8. Первый автоматический запуск
+
+Убедитесь, что существует repository variable:
 
 ```text
 STAGING_DEPLOY_ENABLED=true
 ```
 
-Именно это включает автоматический deploy. Затем отправьте новый проверенный commit в `main` либо
-сделайте обычное изменение приложения. В GitHub откройте:
-
-```text
-Repository -> Actions -> CI
-```
-
-Ожидаемый порядок:
+После этого push в `main` автоматически выполняет:
 
 ```text
 backend  --\
@@ -228,7 +246,7 @@ backend  --\
 frontend --/
 ```
 
-После зелёного deploy job проверьте:
+Проверка на VPS:
 
 ```bash
 cd /opt/go-cleany
@@ -237,45 +255,39 @@ cat .deploy-state/current-revision
 git rev-parse HEAD
 ```
 
-Последние две команды должны показать один commit. Затем выполните acceptance-flow через Telegram.
+## 9. Откат и повторный запуск
 
-## 8. Откат и повторный запуск
-
-Если application deploy прошёл, но обнаружена функциональная проблема:
+Application rollback:
 
 ```bash
 cd /opt/go-cleany
 ./deploy/scripts/rollback.sh
 ```
 
-Откат меняет application revision, но не откатывает Liquibase migrations. Миграции должны оставаться
-совместимыми хотя бы с предыдущей версией приложения.
+Он не откатывает Liquibase migrations.
 
-Если job упал из-за временной сетевой ошибки до запуска `release.sh`, исправьте причину и используйте
-`Re-run failed jobs` в GitHub Actions. Повторное развёртывание того же SHA допустимо.
+При временной CI/SSH ошибке используйте `Re-run failed jobs`.
 
-## 9. Диагностика
+Если нужно только применить новые cleaner/admin IDs, используйте `Run workflow` вместо пустого
+коммита.
+
+## 10. Диагностика
 
 | Ошибка | Что проверить |
 | --- | --- |
-| `Host key verification failed` | `STAGING_SSH_KNOWN_HOSTS`, hostname и SSH-порт |
-| `Permission denied (publickey)` | приватный Actions key, публичный ключ в `authorized_keys`, `STAGING_SSH_USER` |
-| `git fetch` запрашивает пароль | HTTPS credentials либо read-only VPS deploy key |
-| `Tracked files ... contain local changes` | не редактируйте отслеживаемые файлы непосредственно на VPS |
-| `Another go-cleany deployment is already running` | дождитесь текущей выкладки и повторите job |
-| frontend остаётся unhealthy | убедитесь, что deployed Compose проверяет `http://127.0.0.1/health` |
-| Telegram long polling конфликтует | один bot token должен обслуживаться только одним backend instance |
+| `Missing CLEANER_TELEGRAM_IDS staging variable` | variable в environment `staging` |
+| `Missing ADMIN_TELEGRAM_IDS staging variable` | variable в environment `staging` |
+| `must be comma-separated numeric Telegram IDs` | убрать пробелы и посторонние символы |
+| `Host key verification failed` | `STAGING_SSH_KNOWN_HOSTS`, host и SSH port |
+| `Permission denied (publickey)` | Actions private key, authorized_keys, SSH user |
+| `git fetch` запрашивает пароль | HTTPS credentials или read-only VPS deploy key |
+| `Tracked files ... contain local changes` | не редактировать tracked files на VPS |
+| `Another go-cleany deployment is already running` | дождаться текущего deploy и повторить workflow |
+| Telegram long polling конфликтует | один bot token должен обслуживаться одним backend instance |
 
-Если SSH на VPS доступен только с фиксированного домашнего IP, GitHub-hosted runner не сможет
-подключиться без дополнительной сети. Не отключайте проверку host key. Для такого случая отдельно
-настройте VPN-overlay (например, Tailscale), постоянно обновляемый allowlist GitHub Actions или иной
-pull-based deployment transport.
+## 11. Security note
 
-## 10. Полезные официальные материалы
-
-- [Deployment environments](https://docs.github.com/en/actions/concepts/workflows-and-actions/deployment-environments)
-- [Managing environments](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
-- [Workflow syntax: needs, environment and concurrency](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax)
-- [Using secrets in GitHub Actions](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets)
-- [Using configuration variables](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-variables)
-- [Docker post-install security warning](https://docs.docker.com/engine/install/linux-postinstall/)
+Telegram numeric user IDs сами по себе не являются authentication secrets: backend всё равно
+доверяет только подписанному Telegram `initData`/Telegram Bot updates. Однако role lists влияют на
+authorization, поэтому изменять GitHub Environment variables должны только пользователи с правами на
+настройку staging environment.
