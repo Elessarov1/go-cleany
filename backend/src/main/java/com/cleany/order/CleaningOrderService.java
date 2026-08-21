@@ -324,15 +324,13 @@ public class CleaningOrderService {
         CleaningOrder order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
         order.requireReportAccess(cleanerTelegramUserId);
-        List<String> fileIds = photoRepository.findAllByOrderIdOrderByCreatedAt(orderId).stream()
+        List<Long> mediaIds = photoRepository.findAllByOrderIdOrderByCreatedAt(orderId).stream()
                 .map(CleaningOrderPhoto::getMediaAssetId)
-                .map(mediaId -> mediaProviderReferenceService.require(mediaId, MediaProvider.TELEGRAM))
-                .map(reference -> reference.externalId())
                 .toList();
-        if (fileIds.isEmpty()) {
+        if (mediaIds.isEmpty()) {
             throw new PhotoReportEmptyException(orderId);
         }
-        return new CleaningOrderReport(order, fileIds);
+        return new CleaningOrderReport(order, mediaIds);
     }
 
     @Transactional

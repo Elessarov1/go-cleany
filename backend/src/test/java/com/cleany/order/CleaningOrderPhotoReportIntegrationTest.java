@@ -97,8 +97,11 @@ class CleaningOrderPhotoReportIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertEquals(1L, firstPhoto.photoCount()),
                 () -> Assertions.assertEquals(1L, duplicatePhoto.photoCount()),
                 () -> Assertions.assertTrue(comment.commentPresent()),
-                () -> Assertions.assertEquals(1, report.telegramFileIds().size()),
-                () -> Assertions.assertEquals("telegram-file-1", report.telegramFileIds().getFirst()),
+                () -> Assertions.assertEquals(1, report.mediaIds().size()),
+                () -> Assertions.assertEquals(
+                        storedPhoto.getMediaAssetId(),
+                        report.mediaIds().getFirst()
+                ),
                 () -> Assertions.assertEquals(1L, mediaAssetRepository.count()),
                 () -> Assertions.assertEquals(1L, mediaProviderReferenceRepository.count()),
                 () -> Assertions.assertArrayEquals(JPEG, storedMedia.content()),

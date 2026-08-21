@@ -1,38 +1,31 @@
 package com.cleany.telegram.bot;
 
+import java.util.List;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.media.MediaProvider;
+import com.cleany.media.MediaProviderReferenceData;
 import com.cleany.media.MediaProviderReferenceService;
 import com.cleany.notification.CommunicationTarget;
 import com.cleany.notification.CustomerNotification;
 import com.cleany.notification.CustomerNotificationSender;
-import com.cleany.notification.ExternalMediaReference;
 import com.cleany.notification.ReferralUnlockedCustomerNotification;
 import com.cleany.order.CleaningOrderCustomerNotification;
 
+import lombok.RequiredArgsConstructor;
+
 @ConditionalOnProperty(prefix = "telegram", name = "bot-enabled", havingValue = "true")
 @Component
+@RequiredArgsConstructor
 public class TelegramCustomerNotificationSender implements CustomerNotificationSender {
 
     private final TelegramCustomerNotificationMessageFactory messageFactory;
     private final CleaningOrderBotMessageFactory cleaningMessageFactory;
     private final TelegramBotClient botClient;
     private final MediaProviderReferenceService mediaProviderReferenceService;
-
-    public TelegramCustomerNotificationSender(
-            TelegramCustomerNotificationMessageFactory messageFactory,
-            CleaningOrderBotMessageFactory cleaningMessageFactory,
-            TelegramBotClient botClient,
-            MediaProviderReferenceService mediaProviderReferenceService
-    ) {
-        this.messageFactory = messageFactory;
-        this.cleaningMessageFactory = cleaningMessageFactory;
-        this.botClient = botClient;
-        this.mediaProviderReferenceService = mediaProviderReferenceService;
-    }
 
     @Override
     public ExternalIdentityProvider provider() {
@@ -74,16 +67,14 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
             return;
         }
         if (notification instanceof CleaningOrderCustomerNotification.Completed completed) {
-            validateTelegramMedia(completed.photos());
+            var photos = telegramPhotos(completed.mediaIds());
             sendMessage(telegramUserId, cleaningMessageFactory.customerReportHeader(completed));
-            completed.photos().forEach(photo -> botClient.sendPhoto(telegramUserId, photo.externalId()));
+            photos.forEach(photo -> botClient.sendPhoto(telegramUserId, photo.externalId()));
             sendMessage(telegramUserId, cleaningMessageFactory.customerReportComment(completed));
             return;
         }
         if (notification instanceof CleaningOrderCustomerNotification.OnsiteIssueReported issue) {
-            var photos = issue.mediaIds().stream()
-                    .map(mediaId -> mediaProviderReferenceService.require(mediaId, MediaProvider.TELEGRAM))
-                    .toList();
+            var photos = telegramPhotos(issue.mediaIds());
             sendMessage(
                     telegramUserId,
                     cleaningMessageFactory.customerOnsiteIssueReport(issue.reason(), issue.comment())
@@ -101,11 +92,9 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
         botClient.sendMessage(telegramUserId, message, TelegramBotClient.InlineKeyboard.empty());
     }
 
-    private void validateTelegramMedia(Iterable<ExternalMediaReference> media) {
-        for (ExternalMediaReference reference : media) {
-            if (reference.provider() != MediaProvider.TELEGRAM) {
-                throw new IllegalArgumentException("Telegram sender received non-Telegram media");
-            }
-        }
+    private List<MediaProviderReferenceData> telegramPhotos(List<Long> mediaIds) {
+        return mediaIds.stream()
+                .map(mediaId -> mediaProviderReferenceService.require(mediaId, MediaProvider.TELEGRAM))
+                .toList();
     }
 }

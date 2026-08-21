@@ -11,9 +11,9 @@ import org.mockito.Mockito;
 import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.media.MediaProvider;
 import com.cleany.media.MediaProviderReferenceData;
+import com.cleany.media.MediaProviderReferenceNotFoundException;
 import com.cleany.media.MediaProviderReferenceService;
 import com.cleany.notification.CommunicationTarget;
-import com.cleany.notification.ExternalMediaReference;
 import com.cleany.notification.ReferralUnlockedCustomerNotification;
 import com.cleany.order.ApartmentType;
 import com.cleany.order.CleaningOrderCustomerNotification;
@@ -121,6 +121,8 @@ class TelegramCustomerNotificationSenderTest {
         CleaningOrderBotMessageFactory cleaningMessageFactory =
                 Mockito.mock(CleaningOrderBotMessageFactory.class);
         TelegramBotClient botClient = Mockito.mock(TelegramBotClient.class);
+        MediaProviderReferenceService mediaProviderReferenceService =
+                Mockito.mock(MediaProviderReferenceService.class);
         var notification = new CleaningOrderCustomerNotification.Completed(
                 43L,
                 ApartmentType.TWO_PLUS_ONE,
@@ -128,18 +130,19 @@ class TelegramCustomerNotificationSenderTest {
                 ServiceArea.MAHMUTLAR,
                 LocalDate.of(2026, 8, 18),
                 "Готово",
-                List.of(
-                        ExternalMediaReference.telegram("photo-1"),
-                        ExternalMediaReference.telegram("photo-2")
-                )
+                List.of(71L, 72L)
         );
+        Mockito.when(mediaProviderReferenceService.require(71L, MediaProvider.TELEGRAM))
+                .thenReturn(providerReference(71L, "photo-1", "unique-1"));
+        Mockito.when(mediaProviderReferenceService.require(72L, MediaProvider.TELEGRAM))
+                .thenReturn(providerReference(72L, "photo-2", "unique-2"));
         Mockito.when(cleaningMessageFactory.customerReportHeader(notification)).thenReturn("header");
         Mockito.when(cleaningMessageFactory.customerReportComment(notification)).thenReturn("comment");
         var sender = new TelegramCustomerNotificationSender(
                 messageFactory,
                 cleaningMessageFactory,
                 botClient,
-                Mockito.mock(MediaProviderReferenceService.class)
+                mediaProviderReferenceService
         );
 
         sender.send(telegramTarget(), notification);
@@ -152,12 +155,14 @@ class TelegramCustomerNotificationSenderTest {
     }
 
     @Test
-    void completedCleaningReport_withAnotherProviderMediaRejectedBeforePartialDelivery() {
+    void completedCleaningReport_missingTelegramReferenceRejectedBeforePartialDelivery() {
         TelegramCustomerNotificationMessageFactory messageFactory =
                 Mockito.mock(TelegramCustomerNotificationMessageFactory.class);
         CleaningOrderBotMessageFactory cleaningMessageFactory =
                 Mockito.mock(CleaningOrderBotMessageFactory.class);
         TelegramBotClient botClient = Mockito.mock(TelegramBotClient.class);
+        MediaProviderReferenceService mediaProviderReferenceService =
+                Mockito.mock(MediaProviderReferenceService.class);
         var notification = new CleaningOrderCustomerNotification.Completed(
                 43L,
                 ApartmentType.TWO_PLUS_ONE,
@@ -165,17 +170,19 @@ class TelegramCustomerNotificationSenderTest {
                 ServiceArea.MAHMUTLAR,
                 LocalDate.of(2026, 8, 18),
                 null,
-                List.of(new ExternalMediaReference(MediaProvider.WHATSAPP, "media-1"))
+                List.of(71L)
         );
+        Mockito.when(mediaProviderReferenceService.require(71L, MediaProvider.TELEGRAM))
+                .thenThrow(new MediaProviderReferenceNotFoundException(71L, MediaProvider.TELEGRAM));
         var sender = new TelegramCustomerNotificationSender(
                 messageFactory,
                 cleaningMessageFactory,
                 botClient,
-                Mockito.mock(MediaProviderReferenceService.class)
+                mediaProviderReferenceService
         );
 
         Assertions.assertThrows(
-                IllegalArgumentException.class,
+                MediaProviderReferenceNotFoundException.class,
                 () -> sender.send(telegramTarget(), notification)
         );
 
@@ -198,13 +205,7 @@ class TelegramCustomerNotificationSenderTest {
                 List.of(71L)
         );
         Mockito.when(mediaProviderReferenceService.require(71L, MediaProvider.TELEGRAM))
-                .thenReturn(new MediaProviderReferenceData(
-                        71L,
-                        MediaProvider.TELEGRAM,
-                        "evidence-1",
-                        "evidence-unique-1",
-                        Instant.parse("2026-08-21T12:00:00Z")
-                ));
+                .thenReturn(providerReference(71L, "evidence-1", "evidence-unique-1"));
         Mockito.when(cleaningMessageFactory.customerOnsiteIssueReport(
                 OnsiteIssueReason.ACCESS_PROBLEM,
                 "Нет ключа"
@@ -223,6 +224,20 @@ class TelegramCustomerNotificationSenderTest {
         order.verify(botClient).sendMessage(900001L, "issue", TelegramBotClient.InlineKeyboard.empty());
         order.verify(botClient).sendPhoto(900001L, "evidence-1");
         order.verify(botClient).sendMessage(900001L, "paused", TelegramBotClient.InlineKeyboard.empty());
+    }
+
+    private static MediaProviderReferenceData providerReference(
+            long mediaId,
+            String externalId,
+            String externalUniqueId
+    ) {
+        return new MediaProviderReferenceData(
+                mediaId,
+                MediaProvider.TELEGRAM,
+                externalId,
+                externalUniqueId,
+                Instant.parse("2026-08-21T12:00:00Z")
+        );
     }
 
     private static CommunicationTarget telegramTarget() {

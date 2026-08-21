@@ -193,6 +193,7 @@ Do not move all service-specific fields into one generic JSONB payload as the pr
 Java 25
 Spring Boot 4
 Gradle
+Lombok for new Java boilerplate
 PostgreSQL
 Liquibase
 Testcontainers
@@ -230,6 +231,10 @@ Before implementing a non-trivial change:
 6. prefer incremental changes over speculative abstraction.
 
 Avoid unrelated refactoring.
+
+Use Lombok in new Java code when it removes mechanical boilerplate such as dependency
+constructors, getters, builders, or simple value objects. Keep domain validation and
+other meaningful logic explicit.
 
 Do not create interfaces merely because abstraction is possible.
 

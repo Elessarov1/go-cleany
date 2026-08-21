@@ -4,42 +4,24 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.cleany.media.MediaProvider;
-import com.cleany.media.MediaProviderReferenceService;
-import com.cleany.notification.ExternalMediaReference;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class CleaningOrderCustomerNotificationQueryService {
 
     private final CleaningOrderRepository orderRepository;
     private final CleaningOrderPhotoRepository completionPhotoRepository;
     private final CleaningOrderIssueReportRepository issueReportRepository;
     private final CleaningOrderIssuePhotoRepository issuePhotoRepository;
-    private final MediaProviderReferenceService mediaProviderReferenceService;
-
-    public CleaningOrderCustomerNotificationQueryService(
-            CleaningOrderRepository orderRepository,
-            CleaningOrderPhotoRepository completionPhotoRepository,
-            CleaningOrderIssueReportRepository issueReportRepository,
-            CleaningOrderIssuePhotoRepository issuePhotoRepository,
-            MediaProviderReferenceService mediaProviderReferenceService
-    ) {
-        this.orderRepository = orderRepository;
-        this.completionPhotoRepository = completionPhotoRepository;
-        this.issueReportRepository = issueReportRepository;
-        this.issuePhotoRepository = issuePhotoRepository;
-        this.mediaProviderReferenceService = mediaProviderReferenceService;
-    }
 
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public CleaningOrderCustomerNotification.Completed completed(long orderId) {
         CleaningOrder order = findOrder(orderId);
-        var photos = completionPhotoRepository.findAllByOrderIdOrderByCreatedAt(orderId).stream()
+        var mediaIds = completionPhotoRepository.findAllByOrderIdOrderByCreatedAt(orderId).stream()
                 .map(CleaningOrderPhoto::getMediaAssetId)
-                .map(mediaId -> mediaProviderReferenceService.require(mediaId, MediaProvider.TELEGRAM))
-                .map(reference -> new ExternalMediaReference(reference.provider(), reference.externalId()))
                 .toList();
-        if (photos.isEmpty()) {
+        if (mediaIds.isEmpty()) {
             throw new PhotoReportEmptyException(orderId);
         }
         return new CleaningOrderCustomerNotification.Completed(
@@ -49,7 +31,7 @@ public class CleaningOrderCustomerNotificationQueryService {
                 order.getArea(),
                 order.getRequestedDate(),
                 order.getCleanerComment(),
-                photos
+                mediaIds
         );
     }
 

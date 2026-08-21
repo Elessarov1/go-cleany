@@ -4,7 +4,6 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.cleany.notification.CustomerNotification;
-import com.cleany.notification.ExternalMediaReference;
 
 public sealed interface CleaningOrderCustomerNotification extends CustomerNotification {
 
@@ -23,11 +22,11 @@ public sealed interface CleaningOrderCustomerNotification extends CustomerNotifi
             ServiceArea area,
             LocalDate requestedDate,
             String cleanerComment,
-            List<ExternalMediaReference> photos
+            List<Long> mediaIds
     ) implements CleaningOrderCustomerNotification {
 
         public Completed {
-            photos = List.copyOf(photos);
+            mediaIds = List.copyOf(mediaIds);
         }
     }
 

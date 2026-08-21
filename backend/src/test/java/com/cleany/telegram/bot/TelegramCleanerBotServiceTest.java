@@ -311,7 +311,7 @@ class TelegramCleanerBotServiceTest {
         CleaningOrder order = order(43L, CLEANER_ID);
         Mockito.when(order.getCleanerComment()).thenReturn("Everything is ready");
         Mockito.when(orderService.getReportForDelivery(43L, CLEANER_ID))
-                .thenReturn(new CleaningOrderReport(order, List.of("file-1", "file-2")));
+                .thenReturn(new CleaningOrderReport(order, List.of(71L, 72L)));
 
         cleanerBotService.handle(update(CLEANER_ID, "order:report:43"));
 

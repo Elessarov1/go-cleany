@@ -8,11 +8,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import com.cleany.media.MediaProvider;
-import com.cleany.media.MediaProviderReferenceData;
-import com.cleany.media.MediaProviderReferenceService;
-import com.cleany.notification.ExternalMediaReference;
-
 class CleaningOrderCustomerNotificationQueryServiceTest {
 
     private final CleaningOrderRepository orderRepository = Mockito.mock(CleaningOrderRepository.class);
@@ -22,19 +17,16 @@ class CleaningOrderCustomerNotificationQueryServiceTest {
             Mockito.mock(CleaningOrderIssueReportRepository.class);
     private final CleaningOrderIssuePhotoRepository issuePhotoRepository =
             Mockito.mock(CleaningOrderIssuePhotoRepository.class);
-    private final MediaProviderReferenceService mediaProviderReferenceService =
-            Mockito.mock(MediaProviderReferenceService.class);
     private final CleaningOrderCustomerNotificationQueryService service =
             new CleaningOrderCustomerNotificationQueryService(
                     orderRepository,
                     completionPhotoRepository,
                     issueReportRepository,
-                    issuePhotoRepository,
-                    mediaProviderReferenceService
+                    issuePhotoRepository
             );
 
     @Test
-    void completedOrder_notificationSnapshotContainsOrderDetailsAndProviderMediaReferences() {
+    void completedOrder_notificationSnapshotContainsOrderDetailsAndInternalMediaIds() {
         CleaningOrder order = Mockito.mock(CleaningOrder.class);
         CleaningOrderPhoto firstPhoto = Mockito.mock(CleaningOrderPhoto.class);
         CleaningOrderPhoto secondPhoto = Mockito.mock(CleaningOrderPhoto.class);
@@ -46,10 +38,6 @@ class CleaningOrderCustomerNotificationQueryServiceTest {
         Mockito.when(order.getCleanerComment()).thenReturn("Готово");
         Mockito.when(firstPhoto.getMediaAssetId()).thenReturn(71L);
         Mockito.when(secondPhoto.getMediaAssetId()).thenReturn(72L);
-        Mockito.when(mediaProviderReferenceService.require(71L, MediaProvider.TELEGRAM))
-                .thenReturn(providerReference(71L, "photo-1", "unique-1"));
-        Mockito.when(mediaProviderReferenceService.require(72L, MediaProvider.TELEGRAM))
-                .thenReturn(providerReference(72L, "photo-2", "unique-2"));
         Mockito.when(completionPhotoRepository.findAllByOrderIdOrderByCreatedAt(43L))
                 .thenReturn(List.of(firstPhoto, secondPhoto));
 
@@ -60,13 +48,7 @@ class CleaningOrderCustomerNotificationQueryServiceTest {
                 () -> Assertions.assertEquals(ApartmentType.TWO_PLUS_ONE, notification.apartmentType()),
                 () -> Assertions.assertEquals(ServiceArea.MAHMUTLAR, notification.area()),
                 () -> Assertions.assertEquals("Готово", notification.cleanerComment()),
-                () -> Assertions.assertEquals(
-                        List.of(
-                                ExternalMediaReference.telegram("photo-1"),
-                                ExternalMediaReference.telegram("photo-2")
-                        ),
-                        notification.photos()
-                )
+                () -> Assertions.assertEquals(List.of(71L, 72L), notification.mediaIds())
         );
     }
 
@@ -93,17 +75,4 @@ class CleaningOrderCustomerNotificationQueryServiceTest {
         );
     }
 
-    private static MediaProviderReferenceData providerReference(
-            long mediaId,
-            String externalId,
-            String externalUniqueId
-    ) {
-        return new MediaProviderReferenceData(
-                mediaId,
-                MediaProvider.TELEGRAM,
-                externalId,
-                externalUniqueId,
-                java.time.Instant.parse("2026-08-21T12:00:00Z")
-        );
-    }
 }
