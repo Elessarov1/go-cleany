@@ -8,8 +8,7 @@ import com.cleany.finance.CustomerDiscountType;
 
 public record CleaningOrderResponse(
         long id,
-        long telegramUserId,
-        String telegramUsername,
+        long communicationIdentityId,
         String customerName,
         String phone,
         ServiceArea area,
@@ -36,8 +35,7 @@ public record CleaningOrderResponse(
     public static CleaningOrderResponse from(CleaningOrder order) {
         return new CleaningOrderResponse(
                 order.getId(),
-                order.getTelegramUserId(),
-                order.getTelegramUsername(),
+                order.getCommunicationIdentityId(),
                 order.getCustomerName(),
                 order.getPhone(),
                 order.getArea(),

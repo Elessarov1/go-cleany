@@ -69,6 +69,19 @@ class CleaningOrderBotMessageFactoryTest {
     }
 
     @Test
+    void acceptedOrderKeyboard_resolvedCommunicationIdentityUsedForTelegramContact() {
+        CleaningOrder order = Mockito.mock(CleaningOrder.class);
+        Mockito.when(order.getId()).thenReturn(43L);
+
+        var keyboard = messageFactory.acceptedOrderKeyboard(order, 900001L);
+
+        Assertions.assertEquals(
+                "tg://user?id=900001",
+                keyboard.rows().getFirst().getFirst().url()
+        );
+    }
+
+    @Test
     void reportReady_customerMessageAndCallbackRendered() {
         CleaningOrder order = Mockito.mock(CleaningOrder.class);
         Mockito.when(order.getApartmentType()).thenReturn(ApartmentType.TWO_PLUS_ONE);

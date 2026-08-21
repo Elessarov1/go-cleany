@@ -1,6 +1,7 @@
 package com.cleany.telegram.bot;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,6 +10,8 @@ import org.mockito.Mockito;
 
 import com.cleany.configuration.CleanerProperties;
 import com.cleany.customer.CustomerAccountService;
+import com.cleany.customer.CustomerExternalIdentity;
+import com.cleany.customer.CustomerExternalIdentityRepository;
 import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.order.CleaningOrder;
 import com.cleany.order.CleaningOrderReport;
@@ -34,12 +37,15 @@ class TelegramCleanerBotServiceTest {
     private static final long CLEANER_ID = 101L;
     private static final long OTHER_CLEANER_ID = 102L;
     private static final long CUSTOMER_ID = 900001L;
+    private static final long CUSTOMER_ACCOUNT_ID = 77L;
+    private static final long COMMUNICATION_ID = 501L;
 
     private CleaningOrderService orderService;
     private CleaningOrderBotMessageFactory messageFactory;
     private TelegramBotClient botClient;
     private TelegramAdminBotService adminBotService;
     private CustomerAccountService customerAccountService;
+    private CustomerExternalIdentityRepository customerIdentityRepository;
     private OnsiteIssueService onsiteIssueService;
     private TelegramCleanerBotService cleanerBotService;
 
@@ -50,7 +56,16 @@ class TelegramCleanerBotServiceTest {
         botClient = Mockito.mock(TelegramBotClient.class);
         adminBotService = Mockito.mock(TelegramAdminBotService.class);
         customerAccountService = Mockito.mock(CustomerAccountService.class);
+        customerIdentityRepository = Mockito.mock(CustomerExternalIdentityRepository.class);
         onsiteIssueService = Mockito.mock(OnsiteIssueService.class);
+        CustomerExternalIdentity customerIdentity = Mockito.mock(CustomerExternalIdentity.class);
+        Mockito.when(customerIdentity.getProvider()).thenReturn(ExternalIdentityProvider.TELEGRAM);
+        Mockito.when(customerIdentity.getExternalSubject()).thenReturn(Long.toString(CUSTOMER_ID));
+        Mockito.when(customerIdentityRepository.findByIdAndCustomerId(
+                COMMUNICATION_ID,
+                CUSTOMER_ACCOUNT_ID
+        ))
+                .thenReturn(Optional.of(customerIdentity));
         cleanerBotService = new TelegramCleanerBotService(
                 new CleanerProperties(List.of(CLEANER_ID, OTHER_CLEANER_ID)),
                 orderService,
@@ -58,6 +73,7 @@ class TelegramCleanerBotServiceTest {
                 botClient,
                 adminBotService,
                 customerAccountService,
+                customerIdentityRepository,
                 onsiteIssueService
         );
     }
@@ -84,13 +100,13 @@ class TelegramCleanerBotServiceTest {
 
     @Test
     void acceptCallback_firstCleanerWins_customerAndCleanerNotified() {
-        CleaningOrder order = order(43L, CUSTOMER_ID, CLEANER_ID);
+        CleaningOrder order = order(43L, CLEANER_ID);
         InlineKeyboard keyboard = InlineKeyboard.ofRows(List.of(
                 InlineButton.callback("Finish", "order:finish:43")
         ));
         Mockito.when(orderService.acceptOrder(43L, CLEANER_ID)).thenReturn(order);
         Mockito.when(messageFactory.acceptedOrder(order)).thenReturn("accepted-message");
-        Mockito.when(messageFactory.acceptedOrderKeyboard(order)).thenReturn(keyboard);
+        Mockito.when(messageFactory.acceptedOrderKeyboard(order, CUSTOMER_ID)).thenReturn(keyboard);
 
         cleanerBotService.handle(update(CLEANER_ID, "order:accept:43"));
 
@@ -109,7 +125,7 @@ class TelegramCleanerBotServiceTest {
 
     @Test
     void acceptCallback_secondCleanerLosesRace_conflictReported() {
-        CleaningOrder acceptedOrder = order(43L, CUSTOMER_ID, OTHER_CLEANER_ID);
+        CleaningOrder acceptedOrder = order(43L, OTHER_CLEANER_ID);
         Mockito.when(orderService.acceptOrder(43L, CLEANER_ID))
                 .thenThrow(new OrderClaimConflictException(43L));
         Mockito.when(orderService.getOrderForConfiguredCleaner(43L, CLEANER_ID))
@@ -131,7 +147,7 @@ class TelegramCleanerBotServiceTest {
 
     @Test
     void finishCallback_assignedOrderMovedToAwaitingReport() {
-        CleaningOrder order = order(43L, CUSTOMER_ID, CLEANER_ID);
+        CleaningOrder order = order(43L, CLEANER_ID);
         Mockito.when(orderService.markAwaitingReport(43L, CLEANER_ID)).thenReturn(order);
         Mockito.when(messageFactory.awaitingPhotoReport(order)).thenReturn("send-photos");
 
@@ -143,7 +159,7 @@ class TelegramCleanerBotServiceTest {
 
     @Test
     void cancelCallback_assignedOrderCancelled_customerNotified() {
-        CleaningOrder order = order(43L, CUSTOMER_ID, CLEANER_ID);
+        CleaningOrder order = order(43L, CLEANER_ID);
         Mockito.when(orderService.cancelOrderByCleaner(43L, CLEANER_ID)).thenReturn(order);
 
         cleanerBotService.handle(update(CLEANER_ID, "order:cancel:43"));
@@ -262,7 +278,7 @@ class TelegramCleanerBotServiceTest {
 
     @Test
     void reportCallback_photosDeliveredBeforeOrderCompleted() {
-        CleaningOrder order = order(43L, CUSTOMER_ID, CLEANER_ID);
+        CleaningOrder order = order(43L, CLEANER_ID);
         Mockito.when(order.getCleanerComment()).thenReturn("Everything is ready");
         Mockito.when(orderService.getReportForDelivery(43L, CLEANER_ID))
                 .thenReturn(new CleaningOrderReport(order, List.of("file-1", "file-2")));
@@ -289,7 +305,7 @@ class TelegramCleanerBotServiceTest {
 
     @Test
     void reportCallback_photoDeliveryFails_orderNotCompleted() {
-        CleaningOrder order = order(43L, CUSTOMER_ID, CLEANER_ID);
+        CleaningOrder order = order(43L, CLEANER_ID);
         Mockito.when(orderService.getReportForDelivery(43L, CLEANER_ID))
                 .thenReturn(new CleaningOrderReport(order, List.of("file-1")));
         Mockito.when(messageFactory.customerReportHeader(order)).thenReturn("report-header");
@@ -367,7 +383,7 @@ class TelegramCleanerBotServiceTest {
 
     @Test
     void onsiteIssueSubmit_customerReceivesReasonCommentAndEvidenceBeforeNotificationAudit() {
-        CleaningOrder order = order(43L, CUSTOMER_ID, CLEANER_ID);
+        CleaningOrder order = order(43L, CLEANER_ID);
         OnsiteIssueDelivery delivery = new OnsiteIssueDelivery(
                 order,
                 OnsiteIssueReason.ADDRESS_MISMATCH,
@@ -463,10 +479,11 @@ class TelegramCleanerBotServiceTest {
         );
     }
 
-    private static CleaningOrder order(long orderId, long customerId, long cleanerId) {
+    private static CleaningOrder order(long orderId, long cleanerId) {
         CleaningOrder order = Mockito.mock(CleaningOrder.class);
         Mockito.when(order.getId()).thenReturn(orderId);
-        Mockito.when(order.getTelegramUserId()).thenReturn(customerId);
+        Mockito.when(order.getCustomerId()).thenReturn(CUSTOMER_ACCOUNT_ID);
+        Mockito.when(order.getCommunicationIdentityId()).thenReturn(COMMUNICATION_ID);
         Mockito.when(order.getCleanerTelegramUserId()).thenReturn(cleanerId);
         return order;
     }

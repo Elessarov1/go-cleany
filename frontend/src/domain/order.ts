@@ -55,8 +55,7 @@ export interface CleaningOrderQuote {
 
 export interface CleaningOrder {
   id: number;
-  telegramUserId: number;
-  telegramUsername?: string;
+  communicationIdentityId: number;
   customerName: string;
   phone: string;
   area: ServiceArea;

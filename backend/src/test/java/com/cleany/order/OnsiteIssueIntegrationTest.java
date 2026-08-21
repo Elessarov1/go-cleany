@@ -16,8 +16,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.cleany.base.BaseIntegrationTest;
-import com.cleany.customer.CustomerAccount;
 import com.cleany.customer.CustomerAccountRepository;
+import com.cleany.customer.CustomerExternalIdentityRepository;
+import com.cleany.customer.CustomerIdentityTestFixture;
 import com.cleany.finance.AcquisitionSource;
 import com.cleany.finance.CustomerDiscountType;
 import com.cleany.finance.OrderFinancialSnapshot;
@@ -56,6 +57,9 @@ class OnsiteIssueIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private CustomerAccountRepository customerAccountRepository;
+
+    @Autowired
+    private CustomerExternalIdentityRepository customerIdentityRepository;
 
     @Autowired
     private CleaningOrderService orderService;
@@ -281,13 +285,16 @@ class OnsiteIssueIntegrationTest extends BaseIntegrationTest {
     }
 
     private CleaningOrder acceptedOrder() {
-        long customerId = customerAccountRepository.save(new CustomerAccount(Instant.now())).getId();
+        var customer = CustomerIdentityTestFixture.telegramIdentity(
+                customerAccountRepository,
+                customerIdentityRepository,
+                Instant.now()
+        );
         BigDecimal basePrice = BigDecimal.valueOf(1100);
         BigDecimal commission = basePrice.multiply(new BigDecimal("0.15")).setScale(2);
         CleaningOrder order = orderRepository.save(new CleaningOrder(
-                customerId,
-                700001L,
-                "customer",
+                customer.customerId(),
+                customer.externalIdentityId(),
                 "Alex",
                 "+90 555 123 45 67",
                 ServiceArea.MAHMUTLAR,

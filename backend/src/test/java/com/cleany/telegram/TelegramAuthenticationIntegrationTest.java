@@ -13,6 +13,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.cleany.base.BaseIntegrationTest;
+import com.cleany.customer.CustomerExternalIdentityRepository;
+import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.order.CleaningOrderRepository;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -33,6 +35,9 @@ class TelegramAuthenticationIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private CleaningOrderRepository orderRepository;
+
+    @Autowired
+    private CustomerExternalIdentityRepository identityRepository;
 
     @BeforeEach
     void cleanDatabase() {
@@ -85,17 +90,23 @@ class TelegramAuthenticationIntegrationTest extends BaseIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.status").value("NEW"));
+                .andExpect(jsonPath("$.status").value("NEW"))
+                .andExpect(jsonPath("$.communicationIdentityId").isNumber());
 
         var orders = orderRepository.findAll();
         Assertions.assertEquals(1, orders.size());
-        Assertions.assertEquals(900001L, orders.getFirst().getTelegramUserId());
-        Assertions.assertEquals("alex", orders.getFirst().getTelegramUsername());
-        Assertions.assertEquals("Alex Cleaner", orders.getFirst().getCustomerName());
-        Assertions.assertEquals("+905551234567", orders.getFirst().getPhone());
-        Assertions.assertTrue(orders.getFirst().getCustomerId() > 0);
-        Assertions.assertEquals("1100.00", orders.getFirst().getBasePrice().toPlainString());
-        Assertions.assertEquals("165.00", orders.getFirst().getBaseCommission().toPlainString());
+        var order = orders.getFirst();
+        var communicationIdentity = identityRepository.findById(order.getCommunicationIdentityId()).orElseThrow();
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(order.getCustomerId(), communicationIdentity.getCustomerId()),
+                () -> Assertions.assertEquals(ExternalIdentityProvider.TELEGRAM, communicationIdentity.getProvider()),
+                () -> Assertions.assertEquals("900001", communicationIdentity.getExternalSubject()),
+                () -> Assertions.assertEquals("Alex Cleaner", order.getCustomerName()),
+                () -> Assertions.assertEquals("+905551234567", order.getPhone()),
+                () -> Assertions.assertTrue(order.getCustomerId() > 0),
+                () -> Assertions.assertEquals("1100.00", order.getBasePrice().toPlainString()),
+                () -> Assertions.assertEquals("165.00", order.getBaseCommission().toPlainString())
+        );
 
         mvc.perform(get("/api/v1/customers/me")
                         .header("Authorization", "tma " + initData))

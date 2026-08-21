@@ -65,8 +65,7 @@ function createScenarioOrder(status: CleaningOrderStatus): CleaningOrder {
 
   return {
     id: scenarioIds[status],
-    telegramUserId: 900_001,
-    telegramUsername: "browser_preview",
+    communicationIdentityId: 90_001,
     customerName: "Alex",
     phone: "+90 555 123 45 67",
     area: "MAHMUTLAR",
@@ -219,7 +218,7 @@ export class MockCleaningApi implements CleaningApi {
           eventType: "CREATED",
           toStatus: "NEW",
           actorType: "CUSTOMER",
-          actorTelegramUserId: order.telegramUserId,
+          actorTelegramUserId: 900_001,
           occurredAt: order.createdAt,
         },
         ...(order.acceptedAt ? [{
@@ -327,8 +326,7 @@ export class MockCleaningApi implements CleaningApi {
 
     const order: CleaningOrder = {
       id: Date.now(),
-      telegramUserId: user.id,
-      telegramUsername: user.username,
+      communicationIdentityId: user.id,
       customerName: [user.firstName, user.lastName].filter(Boolean).join(" "),
       phone: request.phone,
       area: request.area,

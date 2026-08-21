@@ -59,9 +59,9 @@ class CleaningOrderServiceTest {
                 new CurrentCustomer(
                         77L,
                         88L,
-                        ExternalIdentityProvider.TELEGRAM,
-                        "900001",
-                        "browser_preview",
+                        ExternalIdentityProvider.WHATSAPP,
+                        "905551234567",
+                        null,
                         "Alex",
                         "ru"
                 )
@@ -94,7 +94,7 @@ class CleaningOrderServiceTest {
     }
 
     @Test
-    void orderRequest_trustedCustomer_priceAndIdentityStoredFromBackend() {
+    void orderRequest_channelNeutralCustomer_priceAndCommunicationIdentityStoredFromBackend() {
         Mockito.when(repository.save(Mockito.any(CleaningOrder.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         var command = new CreateCleaningOrderCommand(
@@ -115,7 +115,7 @@ class CleaningOrderServiceTest {
         Mockito.verify(repository).save(captor.capture());
         CleaningOrder order = captor.getValue();
         Assertions.assertEquals(77L, order.getCustomerId());
-        Assertions.assertEquals(900001L, order.getTelegramUserId());
+        Assertions.assertEquals(88L, order.getCommunicationIdentityId());
         Assertions.assertEquals(0, order.getPrice().compareTo(BigDecimal.valueOf(1400)));
         Assertions.assertEquals(0, order.getBaseCommission().compareTo(new BigDecimal("210.00")));
         Assertions.assertEquals("TRY", order.getCurrency());
@@ -127,10 +127,7 @@ class CleaningOrderServiceTest {
         Assertions.assertAll(
                 () -> Assertions.assertEquals(OrderEventType.CREATED, eventCaptor.getValue().getEventType()),
                 () -> Assertions.assertEquals(OrderActorType.CUSTOMER, eventCaptor.getValue().getActorType()),
-                () -> Assertions.assertEquals(
-                        Long.valueOf(900001L),
-                        eventCaptor.getValue().getActorTelegramUserId()
-                ),
+                () -> Assertions.assertNull(eventCaptor.getValue().getActorTelegramUserId()),
                 () -> Assertions.assertEquals(CleaningOrderStatus.NEW, eventCaptor.getValue().getToStatus())
         );
         Mockito.verify(eventPublisher).publishEvent(Mockito.any(CleaningOrderCreatedEvent.class));
@@ -350,8 +347,7 @@ class CleaningOrderServiceTest {
     private static CleaningOrder sampleOrder() {
         return new CleaningOrder(
                 77L,
-                900001L,
-                "browser_preview",
+                88L,
                 "Alex",
                 "+90 555",
                 ServiceArea.MAHMUTLAR,

@@ -13,8 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.cleany.base.BaseIntegrationTest;
-import com.cleany.customer.CustomerAccount;
 import com.cleany.customer.CustomerAccountRepository;
+import com.cleany.customer.CustomerExternalIdentityRepository;
+import com.cleany.customer.CustomerIdentityTestFixture;
 import com.cleany.finance.AcquisitionSource;
 import com.cleany.finance.CustomerDiscountType;
 import com.cleany.finance.OrderFinancialSnapshot;
@@ -44,6 +45,9 @@ class DataRetentionCleanupIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private CustomerAccountRepository customerAccountRepository;
+
+    @Autowired
+    private CustomerExternalIdentityRepository customerIdentityRepository;
 
     @Autowired
     private DataRetentionCleanupService cleanupService;
@@ -273,14 +277,17 @@ class DataRetentionCleanupIntegrationTest extends BaseIntegrationTest {
     }
 
     private CleaningOrder newOrder(Instant createdAt) {
-        long customerId = customerAccountRepository.save(new CustomerAccount(createdAt)).getId();
+        var customer = CustomerIdentityTestFixture.telegramIdentity(
+                customerAccountRepository,
+                customerIdentityRepository,
+                createdAt
+        );
         BigDecimal basePrice = BigDecimal.valueOf(1100);
         BigDecimal commission = basePrice.multiply(new BigDecimal("0.15")).setScale(2);
         return new CleaningOrder(
-                customerId,
-                700000L + customerId,
-                "customer" + customerId,
-                "Customer " + customerId,
+                customer.customerId(),
+                customer.externalIdentityId(),
+                "Customer " + customer.customerId(),
                 "+90 555 123 45 67",
                 ServiceArea.MAHMUTLAR,
                 "Barbaros Cd. 24",

@@ -82,11 +82,11 @@ public class CleaningOrderBotMessageFactory {
         ).strip();
     }
 
-    public InlineKeyboard acceptedOrderKeyboard(CleaningOrder order) {
+    public InlineKeyboard acceptedOrderKeyboard(CleaningOrder order, long customerTelegramUserId) {
         return InlineKeyboard.ofRows(
                 List.of(InlineButton.url(
                         "💬 Связаться с клиентом",
-                        "tg://user?id=" + order.getTelegramUserId()
+                        "tg://user?id=" + customerTelegramUserId
                 )),
                 List.of(InlineButton.callback(
                         "🧹 Завершить уборку",

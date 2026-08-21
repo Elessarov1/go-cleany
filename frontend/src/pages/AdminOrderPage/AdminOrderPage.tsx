@@ -96,7 +96,7 @@ export function AdminOrderPage() {
           <div><dt>{t("details.area")}</dt><dd>{t(`areas.${order.area}`)}</dd></div>
           <div><dt>{t("details.address")}</dt><dd>{order.address}</dd></div>
           <div><dt>{t("details.phone")}</dt><dd>{order.phone}</dd></div>
-          <div><dt>Telegram ID</dt><dd>{order.telegramUserId}</dd></div>
+          <div><dt>{t("admin.communicationIdentity")}</dt><dd>{order.communicationIdentityId}</dd></div>
           <div><dt>{t("admin.cleaner")}</dt><dd>{order.cleanerTelegramUserId ?? t("admin.notAssigned")}</dd></div>
           <div><dt>{t("details.photoReport")}</dt><dd>{details.photoCount}</dd></div>
           <div><dt>{t("admin.financial.basePrice")}</dt><dd>{formatPrice(financial.basePrice, order.currency, locale)}</dd></div>

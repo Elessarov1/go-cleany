@@ -29,11 +29,8 @@ public class CleaningOrder {
     @Column(name = "customer_id", nullable = false)
     private long customerId;
 
-    @Column(name = "telegram_user_id", nullable = false)
-    private long telegramUserId;
-
-    @Column(name = "telegram_username", length = 64)
-    private String telegramUsername;
+    @Column(name = "communication_identity_id", nullable = false)
+    private long communicationIdentityId;
 
     @Column(name = "customer_name", nullable = false, length = 255)
     private String customerName;
@@ -139,8 +136,7 @@ public class CleaningOrder {
 
     CleaningOrder(
             long customerId,
-            long telegramUserId,
-            String telegramUsername,
+            long communicationIdentityId,
             String customerName,
             String phone,
             ServiceArea area,
@@ -159,8 +155,10 @@ public class CleaningOrder {
             Instant createdAt
     ) {
         this.customerId = customerId;
-        this.telegramUserId = telegramUserId;
-        this.telegramUsername = telegramUsername;
+        if (communicationIdentityId <= 0) {
+            throw new IllegalArgumentException("communicationIdentityId must be positive");
+        }
+        this.communicationIdentityId = communicationIdentityId;
         this.customerName = Objects.requireNonNull(customerName);
         this.phone = Objects.requireNonNull(phone);
         this.area = Objects.requireNonNull(area);
@@ -286,12 +284,8 @@ public class CleaningOrder {
         return customerId;
     }
 
-    public long getTelegramUserId() {
-        return telegramUserId;
-    }
-
-    public String getTelegramUsername() {
-        return telegramUsername;
+    public long getCommunicationIdentityId() {
+        return communicationIdentityId;
     }
 
     public String getCustomerName() {

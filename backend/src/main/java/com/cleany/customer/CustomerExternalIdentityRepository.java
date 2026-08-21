@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CustomerExternalIdentityRepository extends JpaRepository<CustomerExternalIdentity, Long> {
 
+    Optional<CustomerExternalIdentity> findByIdAndCustomerId(long id, long customerId);
+
     Optional<CustomerExternalIdentity> findByProviderAndExternalSubject(
             ExternalIdentityProvider provider,
             String externalSubject
