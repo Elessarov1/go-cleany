@@ -1,5 +1,6 @@
 package com.cleany.telegram.bot;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -9,6 +10,8 @@ import org.mockito.Mockito;
 
 import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.media.MediaProvider;
+import com.cleany.media.MediaProviderReferenceData;
+import com.cleany.media.MediaProviderReferenceService;
 import com.cleany.notification.CommunicationTarget;
 import com.cleany.notification.ExternalMediaReference;
 import com.cleany.notification.ReferralUnlockedCustomerNotification;
@@ -31,7 +34,8 @@ class TelegramCustomerNotificationSenderTest {
         var sender = new TelegramCustomerNotificationSender(
                 messageFactory,
                 cleaningMessageFactory,
-                botClient
+                botClient,
+                Mockito.mock(MediaProviderReferenceService.class)
         );
 
         sender.send(
@@ -65,7 +69,8 @@ class TelegramCustomerNotificationSenderTest {
         var sender = new TelegramCustomerNotificationSender(
                 messageFactory,
                 cleaningMessageFactory,
-                botClient
+                botClient,
+                Mockito.mock(MediaProviderReferenceService.class)
         );
 
         Assertions.assertThrows(
@@ -97,7 +102,8 @@ class TelegramCustomerNotificationSenderTest {
         var sender = new TelegramCustomerNotificationSender(
                 messageFactory,
                 cleaningMessageFactory,
-                botClient
+                botClient,
+                Mockito.mock(MediaProviderReferenceService.class)
         );
 
         sender.send(telegramTarget(), new CleaningOrderCustomerNotification.Accepted(43L));
@@ -132,7 +138,8 @@ class TelegramCustomerNotificationSenderTest {
         var sender = new TelegramCustomerNotificationSender(
                 messageFactory,
                 cleaningMessageFactory,
-                botClient
+                botClient,
+                Mockito.mock(MediaProviderReferenceService.class)
         );
 
         sender.send(telegramTarget(), notification);
@@ -163,7 +170,8 @@ class TelegramCustomerNotificationSenderTest {
         var sender = new TelegramCustomerNotificationSender(
                 messageFactory,
                 cleaningMessageFactory,
-                botClient
+                botClient,
+                Mockito.mock(MediaProviderReferenceService.class)
         );
 
         Assertions.assertThrows(
@@ -181,12 +189,22 @@ class TelegramCustomerNotificationSenderTest {
         CleaningOrderBotMessageFactory cleaningMessageFactory =
                 Mockito.mock(CleaningOrderBotMessageFactory.class);
         TelegramBotClient botClient = Mockito.mock(TelegramBotClient.class);
+        MediaProviderReferenceService mediaProviderReferenceService =
+                Mockito.mock(MediaProviderReferenceService.class);
         var notification = new CleaningOrderCustomerNotification.OnsiteIssueReported(
                 43L,
                 OnsiteIssueReason.ACCESS_PROBLEM,
                 "Нет ключа",
-                List.of(ExternalMediaReference.telegram("evidence-1"))
+                List.of(71L)
         );
+        Mockito.when(mediaProviderReferenceService.require(71L, MediaProvider.TELEGRAM))
+                .thenReturn(new MediaProviderReferenceData(
+                        71L,
+                        MediaProvider.TELEGRAM,
+                        "evidence-1",
+                        "evidence-unique-1",
+                        Instant.parse("2026-08-21T12:00:00Z")
+                ));
         Mockito.when(cleaningMessageFactory.customerOnsiteIssueReport(
                 OnsiteIssueReason.ACCESS_PROBLEM,
                 "Нет ключа"
@@ -195,7 +213,8 @@ class TelegramCustomerNotificationSenderTest {
         var sender = new TelegramCustomerNotificationSender(
                 messageFactory,
                 cleaningMessageFactory,
-                botClient
+                botClient,
+                mediaProviderReferenceService
         );
 
         sender.send(telegramTarget(), notification);

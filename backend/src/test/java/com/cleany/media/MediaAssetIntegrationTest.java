@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.HexFormat;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ class MediaAssetIntegrationTest extends BaseIntegrationTest {
     private MediaProviderReferenceRepository referenceRepository;
 
     @BeforeEach
+    @AfterEach
     void cleanDatabase() {
         referenceRepository.deleteAll();
         assetRepository.deleteAll();

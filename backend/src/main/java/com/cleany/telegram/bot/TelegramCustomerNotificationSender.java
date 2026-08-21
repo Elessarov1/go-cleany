@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.media.MediaProvider;
+import com.cleany.media.MediaProviderReferenceService;
 import com.cleany.notification.CommunicationTarget;
 import com.cleany.notification.CustomerNotification;
 import com.cleany.notification.CustomerNotificationSender;
@@ -19,15 +20,18 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
     private final TelegramCustomerNotificationMessageFactory messageFactory;
     private final CleaningOrderBotMessageFactory cleaningMessageFactory;
     private final TelegramBotClient botClient;
+    private final MediaProviderReferenceService mediaProviderReferenceService;
 
     public TelegramCustomerNotificationSender(
             TelegramCustomerNotificationMessageFactory messageFactory,
             CleaningOrderBotMessageFactory cleaningMessageFactory,
-            TelegramBotClient botClient
+            TelegramBotClient botClient,
+            MediaProviderReferenceService mediaProviderReferenceService
     ) {
         this.messageFactory = messageFactory;
         this.cleaningMessageFactory = cleaningMessageFactory;
         this.botClient = botClient;
+        this.mediaProviderReferenceService = mediaProviderReferenceService;
     }
 
     @Override
@@ -77,12 +81,14 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
             return;
         }
         if (notification instanceof CleaningOrderCustomerNotification.OnsiteIssueReported issue) {
-            validateTelegramMedia(issue.photos());
+            var photos = issue.mediaIds().stream()
+                    .map(mediaId -> mediaProviderReferenceService.require(mediaId, MediaProvider.TELEGRAM))
+                    .toList();
             sendMessage(
                     telegramUserId,
                     cleaningMessageFactory.customerOnsiteIssueReport(issue.reason(), issue.comment())
             );
-            issue.photos().forEach(photo -> botClient.sendPhoto(telegramUserId, photo.externalId()));
+            photos.forEach(photo -> botClient.sendPhoto(telegramUserId, photo.externalId()));
             sendMessage(telegramUserId, cleaningMessageFactory.customerOnsiteIssuePaused());
             return;
         }

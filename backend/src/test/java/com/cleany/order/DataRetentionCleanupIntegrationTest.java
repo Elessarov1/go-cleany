@@ -19,6 +19,11 @@ import com.cleany.customer.CustomerIdentityTestFixture;
 import com.cleany.finance.AcquisitionSource;
 import com.cleany.finance.CustomerDiscountType;
 import com.cleany.finance.OrderFinancialSnapshot;
+import com.cleany.media.MediaAssetRepository;
+import com.cleany.media.MediaProvider;
+import com.cleany.media.MediaProviderReferenceRepository;
+import com.cleany.media.MediaProviderReferenceService;
+import com.cleany.media.MediaUpload;
 import com.cleany.retention.DataRetentionCleanupResult;
 import com.cleany.retention.DataRetentionCleanupService;
 
@@ -50,6 +55,15 @@ class DataRetentionCleanupIntegrationTest extends BaseIntegrationTest {
     private CustomerExternalIdentityRepository customerIdentityRepository;
 
     @Autowired
+    private MediaAssetRepository mediaAssetRepository;
+
+    @Autowired
+    private MediaProviderReferenceRepository mediaProviderReferenceRepository;
+
+    @Autowired
+    private MediaProviderReferenceService mediaProviderReferenceService;
+
+    @Autowired
     private DataRetentionCleanupService cleanupService;
 
     @Autowired
@@ -64,6 +78,8 @@ class DataRetentionCleanupIntegrationTest extends BaseIntegrationTest {
         eventRepository.deleteAll();
         orderRepository.deleteAll();
         customerAccountRepository.deleteAll();
+        mediaProviderReferenceRepository.deleteAll();
+        mediaAssetRepository.deleteAll();
     }
 
     @Test
@@ -145,13 +161,10 @@ class DataRetentionCleanupIntegrationTest extends BaseIntegrationTest {
             report.updateComment("Access is unavailable");
             report.submit(createdAt);
             report = issueReportRepository.save(report);
-            issuePhotoRepository.save(new CleaningOrderIssuePhoto(
+            issuePhotoRepository.save(issuePhoto(
                     report,
                     "active-issue-file",
                     "active-issue-unique",
-                    JPEG,
-                    "image/jpeg",
-                    "1".repeat(64),
                     createdAt
             ));
             eventRepository.save(new CleaningOrderEvent(
@@ -226,13 +239,10 @@ class DataRetentionCleanupIntegrationTest extends BaseIntegrationTest {
             report.submit(resolvedAt.minus(Duration.ofHours(1)));
             report.resolve(ADMIN_ID, "Resolved incident", resolvedAt);
             report = issueReportRepository.save(report);
-            issuePhotoRepository.save(new CleaningOrderIssuePhoto(
+            issuePhotoRepository.save(issuePhoto(
                     report,
                     "issue-file",
                     "issue-unique",
-                    JPEG,
-                    "image/jpeg",
-                    "0".repeat(64),
                     resolvedAt.minus(Duration.ofHours(1))
             ));
 
@@ -272,6 +282,25 @@ class DataRetentionCleanupIntegrationTest extends BaseIntegrationTest {
                 order,
                 "completion-file-" + order.getId(),
                 "completion-unique-" + order.getId(),
+                createdAt
+        );
+    }
+
+    private CleaningOrderIssuePhoto issuePhoto(
+            CleaningOrderIssueReport report,
+            String telegramFileId,
+            String telegramFileUniqueId,
+            Instant createdAt
+    ) {
+        var providerMedia = mediaProviderReferenceService.resolveOrStore(
+                new MediaUpload(JPEG, "image/jpeg"),
+                MediaProvider.TELEGRAM,
+                telegramFileId,
+                telegramFileUniqueId
+        );
+        return new CleaningOrderIssuePhoto(
+                report,
+                providerMedia.media().mediaId(),
                 createdAt
         );
     }

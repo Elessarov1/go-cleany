@@ -19,6 +19,11 @@ public interface MediaProviderReferenceRepository extends JpaRepository<MediaPro
             String externalUniqueId
     );
 
+    Optional<MediaProviderReference> findFirstByMediaAsset_IdAndProviderOrderByCreatedAtDescIdDesc(
+            long mediaAssetId,
+            MediaProvider provider
+    );
+
     @Modifying(flushAutomatically = true)
     @Query("delete from MediaProviderReference providerReference "
             + "where providerReference.mediaAsset.id = :mediaAssetId")

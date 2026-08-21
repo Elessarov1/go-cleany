@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.configuration.CleaningProperties;
+import com.cleany.media.MediaStorage;
 import com.cleany.order.CleaningOrder;
 import com.cleany.order.CleaningOrderEventRepository;
 import com.cleany.order.CleaningOrderIssuePhotoRepository;
@@ -30,6 +31,7 @@ public class AdminQueryService {
     private final CleaningOrderPhotoRepository photoRepository;
     private final CleaningOrderIssueReportRepository issueReportRepository;
     private final CleaningOrderIssuePhotoRepository issuePhotoRepository;
+    private final MediaStorage mediaStorage;
     private final CleaningProperties cleaningProperties;
     private final Clock clock;
 
@@ -40,6 +42,7 @@ public class AdminQueryService {
             CleaningOrderPhotoRepository photoRepository,
             CleaningOrderIssueReportRepository issueReportRepository,
             CleaningOrderIssuePhotoRepository issuePhotoRepository,
+            MediaStorage mediaStorage,
             CleaningProperties cleaningProperties,
             Clock clock
     ) {
@@ -49,6 +52,7 @@ public class AdminQueryService {
         this.photoRepository = photoRepository;
         this.issueReportRepository = issueReportRepository;
         this.issuePhotoRepository = issuePhotoRepository;
+        this.mediaStorage = mediaStorage;
         this.cleaningProperties = cleaningProperties;
         this.clock = clock;
     }
@@ -105,7 +109,8 @@ public class AdminQueryService {
         var photo = issuePhotoRepository
                 .findByIdAndIssueReport_Order_IdAndIssueReport_SubmittedAtIsNotNull(photoId, orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
-        return new AdminIssuePhotoContent(photo.getContentType(), photo.getContent());
+        var media = mediaStorage.get(photo.getMediaAssetId());
+        return new AdminIssuePhotoContent(media.contentType(), media.content());
     }
 
     private AdminStatsResponse stats(List<CleaningOrder> orders) {

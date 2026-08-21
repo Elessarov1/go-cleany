@@ -1,9 +1,6 @@
 package com.cleany.order;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
-import java.util.HexFormat;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -12,6 +9,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.configuration.CleanerProperties;
 import com.cleany.configuration.OnsiteIssueProperties;
+import com.cleany.media.MediaProvider;
+import com.cleany.media.MediaProviderReferenceService;
+import com.cleany.media.MediaUpload;
 import com.cleany.referral.ReferralService;
 
 @Service
@@ -26,6 +26,7 @@ public class OnsiteIssueService {
     private final CleanerProperties cleanerProperties;
     private final OnsiteIssueProperties properties;
     private final ReferralService referralService;
+    private final MediaProviderReferenceService mediaProviderReferenceService;
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -37,6 +38,7 @@ public class OnsiteIssueService {
             CleanerProperties cleanerProperties,
             OnsiteIssueProperties properties,
             ReferralService referralService,
+            MediaProviderReferenceService mediaProviderReferenceService,
             Clock clock,
             ApplicationEventPublisher eventPublisher
     ) {
@@ -47,6 +49,7 @@ public class OnsiteIssueService {
         this.cleanerProperties = cleanerProperties;
         this.properties = properties;
         this.referralService = referralService;
+        this.mediaProviderReferenceService = mediaProviderReferenceService;
         this.clock = clock;
         this.eventPublisher = eventPublisher;
     }
@@ -104,7 +107,18 @@ public class OnsiteIssueService {
         String fileId = requireValue(telegramFileId, 512, "Telegram photo file_id");
         String uniqueId = requireValue(telegramFileUniqueId, 255, "Telegram photo file_unique_id");
 
-        if (!photoRepository.existsByIssueReport_IdAndTelegramFileUniqueId(report.getId(), uniqueId)) {
+        ValidatedPhoto photo = validatePhoto(content);
+        var providerMedia = mediaProviderReferenceService.resolveOrStore(
+                new MediaUpload(content, photo.contentType()),
+                MediaProvider.TELEGRAM,
+                fileId,
+                uniqueId
+        );
+
+        if (!photoRepository.existsByIssueReport_IdAndMediaAssetId(
+                report.getId(),
+                providerMedia.media().mediaId()
+        )) {
             long currentCount = photoRepository.countByIssueReport_Id(report.getId());
             if (currentCount >= properties.maxPhotos()) {
                 throw invalid(
@@ -112,14 +126,9 @@ public class OnsiteIssueService {
                         "Onsite issue report cannot contain more than " + properties.maxPhotos() + " photos"
                 );
             }
-            ValidatedPhoto photo = validatePhoto(content);
             CleaningOrderIssuePhoto saved = photoRepository.save(new CleaningOrderIssuePhoto(
                     report,
-                    fileId,
-                    uniqueId,
-                    content,
-                    photo.contentType(),
-                    sha256(content),
+                    providerMedia.media().mediaId(),
                     clock.instant()
             ));
             recordEvent(
@@ -285,12 +294,10 @@ public class OnsiteIssueService {
     }
 
     private OnsiteIssueDelivery delivery(CleaningOrderIssueReport report) {
-        var fileIds = photoRepository.findTelegramFileIdsByIssueReportId(report.getId());
         return new OnsiteIssueDelivery(
                 report.getOrder(),
                 report.getReason(),
-                report.getComment(),
-                fileIds
+                report.getComment()
         );
     }
 
@@ -331,14 +338,6 @@ public class OnsiteIssueService {
             return "image/png";
         }
         return null;
-    }
-
-    private static String sha256(byte[] content) {
-        try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 is unavailable", exception);
-        }
     }
 
     private static String normalizeComment(String value, boolean required) {

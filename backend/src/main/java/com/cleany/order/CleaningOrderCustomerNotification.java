@@ -35,11 +35,11 @@ public sealed interface CleaningOrderCustomerNotification extends CustomerNotifi
             long orderId,
             OnsiteIssueReason reason,
             String comment,
-            List<ExternalMediaReference> photos
+            List<Long> mediaIds
     ) implements CleaningOrderCustomerNotification {
 
         public OnsiteIssueReported {
-            photos = List.copyOf(photos);
+            mediaIds = List.copyOf(mediaIds);
         }
     }
 }

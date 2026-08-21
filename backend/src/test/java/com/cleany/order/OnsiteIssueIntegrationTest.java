@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.util.HexFormat;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
@@ -22,6 +23,11 @@ import com.cleany.customer.CustomerIdentityTestFixture;
 import com.cleany.finance.AcquisitionSource;
 import com.cleany.finance.CustomerDiscountType;
 import com.cleany.finance.OrderFinancialSnapshot;
+import com.cleany.media.MediaAssetRepository;
+import com.cleany.media.MediaContent;
+import com.cleany.media.MediaProvider;
+import com.cleany.media.MediaProviderReferenceRepository;
+import com.cleany.media.MediaStorage;
 import com.cleany.telegram.TelegramInitDataTestFactory;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -62,6 +68,15 @@ class OnsiteIssueIntegrationTest extends BaseIntegrationTest {
     private CustomerExternalIdentityRepository customerIdentityRepository;
 
     @Autowired
+    private MediaAssetRepository mediaAssetRepository;
+
+    @Autowired
+    private MediaProviderReferenceRepository mediaProviderReferenceRepository;
+
+    @Autowired
+    private MediaStorage mediaStorage;
+
+    @Autowired
     private CleaningOrderService orderService;
 
     @Autowired
@@ -71,12 +86,15 @@ class OnsiteIssueIntegrationTest extends BaseIntegrationTest {
     private MockMvc mvc;
 
     @BeforeEach
+    @AfterEach
     void cleanDatabase() {
         issuePhotoRepository.deleteAll();
         issueReportRepository.deleteAll();
         completionPhotoRepository.deleteAll();
         eventRepository.deleteAll();
         orderRepository.deleteAll();
+        mediaProviderReferenceRepository.deleteAll();
+        mediaAssetRepository.deleteAll();
     }
 
     @Test
@@ -187,16 +205,26 @@ class OnsiteIssueIntegrationTest extends BaseIntegrationTest {
         CleaningOrderIssueReport report = issueReportRepository.findByOrder_Id(order.getId()).orElseThrow();
         var photos = issuePhotoRepository.findAllByIssueReport_IdOrderByCreatedAtAscIdAsc(report.getId());
         CleaningOrderIssuePhoto firstPhoto = photos.getFirst();
+        MediaContent firstMedia = mediaStorage.get(firstPhoto.getMediaAssetId());
         var events = eventRepository.findAllByOrderIdOrderByOccurredAtAscIdAsc(order.getId());
 
         Assertions.assertAll(
                 () -> Assertions.assertEquals(1L, first.photoCount()),
                 () -> Assertions.assertEquals(1L, duplicate.photoCount()),
                 () -> Assertions.assertEquals(3, photos.size()),
-                () -> Assertions.assertArrayEquals(JPEG, firstPhoto.getContent()),
-                () -> Assertions.assertEquals("image/jpeg", firstPhoto.getContentType()),
-                () -> Assertions.assertEquals(JPEG.length, firstPhoto.getSizeBytes()),
-                () -> Assertions.assertEquals(sha256(JPEG), firstPhoto.getSha256()),
+                () -> Assertions.assertEquals(3L, mediaAssetRepository.count()),
+                () -> Assertions.assertEquals(3L, mediaProviderReferenceRepository.count()),
+                () -> Assertions.assertArrayEquals(JPEG, firstMedia.content()),
+                () -> Assertions.assertEquals("image/jpeg", firstMedia.contentType()),
+                () -> Assertions.assertEquals(JPEG.length, firstMedia.sizeBytes()),
+                () -> Assertions.assertEquals(sha256(JPEG), firstMedia.sha256()),
+                () -> Assertions.assertEquals(
+                        firstPhoto.getMediaAssetId(),
+                        mediaProviderReferenceRepository
+                                .findByProviderAndExternalUniqueId(MediaProvider.TELEGRAM, "unique-1")
+                                .orElseThrow()
+                                .getMediaAssetId()
+                ),
                 () -> Assertions.assertNotNull(report.getSubmittedAt()),
                 () -> Assertions.assertEquals(
                         CleaningOrderStatus.ONSITE_ISSUE_REPORTED,

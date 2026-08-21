@@ -366,8 +366,7 @@ class TelegramCleanerBotServiceTest {
         OnsiteIssueDelivery delivery = new OnsiteIssueDelivery(
                 order,
                 OnsiteIssueReason.ADDRESS_MISMATCH,
-                "Wrong address",
-                List.of("evidence-1", "evidence-2", "evidence-3")
+                "Wrong address"
         );
         Mockito.when(onsiteIssueService.submit(43L, CLEANER_ID)).thenReturn(delivery);
 

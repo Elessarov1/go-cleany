@@ -52,15 +52,14 @@ public class CleaningOrderCustomerNotificationQueryService {
         CleaningOrderIssueReport report = issueReportRepository
                 .findByOrder_IdAndSubmittedAtIsNotNull(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
-        var photos = issuePhotoRepository.findAllByIssueReport_IdOrderByCreatedAtAscIdAsc(report.getId()).stream()
-                .map(CleaningOrderIssuePhoto::getTelegramFileId)
-                .map(ExternalMediaReference::telegram)
+        var mediaIds = issuePhotoRepository.findAllByIssueReport_IdOrderByCreatedAtAscIdAsc(report.getId()).stream()
+                .map(CleaningOrderIssuePhoto::getMediaAssetId)
                 .toList();
         return new CleaningOrderCustomerNotification.OnsiteIssueReported(
                 orderId,
                 report.getReason(),
                 report.getComment(),
-                photos
+                mediaIds
         );
     }
 

@@ -61,7 +61,7 @@ class CleaningOrderCustomerNotificationQueryServiceTest {
     }
 
     @Test
-    void onsiteIssue_notificationSnapshotContainsReasonCommentAndProviderMediaReferences() {
+    void onsiteIssue_notificationSnapshotContainsReasonCommentAndInternalMediaIds() {
         CleaningOrderIssueReport report = Mockito.mock(CleaningOrderIssueReport.class);
         CleaningOrderIssuePhoto photo = Mockito.mock(CleaningOrderIssuePhoto.class);
         Mockito.when(issueReportRepository.findByOrder_IdAndSubmittedAtIsNotNull(43L))
@@ -71,7 +71,7 @@ class CleaningOrderCustomerNotificationQueryServiceTest {
         Mockito.when(report.getComment()).thenReturn("Нет ключа");
         Mockito.when(issuePhotoRepository.findAllByIssueReport_IdOrderByCreatedAtAscIdAsc(55L))
                 .thenReturn(List.of(photo));
-        Mockito.when(photo.getTelegramFileId()).thenReturn("evidence-1");
+        Mockito.when(photo.getMediaAssetId()).thenReturn(71L);
 
         var notification = service.onsiteIssue(43L);
 
@@ -79,10 +79,7 @@ class CleaningOrderCustomerNotificationQueryServiceTest {
                 () -> Assertions.assertEquals(43L, notification.orderId()),
                 () -> Assertions.assertEquals(OnsiteIssueReason.ACCESS_PROBLEM, notification.reason()),
                 () -> Assertions.assertEquals("Нет ключа", notification.comment()),
-                () -> Assertions.assertEquals(
-                        List.of(ExternalMediaReference.telegram("evidence-1")),
-                        notification.photos()
-                )
+                () -> Assertions.assertEquals(List.of(71L), notification.mediaIds())
         );
     }
 }

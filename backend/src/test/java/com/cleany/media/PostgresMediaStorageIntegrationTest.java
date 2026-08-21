@@ -6,6 +6,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,11 @@ class PostgresMediaStorageIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private MediaProviderReferenceRepository referenceRepository;
 
+    @Autowired
+    private MediaProviderReferenceService mediaProviderReferenceService;
+
     @BeforeEach
+    @AfterEach
     void cleanDatabase() {
         referenceRepository.deleteAll();
         assetRepository.deleteAll();
@@ -87,6 +92,37 @@ class PostgresMediaStorageIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertThrows(
                         MediaNotFoundException.class,
                         () -> mediaStorage.delete(999999L)
+                )
+        );
+    }
+
+    @Test
+    void providerUniqueIdentifier_resolvesExistingCanonicalAsset() {
+        StoredProviderMedia first = mediaProviderReferenceService.resolveOrStore(
+                new MediaUpload(new byte[]{1, 2, 3}, "image/jpeg"),
+                MediaProvider.TELEGRAM,
+                "telegram-file-id",
+                "telegram-unique-id"
+        );
+        StoredProviderMedia duplicate = mediaProviderReferenceService.resolveOrStore(
+                new MediaUpload(new byte[]{9, 9, 9}, "image/jpeg"),
+                MediaProvider.TELEGRAM,
+                "new-telegram-file-id",
+                "telegram-unique-id"
+        );
+        MediaProviderReferenceData required = mediaProviderReferenceService.require(
+                first.media().mediaId(),
+                MediaProvider.TELEGRAM
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(first.media().mediaId(), duplicate.media().mediaId()),
+                () -> Assertions.assertEquals(1L, assetRepository.count()),
+                () -> Assertions.assertEquals(1L, referenceRepository.count()),
+                () -> Assertions.assertEquals("telegram-file-id", required.externalId()),
+                () -> Assertions.assertArrayEquals(
+                        new byte[]{1, 2, 3},
+                        mediaStorage.get(first.media().mediaId()).content()
                 )
         );
     }
