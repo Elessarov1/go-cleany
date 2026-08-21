@@ -102,6 +102,9 @@ class DataRetentionCleanupIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertEquals(1, firstRun.deletedIssuePhotoCount()),
                 () -> Assertions.assertEquals(2, firstRun.deletedCompletionPhotoCount()),
                 () -> Assertions.assertEquals(3, firstRun.deletedAuditEventCount()),
+                () -> Assertions.assertEquals(3, firstRun.deletedMediaAssetCount()),
+                () -> Assertions.assertEquals(3L, mediaAssetRepository.count()),
+                () -> Assertions.assertEquals(3L, mediaProviderReferenceRepository.count()),
                 () -> Assertions.assertEquals(1L,
                         issuePhotoRepository.countByIssueReport_Id(activeIssue.reportId())),
                 () -> Assertions.assertEquals(1,
@@ -142,7 +145,8 @@ class DataRetentionCleanupIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertEquals(0, secondRun.eligibleOrderCount()),
                 () -> Assertions.assertEquals(0, secondRun.deletedIssuePhotoCount()),
                 () -> Assertions.assertEquals(0, secondRun.deletedCompletionPhotoCount()),
-                () -> Assertions.assertEquals(0, secondRun.deletedAuditEventCount())
+                () -> Assertions.assertEquals(0, secondRun.deletedAuditEventCount()),
+                () -> Assertions.assertEquals(0, secondRun.deletedMediaAssetCount())
         );
     }
 

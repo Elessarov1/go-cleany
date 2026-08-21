@@ -7,6 +7,7 @@ public record DataRetentionCleanupResult(
         int eligibleOrderCount,
         int deletedIssuePhotoCount,
         int deletedCompletionPhotoCount,
-        int deletedAuditEventCount
+        int deletedAuditEventCount,
+        int deletedMediaAssetCount
 ) {
 }

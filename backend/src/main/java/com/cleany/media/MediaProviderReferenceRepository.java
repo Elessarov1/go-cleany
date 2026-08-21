@@ -1,5 +1,6 @@
 package com.cleany.media;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -28,4 +29,9 @@ public interface MediaProviderReferenceRepository extends JpaRepository<MediaPro
     @Query("delete from MediaProviderReference providerReference "
             + "where providerReference.mediaAsset.id = :mediaAssetId")
     int deleteAllByMediaAssetId(@Param("mediaAssetId") long mediaAssetId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from MediaProviderReference providerReference "
+            + "where providerReference.mediaAsset.id in :mediaIds")
+    int deleteAllByMediaAssetIds(@Param("mediaIds") List<Long> mediaIds);
 }
