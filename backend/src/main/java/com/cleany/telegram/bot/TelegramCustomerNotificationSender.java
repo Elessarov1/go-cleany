@@ -1,56 +1,59 @@
 package com.cleany.telegram.bot;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import com.cleany.customer.CustomerExternalIdentityRepository;
 import com.cleany.customer.ExternalIdentityProvider;
+import com.cleany.notification.CommunicationTarget;
+import com.cleany.notification.CustomerNotification;
 import com.cleany.notification.CustomerNotificationSender;
+import com.cleany.notification.ReferralUnlockedCustomerNotification;
 
 @ConditionalOnProperty(prefix = "telegram", name = "bot-enabled", havingValue = "true")
 @Component
 public class TelegramCustomerNotificationSender implements CustomerNotificationSender {
 
-    private static final Logger log = LoggerFactory.getLogger(TelegramCustomerNotificationSender.class);
-
-    private final CustomerExternalIdentityRepository identityRepository;
     private final TelegramCustomerNotificationMessageFactory messageFactory;
     private final TelegramBotClient botClient;
 
     public TelegramCustomerNotificationSender(
-            CustomerExternalIdentityRepository identityRepository,
             TelegramCustomerNotificationMessageFactory messageFactory,
             TelegramBotClient botClient
     ) {
-        this.identityRepository = identityRepository;
         this.messageFactory = messageFactory;
         this.botClient = botClient;
     }
 
     @Override
-    public void sendReferralUnlocked(long customerId, String referralCode) {
-        var identity = identityRepository.findByCustomerIdAndProvider(
-                customerId,
-                ExternalIdentityProvider.TELEGRAM
-        );
-        if (identity.isEmpty()) {
-            log.warn("Telegram identity is unavailable for referral unlock customer {}", customerId);
-            return;
+    public ExternalIdentityProvider provider() {
+        return ExternalIdentityProvider.TELEGRAM;
+    }
+
+    @Override
+    public void send(CommunicationTarget target, CustomerNotification notification) {
+        if (target.provider() != provider()) {
+            throw new IllegalArgumentException("Telegram sender received a non-Telegram target");
         }
 
         long telegramUserId;
         try {
-            telegramUserId = Long.parseLong(identity.get().getExternalSubject());
+            telegramUserId = Long.parseLong(target.externalSubject());
+            if (telegramUserId <= 0) {
+                throw new NumberFormatException("Telegram user id must be positive");
+            }
         } catch (NumberFormatException exception) {
-            log.error("Telegram identity is invalid for referral unlock customer {}", customerId);
-            return;
+            throw new IllegalArgumentException("Telegram target external subject is invalid", exception);
         }
 
+        String message = switch (notification) {
+            case ReferralUnlockedCustomerNotification unlocked -> messageFactory.referralUnlocked(
+                    unlocked.referralCode(),
+                    target.languageCode()
+            );
+        };
         botClient.sendMessage(
                 telegramUserId,
-                messageFactory.referralUnlocked(referralCode, identity.get().getLanguageCode()),
+                message,
                 TelegramBotClient.InlineKeyboard.empty()
         );
     }

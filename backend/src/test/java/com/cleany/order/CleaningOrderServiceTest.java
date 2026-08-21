@@ -312,6 +312,7 @@ class CleaningOrderServiceTest {
         CleaningOrder order = Mockito.mock(CleaningOrder.class);
         Mockito.when(order.getId()).thenReturn(43L);
         Mockito.when(order.getCustomerId()).thenReturn(77L);
+        Mockito.when(order.getCommunicationIdentityId()).thenReturn(88L);
         Mockito.when(order.getStatus()).thenReturn(CleaningOrderStatus.AWAITING_REPORT);
         Mockito.when(repository.findById(43L)).thenReturn(Optional.of(order));
         Mockito.when(repository.existsByCustomerIdAndStatus(77L, CleaningOrderStatus.COMPLETED))
@@ -324,6 +325,7 @@ class CleaningOrderServiceTest {
         Mockito.verify(eventPublisher).publishEvent(eventCaptor.capture());
         Assertions.assertAll(
                 () -> Assertions.assertEquals(77L, eventCaptor.getValue().customerId()),
+                () -> Assertions.assertEquals(88L, eventCaptor.getValue().communicationIdentityId()),
                 () -> Assertions.assertEquals("ALEX7K2", eventCaptor.getValue().referralCode())
         );
     }

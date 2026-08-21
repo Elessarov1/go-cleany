@@ -1,7 +1,5 @@
 package com.cleany.notification;
 
-import java.util.List;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -28,17 +26,25 @@ class ReferralUnlockedNotificationListenerTest {
     }
 
     @Test
-    void failedChannel_doesNotPreventOtherChannelsFromReceivingNotification() {
-        CustomerNotificationSender failedSender = Mockito.mock(CustomerNotificationSender.class);
-        CustomerNotificationSender successfulSender = Mockito.mock(CustomerNotificationSender.class);
+    void dispatcherFailure_doesNotEscapeAfterCommitListener() {
+        CustomerNotificationDispatcher dispatcher = Mockito.mock(CustomerNotificationDispatcher.class);
         Mockito.doThrow(new IllegalStateException("Telegram unavailable"))
-                .when(failedSender)
-                .sendReferralUnlocked(77L, "ALEX7K2");
-        var listener = new ReferralUnlockedNotificationListener(List.of(failedSender, successfulSender));
+                .when(dispatcher)
+                .send(
+                        Mockito.eq(77L),
+                        Mockito.eq(88L),
+                        Mockito.any(ReferralUnlockedCustomerNotification.class)
+                );
+        var listener = new ReferralUnlockedNotificationListener(dispatcher);
 
-        listener.notifyCustomer(new ReferralUnlockedEvent(77L, "ALEX7K2"));
+        Assertions.assertDoesNotThrow(
+                () -> listener.notifyCustomer(new ReferralUnlockedEvent(77L, 88L, "ALEX7K2"))
+        );
 
-        Mockito.verify(failedSender).sendReferralUnlocked(77L, "ALEX7K2");
-        Mockito.verify(successfulSender).sendReferralUnlocked(77L, "ALEX7K2");
+        Mockito.verify(dispatcher).send(
+                77L,
+                88L,
+                new ReferralUnlockedCustomerNotification("ALEX7K2")
+        );
     }
 }

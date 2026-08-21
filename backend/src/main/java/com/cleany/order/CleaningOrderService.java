@@ -359,7 +359,11 @@ public class CleaningOrderService {
         ));
         String referralCode = referralService.completeOrder(order);
         if (firstCompletedOrder) {
-            eventPublisher.publishEvent(new ReferralUnlockedEvent(order.getCustomerId(), referralCode));
+            eventPublisher.publishEvent(new ReferralUnlockedEvent(
+                    order.getCustomerId(),
+                    order.getCommunicationIdentityId(),
+                    referralCode
+            ));
         }
         return order;
     }
