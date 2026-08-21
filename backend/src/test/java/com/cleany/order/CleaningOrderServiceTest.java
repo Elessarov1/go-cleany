@@ -76,7 +76,7 @@ class CleaningOrderServiceTest {
                 )
         );
         Mockito.when(referralService.planForCreation(
-                Mockito.eq(77L),
+                Mockito.anyLong(),
                 Mockito.nullable(String.class),
                 Mockito.any(BigDecimal.class),
                 Mockito.anyBoolean()
@@ -104,9 +104,18 @@ class CleaningOrderServiceTest {
     }
 
     @Test
-    void orderRequest_channelNeutralCustomer_priceAndCommunicationIdentityStoredFromBackend() {
+    void explicitCustomerOrder_usesSuppliedCustomerWithoutResolvingRequestIdentity() {
         Mockito.when(repository.save(Mockito.any(CleaningOrder.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+        var customer = new CurrentCustomer(
+                91L,
+                92L,
+                ExternalIdentityProvider.WHATSAPP,
+                "905559876543",
+                null,
+                "WhatsApp Alex",
+                "ru"
+        );
         var command = new CreateCleaningOrderCommand(
                 ServiceArea.MAHMUTLAR,
                 " Barbaros Cd. 24 ",
@@ -119,13 +128,13 @@ class CleaningOrderServiceTest {
                 null
         );
 
-        service.createOrder(command);
+        service.createOrder(customer, command);
 
         var captor = ArgumentCaptor.forClass(CleaningOrder.class);
         Mockito.verify(repository).save(captor.capture());
         CleaningOrder order = captor.getValue();
-        Assertions.assertEquals(77L, order.getCustomerId());
-        Assertions.assertEquals(88L, order.getCommunicationIdentityId());
+        Assertions.assertEquals(91L, order.getCustomerId());
+        Assertions.assertEquals(92L, order.getCommunicationIdentityId());
         Assertions.assertEquals(0, order.getPrice().compareTo(BigDecimal.valueOf(1400)));
         Assertions.assertEquals(0, order.getBaseCommission().compareTo(new BigDecimal("210.00")));
         Assertions.assertEquals("TRY", order.getCurrency());
@@ -141,6 +150,52 @@ class CleaningOrderServiceTest {
                 () -> Assertions.assertEquals(CleaningOrderStatus.NEW, eventCaptor.getValue().getToStatus())
         );
         Mockito.verify(eventPublisher).publishEvent(Mockito.any(CleaningOrderCreatedEvent.class));
+        Mockito.verify(customerAccountService, Mockito.never()).currentCustomer();
+    }
+
+    @Test
+    void explicitCustomerQuote_usesSuppliedCustomerWithoutResolvingRequestIdentity() {
+        var customer = new CurrentCustomer(
+                91L,
+                92L,
+                ExternalIdentityProvider.WHATSAPP,
+                "905559876543",
+                null,
+                "WhatsApp Alex",
+                "ru"
+        );
+        var request = new CleaningOrderQuoteRequest(
+                ApartmentType.TWO_PLUS_ONE,
+                false,
+                CleaningType.REGULAR,
+                "PARTNER10"
+        );
+        Mockito.when(referralService.quote(
+                Mockito.eq(91L),
+                Mockito.eq("PARTNER10"),
+                Mockito.any(BigDecimal.class),
+                Mockito.eq(true)
+        )).thenAnswer(invocation -> new OrderReferralPlan(
+                organicSnapshot(invocation.getArgument(2)),
+                null,
+                null,
+                null,
+                null
+        ));
+
+        CleaningOrderQuoteResponse response = service.quoteOrder(customer, request);
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(0, new BigDecimal("1100.00").compareTo(response.basePrice())),
+                () -> Assertions.assertEquals("TRY", response.currency())
+        );
+        Mockito.verify(referralService).quote(
+                Mockito.eq(91L),
+                Mockito.eq("PARTNER10"),
+                Mockito.any(BigDecimal.class),
+                Mockito.eq(true)
+        );
+        Mockito.verify(customerAccountService, Mockito.never()).currentCustomer();
     }
 
     @ParameterizedTest

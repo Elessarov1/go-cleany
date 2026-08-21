@@ -2,9 +2,12 @@ package com.cleany.telegram.bot;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import com.cleany.configuration.CleanerProperties;
@@ -66,10 +69,14 @@ class TelegramCleanerBotServiceTest {
                 CUSTOMER_ACCOUNT_ID
         ))
                 .thenReturn(Optional.of(customerIdentity));
-        cleanerBotService = new TelegramCleanerBotService(
+        cleanerBotService = createService(messageFactory);
+    }
+
+    private TelegramCleanerBotService createService(CleaningOrderBotMessageFactory factory) {
+        return new TelegramCleanerBotService(
                 new CleanerProperties(List.of(CLEANER_ID, OTHER_CLEANER_ID)),
                 orderService,
-                messageFactory,
+                factory,
                 botClient,
                 adminBotService,
                 customerAccountService,
@@ -106,7 +113,8 @@ class TelegramCleanerBotServiceTest {
         ));
         Mockito.when(orderService.acceptOrder(43L, CLEANER_ID)).thenReturn(order);
         Mockito.when(messageFactory.acceptedOrder(order)).thenReturn("accepted-message");
-        Mockito.when(messageFactory.acceptedOrderKeyboard(order, CUSTOMER_ID)).thenReturn(keyboard);
+        Mockito.when(messageFactory.acceptedOrderKeyboard(order, OptionalLong.of(CUSTOMER_ID)))
+                .thenReturn(keyboard);
 
         cleanerBotService.handle(update(CLEANER_ID, "order:accept:43"));
 
@@ -121,6 +129,86 @@ class TelegramCleanerBotServiceTest {
                 Mockito.anyString(),
                 Mockito.any()
         );
+    }
+
+    @Test
+    void acceptCallback_whatsappCustomer_phoneVisibleAndTelegramLinkOmitted() {
+        CustomerExternalIdentity whatsappIdentity = Mockito.mock(CustomerExternalIdentity.class);
+        Mockito.when(whatsappIdentity.getProvider()).thenReturn(ExternalIdentityProvider.WHATSAPP);
+        Mockito.when(customerIdentityRepository.findByIdAndCustomerId(
+                COMMUNICATION_ID,
+                CUSTOMER_ACCOUNT_ID
+        )).thenReturn(Optional.of(whatsappIdentity));
+        CleaningOrder order = order(43L, CLEANER_ID);
+        Mockito.when(order.getCustomerName()).thenReturn("Alex");
+        Mockito.when(order.getPhone()).thenReturn("+905551234567");
+        Mockito.when(order.getAddress()).thenReturn("Barbaros Cd. 24");
+        Mockito.when(orderService.acceptOrder(43L, CLEANER_ID)).thenReturn(order);
+        cleanerBotService = createService(new CleaningOrderBotMessageFactory());
+
+        cleanerBotService.handle(update(CLEANER_ID, "order:accept:43"));
+
+        var text = ArgumentCaptor.forClass(String.class);
+        var keyboard = ArgumentCaptor.forClass(InlineKeyboard.class);
+        Mockito.verify(botClient).sendMessage(Mockito.eq(CLEANER_ID), text.capture(), keyboard.capture());
+        Assertions.assertAll(
+                () -> Assertions.assertTrue(text.getValue().contains("+905551234567")),
+                () -> Assertions.assertTrue(keyboard.getValue().rows().stream()
+                        .flatMap(List::stream)
+                        .noneMatch(button -> button.url() != null)),
+                () -> Assertions.assertEquals(3, keyboard.getValue().rows().size())
+        );
+    }
+
+    @Test
+    void acceptCallback_missingCommunicationIdentity_orderWorkflowStillAvailable() {
+        Mockito.when(customerIdentityRepository.findByIdAndCustomerId(
+                COMMUNICATION_ID,
+                CUSTOMER_ACCOUNT_ID
+        )).thenReturn(Optional.empty());
+        CleaningOrder order = order(43L, CLEANER_ID);
+        Mockito.when(order.getCustomerName()).thenReturn("Alex");
+        Mockito.when(order.getPhone()).thenReturn("+905551234567");
+        Mockito.when(order.getAddress()).thenReturn("Barbaros Cd. 24");
+        Mockito.when(orderService.acceptOrder(43L, CLEANER_ID)).thenReturn(order);
+        cleanerBotService = createService(new CleaningOrderBotMessageFactory());
+
+        cleanerBotService.handle(update(CLEANER_ID, "order:accept:43"));
+
+        var keyboard = ArgumentCaptor.forClass(InlineKeyboard.class);
+        Mockito.verify(botClient).sendMessage(
+                Mockito.eq(CLEANER_ID),
+                Mockito.anyString(),
+                keyboard.capture()
+        );
+        Assertions.assertTrue(keyboard.getValue().rows().stream()
+                .flatMap(List::stream)
+                .noneMatch(button -> button.url() != null));
+        Mockito.verify(orderService).acceptOrder(43L, CLEANER_ID);
+    }
+
+    @Test
+    void acceptCallback_invalidTelegramIdentity_orderWorkflowStillAvailable() {
+        CustomerExternalIdentity invalidIdentity = Mockito.mock(CustomerExternalIdentity.class);
+        Mockito.when(invalidIdentity.getProvider()).thenReturn(ExternalIdentityProvider.TELEGRAM);
+        Mockito.when(invalidIdentity.getExternalSubject()).thenReturn("not-a-telegram-id");
+        Mockito.when(customerIdentityRepository.findByIdAndCustomerId(
+                COMMUNICATION_ID,
+                CUSTOMER_ACCOUNT_ID
+        )).thenReturn(Optional.of(invalidIdentity));
+        CleaningOrder order = order(43L, CLEANER_ID);
+        InlineKeyboard keyboard = InlineKeyboard.ofRows(List.of(
+                InlineButton.callback("Finish", "order:finish:43")
+        ));
+        Mockito.when(orderService.acceptOrder(43L, CLEANER_ID)).thenReturn(order);
+        Mockito.when(messageFactory.acceptedOrder(order)).thenReturn("accepted-message");
+        Mockito.when(messageFactory.acceptedOrderKeyboard(order, OptionalLong.empty()))
+                .thenReturn(keyboard);
+
+        cleanerBotService.handle(update(CLEANER_ID, "order:accept:43"));
+
+        Mockito.verify(botClient).sendMessage(CLEANER_ID, "accepted-message", keyboard);
+        Mockito.verify(orderService).acceptOrder(43L, CLEANER_ID);
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.cleany.telegram.bot;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.OptionalLong;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -75,7 +76,7 @@ class CleaningOrderBotMessageFactoryTest {
         CleaningOrder order = Mockito.mock(CleaningOrder.class);
         Mockito.when(order.getId()).thenReturn(43L);
 
-        var keyboard = messageFactory.acceptedOrderKeyboard(order, 900001L);
+        var keyboard = messageFactory.acceptedOrderKeyboard(order, OptionalLong.of(900001L));
 
         Assertions.assertEquals(
                 "tg://user?id=900001",

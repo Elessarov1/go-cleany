@@ -2,8 +2,10 @@ package com.cleany.telegram.bot;
 
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.OptionalLong;
 
 import org.springframework.stereotype.Component;
 
@@ -91,25 +93,30 @@ public class CleaningOrderBotMessageFactory {
         return "Заказ отменён.";
     }
 
-    public InlineKeyboard acceptedOrderKeyboard(CleaningOrder order, long customerTelegramUserId) {
-        return InlineKeyboard.ofRows(
-                List.of(InlineButton.url(
-                        "💬 Связаться с клиентом",
-                        "tg://user?id=" + customerTelegramUserId
-                )),
-                List.of(InlineButton.callback(
-                        "🧹 Завершить уборку",
-                        callback("finish", order.getId())
-                )),
-                List.of(InlineButton.callback(
-                        "⚠️ Сообщить о проблеме на объекте",
-                        callback("issue", order.getId())
-                )),
-                List.of(InlineButton.callback(
-                        "❌ Отменить заказ",
-                        callback("cancel", order.getId())
-                ))
-        );
+    public InlineKeyboard acceptedOrderKeyboard(
+            CleaningOrder order,
+            OptionalLong customerTelegramUserId
+    ) {
+        var rows = new ArrayList<List<InlineButton>>();
+        if (customerTelegramUserId.isPresent() && customerTelegramUserId.getAsLong() > 0) {
+            rows.add(List.of(InlineButton.url(
+                    "💬 Связаться с клиентом",
+                    "tg://user?id=" + customerTelegramUserId.getAsLong()
+            )));
+        }
+        rows.add(List.of(InlineButton.callback(
+                "🧹 Завершить уборку",
+                callback("finish", order.getId())
+        )));
+        rows.add(List.of(InlineButton.callback(
+                "⚠️ Сообщить о проблеме на объекте",
+                callback("issue", order.getId())
+        )));
+        rows.add(List.of(InlineButton.callback(
+                "❌ Отменить заказ",
+                callback("cancel", order.getId())
+        )));
+        return new InlineKeyboard(rows);
     }
 
     public InlineKeyboard onsiteIssueReasonKeyboard(long orderId) {

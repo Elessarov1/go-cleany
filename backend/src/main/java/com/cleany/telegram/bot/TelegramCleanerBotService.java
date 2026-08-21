@@ -1,6 +1,7 @@
 package com.cleany.telegram.bot;
 
 import java.util.Comparator;
+import java.util.OptionalLong;
 import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
@@ -305,12 +306,12 @@ public class TelegramCleanerBotService {
     private void accept(String callbackId, long orderId, long cleanerId) {
         try {
             CleaningOrder order = orderService.acceptOrder(orderId, cleanerId);
-            long customerChatId = requireTelegramCustomerChatId(order);
+            OptionalLong customerTelegramUserId = findTelegramCustomerId(order);
             safeAnswer(callbackId, "Заказ №" + orderId + " принят вами.", false);
             safeSend(
                     cleanerId,
                     messageFactory.acceptedOrder(order),
-                    messageFactory.acceptedOrderKeyboard(order, customerChatId),
+                    messageFactory.acceptedOrderKeyboard(order, customerTelegramUserId),
                     orderId
             );
         } catch (OrderClaimConflictException exception) {
@@ -382,29 +383,28 @@ public class TelegramCleanerBotService {
         safeSend(cleanerId, "⚠️ Отчёт по заказу №" + orderId + " сохранён и отправлен клиенту.", orderId);
     }
 
-    private long requireTelegramCustomerChatId(CleaningOrder order) {
+    private OptionalLong findTelegramCustomerId(CleaningOrder order) {
         var identity = customerIdentityRepository.findByIdAndCustomerId(
                 order.getCommunicationIdentityId(),
                 order.getCustomerId()
-        ).orElseThrow(() -> new IllegalStateException(
-                "Communication identity is unavailable for order " + order.getId()
-        ));
-        if (identity.getProvider() != ExternalIdentityProvider.TELEGRAM) {
-            throw new IllegalStateException(
-                    "Telegram delivery is unavailable for order " + order.getId()
-            );
+        );
+        if (identity.isEmpty()) {
+            log.warn("Communication identity is unavailable for accepted order {}", order.getId());
+            return OptionalLong.empty();
+        }
+        var communicationIdentity = identity.get();
+        if (communicationIdentity.getProvider() != ExternalIdentityProvider.TELEGRAM) {
+            return OptionalLong.empty();
         }
         try {
-            long telegramUserId = Long.parseLong(identity.getExternalSubject());
+            long telegramUserId = Long.parseLong(communicationIdentity.getExternalSubject());
             if (telegramUserId <= 0) {
                 throw new NumberFormatException("Telegram user id must be positive");
             }
-            return telegramUserId;
+            return OptionalLong.of(telegramUserId);
         } catch (NumberFormatException exception) {
-            throw new IllegalStateException(
-                    "Telegram communication identity is invalid for order " + order.getId(),
-                    exception
-            );
+            log.warn("Telegram communication identity is invalid for accepted order {}", order.getId());
+            return OptionalLong.empty();
         }
     }
 

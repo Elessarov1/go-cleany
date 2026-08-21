@@ -1,13 +1,17 @@
 package com.cleany.customer;
 
 import java.time.Clock;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.order.PhoneNumberNormalizer;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class CustomerAccountService {
 
     private final CustomerIdentityProvider identityProvider;
@@ -16,23 +20,14 @@ public class CustomerAccountService {
     private final PhoneNumberNormalizer phoneNumberNormalizer;
     private final Clock clock;
 
-    public CustomerAccountService(
-            CustomerIdentityProvider identityProvider,
-            CustomerAccountRepository accountRepository,
-            CustomerExternalIdentityRepository externalIdentityRepository,
-            PhoneNumberNormalizer phoneNumberNormalizer,
-            Clock clock
-    ) {
-        this.identityProvider = identityProvider;
-        this.accountRepository = accountRepository;
-        this.externalIdentityRepository = externalIdentityRepository;
-        this.phoneNumberNormalizer = phoneNumberNormalizer;
-        this.clock = clock;
+    @Transactional
+    public CurrentCustomer currentCustomer() {
+        return resolveCustomer(identityProvider.currentIdentity());
     }
 
     @Transactional
-    public CurrentCustomer currentCustomer() {
-        AuthenticatedCustomerIdentity authenticatedIdentity = identityProvider.currentIdentity();
+    public CurrentCustomer resolveCustomer(AuthenticatedCustomerIdentity authenticatedIdentity) {
+        Objects.requireNonNull(authenticatedIdentity, "authenticatedIdentity");
         ResolvedCustomer resolved = resolveAccount(
                 authenticatedIdentity.provider(),
                 authenticatedIdentity.externalSubject(),

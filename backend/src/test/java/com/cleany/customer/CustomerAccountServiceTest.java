@@ -3,8 +3,10 @@ package com.cleany.customer;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -13,55 +15,172 @@ import com.cleany.order.PhoneNumberNormalizer;
 
 class CustomerAccountServiceTest {
 
+    private static final Instant NOW = Instant.parse("2026-08-21T09:00:00Z");
+
+    private CustomerIdentityProvider identityProvider;
+    private CustomerAccountRepository accountRepository;
+    private CustomerExternalIdentityRepository identityRepository;
+    private CustomerAccountService service;
+
+    @BeforeEach
+    void setUp() {
+        identityProvider = Mockito.mock(CustomerIdentityProvider.class);
+        accountRepository = Mockito.mock(CustomerAccountRepository.class);
+        identityRepository = Mockito.mock(CustomerExternalIdentityRepository.class);
+        service = new CustomerAccountService(
+                identityProvider,
+                accountRepository,
+                identityRepository,
+                new PhoneNumberNormalizer(),
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+    }
+
     @Test
-    void authenticatedIdentity_storedAndReturnedWithChannelMetadata() {
-        CustomerIdentityProvider identityProvider = Mockito.mock(CustomerIdentityProvider.class);
-        CustomerAccountRepository accountRepository = Mockito.mock(CustomerAccountRepository.class);
-        CustomerExternalIdentityRepository identityRepository =
-                Mockito.mock(CustomerExternalIdentityRepository.class);
+    void explicitWhatsappIdentity_customerAndExternalIdentityCreated() {
         CustomerAccount account = Mockito.mock(CustomerAccount.class);
         CustomerExternalIdentity persistedIdentity = Mockito.mock(CustomerExternalIdentity.class);
-        Mockito.when(identityProvider.currentIdentity()).thenReturn(
-                new AuthenticatedCustomerIdentity(
-                        ExternalIdentityProvider.TELEGRAM,
-                        "900001",
-                        "alex",
-                        "Alex",
-                        " EN_us "
-                )
+        var authenticatedIdentity = new AuthenticatedCustomerIdentity(
+                ExternalIdentityProvider.WHATSAPP,
+                "905551234567",
+                null,
+                "Alex",
+                " RU_tr "
         );
         Mockito.when(account.getId()).thenReturn(77L);
         Mockito.when(accountRepository.save(Mockito.any(CustomerAccount.class))).thenReturn(account);
         Mockito.when(identityRepository.save(Mockito.any(CustomerExternalIdentity.class)))
                 .thenReturn(persistedIdentity);
-        Mockito.when(persistedIdentity.getId()).thenReturn(88L);
-        Mockito.when(persistedIdentity.getProvider()).thenReturn(ExternalIdentityProvider.TELEGRAM);
-        Mockito.when(persistedIdentity.getExternalSubject()).thenReturn("900001");
-        Mockito.when(persistedIdentity.getUsername()).thenReturn("alex");
-        Mockito.when(persistedIdentity.getDisplayName()).thenReturn("Alex");
-        Mockito.when(persistedIdentity.getLanguageCode()).thenReturn("en-us");
-        var service = new CustomerAccountService(
-                identityProvider,
-                accountRepository,
-                identityRepository,
-                new PhoneNumberNormalizer(),
-                Clock.fixed(Instant.parse("2026-08-21T09:00:00Z"), ZoneOffset.UTC)
+        stubIdentity(
+                persistedIdentity,
+                77L,
+                88L,
+                ExternalIdentityProvider.WHATSAPP,
+                "905551234567",
+                null,
+                "Alex",
+                "ru-tr"
         );
 
-        CurrentCustomer customer = service.currentCustomer();
+        CurrentCustomer customer = service.resolveCustomer(authenticatedIdentity);
 
         var identityCaptor = ArgumentCaptor.forClass(CustomerExternalIdentity.class);
         Mockito.verify(identityRepository).save(identityCaptor.capture());
+        Mockito.verifyNoInteractions(identityProvider);
         Assertions.assertAll(
-                () -> Assertions.assertEquals("900001", identityCaptor.getValue().getExternalSubject()),
-                () -> Assertions.assertEquals("en-us", identityCaptor.getValue().getLanguageCode()),
+                () -> Assertions.assertEquals(
+                        ExternalIdentityProvider.WHATSAPP,
+                        identityCaptor.getValue().getProvider()
+                ),
+                () -> Assertions.assertEquals(
+                        "905551234567",
+                        identityCaptor.getValue().getExternalSubject()
+                ),
+                () -> Assertions.assertEquals("ru-tr", identityCaptor.getValue().getLanguageCode()),
                 () -> Assertions.assertEquals(77L, customer.customerId()),
                 () -> Assertions.assertEquals(88L, customer.externalIdentityId()),
-                () -> Assertions.assertEquals(ExternalIdentityProvider.TELEGRAM, customer.provider()),
-                () -> Assertions.assertEquals("900001", customer.externalSubject()),
-                () -> Assertions.assertEquals("alex", customer.username()),
-                () -> Assertions.assertEquals("Alex", customer.displayName()),
-                () -> Assertions.assertEquals("en-us", customer.languageCode())
+                () -> Assertions.assertEquals(ExternalIdentityProvider.WHATSAPP, customer.provider()),
+                () -> Assertions.assertEquals("905551234567", customer.externalSubject())
         );
+    }
+
+    @Test
+    void sameWhatsappIdentity_resolvedAgain_sameCustomerReturnedAndMetadataRefreshed() {
+        CustomerAccount account = Mockito.mock(CustomerAccount.class);
+        CustomerExternalIdentity persistedIdentity = Mockito.mock(CustomerExternalIdentity.class);
+        var firstIdentity = new AuthenticatedCustomerIdentity(
+                ExternalIdentityProvider.WHATSAPP,
+                "905551234567",
+                "old-name",
+                "Alex",
+                "ru"
+        );
+        var refreshedIdentity = new AuthenticatedCustomerIdentity(
+                ExternalIdentityProvider.WHATSAPP,
+                "905551234567",
+                "new-name",
+                "Alex Updated",
+                "en_US"
+        );
+        Mockito.when(identityRepository.findByProviderAndExternalSubject(
+                ExternalIdentityProvider.WHATSAPP,
+                "905551234567"
+        )).thenReturn(Optional.empty(), Optional.of(persistedIdentity));
+        Mockito.when(account.getId()).thenReturn(77L);
+        Mockito.when(accountRepository.save(Mockito.any(CustomerAccount.class))).thenReturn(account);
+        Mockito.when(accountRepository.findById(77L)).thenReturn(Optional.of(account));
+        Mockito.when(identityRepository.save(Mockito.any(CustomerExternalIdentity.class)))
+                .thenReturn(persistedIdentity);
+        stubIdentity(
+                persistedIdentity,
+                77L,
+                88L,
+                ExternalIdentityProvider.WHATSAPP,
+                "905551234567",
+                "new-name",
+                "Alex Updated",
+                "en-us"
+        );
+
+        CurrentCustomer first = service.resolveCustomer(firstIdentity);
+        CurrentCustomer second = service.resolveCustomer(refreshedIdentity);
+
+        Mockito.verify(persistedIdentity).refresh("new-name", "Alex Updated", "en-us", NOW);
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(first.customerId(), second.customerId()),
+                () -> Assertions.assertEquals(first.externalIdentityId(), second.externalIdentityId()),
+                () -> Assertions.assertEquals("new-name", second.username()),
+                () -> Assertions.assertEquals("Alex Updated", second.displayName()),
+                () -> Assertions.assertEquals("en-us", second.languageCode())
+        );
+    }
+
+    @Test
+    void currentCustomer_telegramRequestIdentityDelegatedToExplicitResolution() {
+        var authenticatedIdentity = new AuthenticatedCustomerIdentity(
+                ExternalIdentityProvider.TELEGRAM,
+                "900001",
+                "alex",
+                "Alex",
+                "ru"
+        );
+        var expected = new CurrentCustomer(
+                77L,
+                88L,
+                ExternalIdentityProvider.TELEGRAM,
+                "900001",
+                "alex",
+                "Alex",
+                "ru"
+        );
+        CustomerAccountService spy = Mockito.spy(service);
+        Mockito.when(identityProvider.currentIdentity()).thenReturn(authenticatedIdentity);
+        Mockito.doReturn(expected).when(spy).resolveCustomer(authenticatedIdentity);
+
+        CurrentCustomer customer = spy.currentCustomer();
+
+        Assertions.assertSame(expected, customer);
+        Mockito.verify(identityProvider).currentIdentity();
+        Mockito.verify(spy).resolveCustomer(authenticatedIdentity);
+        Mockito.verifyNoInteractions(accountRepository, identityRepository);
+    }
+
+    private static void stubIdentity(
+            CustomerExternalIdentity identity,
+            long customerId,
+            long identityId,
+            ExternalIdentityProvider provider,
+            String externalSubject,
+            String username,
+            String displayName,
+            String languageCode
+    ) {
+        Mockito.when(identity.getCustomerId()).thenReturn(customerId);
+        Mockito.when(identity.getId()).thenReturn(identityId);
+        Mockito.when(identity.getProvider()).thenReturn(provider);
+        Mockito.when(identity.getExternalSubject()).thenReturn(externalSubject);
+        Mockito.when(identity.getUsername()).thenReturn(username);
+        Mockito.when(identity.getDisplayName()).thenReturn(displayName);
+        Mockito.when(identity.getLanguageCode()).thenReturn(languageCode);
     }
 }

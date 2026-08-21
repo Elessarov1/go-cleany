@@ -3,6 +3,7 @@ package com.cleany.order;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -21,7 +22,10 @@ import com.cleany.referral.OrderReferralPlan;
 import com.cleany.referral.ReferralUnlockedEvent;
 import com.cleany.referral.ReferralService;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class CleaningOrderService {
 
     private static final List<CleaningOrderStatus> ACTIVE_STATUSES = List.of(
@@ -44,37 +48,14 @@ public class CleaningOrderService {
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
 
-    public CleaningOrderService(
-            CleaningOrderRepository orderRepository,
-            CleaningOrderPhotoRepository photoRepository,
-            CleaningOrderEventRepository orderEventRepository,
-            CleaningPriceService priceService,
-            PhoneNumberNormalizer phoneNumberNormalizer,
-            CleaningProperties cleaningProperties,
-            CleanerProperties cleanerProperties,
-            CustomerAccountService customerAccountService,
-            ReferralService referralService,
-            MediaProviderReferenceService mediaProviderReferenceService,
-            Clock clock,
-            ApplicationEventPublisher eventPublisher
-    ) {
-        this.orderRepository = orderRepository;
-        this.photoRepository = photoRepository;
-        this.orderEventRepository = orderEventRepository;
-        this.priceService = priceService;
-        this.phoneNumberNormalizer = phoneNumberNormalizer;
-        this.cleaningProperties = cleaningProperties;
-        this.cleanerProperties = cleanerProperties;
-        this.customerAccountService = customerAccountService;
-        this.referralService = referralService;
-        this.mediaProviderReferenceService = mediaProviderReferenceService;
-        this.clock = clock;
-        this.eventPublisher = eventPublisher;
+    @Transactional
+    public CleaningOrder createOrder(CreateCleaningOrderCommand command) {
+        return createOrder(customerAccountService.currentCustomer(), command);
     }
 
     @Transactional
-    public CleaningOrder createOrder(CreateCleaningOrderCommand command) {
-        CurrentCustomer customer = customerAccountService.currentCustomer();
+    public CleaningOrder createOrder(CurrentCustomer customer, CreateCleaningOrderCommand command) {
+        Objects.requireNonNull(customer, "customer");
         customerAccountService.lock(customer.customerId());
         validateRequestedDate(command.requestedDate());
         String normalizedPhone = phoneNumberNormalizer.normalize(command.phone());
@@ -132,7 +113,15 @@ public class CleaningOrderService {
 
     @Transactional
     public CleaningOrderQuoteResponse quoteOrder(CleaningOrderQuoteRequest request) {
-        CurrentCustomer customer = customerAccountService.currentCustomer();
+        return quoteOrder(customerAccountService.currentCustomer(), request);
+    }
+
+    @Transactional
+    public CleaningOrderQuoteResponse quoteOrder(
+            CurrentCustomer customer,
+            CleaningOrderQuoteRequest request
+    ) {
+        Objects.requireNonNull(customer, "customer");
         var basePrice = priceService.calculate(
                 request.apartmentType(),
                 request.cleaningType(),
