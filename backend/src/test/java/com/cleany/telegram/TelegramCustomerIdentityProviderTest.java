@@ -5,6 +5,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.mock.web.MockHttpServletRequest;
 
+import com.cleany.customer.AuthenticatedCustomerIdentity;
+import com.cleany.customer.ExternalIdentityProvider;
+
 class TelegramCustomerIdentityProviderTest {
 
     @Test
@@ -17,7 +20,16 @@ class TelegramCustomerIdentityProviderTest {
 
         var provider = new TelegramCustomerIdentityProvider(request, validator);
 
-        Assertions.assertSame(expected, provider.currentCustomer());
+        Assertions.assertEquals(
+                new AuthenticatedCustomerIdentity(
+                        ExternalIdentityProvider.TELEGRAM,
+                        "900001",
+                        "alex",
+                        "Alex",
+                        "ru"
+                ),
+                provider.currentIdentity()
+        );
     }
 
     @Test
@@ -29,7 +41,7 @@ class TelegramCustomerIdentityProviderTest {
 
         Assertions.assertThrows(
                 CustomerAuthenticationRequiredException.class,
-                provider::currentCustomer
+                provider::currentIdentity
         );
     }
 
@@ -44,7 +56,7 @@ class TelegramCustomerIdentityProviderTest {
 
         Assertions.assertThrows(
                 CustomerAuthenticationRequiredException.class,
-                provider::currentCustomer
+                provider::currentIdentity
         );
     }
 }

@@ -74,8 +74,24 @@ public class CustomerExternalIdentity {
         return customerId;
     }
 
+    public Long getId() {
+        return id;
+    }
+
+    public ExternalIdentityProvider getProvider() {
+        return provider;
+    }
+
     public String getExternalSubject() {
         return externalSubject;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getDisplayName() {
+        return displayName;
     }
 
     public String getLanguageCode() {

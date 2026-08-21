@@ -24,6 +24,7 @@ import com.cleany.configuration.CleanerProperties;
 import com.cleany.configuration.CleaningProperties;
 import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountService;
+import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.finance.AcquisitionSource;
 import com.cleany.finance.CustomerDiscountType;
 import com.cleany.finance.OrderFinancialSnapshot;
@@ -55,7 +56,15 @@ class CleaningOrderServiceTest {
         referralService = Mockito.mock(ReferralService.class);
         CleaningProperties properties = properties();
         Mockito.when(customerAccountService.currentCustomer()).thenReturn(
-                new CurrentCustomer(77L, 900001L, "browser_preview", "Alex")
+                new CurrentCustomer(
+                        77L,
+                        88L,
+                        ExternalIdentityProvider.TELEGRAM,
+                        "900001",
+                        "browser_preview",
+                        "Alex",
+                        "ru"
+                )
         );
         Mockito.when(referralService.planForCreation(
                 Mockito.eq(77L),

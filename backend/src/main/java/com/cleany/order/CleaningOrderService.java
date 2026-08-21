@@ -12,6 +12,7 @@ import com.cleany.configuration.CleanerProperties;
 import com.cleany.configuration.CleaningProperties;
 import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountService;
+import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.pricing.CleaningPriceService;
 import com.cleany.referral.OrderReferralPlan;
 import com.cleany.referral.ReferralUnlockedEvent;
@@ -68,28 +69,29 @@ public class CleaningOrderService {
     @Transactional
     public CleaningOrder createOrder(CreateCleaningOrderCommand command) {
         CurrentCustomer customer = customerAccountService.currentCustomer();
-        customerAccountService.lock(customer.id());
+        long legacyTelegramUserId = requireLegacyTelegramUserId(customer);
+        customerAccountService.lock(customer.customerId());
         validateRequestedDate(command.requestedDate());
         String normalizedPhone = phoneNumberNormalizer.normalize(command.phone());
-        customerAccountService.updatePhone(customer.id(), normalizedPhone);
+        customerAccountService.updatePhone(customer.customerId(), normalizedPhone);
 
         var basePrice = priceService.calculate(
                 command.apartmentType(),
                 command.cleaningType(),
                 command.duplex()
         );
-        boolean firstOrder = isAcquisitionEligible(customer.id());
+        boolean firstOrder = isAcquisitionEligible(customer.customerId());
         OrderReferralPlan referralPlan = referralService.planForCreation(
-                customer.id(),
+                customer.customerId(),
                 command.referralCode(),
                 basePrice,
                 firstOrder
         );
 
         var order = new CleaningOrder(
-                customer.id(),
-                customer.telegramUserId(),
-                customer.telegramUsername(),
+                customer.customerId(),
+                legacyTelegramUserId,
+                customer.username(),
                 customer.displayName(),
                 normalizedPhone,
                 command.area(),
@@ -117,7 +119,7 @@ public class CleaningOrderService {
                 null,
                 CleaningOrderStatus.NEW,
                 OrderActorType.CUSTOMER,
-                customer.telegramUserId(),
+                legacyTelegramUserId,
                 null
         );
         eventPublisher.publishEvent(new CleaningOrderCreatedEvent(savedOrder));
@@ -132,9 +134,9 @@ public class CleaningOrderService {
                 request.cleaningType(),
                 request.duplex()
         );
-        boolean firstOrder = isAcquisitionEligible(customer.id());
+        boolean firstOrder = isAcquisitionEligible(customer.customerId());
         var plan = referralService.quote(
-                customer.id(),
+                customer.customerId(),
                 request.referralCode(),
                 basePrice,
                 firstOrder
@@ -147,20 +149,21 @@ public class CleaningOrderService {
 
     @Transactional
     public List<CleaningOrder> getCurrentCustomerOrders() {
-        long customerId = customerAccountService.currentCustomer().id();
+        long customerId = customerAccountService.currentCustomer().customerId();
         return orderRepository.findAllByCustomerIdOrderByCreatedAtDesc(customerId);
     }
 
     @Transactional
     public CleaningOrder getCurrentCustomerOrder(long orderId) {
-        long customerId = customerAccountService.currentCustomer().id();
+        long customerId = customerAccountService.currentCustomer().customerId();
         return findCustomerOrder(orderId, customerId);
     }
 
     @Transactional
     public CleaningOrder cancelCurrentCustomerOrder(long orderId) {
         CurrentCustomer customer = customerAccountService.currentCustomer();
-        long customerId = customer.id();
+        long customerId = customer.customerId();
+        long legacyTelegramUserId = requireLegacyTelegramUserId(customer);
         var order = findCustomerOrder(orderId, customerId);
         CleaningOrderStatus previousStatus = order.getStatus();
         order.cancelByCustomer();
@@ -171,7 +174,7 @@ public class CleaningOrderService {
                 previousStatus,
                 CleaningOrderStatus.CANCELLED,
                 OrderActorType.CUSTOMER,
-                customer.telegramUserId(),
+                legacyTelegramUserId,
                 null
         );
         return order;
@@ -424,6 +427,23 @@ public class CleaningOrderService {
     private void requireConfiguredCleaner(long cleanerTelegramUserId) {
         if (!cleanerProperties.contains(cleanerTelegramUserId)) {
             throw new CleanerNotAuthorizedException(cleanerTelegramUserId);
+        }
+    }
+
+    private static long requireLegacyTelegramUserId(CurrentCustomer customer) {
+        if (customer.provider() != ExternalIdentityProvider.TELEGRAM) {
+            throw new IllegalStateException(
+                    "CleaningOrder legacy Telegram identity must be replaced by communication identity"
+            );
+        }
+        try {
+            long telegramUserId = Long.parseLong(customer.externalSubject());
+            if (telegramUserId <= 0) {
+                throw new NumberFormatException("Telegram user id must be positive");
+            }
+            return telegramUserId;
+        } catch (NumberFormatException exception) {
+            throw new IllegalStateException("Telegram external subject must be a positive number", exception);
         }
     }
 

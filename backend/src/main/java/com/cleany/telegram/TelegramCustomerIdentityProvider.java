@@ -9,6 +9,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
 
+import com.cleany.customer.AuthenticatedCustomerIdentity;
+import com.cleany.customer.CustomerIdentityProvider;
+
 @Profile("!local")
 @RequestScope
 @Component
@@ -28,7 +31,7 @@ public class TelegramCustomerIdentityProvider implements CustomerIdentityProvide
     }
 
     @Override
-    public TelegramPrincipal currentCustomer() {
+    public AuthenticatedCustomerIdentity currentIdentity() {
         var authorizationHeaders = Collections.list(request.getHeaders(HttpHeaders.AUTHORIZATION));
         if (authorizationHeaders.size() != 1) {
             throw new CustomerAuthenticationRequiredException();
@@ -45,6 +48,6 @@ public class TelegramCustomerIdentityProvider implements CustomerIdentityProvide
         if (initData.isBlank() || !initData.equals(initData.strip())) {
             throw new CustomerAuthenticationRequiredException();
         }
-        return validator.validate(initData);
+        return validator.validate(initData).authenticatedIdentity();
     }
 }
