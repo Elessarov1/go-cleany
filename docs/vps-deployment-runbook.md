@@ -81,6 +81,11 @@ PostgreSQL `5432` и backend `8080` открывать нельзя.
 
 ## 5. Заполнить production-конфигурацию
 
+Для staging с GitHub Actions используйте
+[автоматическую синхронизацию GitHub Environment](staging-continuous-deployment.md): workflow сам
+обновляет Telegram/WhatsApp значения в `/opt/go-cleany/.env.production`, сохраняя остальные строки.
+Следующие команды остаются способом первичного bootstrap и ручным fallback без CI.
+
 ```bash
 cd /opt/go-cleany
 cp .env.production.example .env.production
@@ -98,6 +103,11 @@ nano .env.production
 - `TELEGRAM_BOT_TOKEN` — секрет от BotFather;
 - `CLEANER_TELEGRAM_IDS` — ID клинеров через запятую;
 - `ADMIN_TELEGRAM_IDS` — ID администраторов через запятую;
+- `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET` и `WHATSAPP_WEBHOOK_VERIFY_TOKEN` — секреты
+  WhatsApp Cloud API; для CI храните их в GitHub Environment secrets, а сгенерированный workflow
+  файл `.env.production` на VPS должен иметь права `600`;
+- `WHATSAPP_ENABLED=true` — включает `/api/v1/whatsapp/webhook` и Cloud API client после
+  заполнения всех WhatsApp-переменных;
 - `CLEANING_PRICES_*` — утверждённые цены в TRY.
 - `REFERRAL_*` — ставки и денежные caps реферальной модели; безопасные значения v1 уже находятся
   в `.env.production.example`.
@@ -145,7 +155,22 @@ Frontend подключает официальный `telegram-web-app.js`, от
 backend проверяет подпись токеном бота. Обычное открытие production URL вне Telegram не создаёт
 тестового пользователя и не даёт доступа к заказам.
 
-## 8. Последующие релизы одной командой
+## 8. Подключить WhatsApp Cloud API webhook
+
+После успешного HTTPS-деплоя проверьте, что endpoint доступен снаружи по адресу
+`https://<APP_HOST>/api/v1/whatsapp/webhook`. В Meta Developer настройте WhatsApp webhook:
+
+1. Callback URL: `https://<APP_HOST>/api/v1/whatsapp/webhook`;
+2. Verify token: значение `WHATSAPP_WEBHOOK_VERIFY_TOKEN` из `.env.production`;
+3. подпишитесь на поле `messages`;
+4. не включайте Marketing Messages API;
+5. отправьте `ping` или `/ping` с разрешённого тестового номера — при
+   `WHATSAPP_TEST_REPLY_ENABLED=true` приложение ответит `pong`.
+
+Backend проверяет GET verification token и HMAC-подпись `X-Hub-Signature-256` для каждого POST.
+Meta App Secret и System User token не должны попадать в логи, Git или команды проверки.
+
+## 9. Последующие релизы одной командой
 
 На VPS не редактируйте отслеживаемые Git-файлы. Чтобы получить `origin/main` и развернуть его:
 
@@ -164,7 +189,7 @@ cd /opt/go-cleany
 Скрипт откажется работать при локальных изменениях, использует только fast-forward для ветки и
 после обновления вызывает обычный `deploy.sh`.
 
-## 9. Бэкапы и откат
+## 10. Бэкапы и откат
 
 Перед каждым повторным деплоем backup создаётся автоматически в `/opt/go-cleany/backups`.
 Создать его отдельно:
@@ -206,7 +231,7 @@ Rollback пересобирает приложение и не откатыва�
 Liquibase должны оставаться совместимыми хотя бы с предыдущей версией приложения. Восстановление
 базы из dump — отдельная аварийная операция, которую сначала необходимо отрепетировать на staging.
 
-## 10. Приёмка перед открытием пользователям
+## 11. Приёмка перед открытием пользователям
 
 Используйте разные Telegram-аккаунты клиента, клинера и администратора:
 

@@ -13,10 +13,11 @@ push в main ИЛИ ручной Run workflow
   -> backup, Docker build, health checks
 ```
 
-Чувствительные application secrets (`TELEGRAM_BOT_TOKEN`, пароль PostgreSQL и т.д.) остаются в
-`.env.production` только на VPS. Списки Telegram ID клинеров и администраторов для staging управляются
-через GitHub Environment variables, чтобы их можно было менять перед демо без SSH на сервер и без
-коммита в репозиторий.
+GitHub Environment `staging` является источником Telegram/WhatsApp channel configuration и secrets.
+Workflow проверяет заданные значения, формирует временный overrides-файл на GitHub-hosted runner,
+передаёт его на VPS через зашифрованный SSH stdin и атомарно объединяет с
+`/opt/go-cleany/.env.production`. Пароль PostgreSQL, цены, hostname и остальные VPS-настройки этот
+workflow не читает и не изменяет.
 
 ## 1. Предварительные условия
 
@@ -141,6 +142,10 @@ Repository -> Settings -> Environments -> staging
 | --- | --- |
 | `STAGING_SSH_PRIVATE_KEY` | приватный `go-cleany-staging-actions` |
 | `STAGING_SSH_KNOWN_HOSTS` | проверенный SSH host key VPS |
+| `TELEGRAM_BOT_TOKEN` | токен staging Telegram-бота |
+| `WHATSAPP_ACCESS_TOKEN` | постоянный Meta System User token |
+| `WHATSAPP_APP_SECRET` | Meta App Secret |
+| `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | случайный verify token для webhook |
 
 ### Environment variables
 
@@ -151,15 +156,23 @@ Repository -> Settings -> Environments -> staging
 | `STAGING_SSH_USER` | пользователь-владелец `/opt/go-cleany` |
 | `CLEANER_TELEGRAM_IDS` | `123456789,987654321` |
 | `ADMIN_TELEGRAM_IDS` | `123456789,555555555` |
+| `WHATSAPP_ENABLED` | `true` после заполнения WhatsApp credentials |
+| `WHATSAPP_GRAPH_API_BASE_URL` | `https://graph.facebook.com` |
+| `WHATSAPP_GRAPH_API_VERSION` | `v25.0` |
+| `WHATSAPP_APP_ID` | Meta App ID |
+| `WHATSAPP_BUSINESS_PORTFOLIO_ID` | Meta Business Portfolio ID |
+| `WHATSAPP_BUSINESS_ACCOUNT_ID` | WABA ID |
+| `WHATSAPP_PHONE_NUMBER_ID` | Cloud API Phone Number ID |
+| `WHATSAPP_SYSTEM_USER_ID` | Meta System User ID |
+| `WHATSAPP_ACCESS_TOKEN_TYPE` | `SYSTEM_USER` |
+| `WHATSAPP_ACCESS_TOKEN_EXPIRES_AT` | `NEVER` |
+| `WHATSAPP_TEST_REPLY_ENABLED` | `true` только на тестовом стенде |
 
 `CLEANER_TELEGRAM_IDS` и `ADMIN_TELEGRAM_IDS` должны содержать только numeric Telegram IDs через
-запятую, без пробелов. Workflow валидирует этот формат до SSH/deploy.
+запятую, без пробелов. При `WHATSAPP_ENABLED=true` workflow также требует все WhatsApp IDs и три
+WhatsApp secrets. Пустые channel variables не удаляют существующие значения на VPS.
 
-Эти два значения передаются `release.sh` как process environment и имеют приоритет над одноимёнными
-fallback-значениями из `.env.production` при Docker Compose interpolation. Файл `.env.production` на
-VPS не переписывается.
-
-Такой подход позволяет менять демо-роли непосредственно в GitHub и затем передеплоить staging.
+Secrets нельзя помещать в GitHub Variables: значения Variables не маскируются как credentials.
 
 Отдельно в:
 
@@ -185,17 +198,16 @@ staging environment.
 2. ждёт успешные `backend` и `frontend` jobs;
 3. загружает `staging` environment;
 4. валидирует SSH credentials;
-5. валидирует `CLEANER_TELEGRAM_IDS` и `ADMIN_TELEGRAM_IDS`;
-6. подключается к VPS через проверенный host key;
-7. передаёт оба списка ID в process environment remote command;
-8. вызывает `./deploy/scripts/release.sh "$GITHUB_SHA"`.
-
-В Docker Compose shell/process environment имеет приоритет над `--env-file`, поэтому backend
-контейнер получает именно значения, заданные в GitHub для этого deploy.
+5. проверяет Telegram/WhatsApp secrets/variables и форматы значений;
+6. формирует временный channel overrides-файл с правами `600` на GitHub-hosted runner;
+7. передаёт файл через SSH stdin, не помещая secrets в remote command arguments;
+8. атомарно объединяет overrides с `/opt/go-cleany/.env.production`;
+9. вызывает `./deploy/scripts/release.sh "$GITHUB_SHA"`;
+10. удаляет временный файл с runner даже при ошибке deploy.
 
 Передаётся точный SHA, прошедший CI. `concurrency` разрешает только одну staging-выкладку одновременно.
 
-## 7. Изменить роли перед демо
+## 7. Изменить конфигурацию перед демо
 
 Откройте:
 
@@ -203,7 +215,7 @@ staging environment.
 Repository -> Settings -> Environments -> staging
 ```
 
-Измените, например:
+Измените нужную Environment variable или secret, например:
 
 ```text
 CLEANER_TELEGRAM_IDS=111111111,222222222
@@ -224,13 +236,17 @@ main
 
 и запустите workflow.
 
-Новый commit для изменения ролей не нужен. Workflow снова прогонит backend/frontend проверки и
-передеплоит текущий `main` с новым набором staging access IDs.
+Новый commit для изменения конфигурации не нужен. Workflow снова прогонит backend/frontend проверки,
+сформирует channel overrides и передеплоит текущий `main`.
 
 После deploy участникам демо достаточно заново открыть Mini App/бот. Backend уже будет работать с
 новыми списками ролей.
 
 ## 8. Первый автоматический запуск
+
+До первого запуска нового workflow добавьте `TELEGRAM_BOT_TOKEN` и WhatsApp credentials в
+Environment. Renderer завершит job до SSH и не изменит файл на VPS, если при
+`WHATSAPP_ENABLED=true` хотя бы одно обязательное WhatsApp-значение отсутствует.
 
 Убедитесь, что существует repository variable:
 
@@ -275,9 +291,9 @@ cd /opt/go-cleany
 
 | Ошибка | Что проверить |
 | --- | --- |
-| `Missing CLEANER_TELEGRAM_IDS staging variable` | variable в environment `staging` |
-| `Missing ADMIN_TELEGRAM_IDS staging variable` | variable в environment `staging` |
+| `Missing required GitHub Environment value` | указанный secret/variable в environment `staging` |
 | `must be comma-separated numeric Telegram IDs` | убрать пробелы и посторонние символы |
+| `contains a placeholder or characters that cannot be represented safely` | убрать placeholder, перевод строки или одинарную кавычку |
 | `Host key verification failed` | `STAGING_SSH_KNOWN_HOSTS`, host и SSH port |
 | `Permission denied (publickey)` | Actions private key, authorized_keys, SSH user |
 | `git fetch` запрашивает пароль | HTTPS credentials или read-only VPS deploy key |

@@ -100,6 +100,19 @@ telegram:
   polling-retry-delay: ${TELEGRAM_POLLING_RETRY_DELAY:3s}
   polling-drop-pending-updates: ${TELEGRAM_POLLING_DROP_PENDING_UPDATES:false}
 
+whatsapp:
+  enabled: ${WHATSAPP_ENABLED:false}
+  graph-api-base-url: ${WHATSAPP_GRAPH_API_BASE_URL:https://graph.facebook.com}
+  graph-api-version: ${WHATSAPP_GRAPH_API_VERSION:v25.0}
+  app-id: ${WHATSAPP_APP_ID:}
+  business-portfolio-id: ${WHATSAPP_BUSINESS_PORTFOLIO_ID:}
+  business-account-id: ${WHATSAPP_BUSINESS_ACCOUNT_ID:}
+  phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:}
+  access-token: ${WHATSAPP_ACCESS_TOKEN:}
+  app-secret: ${WHATSAPP_APP_SECRET:}
+  webhook-verify-token: ${WHATSAPP_WEBHOOK_VERIFY_TOKEN:}
+  test-reply-enabled: ${WHATSAPP_TEST_REPLY_ENABLED:false}
+
 management:
   endpoints:
     web:
