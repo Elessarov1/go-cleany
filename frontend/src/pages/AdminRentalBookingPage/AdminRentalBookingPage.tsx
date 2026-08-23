@@ -9,6 +9,7 @@ import type { AdminRentalBooking } from "../../domain/rental";
 import { formatPrice } from "../../domain/pricing";
 import { formatDate, todayAsInputValue } from "../../utils/format";
 import { rentalLanguage, rentalPropertyTitle } from "../../utils/rental";
+import { BrandName } from "../../components/BrandName/BrandName";
 
 export function AdminRentalBookingPage() {
   const { id } = useParams();
@@ -68,14 +69,14 @@ export function AdminRentalBookingPage() {
   return (
     <div className="page page--admin-rental">
       <Link className="back-link" to="/admin/rent/bookings"><Icon name="arrow-left" size={17} />{t("common.back")}</Link>
-      <header className="admin-rental-header"><div><span className="eyebrow">go-rent / #{booking.id}</span><h1>{rentalPropertyTitle(booking.property, language)}</h1><p>{booking.property.area}</p></div><RentalBookingStatus status={booking.status} /></header>
+      <header className="admin-rental-header"><div><span className="eyebrow"><BrandName service="rental" /> / #{booking.id}</span><h1>{rentalPropertyTitle(booking.property, language)}</h1><p>{booking.property.area}</p></div><RentalBookingStatus status={booking.status} /></header>
       <div className="admin-rental-booking-details-grid">
         <section className="admin-rental-panel">
           <div className="admin-rental-section-heading"><div><h2>{t("adminRental.booking.stayTitle")}</h2></div></div>
           <dl className="detail-list">
             <div><dt>{t("rental.booking.checkIn")}</dt><dd>{formatDate(booking.checkInDate, locale)}</dd></div>
-            <div><dt>{t("rental.booking.checkOut")}</dt><dd>{formatDate(booking.checkOutDate, locale)}</dd></div>
-            <div><dt>{t("rental.bookingDetails.duration")}</dt><dd>{t("rental.booking.stay", { count: booking.durationDays })}</dd></div>
+            <div><dt>{booking.termType === "MONTHLY" ? t("rental.booking.expectedCheckOut") : t("rental.booking.checkOut")}</dt><dd>{formatDate(booking.checkOutDate, locale)}</dd></div>
+            <div><dt>{t("rental.bookingDetails.duration")}</dt><dd>{booking.termType === "MONTHLY" ? t("rental.booking.months", { count: booking.rentalMonths }) : t("rental.booking.stay", { count: booking.durationDays })}</dd></div>
             <div><dt>{t("rental.bookingDetails.guests")}</dt><dd>{booking.guests}</dd></div>
             <div><dt>{t("rental.bookingDetails.comment")}</dt><dd>{booking.comment || t("common.notProvided")}</dd></div>
             {booking.cancellationReason ? <div><dt>{t("rental.bookingDetails.cancellationReason")}</dt><dd>{booking.cancellationReason}</dd></div> : null}
@@ -93,7 +94,7 @@ export function AdminRentalBookingPage() {
         <section className="admin-rental-panel">
           <div className="admin-rental-section-heading"><div><h2>{t("adminRental.booking.priceTitle")}</h2></div></div>
           <dl className="detail-list">
-            <div><dt>{t("rental.bookingDetails.dailyPrice")}</dt><dd>{formatPrice(booking.baseDailyPriceSnapshot, booking.currency, locale)}</dd></div>
+            <div><dt>{booking.termType === "MONTHLY" ? t("rental.bookingDetails.monthlyPrice") : t("rental.bookingDetails.dailyPrice")}</dt><dd>{formatPrice(booking.termType === "MONTHLY" ? booking.monthlyPriceSnapshot! : booking.baseDailyPriceSnapshot, booking.currency, locale)}</dd></div>
             <div><dt>{t("rental.bookingDetails.discount")}</dt><dd>{formatPrice(booking.discountAmount, booking.currency, locale)}</dd></div>
             <div><dt>{t("rental.booking.total")}</dt><dd><strong>{formatPrice(booking.totalPrice, booking.currency, locale)}</strong></dd></div>
             <div><dt>{t("adminRental.booking.createdAt")}</dt><dd>{new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(booking.createdAt))}</dd></div>

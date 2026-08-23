@@ -1,11 +1,14 @@
-# go services: go-cleany + go-rent
+# go services: go-cleany + go-renty
 
 This repository contains a mobile-first service platform for customers in Alanya with two independent verticals:
 
 - **go-cleany** — apartment cleaning with Telegram cleaner dispatch and photo reports;
-- **go-rent** — apartment catalog, server-side availability and pricing, immediate booking and rental administration.
+- **go-renty** — apartment catalog, date-range and monthly pricing, immediate booking and rental administration.
 
 Both verticals share customer identity, communication, media, retention and the React application shell. Their aggregates and business rules remain separate: `CleaningOrder` is not reused as a rental booking.
+
+`go-renty` is the customer-facing brand. Existing technical namespaces intentionally remain `/rent`,
+`/api/v1/rental` and `Rental*`.
 
 ## Repository layout
 
@@ -37,7 +40,7 @@ VITE_API_BASE_URL=http://localhost:8080
 
 ## Backend foundation
 
-The backend is a single Spring Boot application. It owns customer identity, canonical media, cleaning and rental configuration, server-side pricing, customer-scoped access and lifecycle validation. PostgreSQL protects both first-cleaner-wins claiming and non-overlapping rental occupancy under concurrency.
+The backend is a single Spring Boot application. It owns customer identity, canonical media, cleaning and rental configuration, server-side pricing, customer-scoped access and lifecycle validation. PostgreSQL protects both first-cleaner-wins claiming and non-overlapping rental occupancy under concurrency. Rental customers explicitly choose a date range or a monthly term; monthly checkout and pricing are derived by the backend.
 
 Local backend startup uses the isolated `local` profile. See [`backend/README.md`](backend/README.md) for environment and PostgreSQL setup. The default profile validates Telegram Mini App `initData`; browser-preview identity remains available only in the `local` profile.
 
@@ -75,4 +78,5 @@ can deploy each tested `main` revision automatically through GitHub Actions and 
 - Prices, availability and customer identity are never trusted from the frontend in production.
 - Backend order acceptance must be concurrency-safe: the first successful claim wins.
 - Rental bookings and cleaning orders are separate domain aggregates.
+- Rental property slugs, prices, availability and normalized catalog images are backend-owned data.
 - The pilot intentionally excludes online payments, rental marketplace integrations, cleaner registration, ratings, and object storage.

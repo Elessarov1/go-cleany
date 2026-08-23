@@ -22,7 +22,7 @@ The current UI contains a shared service catalog and two real verticals:
 
 ```text
 go-cleany
-go-rent
+go-renty
 ```
 
 Further platform direction:

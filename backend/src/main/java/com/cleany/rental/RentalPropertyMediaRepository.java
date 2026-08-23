@@ -18,4 +18,6 @@ public interface RentalPropertyMediaRepository extends JpaRepository<RentalPrope
     );
 
     boolean existsByProperty_Id(long propertyId);
+
+    boolean existsByMediaAssetId(long mediaAssetId);
 }

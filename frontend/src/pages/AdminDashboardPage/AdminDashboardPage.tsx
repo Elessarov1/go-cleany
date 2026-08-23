@@ -9,6 +9,7 @@ import type { AdminDashboard, AdminReferralOverview } from "../../domain/admin";
 import type { CleaningOrderStatus } from "../../domain/order";
 import { formatPrice } from "../../domain/pricing";
 import { formatDate } from "../../utils/format";
+import { BrandName } from "../../components/BrandName/BrandName";
 
 type StatusFilter = CleaningOrderStatus | "ALL";
 
@@ -113,7 +114,7 @@ export function AdminDashboardPage() {
   return (
     <div className="page page--admin">
       <header className="page-header admin-header">
-        <span className="eyebrow">{t("admin.eyebrow")}</span>
+        <span className="eyebrow"><BrandName service="cleaning" /> / {t("admin.eyebrow")}</span>
         <h1>{t("admin.title")}</h1>
         <p>{t("admin.subtitle")}</p>
       </header>

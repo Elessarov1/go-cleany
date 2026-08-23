@@ -21,7 +21,16 @@ export function addDaysToInputValue(value: string, days: number): string {
 
 export function addMonthsToInputValue(value: string, months: number): string {
   const date = new Date(`${value}T12:00:00`);
+  const originalDay = date.getDate();
+  date.setDate(1);
   date.setMonth(date.getMonth() + months);
+  const lastDayOfTargetMonth = new Date(
+    date.getFullYear(),
+    date.getMonth() + 1,
+    0,
+    12,
+  ).getDate();
+  date.setDate(Math.min(originalDay, lastDayOfTargetMonth));
   return date.toISOString().slice(0, 10);
 }
 

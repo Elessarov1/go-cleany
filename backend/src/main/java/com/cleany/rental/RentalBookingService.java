@@ -33,13 +33,18 @@ public class RentalBookingService {
     @Transactional(readOnly = true)
     public RentalBookingQuoteResponse quote(RentalBookingQuoteRequest request) {
         RentalProperty property = propertyService.requirePublishedProperty(request.propertyId());
-        int durationDays = stayPolicy.validate(request.checkInDate(), request.checkOutDate());
-        requireAvailable(request.propertyId(), request.checkInDate(), request.checkOutDate());
-        return RentalBookingQuoteResponse.from(
-                property,
+        ResolvedRentalTerm term = stayPolicy.resolve(
+                request.termType(),
                 request.checkInDate(),
                 request.checkOutDate(),
-                priceService.calculate(property, durationDays)
+                request.months()
+        );
+        requireAvailable(request.propertyId(), term.checkInDate(), term.checkOutDate());
+        return RentalBookingQuoteResponse.from(
+                property,
+                term.checkInDate(),
+                term.checkOutDate(),
+                priceService.calculate(property, term)
         );
     }
 
@@ -52,20 +57,24 @@ public class RentalBookingService {
     public RentalBookingResponse create(CurrentCustomer customer, CreateRentalBookingRequest request) {
         customerAccountService.lock(customer.customerId());
         RentalProperty property = propertyService.requirePublishedPropertyForUpdate(request.propertyId());
-        int durationDays = stayPolicy.validate(request.checkInDate(), request.checkOutDate());
+        ResolvedRentalTerm term = stayPolicy.resolve(
+                request.termType(),
+                request.checkInDate(),
+                request.checkOutDate(),
+                request.months()
+        );
         validateGuests(property, request.guests());
         enforceActiveBookingLimit(customer.customerId(), stayPolicy.today());
-        requireAvailable(property.getId(), request.checkInDate(), request.checkOutDate());
+        requireAvailable(property.getId(), term.checkInDate(), term.checkOutDate());
 
         String normalizedPhone = phoneNumberNormalizer.normalize(request.phone());
         customerAccountService.updatePhone(customer.customerId(), normalizedPhone);
-        RentalPriceQuote quote = priceService.calculate(property, durationDays);
+        RentalPriceQuote quote = priceService.calculate(property, term);
         RentalBooking booking = bookingRepository.saveAndFlush(new RentalBooking(
                 customer.customerId(),
                 customer.externalIdentityId(),
                 property,
-                request.checkInDate(),
-                request.checkOutDate(),
+                term,
                 customer.displayName(),
                 normalizedPhone,
                 request.guests(),
@@ -77,8 +86,8 @@ public class RentalBookingService {
         try {
             occupancyRepository.create(
                     property.getId(),
-                    request.checkInDate(),
-                    request.checkOutDate(),
+                    term.checkInDate(),
+                    term.checkOutDate(),
                     RentalOccupancyType.BOOKING,
                     booking.getId(),
                     null,
@@ -93,6 +102,10 @@ public class RentalBookingService {
                 booking.getId(),
                 booking.getCustomerId(),
                 booking.getCommunicationIdentityId()
+        ));
+        eventPublisher.publishEvent(new RentalBookingAdminEvent(
+                booking.getId(),
+                RentalBookingAdminEvent.Type.CREATED
         ));
         return RentalBookingResponse.from(booking);
     }
@@ -128,6 +141,10 @@ public class RentalBookingService {
                 booking.getCustomerId(),
                 booking.getCommunicationIdentityId(),
                 booking.getStatus()
+        ));
+        eventPublisher.publishEvent(new RentalBookingAdminEvent(
+                booking.getId(),
+                RentalBookingAdminEvent.Type.CANCELLED_BY_CUSTOMER
         ));
         return RentalBookingResponse.from(booking);
     }

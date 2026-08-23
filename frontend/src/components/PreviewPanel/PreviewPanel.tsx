@@ -13,7 +13,9 @@ type PreviewScenario = CleaningOrderStatus
   | "SERVICE_CATALOG"
   | "RENT_CATALOG"
   | "RENT_PROPERTY"
-  | "RENT_LONG_TERM"
+  | "RENT_DATE_RANGE"
+  | "RENT_MONTHLY"
+  | "RENT_MONTHLY_UNAVAILABLE"
   | "RENT_BOOKINGS"
   | "RENT_CONFIRMED"
   | "ADMIN_RENT_PROPERTIES"
@@ -33,7 +35,9 @@ const scenarios: PreviewScenario[] = [
   "SERVICE_CATALOG",
   "RENT_CATALOG",
   "RENT_PROPERTY",
-  "RENT_LONG_TERM",
+  "RENT_DATE_RANGE",
+  "RENT_MONTHLY",
+  "RENT_MONTHLY_UNAVAILABLE",
   "RENT_BOOKINGS",
   "RENT_CONFIRMED",
   "ADMIN_RENT_PROPERTIES",
@@ -92,7 +96,9 @@ export function PreviewPanel() {
       SERVICE_CATALOG: "/?preview=true&scenario=service_catalog",
       RENT_CATALOG: "/rent?preview=true&scenario=rent_catalog",
       RENT_PROPERTY: "/rent/properties/kestel-sea-breeze?preview=true&scenario=rent_property",
-      RENT_LONG_TERM: "/rent/properties/kestel-sea-breeze?preview=true&scenario=rent_long_term",
+      RENT_DATE_RANGE: "/rent/properties/kestel-sea-breeze?preview=true&scenario=rent_date_range",
+      RENT_MONTHLY: "/rent/properties/kestel-sea-breeze?preview=true&scenario=rent_monthly",
+      RENT_MONTHLY_UNAVAILABLE: "/rent/properties/kestel-sea-breeze?preview=true&scenario=rent_monthly_unavailable",
       RENT_BOOKINGS: "/rent/bookings?preview=true&scenario=rent_bookings",
       RENT_CONFIRMED: "/rent/bookings/501?preview=true&scenario=rent_confirmed",
       ADMIN_RENT_PROPERTIES: "/admin/rent/properties?preview=true&scenario=admin_rent_properties",

@@ -8,6 +8,7 @@ import type {
   RentalBookingQuote,
   RentalBookingQuoteRequest,
   RentalConfiguration,
+  RentalAdminNotificationPreference,
   RentalProperty,
   RentalOccupancy,
   UpdateRentalPropertyRequest,
@@ -96,6 +97,14 @@ export class HttpRentalApi implements RentalApi {
     return this.resolveMedia(await this.client.request(`/api/v1/admin/rental/properties/${id}/publish`, { method: "POST" }));
   }
 
+  async unpublishAdminProperty(id: number): Promise<RentalProperty> {
+    return this.resolveMedia(await this.client.request(`/api/v1/admin/rental/properties/${id}/unpublish`, { method: "POST" }));
+  }
+
+  deleteAdminProperty(id: number): Promise<void> {
+    return this.client.request(`/api/v1/admin/rental/properties/${id}`, { method: "DELETE" });
+  }
+
   async archiveAdminProperty(id: number): Promise<RentalProperty> {
     return this.resolveMedia(await this.client.request(`/api/v1/admin/rental/properties/${id}/archive`, { method: "POST" }));
   }
@@ -171,6 +180,19 @@ export class HttpRentalApi implements RentalApi {
 
   completeAdminBooking(id: number): Promise<AdminRentalBooking> {
     return this.client.request(`/api/v1/admin/rental/bookings/${id}/complete`, { method: "POST" });
+  }
+
+  getAdminRentalNotificationPreference(): Promise<RentalAdminNotificationPreference> {
+    return this.client.request("/api/v1/admin/rental/notification-preferences");
+  }
+
+  updateAdminRentalNotificationPreference(
+    telegramEnabled: boolean,
+  ): Promise<RentalAdminNotificationPreference> {
+    return this.client.request("/api/v1/admin/rental/notification-preferences", {
+      method: "PUT",
+      body: JSON.stringify({ telegramEnabled }),
+    });
   }
 
   private resolveMedia(property: RentalProperty): RentalProperty {

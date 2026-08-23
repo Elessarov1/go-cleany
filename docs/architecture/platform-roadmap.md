@@ -31,7 +31,9 @@ Always verify current code and recent git history before assuming an architectur
 
 # 1. Product vision
 
-`go-cleany` was the first vertical of the service platform. `go-rent` is now the second real vertical.
+`go-cleany` was the first vertical of the service platform. `go-renty` is now the second real vertical.
+The rental brand is user-facing; technical routes and code namespaces remain `rent`, `rental` and
+`Rental*` so a brand change does not force an API migration.
 
 Today:
 
@@ -40,7 +42,7 @@ Service Platform
 
 ├── go-cleany
 │   └── apartment cleaning
-└── go-rent
+└── go-renty
     └── apartment rental
 ```
 
@@ -52,7 +54,7 @@ Service Platform
 ├── go-cleany
 │   └── cleaning
 │
-├── go-rent
+├── go-renty
 │   └── apartment rental
 │
 ├── handyman / repair
@@ -94,7 +96,7 @@ Cleaning
 → go-cleany flow
 
 Apartment rental
-→ go-rent flow
+→ go-renty flow
 
 Handyman
 → handyman-specific flow
@@ -247,10 +249,15 @@ Rental currently contains:
 RentalProperty
 RentalBooking
 RentalOccupancy
+DATE_RANGE and MONTHLY terms
 stay policy and pricing
 availability calendar
 rental administration
 ```
+
+Monthly rental remains a concrete dated occupancy: checkout is derived from check-in with
+`plusMonths`, while pricing is based on `daily × 30 × (1 - configured discount)`. The booking keeps
+the term, month count where applicable, and immutable price snapshots.
 
 Keep separate aggregates such as:
 
@@ -476,6 +483,11 @@ Push
 
 Cleaner-side interaction may remain Telegram-specific while the customer side becomes channel-neutral.
 
+The current rental admin flow follows this boundary: booking creation and customer cancellation
+publish rental events, an `AFTER_COMMIT` listener prepares the operational notification, and the
+Telegram adapter delivers it. Per-admin rental notification preferences belong to the adapter-facing
+rental notification layer; they do not alter booking state or other verticals' notifications.
+
 ---
 
 # 13. Media architecture
@@ -635,7 +647,7 @@ partner customer discount
 partner payout
 ```
 
-The addition of go-rent does not generalize those financial rules: rental bookings currently have no cleaning referral discounts, rewards or partner payouts.
+The addition of go-renty does not generalize those financial rules: rental bookings currently have no cleaning referral discounts, rewards or partner payouts.
 
 Future shared concepts might eventually include:
 
@@ -737,6 +749,11 @@ Admin
 ```
 
 Shared navigation and access control belong to the platform shell. Cleaning and rental operations remain vertical-specific.
+
+Rental administration owns property publication, occupancy, bookings and the current administrator's
+own Telegram booking-notification preference. Public property slugs are backend-generated and stable.
+Descriptions are authored in English, while media uploads are normalized into canonical platform
+assets before being attached to the rental property.
 
 ---
 
@@ -858,7 +875,7 @@ media
 
 # 26. Multiple verticals
 
-go-rent is the second real vertical and validates that shared identity, communication, media, retention and UI infrastructure do not require a generic order aggregate.
+go-renty is the second real vertical and validates that shared identity, communication, media, retention and UI infrastructure do not require a generic order aggregate.
 
 A future Handyman/repair vertical will further test the boundaries because its lifecycle should differ substantially from both cleaning and rental.
 

@@ -14,6 +14,10 @@ public class RentalPropertyService {
 
     private final RentalPropertyRepository propertyRepository;
     private final RentalPropertyMediaRepository mediaRepository;
+    private final RentalPropertySlugGenerator slugGenerator;
+    private final RentalBookingRepository bookingRepository;
+    private final RentalOccupancyRepository occupancyRepository;
+    private final RentalPropertyMediaService mediaService;
     private final Clock clock;
 
     @Transactional
@@ -24,10 +28,10 @@ public class RentalPropertyService {
 
     @Transactional
     public RentalPropertyResponse update(long propertyId, RentalPropertyDetails details) {
-        RentalProperty property = requireProperty(propertyId);
+        RentalProperty property = requirePropertyForUpdate(propertyId);
         boolean published = property.getStatus() == RentalPropertyStatus.PUBLISHED;
-        if (details.slug() != null && slugInUse(details.slug(), propertyId)) {
-            throw new RentalPropertySlugConflictException(details.slug());
+        if (property.getSlug() == null && details.titleEn() != null) {
+            property.assignSlug(slugGenerator.generate(details.titleEn(), propertyId));
         }
         property.updateDetails(details, clock.instant());
         if (published) {
@@ -52,6 +56,33 @@ public class RentalPropertyService {
         RentalProperty property = requireProperty(propertyId);
         property.archive(clock.instant());
         return adminResponse(property);
+    }
+
+    @Transactional
+    public RentalPropertyResponse unpublish(long propertyId) {
+        RentalProperty property = requirePropertyForUpdate(propertyId);
+        property.unpublish(clock.instant());
+        return adminResponse(property);
+    }
+
+    @Transactional
+    public void deleteDraft(long propertyId) {
+        RentalProperty property = requirePropertyForUpdate(propertyId);
+        if (property.getStatus() != RentalPropertyStatus.DRAFT) {
+            throw new RentalPropertyCannotBeDeletedException(
+                    propertyId,
+                    "only an unpublished draft can be deleted"
+            );
+        }
+        if (bookingRepository.existsByProperty_Id(propertyId)) {
+            throw new RentalPropertyCannotBeDeletedException(
+                    propertyId,
+                    "booking history must be retained"
+            );
+        }
+        occupancyRepository.deleteManualByPropertyId(propertyId);
+        mediaService.deleteAllForProperty(propertyId);
+        propertyRepository.delete(property);
     }
 
     @Transactional(readOnly = true)
@@ -101,10 +132,6 @@ public class RentalPropertyService {
         return propertyRepository
                 .findByIdAndStatusForUpdate(propertyId, RentalPropertyStatus.PUBLISHED)
                 .orElseThrow(() -> new RentalPropertyNotAvailableException(propertyId));
-    }
-
-    private boolean slugInUse(String slug, long propertyId) {
-        return propertyRepository.existsBySlugIgnoreCaseAndIdNot(slug, propertyId);
     }
 
     private RentalPropertyResponse publicResponse(RentalProperty property) {

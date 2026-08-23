@@ -168,6 +168,13 @@ public class RentalOccupancyRepository {
         );
     }
 
+    public int deleteManualByPropertyId(long propertyId) {
+        return jdbcTemplate.update(
+                "delete from rental_occupancy where property_id = ? and booking_id is null",
+                propertyId
+        );
+    }
+
     private static RentalOccupancy map(ResultSet resultSet, int rowNumber) throws SQLException {
         return new RentalOccupancy(
                 resultSet.getLong("id"),

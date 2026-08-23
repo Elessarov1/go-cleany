@@ -36,7 +36,6 @@ export interface RentalProperty {
   slug: string | null;
   titleRu: string | null;
   titleEn: string | null;
-  descriptionRu: string | null;
   descriptionEn: string | null;
   area: string | null;
   address: string | null;
@@ -70,23 +69,42 @@ export interface RentalAvailability {
 export interface RentalBookingProperty {
   id: number;
   slug: string;
-  titleRu: string;
+  titleRu: string | null;
   titleEn: string;
   area: string;
 }
 
-export interface RentalBookingQuoteRequest {
+export type RentalTermType = "DATE_RANGE" | "MONTHLY";
+
+export interface DateRangeRentalBookingQuoteRequest {
   propertyId: number;
+  termType: "DATE_RANGE";
   checkInDate: string;
   checkOutDate: string;
+  months?: never;
 }
+
+export interface MonthlyRentalBookingQuoteRequest {
+  propertyId: number;
+  termType: "MONTHLY";
+  checkInDate: string;
+  checkOutDate?: never;
+  months: number;
+}
+
+export type RentalBookingQuoteRequest =
+  | DateRangeRentalBookingQuoteRequest
+  | MonthlyRentalBookingQuoteRequest;
 
 export interface RentalBookingQuote {
   property: RentalBookingProperty;
+  termType: RentalTermType;
   checkInDate: string;
   checkOutDate: string;
+  rentalMonths: number | null;
   durationDays: number;
   baseDailyPrice: number;
+  monthlyPrice: number | null;
   baseAmount: number;
   longTermDiscountApplied: boolean;
   discountRate: number;
@@ -95,11 +113,11 @@ export interface RentalBookingQuote {
   currency: string;
 }
 
-export interface CreateRentalBookingRequest extends RentalBookingQuoteRequest {
+export type CreateRentalBookingRequest = RentalBookingQuoteRequest & {
   guests: number;
   phone: string;
   comment?: string;
-}
+};
 
 export type RentalBookingStatus =
   | "CONFIRMED"
@@ -110,14 +128,17 @@ export type RentalBookingStatus =
 export interface RentalBooking {
   id: number;
   property: RentalBookingProperty;
+  termType: RentalTermType;
   checkInDate: string;
   checkOutDate: string;
+  rentalMonths: number | null;
   durationDays: number;
   customerName: string;
   phone: string;
   guests: number;
   comment?: string | null;
   baseDailyPriceSnapshot: number;
+  monthlyPriceSnapshot: number | null;
   longTermDiscountRateSnapshot: number;
   discountAmount: number;
   totalPrice: number;
@@ -130,10 +151,8 @@ export interface RentalBooking {
 }
 
 export interface UpdateRentalPropertyRequest {
-  slug: string | null;
   titleRu: string | null;
   titleEn: string | null;
-  descriptionRu: string | null;
   descriptionEn: string | null;
   area: string | null;
   address: string | null;
@@ -190,4 +209,8 @@ export interface AdminRentalBookingFilters {
 export interface AdminCancelRentalBookingRequest {
   reason?: string | null;
   keepDatesUnavailable: boolean;
+}
+
+export interface RentalAdminNotificationPreference {
+  telegramEnabled: boolean;
 }

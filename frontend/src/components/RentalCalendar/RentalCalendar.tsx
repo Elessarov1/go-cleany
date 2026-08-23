@@ -9,6 +9,7 @@ interface RentalCalendarProps {
   unavailableRanges: RentalAvailabilityRange[];
   checkInDate: string;
   checkOutDate: string;
+  selectionMode?: "RANGE" | "START";
   onChange: (checkInDate: string, checkOutDate: string) => void;
   onValidationError: (message: string | null) => void;
 }
@@ -43,6 +44,7 @@ export function RentalCalendar({
   unavailableRanges,
   checkInDate,
   checkOutDate,
+  selectionMode = "RANGE",
   onChange,
   onValidationError,
 }: RentalCalendarProps) {
@@ -78,6 +80,11 @@ export function RentalCalendar({
 
   const selectDate = (value: string) => {
     onValidationError(null);
+    if (selectionMode === "START") {
+      if (value < today || value > maxCheckIn || isUnavailableDay(value)) return;
+      onChange(value, "");
+      return;
+    }
     const selectingStart = !checkInDate || Boolean(checkOutDate);
     if (selectingStart) {
       if (value < today || value > maxCheckIn || isUnavailableDay(value)) return;
@@ -152,13 +159,16 @@ export function RentalCalendar({
           const inSelection = Boolean(checkInDate && checkOutDate)
             && checkInDate <= value && value < checkOutDate;
           const selected = value === checkInDate || value === checkOutDate;
-          const selectingCheckout = Boolean(checkInDate && !checkOutDate && value > checkInDate);
+          const selectingCheckout = selectionMode === "RANGE"
+            && Boolean(checkInDate && !checkOutDate && value > checkInDate);
           const checkoutOverlaps = selectingCheckout && unavailableRanges.some(
             (range) => overlaps(range, checkInDate, value),
           );
           const disabled = outsideMonth
             || value < today
-            || (!checkInDate || checkOutDate ? value > maxCheckIn || unavailable : false)
+            || (selectionMode === "START" || !checkInDate || checkOutDate
+              ? value > maxCheckIn || unavailable
+              : false)
             || (selectingCheckout && (
               daysBetween(checkInDate, value) > configuration.maxStayDays || checkoutOverlaps
             ));

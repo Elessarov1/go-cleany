@@ -7,7 +7,9 @@ import jakarta.validation.constraints.Positive;
 
 public record RentalBookingQuoteRequest(
         @Positive long propertyId,
+        @NotNull RentalTermType termType,
         @NotNull LocalDate checkInDate,
-        @NotNull LocalDate checkOutDate
+        LocalDate checkOutDate,
+        @Positive Integer months
 ) {
 }

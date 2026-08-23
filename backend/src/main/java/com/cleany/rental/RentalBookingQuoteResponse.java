@@ -5,10 +5,13 @@ import java.time.LocalDate;
 
 public record RentalBookingQuoteResponse(
         RentalBookingPropertyResponse property,
+        RentalTermType termType,
         LocalDate checkInDate,
         LocalDate checkOutDate,
+        Integer rentalMonths,
         int durationDays,
         BigDecimal baseDailyPrice,
+        BigDecimal monthlyPrice,
         BigDecimal baseAmount,
         boolean longTermDiscountApplied,
         BigDecimal discountRate,
@@ -25,10 +28,13 @@ public record RentalBookingQuoteResponse(
     ) {
         return new RentalBookingQuoteResponse(
                 RentalBookingPropertyResponse.from(property),
+                quote.termType(),
                 checkInDate,
                 checkOutDate,
+                quote.rentalMonths(),
                 quote.durationDays(),
                 quote.baseDailyPrice(),
+                quote.monthlyPrice(),
                 quote.baseAmount(),
                 quote.longTermDiscountApplied(),
                 quote.discountRate(),

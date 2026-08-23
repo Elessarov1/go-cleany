@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260828-01" author="go-cleany">
+        <comment>Add explicit date-range/monthly terms and immutable monthly pricing snapshots.</comment>
+
+        <addColumn tableName="rental_booking">
+            <column name="term_type" type="VARCHAR(32)" defaultValue="DATE_RANGE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rental_months" type="INTEGER"/>
+            <column name="monthly_price_snapshot" type="NUMERIC(12,2)"/>
+        </addColumn>
+        <dropDefaultValue tableName="rental_booking" columnName="term_type"/>
+
+        <sql dbms="postgresql"><![CDATA[
+            alter table rental_booking
+                add constraint ck_rental_booking_term_type check (
+                    term_type in ('DATE_RANGE', 'MONTHLY')
+                ),
+                add constraint ck_rental_booking_term_values check (
+                    (term_type = 'DATE_RANGE'
+                        and rental_months is null
+                        and monthly_price_snapshot is null)
+                    or
+                    (term_type = 'MONTHLY'
+                        and rental_months >= 1
+                        and monthly_price_snapshot > 0)
+                );
+        ]]></sql>
+
+        <rollback>
+            <sql dbms="postgresql"><![CDATA[
+                alter table rental_booking
+                    drop constraint ck_rental_booking_term_values,
+                    drop constraint ck_rental_booking_term_type;
+            ]]></sql>
+            <dropColumn tableName="rental_booking" columnName="monthly_price_snapshot"/>
+            <dropColumn tableName="rental_booking" columnName="rental_months"/>
+            <dropColumn tableName="rental_booking" columnName="term_type"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="20260828-02" author="go-cleany">
+        <comment>Remove the unused Russian rental property description.</comment>
+
+        <dropColumn tableName="rental_property" columnName="description_ru"/>
+
+        <rollback>
+            <addColumn tableName="rental_property">
+                <column name="description_ru" type="VARCHAR(5000)"/>
+            </addColumn>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="20260828-03" author="go-cleany">
+        <comment>Store the go-renty Telegram notification preference for each administrator.</comment>
+
+        <createTable tableName="rental_admin_notification_preference">
+            <column name="admin_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true"
+                             primaryKeyName="pk_rental_admin_notification_preference"/>
+            </column>
+            <column name="telegram_enabled" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="rental_admin_notification_preference"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

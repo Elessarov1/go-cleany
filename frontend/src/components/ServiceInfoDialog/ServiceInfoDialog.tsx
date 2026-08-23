@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import type { CleaningType } from "../../domain/order";
 import { Icon } from "../Icon/Icon";
+import { BrandName } from "../BrandName/BrandName";
 
 interface ServiceInfoDialogProps {
   cleaningType: CleaningType;
@@ -46,7 +47,7 @@ export function ServiceInfoDialog({
         <div className="service-dialog__handle" aria-hidden="true" />
         <div className="service-dialog__header">
           <div>
-            <span className="eyebrow">go-cleany</span>
+            <span className="eyebrow"><BrandName service="cleaning" /></span>
             <h2 id="service-dialog-title">
               {t("create.cleaning.includedTitle", {
                 type: t(`cleaning.${cleaningType}.title`),

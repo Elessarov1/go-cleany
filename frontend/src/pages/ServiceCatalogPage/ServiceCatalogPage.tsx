@@ -1,6 +1,7 @@
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Icon } from "../../components/Icon/Icon";
+import { BrandName } from "../../components/BrandName/BrandName";
 
 export function ServiceCatalogPage() {
   const { t } = useTranslation();
@@ -14,7 +15,7 @@ export function ServiceCatalogPage() {
   return (
     <div className="page page--service-catalog">
       <header className="service-catalog__header">
-        <span className="eyebrow">go services</span>
+        <span className="eyebrow"><BrandName /> services</span>
         <h1>{t("catalog.title")}</h1>
         <p>{t("catalog.subtitle")}</p>
       </header>
@@ -23,7 +24,7 @@ export function ServiceCatalogPage() {
         <Link className="service-card service-card--rent" to="/rent">
           <span className="service-card__icon"><Icon name="building" size={34} /></span>
           <span className="service-card__copy">
-            <small>go-rent</small>
+            <small><BrandName service="rental" /></small>
             <strong>{t("catalog.rent.title")}</strong>
             <span>{t("catalog.rent.text")}</span>
           </span>
@@ -33,7 +34,7 @@ export function ServiceCatalogPage() {
         <Link className="service-card service-card--cleaning" to="/cleaning">
           <span className="service-card__icon"><Icon name="sparkles" size={32} /></span>
           <span className="service-card__copy">
-            <small>go-cleany</small>
+            <small><BrandName service="cleaning" /></small>
             <strong>{t("catalog.cleaning.title")}</strong>
             <span>{t("catalog.cleaning.text")}</span>
           </span>

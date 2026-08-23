@@ -20,7 +20,7 @@ Read this for:
 - go-cleany as the cleaning vertical;
 - Telegram → WhatsApp → Flutter direction;
 - future multi-service platform;
-- current go-cleany and go-rent vertical boundaries;
+- current go-cleany and go-renty vertical boundaries;
 - platform vs vertical boundaries;
 - customer identity direction;
 - media and notification architecture direction;

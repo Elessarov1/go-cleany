@@ -70,8 +70,11 @@ class RentalBookingTest {
                 NOW
         );
         var quote = new RentalPriceQuote(
+                RentalTermType.DATE_RANGE,
+                null,
                 Math.toIntExact(java.time.temporal.ChronoUnit.DAYS.between(checkIn, checkOut)),
                 new BigDecimal("100.00"),
+                null,
                 new BigDecimal("700.00"),
                 false,
                 BigDecimal.ZERO,
@@ -83,8 +86,13 @@ class RentalBookingTest {
                 1L,
                 2L,
                 property,
-                checkIn,
-                checkOut,
+                new ResolvedRentalTerm(
+                        RentalTermType.DATE_RANGE,
+                        checkIn,
+                        checkOut,
+                        Math.toIntExact(java.time.temporal.ChronoUnit.DAYS.between(checkIn, checkOut)),
+                        null
+                ),
                 "Alex",
                 "+905551234567",
                 2,

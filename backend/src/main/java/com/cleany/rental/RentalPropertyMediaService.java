@@ -8,9 +8,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.cleany.media.ImageMediaTypeDetector;
 import com.cleany.media.MediaStorage;
-import com.cleany.media.MediaUpload;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +21,7 @@ public class RentalPropertyMediaService {
     private final RentalPropertyRepository propertyRepository;
     private final RentalPropertyMediaRepository mediaRepository;
     private final MediaStorage mediaStorage;
+    private final RentalImageNormalizer imageNormalizer;
     private final Clock clock;
 
     @Transactional
@@ -34,17 +33,14 @@ public class RentalPropertyMediaService {
         if (content.length > MAX_IMAGE_BYTES) {
             throw new InvalidRentalPropertyMediaException("Property image exceeds 10 MB");
         }
-        String contentType = ImageMediaTypeDetector.detect(content)
-                .orElseThrow(() -> new InvalidRentalPropertyMediaException(
-                        "Property image must be JPEG or PNG"
-                ));
+        var normalized = imageNormalizer.normalize(content);
         List<RentalPropertyMedia> existing = media(propertyId);
         boolean cover = requestedCover || existing.isEmpty();
         if (cover) {
             existing.forEach(item -> item.setCover(false));
             mediaRepository.flush();
         }
-        var stored = mediaStorage.store(new MediaUpload(content, contentType));
+        var stored = mediaStorage.store(normalized);
         mediaRepository.save(new RentalPropertyMedia(
                 property,
                 stored.mediaId(),
@@ -117,6 +113,19 @@ public class RentalPropertyMediaService {
             media.reorder(index);
         }
         property.touch(clock.instant());
+    }
+
+    @Transactional
+    public void deleteAllForProperty(long propertyId) {
+        List<RentalPropertyMedia> propertyMedia = media(propertyId);
+        List<Long> assetIds = propertyMedia.stream()
+                .map(RentalPropertyMedia::getMediaAssetId)
+                .toList();
+        mediaRepository.deleteAll(propertyMedia);
+        mediaRepository.flush();
+        assetIds.stream()
+                .filter(assetId -> !mediaRepository.existsByMediaAssetId(assetId))
+                .forEach(mediaStorage::delete);
     }
 
     @Transactional(readOnly = true)

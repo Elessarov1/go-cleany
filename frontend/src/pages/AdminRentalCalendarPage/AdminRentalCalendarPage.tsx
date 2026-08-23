@@ -6,6 +6,7 @@ import { Icon } from "../../components/Icon/Icon";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import type { RentalOccupancy, RentalOccupancyType, RentalProperty, UpsertRentalOccupancyRequest } from "../../domain/rental";
 import { addDaysToInputValue, formatDate, todayAsInputValue } from "../../utils/format";
+import { BrandName } from "../../components/BrandName/BrandName";
 
 const manualTypes: Exclude<RentalOccupancyType, "BOOKING">[] = ["OWNER_BLOCK", "EXTERNAL_BOOKING", "MAINTENANCE"];
 
@@ -129,7 +130,7 @@ export function AdminRentalCalendarPage() {
     <div className="page page--admin-rental">
       <Link className="back-link" to="/admin/rent/properties"><Icon name="arrow-left" size={17} />{t("common.back")}</Link>
       <header className="admin-rental-header">
-        <div><span className="eyebrow">go-rent / #{property.id}</span><h1>{t("adminRental.calendar.title")}</h1><p>{property.titleRu || property.titleEn || t("adminRental.properties.untitled")}</p></div>
+        <div><span className="eyebrow"><BrandName service="rental" /> / #{property.id}</span><h1>{t("adminRental.calendar.title")}</h1><p>{property.titleRu || property.titleEn || t("adminRental.properties.untitled")}</p></div>
         <Link className="button button--secondary" to={`/admin/rent/properties/${property.id}`}>{t("adminRental.properties.edit")}</Link>
       </header>
 

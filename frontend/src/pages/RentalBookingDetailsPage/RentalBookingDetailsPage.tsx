@@ -88,10 +88,10 @@ export function RentalBookingDetailsPage() {
         <div className="rental-booking-summary__dates">
           <div><span>{t("rental.booking.checkIn")}</span><strong>{formatDate(booking.checkInDate, locale)}</strong></div>
           <Icon name="arrow-right" size={19} />
-          <div><span>{t("rental.booking.checkOut")}</span><strong>{formatDate(booking.checkOutDate, locale)}</strong></div>
+          <div><span>{booking.termType === "MONTHLY" ? t("rental.booking.expectedCheckOut") : t("rental.booking.checkOut")}</span><strong>{formatDate(booking.checkOutDate, locale)}</strong></div>
         </div>
         <dl className="detail-list">
-          <div><dt>{t("rental.bookingDetails.duration")}</dt><dd>{t("rental.booking.stay", { count: booking.durationDays })}</dd></div>
+          <div><dt>{t("rental.bookingDetails.duration")}</dt><dd>{booking.termType === "MONTHLY" ? t("rental.booking.months", { count: booking.rentalMonths }) : t("rental.booking.stay", { count: booking.durationDays })}</dd></div>
           <div><dt>{t("rental.bookingDetails.guests")}</dt><dd>{booking.guests}</dd></div>
           <div><dt>{t("rental.bookingDetails.phone")}</dt><dd>{booking.phone}</dd></div>
           <div><dt>{t("rental.bookingDetails.comment")}</dt><dd>{booking.comment || t("common.notProvided")}</dd></div>
@@ -102,7 +102,10 @@ export function RentalBookingDetailsPage() {
       </section>
 
       <section className="rental-price-snapshot">
-        <div><span>{t("rental.bookingDetails.dailyPrice")}</span><strong>{formatPrice(booking.baseDailyPriceSnapshot, booking.currency, locale)}</strong></div>
+        <div>
+          <span>{booking.termType === "MONTHLY" ? t("rental.bookingDetails.monthlyPrice") : t("rental.bookingDetails.dailyPrice")}</span>
+          <strong>{formatPrice(booking.termType === "MONTHLY" ? booking.monthlyPriceSnapshot! : booking.baseDailyPriceSnapshot, booking.currency, locale)}</strong>
+        </div>
         {booking.discountAmount > 0 ? (
           <div><span>{t("rental.bookingDetails.discount")}</span><strong>−{formatPrice(booking.discountAmount, booking.currency, locale)}</strong></div>
         ) : null}

@@ -10,8 +10,10 @@ import jakarta.validation.constraints.Size;
 
 public record CreateRentalBookingRequest(
         @Positive long propertyId,
+        @NotNull RentalTermType termType,
         @NotNull LocalDate checkInDate,
-        @NotNull LocalDate checkOutDate,
+        LocalDate checkOutDate,
+        @Positive Integer months,
         @Positive @Max(100) int guests,
         @NotBlank @Size(max = 40) String phone,
         @Size(max = 1000) String comment

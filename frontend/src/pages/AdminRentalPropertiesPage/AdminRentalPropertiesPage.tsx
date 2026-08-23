@@ -8,6 +8,14 @@ import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import type { RentalProperty } from "../../domain/rental";
 import { formatPrice } from "../../domain/pricing";
 import { rentalLanguage, rentalPropertyTitle } from "../../utils/rental";
+import { BrandName } from "../../components/BrandName/BrandName";
+import { ConfirmationDialog } from "../../components/ConfirmationDialog/ConfirmationDialog";
+import { RentalAdminNotificationPreference } from "../../components/RentalAdminNotificationPreference/RentalAdminNotificationPreference";
+
+interface PropertyAction {
+  type: "DELETE" | "UNPUBLISH";
+  property: RentalProperty;
+}
 
 export function AdminRentalPropertiesPage() {
   const { t, i18n } = useTranslation();
@@ -16,6 +24,9 @@ export function AdminRentalPropertiesPage() {
   const [properties, setProperties] = useState<RentalProperty[] | null>(null);
   const [error, setError] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [propertyAction, setPropertyAction] = useState<PropertyAction | null>(null);
+  const [actionPending, setActionPending] = useState(false);
+  const [actionError, setActionError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const language = rentalLanguage(i18n.resolvedLanguage);
   const locale = language === "ru" ? "ru-RU" : "en-GB";
@@ -43,13 +54,34 @@ export function AdminRentalPropertiesPage() {
     }
   };
 
+  const confirmPropertyAction = async () => {
+    if (!propertyAction) return;
+    try {
+      setActionPending(true);
+      setActionError(false);
+      if (propertyAction.type === "UNPUBLISH") {
+        const updated = await api.unpublishAdminProperty(propertyAction.property.id);
+        setProperties((current) => current?.map((item) => item.id === updated.id ? updated : item) ?? null);
+      } else {
+        await api.deleteAdminProperty(propertyAction.property.id);
+        setProperties((current) => current?.filter((item) => item.id !== propertyAction.property.id) ?? null);
+      }
+      setPropertyAction(null);
+    } catch {
+      setActionError(true);
+      setPropertyAction(null);
+    } finally {
+      setActionPending(false);
+    }
+  };
+
   if (error) return <ErrorState message={t("adminRental.properties.loadError")} onRetry={() => setReloadKey((key) => key + 1)} />;
   if (!properties) return <LoadingState />;
 
   return (
     <div className="page page--admin-rental">
       <header className="admin-rental-header">
-        <div><span className="eyebrow">go-rent / admin</span><h1>{t("adminRental.properties.title")}</h1><p>{t("adminRental.properties.subtitle")}</p></div>
+        <div><span className="eyebrow"><BrandName service="rental" /> / admin</span><h1>{t("adminRental.properties.title")}</h1><p>{t("adminRental.properties.subtitle")}</p></div>
         <button className="button button--primary" type="button" disabled={creating} onClick={() => void createProperty()}>
           {creating ? t("adminRental.properties.creating") : t("adminRental.properties.create")}
         </button>
@@ -58,6 +90,8 @@ export function AdminRentalPropertiesPage() {
         <Link className="admin-rental-toolbar__link is-active" to="/admin/rent/properties"><Icon name="building" size={18} />{t("adminRental.nav.properties")}</Link>
         <Link className="admin-rental-toolbar__link" to="/admin/rent/bookings"><Icon name="clipboard" size={18} />{t("adminRental.nav.bookings")}</Link>
       </div>
+      <RentalAdminNotificationPreference />
+      {actionError ? <p className="form-alert" role="alert">{t("adminRental.properties.actionError")}</p> : null}
       {properties.length === 0 ? <p className="admin-orders__empty">{t("adminRental.properties.empty")}</p> : (
         <div className="admin-rental-property-grid">
           {properties.map((property) => {
@@ -74,7 +108,16 @@ export function AdminRentalPropertiesPage() {
                   <strong>{property.baseDailyPrice && property.currency ? formatPrice(property.baseDailyPrice, property.currency, locale) : "—"}</strong>
                   <div>
                     <Link className="button button--secondary" to={`/admin/rent/properties/${property.id}`}>{t("adminRental.properties.edit")}</Link>
-                    <Link className="button button--secondary" to={`/admin/rent/properties/${property.id}/calendar`}>{t("adminRental.properties.calendar")}</Link>
+                    {property.status === "DRAFT" ? (
+                      <button className="button button--danger" type="button" onClick={() => setPropertyAction({ type: "DELETE", property })}>
+                        {t("adminRental.properties.delete")}
+                      </button>
+                    ) : null}
+                    {property.status === "PUBLISHED" ? (
+                      <button className="button button--secondary" type="button" onClick={() => setPropertyAction({ type: "UNPUBLISH", property })}>
+                        {t("adminRental.properties.unpublish")}
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               </article>
@@ -82,6 +125,17 @@ export function AdminRentalPropertiesPage() {
           })}
         </div>
       )}
+      {propertyAction ? (
+        <ConfirmationDialog
+          title={t(`adminRental.properties.confirm.${propertyAction.type}.title`)}
+          description={t(`adminRental.properties.confirm.${propertyAction.type}.description`)}
+          confirmLabel={t(`adminRental.properties.confirm.${propertyAction.type}.action`)}
+          pending={actionPending}
+          destructive={propertyAction.type === "DELETE"}
+          onCancel={() => setPropertyAction(null)}
+          onConfirm={() => void confirmPropertyAction()}
+        />
+      ) : null}
     </div>
   );
 }

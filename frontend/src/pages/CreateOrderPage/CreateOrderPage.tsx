@@ -18,6 +18,7 @@ import type {
 import { calculateDisplayedPrice, formatPrice } from "../../domain/pricing";
 import { usePlatform } from "../../platform/PlatformProvider";
 import { addDaysToInputValue, todayAsInputValue } from "../../utils/format";
+import { getBrandName } from "../../brand/productBrand";
 
 interface FormState {
   area?: ServiceArea;
@@ -554,7 +555,7 @@ export function CreateOrderPage() {
           </div>
           <div className="payment-note">
             <span><Icon name="wallet" size={17} /></span>
-            <p>{t("create.summary.directPayment")}</p>
+            <p>{t("create.summary.directPayment", { brand: getBrandName("cleaning") })}</p>
           </div>
           {submitError ? (
             <p className="form-alert" role="alert">

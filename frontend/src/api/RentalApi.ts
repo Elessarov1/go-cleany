@@ -8,6 +8,7 @@ import type {
   RentalBookingQuote,
   RentalBookingQuoteRequest,
   RentalConfiguration,
+  RentalAdminNotificationPreference,
   RentalProperty,
   RentalOccupancy,
   UpdateRentalPropertyRequest,
@@ -29,6 +30,8 @@ export interface RentalApi {
   getAdminProperty(id: number): Promise<RentalProperty>;
   updateAdminProperty(id: number, request: UpdateRentalPropertyRequest): Promise<RentalProperty>;
   publishAdminProperty(id: number): Promise<RentalProperty>;
+  unpublishAdminProperty(id: number): Promise<RentalProperty>;
+  deleteAdminProperty(id: number): Promise<void>;
   archiveAdminProperty(id: number): Promise<RentalProperty>;
   addAdminPropertyMedia(id: number, file: File, cover: boolean): Promise<RentalProperty>;
   removeAdminPropertyMedia(id: number, mediaId: number): Promise<RentalProperty>;
@@ -43,4 +46,6 @@ export interface RentalApi {
   getAdminBooking(id: number): Promise<AdminRentalBooking>;
   cancelAdminBooking(id: number, request: AdminCancelRentalBookingRequest): Promise<AdminRentalBooking>;
   completeAdminBooking(id: number): Promise<AdminRentalBooking>;
+  getAdminRentalNotificationPreference(): Promise<RentalAdminNotificationPreference>;
+  updateAdminRentalNotificationPreference(telegramEnabled: boolean): Promise<RentalAdminNotificationPreference>;
 }
