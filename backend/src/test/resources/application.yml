@@ -85,12 +85,6 @@ telegram:
   polling-retry-delay: 3s
   polling-drop-pending-updates: false
 
-whatsapp:
-  enabled: false
-  graph-api-base-url: https://graph.facebook.com
-  graph-api-version: v25.0
-  test-reply-enabled: false
-
 logging:
   level:
     root: ERROR
