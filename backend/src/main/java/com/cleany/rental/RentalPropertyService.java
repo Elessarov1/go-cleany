@@ -1,7 +1,9 @@
 package com.cleany.rental;
 
 import java.time.Clock;
+import java.util.Map;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,12 +68,13 @@ public class RentalPropertyService {
     }
 
     @Transactional
-    public void deleteDraft(long propertyId) {
+    public void deleteProperty(long propertyId) {
         RentalProperty property = requirePropertyForUpdate(propertyId);
-        if (property.getStatus() != RentalPropertyStatus.DRAFT) {
+        if (property.getStatus() != RentalPropertyStatus.DRAFT
+                && property.getStatus() != RentalPropertyStatus.ARCHIVED) {
             throw new RentalPropertyCannotBeDeletedException(
                     propertyId,
-                    "only an unpublished draft can be deleted"
+                    "only a draft or archived property can be deleted"
             );
         }
         if (bookingRepository.existsByProperty_Id(propertyId)) {
@@ -87,10 +90,12 @@ public class RentalPropertyService {
 
     @Transactional(readOnly = true)
     public List<RentalPropertyResponse> getPublishedProperties() {
-        return propertyRepository.findAllByStatusOrderByCreatedAtDesc(RentalPropertyStatus.PUBLISHED)
-                .stream()
-                .map(this::publicResponse)
-                .toList();
+        return responses(
+                propertyRepository.findAllByStatusOrderByCreatedAtDesc(
+                        RentalPropertyStatus.PUBLISHED
+                ),
+                false
+        );
     }
 
     @Transactional(readOnly = true)
@@ -103,9 +108,7 @@ public class RentalPropertyService {
 
     @Transactional(readOnly = true)
     public List<RentalPropertyResponse> getAdminProperties() {
-        return propertyRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(this::adminResponse)
-                .toList();
+        return responses(propertyRepository.findAllByOrderByCreatedAtDesc(), true);
     }
 
     @Transactional(readOnly = true)
@@ -136,6 +139,27 @@ public class RentalPropertyService {
 
     private RentalPropertyResponse publicResponse(RentalProperty property) {
         return response(property, media(property.getId()), false);
+    }
+
+    private List<RentalPropertyResponse> responses(
+            List<RentalProperty> properties,
+            boolean admin
+    ) {
+        if (properties.isEmpty()) {
+            return List.of();
+        }
+        List<Long> propertyIds = properties.stream().map(RentalProperty::getId).toList();
+        Map<Long, List<RentalPropertyMedia>> mediaByPropertyId = mediaRepository
+                .findAllByProperty_IdInOrderByProperty_IdAscSortOrderAscIdAsc(propertyIds)
+                .stream()
+                .collect(Collectors.groupingBy(media -> media.getProperty().getId()));
+        return properties.stream()
+                .map(property -> response(
+                        property,
+                        mediaByPropertyId.getOrDefault(property.getId(), List.of()),
+                        admin
+                ))
+                .toList();
     }
 
     private RentalPropertyResponse adminResponse(RentalProperty property) {

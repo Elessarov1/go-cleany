@@ -1,5 +1,7 @@
 package com.cleany.order;
 
+import static com.cleany.common.text.TextValues.requireNonBlank;
+
 import java.time.Clock;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -334,10 +336,11 @@ public class OnsiteIssueService {
     }
 
     private static String requireValue(String value, int maxLength, String name) {
-        if (value == null || value.isBlank() || value.trim().length() > maxLength) {
-            throw invalid(OnsiteIssueProblem.PHOTO_EMPTY, name + " is invalid");
-        }
-        return value.trim();
+        return requireNonBlank(
+                value,
+                maxLength,
+                ignored -> invalid(OnsiteIssueProblem.PHOTO_EMPTY, name + " is invalid")
+        );
     }
 
     private void requireConfiguredCleaner(long cleanerTelegramUserId) {

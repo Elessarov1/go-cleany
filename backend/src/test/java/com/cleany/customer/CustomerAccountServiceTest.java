@@ -20,6 +20,7 @@ class CustomerAccountServiceTest {
     private CustomerIdentityProvider identityProvider;
     private CustomerAccountRepository accountRepository;
     private CustomerExternalIdentityRepository identityRepository;
+    private PhoneNumberNormalizer phoneNumberNormalizer;
     private CustomerAccountService service;
 
     @BeforeEach
@@ -27,13 +28,25 @@ class CustomerAccountServiceTest {
         identityProvider = Mockito.mock(CustomerIdentityProvider.class);
         accountRepository = Mockito.mock(CustomerAccountRepository.class);
         identityRepository = Mockito.mock(CustomerExternalIdentityRepository.class);
+        phoneNumberNormalizer = Mockito.mock(PhoneNumberNormalizer.class);
         service = new CustomerAccountService(
                 identityProvider,
                 accountRepository,
                 identityRepository,
-                new PhoneNumberNormalizer(),
+                phoneNumberNormalizer,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
+    }
+
+    @Test
+    void normalizedPhone_isStoredWithoutParsingItAgain() {
+        CustomerAccount account = Mockito.mock(CustomerAccount.class);
+        Mockito.when(accountRepository.findById(77L)).thenReturn(Optional.of(account));
+
+        service.updateNormalizedPhone(77L, "+905551234567");
+
+        Mockito.verify(account).updatePhone("+905551234567");
+        Mockito.verifyNoInteractions(phoneNumberNormalizer);
     }
 
     @Test

@@ -11,7 +11,7 @@ class MediaAssetTest {
     private static final String SHA256 = "a".repeat(64);
 
     @Test
-    void validContent_metadataNormalizedAndBinaryDefensivelyCopied() {
+    void validContent_metadataNormalizedAndPublicContentDefensivelyCopied() {
         byte[] source = {1, 2, 3};
         var asset = new MediaAsset(source, " Image/JPEG ", SHA256.toUpperCase(), CREATED_AT);
         source[0] = 9;
@@ -20,6 +20,7 @@ class MediaAssetTest {
 
         Assertions.assertAll(
                 () -> Assertions.assertArrayEquals(new byte[]{1, 2, 3}, asset.getContent()),
+                () -> Assertions.assertSame(asset.contentBuffer(), asset.contentBuffer()),
                 () -> Assertions.assertEquals("image/jpeg", asset.getContentType()),
                 () -> Assertions.assertEquals(3L, asset.getSizeBytes()),
                 () -> Assertions.assertEquals(SHA256, asset.getSha256()),

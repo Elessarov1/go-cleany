@@ -7,11 +7,34 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.query.Param;
 
 public interface CleaningOrderRepository extends JpaRepository<CleaningOrder, Long> {
 
-    List<CleaningOrder> findAllByOrderByCreatedAtDesc();
+    List<CleaningOrder> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+    @Query(value = """
+            select count(*) as "totalOrders",
+                   count(*) filter (
+                       where created_at >= :todayStart and created_at < :tomorrowStart
+                   ) as "ordersToday",
+                   count(*) filter (where status = 'NEW') as "newOrders",
+                   count(*) filter (
+                       where status in ('ACCEPTED', 'AWAITING_REPORT', 'ONSITE_ISSUE_REPORTED')
+                   ) as "activeOrders",
+                   count(*) filter (where status = 'COMPLETED') as "completedOrders",
+                   count(*) filter (where status = 'CANCELLED') as "cancelledOrders",
+                   coalesce(
+                       sum(price) filter (where status = 'COMPLETED'),
+                       0
+                   ) as "completedAmount"
+              from cleaning_order
+            """, nativeQuery = true)
+    CleaningOrderStatistics calculateStatistics(
+            @Param("todayStart") Instant todayStart,
+            @Param("tomorrowStart") Instant tomorrowStart
+    );
 
     List<CleaningOrder> findAllByCustomerIdOrderByCreatedAtDesc(long customerId);
 
@@ -67,7 +90,8 @@ public interface CleaningOrderRepository extends JpaRepository<CleaningOrder, Lo
     @Modifying(flushAutomatically = true)
     @Query("""
             update CleaningOrder order
-               set order.reportInputActive = false
+               set order.reportInputActive = false,
+                   order.version = order.version + 1
              where order.cleanerTelegramUserId = :cleanerId
                and order.id <> :activeOrderId
                and order.reportInputActive = true
@@ -82,7 +106,8 @@ public interface CleaningOrderRepository extends JpaRepository<CleaningOrder, Lo
             update CleaningOrder order
                set order.status = :acceptedStatus,
                    order.cleanerTelegramUserId = :cleanerId,
-                   order.acceptedAt = :acceptedAt
+                   order.acceptedAt = :acceptedAt,
+                   order.version = order.version + 1
              where order.id = :orderId
                and order.status = :newStatus
             """)

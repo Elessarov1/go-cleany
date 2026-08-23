@@ -1,10 +1,10 @@
 package com.cleany.admin;
 
-import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,10 +17,13 @@ import com.cleany.order.CleaningOrderIssueReportRepository;
 import com.cleany.order.CleaningOrderPhotoRepository;
 import com.cleany.order.CleaningOrderRepository;
 import com.cleany.order.CleaningOrderResponse;
-import com.cleany.order.CleaningOrderStatus;
+import com.cleany.order.CleaningOrderStatistics;
 import com.cleany.order.OrderNotFoundException;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class AdminQueryService {
 
     private static final int MAX_RECENT_ORDERS = 100;
@@ -35,28 +38,6 @@ public class AdminQueryService {
     private final CleaningProperties cleaningProperties;
     private final Clock clock;
 
-    public AdminQueryService(
-            AdminAccessService accessService,
-            CleaningOrderRepository orderRepository,
-            CleaningOrderEventRepository eventRepository,
-            CleaningOrderPhotoRepository photoRepository,
-            CleaningOrderIssueReportRepository issueReportRepository,
-            CleaningOrderIssuePhotoRepository issuePhotoRepository,
-            MediaStorage mediaStorage,
-            CleaningProperties cleaningProperties,
-            Clock clock
-    ) {
-        this.accessService = accessService;
-        this.orderRepository = orderRepository;
-        this.eventRepository = eventRepository;
-        this.photoRepository = photoRepository;
-        this.issueReportRepository = issueReportRepository;
-        this.issuePhotoRepository = issuePhotoRepository;
-        this.mediaStorage = mediaStorage;
-        this.cleaningProperties = cleaningProperties;
-        this.clock = clock;
-    }
-
     @Transactional(readOnly = true)
     public AdminDashboardResponse getCurrentAdminDashboard(int requestedLimit) {
         return getDashboard(accessService.requireCurrentAdmin(), requestedLimit);
@@ -65,13 +46,22 @@ public class AdminQueryService {
     @Transactional(readOnly = true)
     public AdminDashboardResponse getDashboard(long adminTelegramId, int requestedLimit) {
         accessService.requireAdmin(adminTelegramId);
-        List<CleaningOrder> orders = orderRepository.findAllByOrderByCreatedAtDesc();
         int limit = Math.max(1, Math.min(requestedLimit, MAX_RECENT_ORDERS));
-        List<AdminOrderSummaryResponse> recentOrders = orders.stream()
-                .limit(limit)
+        LocalDate today = LocalDate.now(clock.withZone(cleaningProperties.zoneId()));
+        var todayStart = today.atStartOfDay(cleaningProperties.zoneId()).toInstant();
+        var tomorrowStart = today.plusDays(1)
+                .atStartOfDay(cleaningProperties.zoneId())
+                .toInstant();
+        CleaningOrderStatistics statistics = orderRepository.calculateStatistics(
+                todayStart,
+                tomorrowStart
+        );
+        List<AdminOrderSummaryResponse> recentOrders = orderRepository
+                .findAllByOrderByCreatedAtDesc(PageRequest.of(0, limit))
+                .stream()
                 .map(AdminOrderSummaryResponse::from)
                 .toList();
-        return new AdminDashboardResponse(stats(orders), recentOrders);
+        return new AdminDashboardResponse(stats(statistics), recentOrders);
     }
 
     @Transactional(readOnly = true)
@@ -113,40 +103,16 @@ public class AdminQueryService {
         return new AdminIssuePhotoContent(media.contentType(), media.content());
     }
 
-    private AdminStatsResponse stats(List<CleaningOrder> orders) {
-        LocalDate today = LocalDate.now(clock.withZone(cleaningProperties.zoneId()));
-        long ordersToday = orders.stream()
-                .filter(order -> LocalDate.ofInstant(
-                        order.getCreatedAt(),
-                        cleaningProperties.zoneId()
-                ).equals(today))
-                .count();
-        long newOrders = count(orders, CleaningOrderStatus.NEW);
-        long activeOrders = orders.stream()
-                .filter(order -> order.getStatus() == CleaningOrderStatus.ACCEPTED
-                        || order.getStatus() == CleaningOrderStatus.AWAITING_REPORT
-                        || order.getStatus() == CleaningOrderStatus.ONSITE_ISSUE_REPORTED)
-                .count();
-        long completedOrders = count(orders, CleaningOrderStatus.COMPLETED);
-        long cancelledOrders = count(orders, CleaningOrderStatus.CANCELLED);
-        BigDecimal completedAmount = orders.stream()
-                .filter(order -> order.getStatus() == CleaningOrderStatus.COMPLETED)
-                .map(CleaningOrder::getPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
+    private AdminStatsResponse stats(CleaningOrderStatistics statistics) {
         return new AdminStatsResponse(
-                orders.size(),
-                ordersToday,
-                newOrders,
-                activeOrders,
-                completedOrders,
-                cancelledOrders,
-                completedAmount,
+                statistics.getTotalOrders(),
+                statistics.getOrdersToday(),
+                statistics.getNewOrders(),
+                statistics.getActiveOrders(),
+                statistics.getCompletedOrders(),
+                statistics.getCancelledOrders(),
+                statistics.getCompletedAmount(),
                 cleaningProperties.currency().getCurrencyCode()
         );
-    }
-
-    private static long count(List<CleaningOrder> orders, CleaningOrderStatus status) {
-        return orders.stream().filter(order -> order.getStatus() == status).count();
     }
 }

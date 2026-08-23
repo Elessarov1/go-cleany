@@ -1,6 +1,7 @@
 package com.cleany.rental;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -13,7 +14,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.cleany.base.BaseIntegrationTest;
 import com.cleany.customer.CurrentCustomer;
@@ -66,6 +70,9 @@ class RentalBookingConcurrencyIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     @BeforeEach
     @AfterEach
@@ -145,6 +152,73 @@ class RentalBookingConcurrencyIntegrationTest extends BaseIntegrationTest {
         }
     }
 
+    @Test
+    void sameBooking_twoAdminCancellationsConcurrently_exactlyOneCommits() throws Exception {
+        RentalPropertyResponse property = RentalTestFixtures.publishedProperty(
+                propertyService,
+                propertyMediaService,
+                "concurrent-cancellation",
+                new BigDecimal("100.00")
+        );
+        CurrentCustomer customer = RentalTestFixtures.customer(
+                customerAccountService,
+                "920003"
+        );
+        LocalDate checkIn = stayPolicy.today().plusDays(5);
+        RentalBookingResponse booking = bookingService.create(
+                customer,
+                new CreateRentalBookingRequest(
+                        property.id(),
+                        RentalTermType.DATE_RANGE,
+                        checkIn,
+                        checkIn.plusDays(7),
+                        null,
+                        2,
+                        "+90 555 123 45 67",
+                        null
+                )
+        );
+        var ready = new CountDownLatch(2);
+        var start = new CountDownLatch(1);
+
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var firstCancellation = executor.submit(() -> cancel(
+                    booking.id(),
+                    "first",
+                    ready,
+                    start
+            ));
+            var secondCancellation = executor.submit(() -> cancel(
+                    booking.id(),
+                    "second",
+                    ready,
+                    start
+            ));
+            Assertions.assertTrue(ready.await(5, TimeUnit.SECONDS));
+            start.countDown();
+
+            Assertions.assertEquals(
+                    1,
+                    List.of(firstCancellation.get(), secondCancellation.get()).stream()
+                            .filter(Boolean::booleanValue)
+                            .count()
+            );
+        }
+
+        RentalBooking persisted = bookingRepository.findById(booking.id()).orElseThrow();
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(
+                        RentalBookingStatus.CANCELLED_BY_ADMIN,
+                        persisted.getStatus()
+                ),
+                () -> Assertions.assertTrue(
+                        persisted.getCancellationReason().equals("first")
+                                || persisted.getCancellationReason().equals("second")
+                ),
+                () -> Assertions.assertEquals(1L, persisted.getVersion())
+        );
+    }
+
     private Callable<Object> attempt(
             CountDownLatch start,
             CurrentCustomer customer,
@@ -172,5 +246,36 @@ class RentalBookingConcurrencyIntegrationTest extends BaseIntegrationTest {
                 return exception;
             }
         };
+    }
+
+    private boolean cancel(
+            long bookingId,
+            String reason,
+            CountDownLatch ready,
+            CountDownLatch start
+    ) {
+        try {
+            new TransactionTemplate(transactionManager).executeWithoutResult(ignored -> {
+                RentalBooking booking = bookingRepository.findById(bookingId).orElseThrow();
+                ready.countDown();
+                await(start);
+                booking.cancelByAdmin(reason, Instant.now());
+                bookingRepository.flush();
+            });
+            return true;
+        } catch (OptimisticLockingFailureException exception) {
+            return false;
+        }
+    }
+
+    private static void await(CountDownLatch latch) {
+        try {
+            if (!latch.await(5, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("Concurrent transition did not start in time");
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Concurrent transition was interrupted", exception);
+        }
     }
 }

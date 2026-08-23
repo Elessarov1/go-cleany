@@ -1,5 +1,7 @@
 package com.cleany.rental;
 
+import static com.cleany.common.text.TextValues.normalizeOptional;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -16,6 +18,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -103,6 +106,10 @@ public class RentalBooking {
     @Column(name = "completed_at")
     private Instant completedAt;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    private long version;
+
     public RentalBooking(
             long customerId,
             long communicationIdentityId,
@@ -189,7 +196,4 @@ public class RentalBooking {
         return normalized;
     }
 
-    private static String normalizeOptional(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
-    }
 }

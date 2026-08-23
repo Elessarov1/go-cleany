@@ -26,6 +26,7 @@ export function AdminRentalPropertiesPage() {
   const [creating, setCreating] = useState(false);
   const [propertyAction, setPropertyAction] = useState<PropertyAction | null>(null);
   const [actionPending, setActionPending] = useState(false);
+  const [publishingPropertyId, setPublishingPropertyId] = useState<number | null>(null);
   const [actionError, setActionError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const language = rentalLanguage(i18n.resolvedLanguage);
@@ -75,6 +76,19 @@ export function AdminRentalPropertiesPage() {
     }
   };
 
+  const publishProperty = async (property: RentalProperty) => {
+    try {
+      setPublishingPropertyId(property.id);
+      setActionError(false);
+      const updated = await api.publishAdminProperty(property.id);
+      setProperties((current) => current?.map((item) => item.id === updated.id ? updated : item) ?? null);
+    } catch {
+      setActionError(true);
+    } finally {
+      setPublishingPropertyId(null);
+    }
+  };
+
   if (error) return <ErrorState message={t("adminRental.properties.loadError")} onRetry={() => setReloadKey((key) => key + 1)} />;
   if (!properties) return <LoadingState />;
 
@@ -108,13 +122,18 @@ export function AdminRentalPropertiesPage() {
                   <strong>{property.baseDailyPrice && property.currency ? formatPrice(property.baseDailyPrice, property.currency, locale) : "—"}</strong>
                   <div>
                     <Link className="button button--secondary" to={`/admin/rent/properties/${property.id}`}>{t("adminRental.properties.edit")}</Link>
-                    {property.status === "DRAFT" ? (
-                      <button className="button button--danger" type="button" onClick={() => setPropertyAction({ type: "DELETE", property })}>
+                    {property.status === "ARCHIVED" ? (
+                      <button className="button button--primary" type="button" disabled={publishingPropertyId !== null || actionPending} onClick={() => void publishProperty(property)}>
+                        {t("adminRental.properties.publish")}
+                      </button>
+                    ) : null}
+                    {property.status !== "PUBLISHED" ? (
+                      <button className="button button--danger" type="button" disabled={publishingPropertyId !== null || actionPending} onClick={() => setPropertyAction({ type: "DELETE", property })}>
                         {t("adminRental.properties.delete")}
                       </button>
                     ) : null}
                     {property.status === "PUBLISHED" ? (
-                      <button className="button button--secondary" type="button" onClick={() => setPropertyAction({ type: "UNPUBLISH", property })}>
+                      <button className="button button--secondary" type="button" disabled={publishingPropertyId !== null || actionPending} onClick={() => setPropertyAction({ type: "UNPUBLISH", property })}>
                         {t("adminRental.properties.unpublish")}
                       </button>
                     ) : null}

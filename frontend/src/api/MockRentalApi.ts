@@ -581,7 +581,7 @@ export class MockRentalApi implements RentalApi {
 
   async deleteAdminProperty(id: number): Promise<void> {
     const property = await this.getAdminProperty(id);
-    if (property.status !== "DRAFT" || readBookings().some((booking) => booking.property.id === id)) {
+    if (property.status === "PUBLISHED" || readBookings().some((booking) => booking.property.id === id)) {
       throw new ApiError("Rental property cannot be deleted", 409, "rental_property_cannot_be_deleted");
     }
     property.media.forEach((media) => {

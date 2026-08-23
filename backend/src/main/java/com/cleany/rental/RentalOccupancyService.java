@@ -1,5 +1,7 @@
 package com.cleany.rental;
 
+import static com.cleany.common.text.TextValues.normalizeOptional;
+
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
@@ -130,7 +132,4 @@ public class RentalOccupancyService {
         }
     }
 
-    private static String normalizeOptional(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
-    }
 }

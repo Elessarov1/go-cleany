@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 import com.cleany.configuration.CleanerProperties;
@@ -133,6 +134,8 @@ public class TelegramCleanerBotService {
             safeAnswer(callback.id(), "У вас нет доступа к этому заказу.", true);
         } catch (InvalidOrderStateException exception) {
             safeAnswer(callback.id(), "Это действие больше недоступно.", true);
+        } catch (OptimisticLockingFailureException exception) {
+            safeAnswer(callback.id(), "Состояние заказа уже изменилось. Обновите заказ.", true);
         } catch (PhotoReportEmptyException exception) {
             safeAnswer(callback.id(), "Перед отправкой отчёта добавьте хотя бы одну фотографию.", true);
         } catch (InvalidOnsiteIssueException exception) {
@@ -226,6 +229,8 @@ public class TelegramCleanerBotService {
             safeSend(cleanerId, "Комментарий клинера должен содержать от 1 до 1000 символов.");
         } catch (CleanerNotAuthorizedException | InvalidOrderStateException exception) {
             safeSend(cleanerId, "У вас нет доступа к этому фотоотчёту.");
+        } catch (OptimisticLockingFailureException exception) {
+            safeSend(cleanerId, "Состояние заказа уже изменилось. Откройте заказ заново.");
         } catch (InvalidOnsiteIssueException exception) {
             safeSend(cleanerId, onsiteIssueError(exception));
         }

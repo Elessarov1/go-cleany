@@ -1,5 +1,8 @@
 package com.cleany.order;
 
+import static com.cleany.common.text.TextValues.normalizeOptional;
+import static com.cleany.common.text.TextValues.requireNonBlank;
+
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
@@ -59,7 +62,7 @@ public class CleaningOrderService {
         customerAccountService.lock(customer.customerId());
         validateRequestedDate(command.requestedDate());
         String normalizedPhone = phoneNumberNormalizer.normalize(command.phone());
-        customerAccountService.updatePhone(customer.customerId(), normalizedPhone);
+        customerAccountService.updateNormalizedPhone(customer.customerId(), normalizedPhone);
 
         var basePrice = priceService.calculate(
                 command.apartmentType(),
@@ -459,10 +462,6 @@ public class CleaningOrderService {
         }
     }
 
-    private static String normalizeOptional(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
-    }
-
     private static String normalizeCleanerComment(String value) {
         String normalized = normalizeOptional(value);
         if (normalized != null && normalized.length() > 1000) {
@@ -472,13 +471,10 @@ public class CleaningOrderService {
     }
 
     private static String requireValue(String value, int maxLength, String name) {
-        if (value == null || value.isBlank()) {
-            throw new InvalidPhotoReportInputException(name + " must not be blank");
-        }
-        String normalized = value.trim();
-        if (normalized.length() > maxLength) {
-            throw new InvalidPhotoReportInputException(name + " is too long");
-        }
-        return normalized;
+        return requireNonBlank(
+                value,
+                maxLength,
+                problem -> new InvalidPhotoReportInputException(name + " " + problem)
+        );
     }
 }

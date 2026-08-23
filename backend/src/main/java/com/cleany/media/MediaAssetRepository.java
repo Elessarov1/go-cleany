@@ -9,6 +9,10 @@ import org.springframework.data.repository.query.Param;
 
 public interface MediaAssetRepository extends JpaRepository<MediaAsset, Long> {
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from MediaAsset asset where asset.id = :mediaId")
+    int deleteByIdWithoutLoading(@Param("mediaId") long mediaId);
+
     /**
      * Every new domain table that owns media must be added to this orphan check before rollout.
      */

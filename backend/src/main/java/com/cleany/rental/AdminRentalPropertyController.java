@@ -84,9 +84,9 @@ public class AdminRentalPropertyController {
     }
 
     @DeleteMapping("/{propertyId}")
-    public ResponseEntity<Void> deleteDraft(@PathVariable long propertyId) {
+    public ResponseEntity<Void> deleteProperty(@PathVariable long propertyId) {
         accessService.requireCurrentAdmin();
-        propertyService.deleteDraft(propertyId);
+        propertyService.deleteProperty(propertyId);
         return ResponseEntity.noContent().build();
     }
 

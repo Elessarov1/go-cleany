@@ -6,11 +6,15 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.cleany.base.BaseIntegrationTest;
 import com.cleany.customer.CustomerAccountRepository;
@@ -36,6 +40,9 @@ class CleaningOrderClaimIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private CustomerExternalIdentityRepository customerIdentityRepository;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     @BeforeEach
     void cleanDatabase() {
@@ -94,6 +101,71 @@ class CleaningOrderClaimIntegrationTest extends BaseIntegrationTest {
                         || acceptedOrder.getCleanerTelegramUserId() == SECOND_CLEANER_ID
         );
         Assertions.assertNotNull(acceptedOrder.getAcceptedAt());
+        Assertions.assertEquals(1L, acceptedOrder.getVersion());
+    }
+
+    @Test
+    void sameOrder_twoTerminalTransitionsConcurrently_exactlyOneCommits() throws Exception {
+        var customer = CustomerIdentityTestFixture.telegramIdentity(
+                customerAccountRepository,
+                customerIdentityRepository,
+                Instant.now()
+        );
+        CleaningOrder order = orderRepository.save(new CleaningOrder(
+                customer.customerId(),
+                customer.externalIdentityId(),
+                "Alex",
+                "+90 555 123 45 67",
+                ServiceArea.MAHMUTLAR,
+                "Barbaros Cd. 24",
+                ApartmentType.TWO_PLUS_ONE,
+                false,
+                CleaningType.REGULAR,
+                organicSnapshot(BigDecimal.valueOf(1100)),
+                null,
+                null,
+                null,
+                null,
+                "TRY",
+                LocalDate.now().plusDays(1),
+                null,
+                Instant.now()
+        ));
+        var ready = new CountDownLatch(2);
+        var start = new CountDownLatch(1);
+
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var cancellation = executor.submit(() -> terminalTransition(
+                    order.getId(),
+                    false,
+                    ready,
+                    start
+            ));
+            var rejection = executor.submit(() -> terminalTransition(
+                    order.getId(),
+                    true,
+                    ready,
+                    start
+            ));
+            Assertions.assertTrue(ready.await(5, TimeUnit.SECONDS));
+            start.countDown();
+
+            Assertions.assertEquals(
+                    1,
+                    List.of(cancellation.get(), rejection.get()).stream()
+                            .filter(Boolean::booleanValue)
+                            .count()
+            );
+        }
+
+        CleaningOrder persisted = orderRepository.findById(order.getId()).orElseThrow();
+        Assertions.assertAll(
+                () -> Assertions.assertTrue(
+                        persisted.getStatus() == CleaningOrderStatus.CANCELLED
+                                || persisted.getStatus() == CleaningOrderStatus.REJECTED
+                ),
+                () -> Assertions.assertEquals(1L, persisted.getVersion())
+        );
     }
 
     private static OrderFinancialSnapshot organicSnapshot(BigDecimal basePrice) {
@@ -118,6 +190,41 @@ class CleaningOrderClaimIntegrationTest extends BaseIntegrationTest {
             return true;
         } catch (OrderClaimConflictException exception) {
             return false;
+        }
+    }
+
+    private boolean terminalTransition(
+            long orderId,
+            boolean reject,
+            CountDownLatch ready,
+            CountDownLatch start
+    ) {
+        try {
+            new TransactionTemplate(transactionManager).executeWithoutResult(ignored -> {
+                CleaningOrder order = orderRepository.findById(orderId).orElseThrow();
+                ready.countDown();
+                await(start);
+                if (reject) {
+                    order.reject();
+                } else {
+                    order.cancelByCustomer();
+                }
+                orderRepository.flush();
+            });
+            return true;
+        } catch (OptimisticLockingFailureException exception) {
+            return false;
+        }
+    }
+
+    private static void await(CountDownLatch latch) {
+        try {
+            if (!latch.await(5, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("Concurrent transition did not start in time");
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Concurrent transition was interrupted", exception);
         }
     }
 }

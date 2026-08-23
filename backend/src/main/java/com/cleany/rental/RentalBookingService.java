@@ -55,6 +55,8 @@ public class RentalBookingService {
 
     @Transactional
     public RentalBookingResponse create(CurrentCustomer customer, CreateRentalBookingRequest request) {
+        // This lock serializes the per-customer active-booking limit. Date overlap is enforced
+        // independently by the rental_occupancy exclusion constraint.
         customerAccountService.lock(customer.customerId());
         RentalProperty property = propertyService.requirePublishedPropertyForUpdate(request.propertyId());
         ResolvedRentalTerm term = stayPolicy.resolve(
@@ -68,7 +70,7 @@ public class RentalBookingService {
         requireAvailable(property.getId(), term.checkInDate(), term.checkOutDate());
 
         String normalizedPhone = phoneNumberNormalizer.normalize(request.phone());
-        customerAccountService.updatePhone(customer.customerId(), normalizedPhone);
+        customerAccountService.updateNormalizedPhone(customer.customerId(), normalizedPhone);
         RentalPriceQuote quote = priceService.calculate(property, term);
         RentalBooking booking = bookingRepository.saveAndFlush(new RentalBooking(
                 customer.customerId(),

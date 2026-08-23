@@ -1,5 +1,7 @@
 package com.cleany.customer;
 
+import static com.cleany.common.text.TextValues.normalizeOptional;
+
 import java.util.Objects;
 
 public record AuthenticatedCustomerIdentity(
@@ -25,7 +27,4 @@ public record AuthenticatedCustomerIdentity(
         return value.trim();
     }
 
-    private static String normalizeOptional(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
-    }
 }

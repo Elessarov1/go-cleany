@@ -343,13 +343,14 @@
       "untitled": "Untitled property",
       "edit": "Edit",
       "calendar": "Calendar",
+      "publish": "Publish",
       "delete": "Delete",
       "unpublish": "Unpublish",
       "actionError": "The property could not be changed. It may have booking history or a newer status.",
       "confirm": {
         "DELETE": {
           "title": "Delete apartment?",
-          "description": "This will permanently remove this unpublished draft and its photos.",
+          "description": "This will permanently remove this draft or archived apartment and its photos.",
           "action": "Delete permanently"
         },
         "UNPUBLISH": {

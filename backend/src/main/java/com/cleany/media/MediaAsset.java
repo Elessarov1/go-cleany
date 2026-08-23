@@ -62,6 +62,12 @@ public class MediaAsset {
         return Arrays.copyOf(content, content.length);
     }
 
+    byte[] contentBuffer() {
+        // Package-private storage boundary: MediaContent copies this buffer exactly once before
+        // exposing it to callers, avoiding a second copy without making the entity mutable.
+        return content;
+    }
+
     public String getContentType() {
         return contentType;
     }

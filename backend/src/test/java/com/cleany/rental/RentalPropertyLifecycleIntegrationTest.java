@@ -106,7 +106,7 @@ class RentalPropertyLifecycleIntegrationTest extends BaseIntegrationTest {
                 ADMIN_ID
         );
 
-        propertyService.deleteDraft(draft.id());
+        propertyService.deleteProperty(draft.id());
 
         Assertions.assertAll(
                 () -> Assertions.assertFalse(propertyRepository.existsById(draft.id())),
@@ -133,7 +133,7 @@ class RentalPropertyLifecycleIntegrationTest extends BaseIntegrationTest {
 
         Assertions.assertThrows(
                 RentalPropertyCannotBeDeletedException.class,
-                () -> propertyService.deleteDraft(published.id())
+                () -> propertyService.deleteProperty(published.id())
         );
 
         RentalPropertyResponse unpublished = propertyService.unpublish(published.id());
@@ -141,12 +141,32 @@ class RentalPropertyLifecycleIntegrationTest extends BaseIntegrationTest {
         Assertions.assertAll(
                 () -> Assertions.assertEquals(RentalPropertyStatus.DRAFT, unpublished.status()),
                 () -> Assertions.assertTrue(propertyService.getPublishedProperties().isEmpty()),
-                () -> Assertions.assertDoesNotThrow(() -> propertyService.deleteDraft(published.id()))
+                () -> Assertions.assertDoesNotThrow(() -> propertyService.deleteProperty(published.id()))
         );
     }
 
     @Test
-    void unpublishedPropertyWithBookingHistory_cannotBeDeleted() {
+    void archivedPropertyWithoutBookingHistory_canBeDeleted() {
+        RentalPropertyResponse published = RentalTestFixtures.publishedProperty(
+                propertyService,
+                mediaService,
+                "archived-delete",
+                new BigDecimal("100.00")
+        );
+        long assetId = published.media().getFirst().mediaAssetId();
+
+        propertyService.archive(published.id());
+        propertyService.deleteProperty(published.id());
+
+        Assertions.assertAll(
+                () -> Assertions.assertFalse(propertyRepository.existsById(published.id())),
+                () -> Assertions.assertFalse(propertyMediaRepository.existsByProperty_Id(published.id())),
+                () -> Assertions.assertFalse(mediaAssetRepository.existsById(assetId))
+        );
+    }
+
+    @Test
+    void archivedPropertyWithBookingHistory_cannotBeDeleted() {
         RentalPropertyResponse published = RentalTestFixtures.publishedProperty(
                 propertyService,
                 mediaService,
@@ -168,12 +188,12 @@ class RentalPropertyLifecycleIntegrationTest extends BaseIntegrationTest {
                 )
         );
 
-        propertyService.unpublish(published.id());
+        propertyService.archive(published.id());
 
         Assertions.assertAll(
                 () -> Assertions.assertThrows(
                         RentalPropertyCannotBeDeletedException.class,
-                        () -> propertyService.deleteDraft(published.id())
+                        () -> propertyService.deleteProperty(published.id())
                 ),
                 () -> Assertions.assertTrue(propertyRepository.existsById(published.id())),
                 () -> Assertions.assertTrue(bookingRepository.existsById(booking.id())),

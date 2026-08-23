@@ -1,5 +1,7 @@
 package com.cleany.media;
 
+import static com.cleany.common.text.TextValues.requireNonBlank;
+
 import java.time.Clock;
 import java.util.Objects;
 import java.util.Optional;
@@ -121,13 +123,10 @@ public class MediaProviderReferenceService {
     }
 
     private static String requireValue(String value, int maxLength, String name) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(name + " must not be blank");
-        }
-        String normalized = value.trim();
-        if (normalized.length() > maxLength) {
-            throw new IllegalArgumentException(name + " is too long");
-        }
-        return normalized;
+        return requireNonBlank(
+                value,
+                maxLength,
+                problem -> new IllegalArgumentException(name + " " + problem)
+        );
     }
 }

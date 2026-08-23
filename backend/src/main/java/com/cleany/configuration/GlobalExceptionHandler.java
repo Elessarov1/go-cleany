@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -329,6 +330,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({InvalidOrderStateException.class, OrderClaimConflictException.class})
     ResponseEntity<ApiError> handleConflict(RuntimeException exception) {
         return response(HttpStatus.CONFLICT, "order_state_conflict", exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    ResponseEntity<ApiError> handleConcurrentUpdate(OptimisticLockingFailureException exception) {
+        return response(
+                HttpStatus.CONFLICT,
+                "concurrent_update_conflict",
+                "The resource was changed by another request",
+                Map.of()
+        );
     }
 
     @ExceptionHandler(Exception.class)

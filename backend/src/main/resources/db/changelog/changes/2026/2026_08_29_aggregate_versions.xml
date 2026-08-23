@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260829-01" author="go-cleany">
+        <comment>Add optimistic-lock versions to cleaning and rental lifecycle aggregates.</comment>
+
+        <addColumn tableName="cleaning_order">
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <dropDefaultValue tableName="cleaning_order" columnName="version"/>
+
+        <addColumn tableName="rental_booking">
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <dropDefaultValue tableName="rental_booking" columnName="version"/>
+
+        <rollback>
+            <dropColumn tableName="rental_booking" columnName="version"/>
+            <dropColumn tableName="cleaning_order" columnName="version"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

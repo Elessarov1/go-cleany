@@ -46,7 +46,7 @@ public class PostgresMediaStorage implements MediaStorage {
         MediaAsset asset = find(mediaId);
         return new MediaContent(
                 asset.getId(),
-                asset.getContent(),
+                asset.contentBuffer(),
                 asset.getContentType(),
                 asset.getSizeBytes(),
                 asset.getSha256(),
@@ -57,9 +57,10 @@ public class PostgresMediaStorage implements MediaStorage {
     @Override
     @Transactional
     public void delete(long mediaId) {
-        MediaAsset asset = find(mediaId);
         referenceRepository.deleteAllByMediaAssetId(mediaId);
-        assetRepository.delete(asset);
+        if (assetRepository.deleteByIdWithoutLoading(mediaId) == 0) {
+            throw new MediaNotFoundException(mediaId);
+        }
     }
 
     private MediaAsset find(long mediaId) {

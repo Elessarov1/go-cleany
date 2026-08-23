@@ -1,5 +1,7 @@
 package com.cleany.rental;
 
+import static com.cleany.common.text.TextValues.normalizeOptional;
+
 import java.math.BigDecimal;
 import java.util.Locale;
 import java.util.Set;
@@ -55,10 +57,6 @@ public record RentalPropertyDetails(
             throw new IllegalArgumentException("currency must be a three-letter ISO code");
         }
         return normalized;
-    }
-
-    private static String normalizeOptional(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private static void requireMinimum(Integer value, int minimum, String name) {

@@ -13,6 +13,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 import com.cleany.finance.AcquisitionSource;
 import com.cleany.finance.CustomerDiscountType;
@@ -130,6 +131,10 @@ public class CleaningOrder {
 
     @Column(name = "report_input_active", nullable = false)
     private boolean reportInputActive;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    private long version;
 
     protected CleaningOrder() {
     }
@@ -410,5 +415,9 @@ public class CleaningOrder {
 
     public boolean isReportInputActive() {
         return reportInputActive;
+    }
+
+    public long getVersion() {
+        return version;
     }
 }

@@ -9,6 +9,10 @@ public interface RentalPropertyMediaRepository extends JpaRepository<RentalPrope
 
     List<RentalPropertyMedia> findAllByProperty_IdOrderBySortOrderAscIdAsc(long propertyId);
 
+    List<RentalPropertyMedia> findAllByProperty_IdInOrderByProperty_IdAscSortOrderAscIdAsc(
+            List<Long> propertyIds
+    );
+
     Optional<RentalPropertyMedia> findByIdAndProperty_Id(long id, long propertyId);
 
     Optional<RentalPropertyMedia> findByIdAndProperty_IdAndProperty_Status(

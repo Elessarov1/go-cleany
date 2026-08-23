@@ -1,5 +1,7 @@
 package com.cleany.customer;
 
+import static com.cleany.common.text.TextValues.normalizeOptional;
+
 import java.time.Clock;
 import java.util.Objects;
 
@@ -59,10 +61,13 @@ public class CustomerAccountService {
     }
 
     @Transactional
-    public void updatePhone(long customerId, String rawPhone) {
+    public void updateNormalizedPhone(long customerId, String normalizedPhone) {
         CustomerAccount account = accountRepository.findById(customerId)
                 .orElseThrow(() -> new IllegalStateException("Customer account not found: " + customerId));
-        account.updatePhone(phoneNumberNormalizer.normalize(rawPhone));
+        if (normalizedPhone == null || normalizedPhone.isBlank()) {
+            throw new IllegalArgumentException("normalizedPhone must not be blank");
+        }
+        account.updatePhone(normalizedPhone);
     }
 
     @Transactional
@@ -147,10 +152,6 @@ public class CustomerAccountService {
     private static String normalizeDisplayName(String value, String externalSubject) {
         String normalized = normalizeOptional(value);
         return normalized == null ? "Customer " + externalSubject : normalized;
-    }
-
-    private static String normalizeOptional(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private static String normalizeLanguageCode(String value) {

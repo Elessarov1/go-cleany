@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.data.domain.PageRequest;
 
 import com.cleany.configuration.CleaningProperties;
 import com.cleany.media.MediaContent;
@@ -24,6 +25,7 @@ import com.cleany.order.CleaningOrderIssuePhotoRepository;
 import com.cleany.order.CleaningOrderIssueReportRepository;
 import com.cleany.order.CleaningOrderPhotoRepository;
 import com.cleany.order.CleaningOrderRepository;
+import com.cleany.order.CleaningOrderStatistics;
 import com.cleany.order.CleaningOrderStatus;
 
 class AdminQueryServiceTest {
@@ -89,15 +91,23 @@ class AdminQueryServiceTest {
     void dashboard_authorizedAdmin_receivesLimitedOrdersAndAggregatedStats() {
         var completed = order(1L, CleaningOrderStatus.COMPLETED, "1100", NOW.minusSeconds(3600));
         var active = order(2L, CleaningOrderStatus.ACCEPTED, "900", NOW.minusSeconds(7200));
-        var awaitingReport = order(3L, CleaningOrderStatus.AWAITING_REPORT, "800", NOW.minusSeconds(9000));
-        var cancelled = order(4L, CleaningOrderStatus.CANCELLED, "1200", NOW.minusSeconds(172800));
-        var onsiteIssue = order(5L, CleaningOrderStatus.ONSITE_ISSUE_REPORTED, "1700", NOW.minusSeconds(10800));
-        Mockito.when(orderRepository.findAllByOrderByCreatedAtDesc())
-                .thenReturn(List.of(completed, active, awaitingReport, onsiteIssue, cancelled));
+        CleaningOrderStatistics statistics = Mockito.mock(CleaningOrderStatistics.class);
+        Mockito.when(statistics.getTotalOrders()).thenReturn(5L);
+        Mockito.when(statistics.getOrdersToday()).thenReturn(4L);
+        Mockito.when(statistics.getNewOrders()).thenReturn(0L);
+        Mockito.when(statistics.getActiveOrders()).thenReturn(3L);
+        Mockito.when(statistics.getCompletedOrders()).thenReturn(1L);
+        Mockito.when(statistics.getCancelledOrders()).thenReturn(1L);
+        Mockito.when(statistics.getCompletedAmount()).thenReturn(BigDecimal.valueOf(1100));
+        Mockito.when(orderRepository.calculateStatistics(Mockito.any(), Mockito.any()))
+                .thenReturn(statistics);
+        Mockito.when(orderRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 2)))
+                .thenReturn(List.of(completed, active));
 
         AdminDashboardResponse result = queryService.getDashboard(ADMIN_ID, 2);
 
         Mockito.verify(accessService).requireAdmin(ADMIN_ID);
+        Mockito.verify(orderRepository).findAllByOrderByCreatedAtDesc(PageRequest.of(0, 2));
         Assertions.assertAll(
                 () -> Assertions.assertEquals(2, result.recentOrders().size()),
                 () -> Assertions.assertEquals(5, result.stats().totalOrders()),
