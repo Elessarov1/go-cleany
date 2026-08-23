@@ -9,6 +9,8 @@ import type { AdminRentalBooking, RentalBookingStatus, RentalBookingTimeFilter, 
 import { formatPrice } from "../../domain/pricing";
 import { formatDate } from "../../utils/format";
 import { rentalLanguage, rentalPropertyTitle } from "../../utils/rental";
+import { BrandName } from "../../components/BrandName/BrandName";
+import { RentalAdminNotificationPreference } from "../../components/RentalAdminNotificationPreference/RentalAdminNotificationPreference";
 
 type StatusFilter = RentalBookingStatus | "ALL";
 
@@ -50,11 +52,12 @@ export function AdminRentalBookingsPage() {
 
   return (
     <div className="page page--admin-rental">
-      <header className="admin-rental-header"><div><span className="eyebrow">go-rent / admin</span><h1>{t("adminRental.bookings.title")}</h1><p>{t("adminRental.bookings.subtitle")}</p></div></header>
+      <header className="admin-rental-header"><div><span className="eyebrow"><BrandName service="rental" /> / admin</span><h1>{t("adminRental.bookings.title")}</h1><p>{t("adminRental.bookings.subtitle")}</p></div></header>
       <div className="admin-rental-toolbar">
         <Link className="admin-rental-toolbar__link" to="/admin/rent/properties"><Icon name="building" size={18} />{t("adminRental.nav.properties")}</Link>
         <Link className="admin-rental-toolbar__link is-active" to="/admin/rent/bookings"><Icon name="clipboard" size={18} />{t("adminRental.nav.bookings")}</Link>
       </div>
+      <RentalAdminNotificationPreference />
       <section className="admin-rental-panel admin-rental-filters">
         <div className="field"><label><span>{t("adminRental.bookings.statusFilter")}</span><select value={status} onChange={(event) => setStatus(event.target.value as StatusFilter)}><option value="ALL">{t("adminRental.filters.all")}</option>{(["CONFIRMED", "CANCELLED_BY_CUSTOMER", "CANCELLED_BY_ADMIN", "COMPLETED"] as RentalBookingStatus[]).map((item) => <option key={item} value={item}>{t(`rental.status.${item}`)}</option>)}</select></label></div>
         <div className="field"><label><span>{t("adminRental.bookings.propertyFilter")}</span><select value={propertyId} onChange={(event) => setPropertyId(event.target.value)}><option value="ALL">{t("adminRental.filters.allProperties")}</option>{properties.map((property) => <option key={property.id} value={property.id}>{rentalPropertyTitle(property, language) || `#${property.id}`}</option>)}</select></label></div>

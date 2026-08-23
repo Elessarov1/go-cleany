@@ -6,10 +6,8 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 public record RentalPropertyDetails(
-        String slug,
         String titleRu,
         String titleEn,
-        String descriptionRu,
         String descriptionEn,
         String area,
         String address,
@@ -24,14 +22,11 @@ public record RentalPropertyDetails(
         Set<RentalAmenity> amenities
 ) {
 
-    private static final Pattern SLUG_PATTERN = Pattern.compile("^[a-z0-9]+(?:-[a-z0-9]+)*$");
     private static final Pattern CURRENCY_PATTERN = Pattern.compile("^[A-Z]{3}$");
 
     public RentalPropertyDetails {
-        slug = normalizeSlug(slug);
         titleRu = normalizeOptional(titleRu);
         titleEn = normalizeOptional(titleEn);
-        descriptionRu = normalizeOptional(descriptionRu);
         descriptionEn = normalizeOptional(descriptionEn);
         area = normalizeOptional(area);
         address = normalizeOptional(address);
@@ -48,18 +43,6 @@ public record RentalPropertyDetails(
         if (baseDailyPrice != null && baseDailyPrice.signum() <= 0) {
             throw new IllegalArgumentException("baseDailyPrice must be positive");
         }
-    }
-
-    private static String normalizeSlug(String value) {
-        String normalized = normalizeOptional(value);
-        if (normalized == null) {
-            return null;
-        }
-        normalized = normalized.toLowerCase(Locale.ROOT);
-        if (!SLUG_PATTERN.matcher(normalized).matches()) {
-            throw new IllegalArgumentException("slug must contain lowercase words separated by hyphens");
-        }
-        return normalized;
     }
 
     private static String normalizeCurrency(String value) {

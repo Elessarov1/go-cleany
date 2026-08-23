@@ -1,6 +1,7 @@
 package com.cleany.rental;
 
 import java.math.BigDecimal;
+import java.awt.Color;
 import java.util.Set;
 
 import com.cleany.customer.AuthenticatedCustomerIdentity;
@@ -10,9 +11,7 @@ import com.cleany.customer.ExternalIdentityProvider;
 
 final class RentalTestFixtures {
 
-    private static final byte[] JPEG = {
-            (byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 0x03, (byte) 0xD9
-    };
+    private static final byte[] JPEG = RentalTestImages.jpeg(16, 12, Color.BLUE);
 
     private RentalTestFixtures() {
     }
@@ -31,10 +30,8 @@ final class RentalTestFixtures {
 
     static RentalPropertyDetails details(String slug, BigDecimal dailyPrice) {
         return new RentalPropertyDetails(
-                slug,
                 "Апартаменты " + slug,
-                "Apartment " + slug,
-                "Светлые апартаменты рядом с морем",
+                slug.replace('-', ' '),
                 "Bright apartment near the sea",
                 "Махмутлар",
                 "Barbaros Cd. 24",

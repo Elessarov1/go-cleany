@@ -77,6 +77,19 @@ public class AdminRentalPropertyController {
         return propertyService.archive(propertyId);
     }
 
+    @PostMapping("/{propertyId}/unpublish")
+    public RentalPropertyResponse unpublish(@PathVariable long propertyId) {
+        accessService.requireCurrentAdmin();
+        return propertyService.unpublish(propertyId);
+    }
+
+    @DeleteMapping("/{propertyId}")
+    public ResponseEntity<Void> deleteDraft(@PathVariable long propertyId) {
+        accessService.requireCurrentAdmin();
+        propertyService.deleteDraft(propertyId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping(path = "/{propertyId}/media", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public RentalPropertyResponse addMedia(
             @PathVariable long propertyId,

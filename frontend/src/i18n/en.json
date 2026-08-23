@@ -1,7 +1,7 @@
 {
   "app": {
     "tagline": "A clean home, without the back-and-forth",
-    "homeLabel": "go-cleany home",
+    "homeLabel": "{{brand}} home",
     "navigation": {
       "label": "Primary navigation",
       "book": "Book",
@@ -16,6 +16,7 @@
     "loading": "Loading…",
     "retry": "Try again",
     "close": "Close",
+    "cancel": "Cancel",
     "yes": "Yes",
     "no": "No",
     "optional": "Optional",
@@ -65,7 +66,7 @@
       "pending": "Select the apartment and cleaning type to see the price",
       "fixed": "Fixed price",
       "discount": "{{amount}} discount applied",
-      "directPayment": "Pay the cleaner directly after cleaning. go-cleany does not process your payment."
+      "directPayment": "Pay the cleaner directly after cleaning. {{brand}} does not process your payment."
     },
     "submit": "Book for {{price}}",
     "submitting": "Creating your order…",
@@ -210,7 +211,7 @@
     "OTHER": "Other material difference"
   },
   "admin": {
-    "eyebrow": "go-cleany / operations",
+    "eyebrow": "operations",
     "title": "Service overview",
     "subtitle": "Current metrics and the order log, without direct database access.",
     "statsLabel": "Order statistics",
@@ -317,6 +318,13 @@
       "properties": "Properties",
       "bookings": "Bookings"
     },
+    "notifications": {
+      "title": "Telegram notifications about bookings",
+      "description": "Receive new booking and customer cancellation alerts for go-renty.",
+      "error": "Could not load or save your notification setting.",
+      "on": "On",
+      "off": "Off"
+    },
     "filters": {
       "all": "All statuses",
       "allProperties": "All properties"
@@ -328,23 +336,36 @@
     },
     "properties": {
       "title": "Properties",
-      "subtitle": "Publishing, photos and availability calendars for go-rent properties.",
+      "subtitle": "Publishing, photos and availability calendars for rental properties.",
       "create": "Add property",
       "creating": "Creating…",
       "empty": "No properties yet. Create the first draft.",
       "untitled": "Untitled property",
       "edit": "Edit",
       "calendar": "Calendar",
+      "delete": "Delete",
+      "unpublish": "Unpublish",
+      "actionError": "The property could not be changed. It may have booking history or a newer status.",
+      "confirm": {
+        "DELETE": {
+          "title": "Delete apartment?",
+          "description": "This will permanently remove this unpublished draft and its photos.",
+          "action": "Delete permanently"
+        },
+        "UNPUBLISH": {
+          "title": "Remove apartment from publication?",
+          "description": "Customers will no longer see or be able to book this apartment. Existing bookings remain unchanged.",
+          "action": "Unpublish"
+        }
+      },
       "loadError": "Could not load properties."
     },
     "editor": {
-      "mainTitle": "Description and terms",
-      "mainText": "An incomplete draft can be saved. The backend validates required data before publishing.",
+      "mainTitle": "Apartment details",
+      "mainText": "The public page address is generated automatically from the English title.",
       "fields": {
-        "slug": "Page address (slug)",
         "titleRu": "Russian title",
         "titleEn": "English title",
-        "descriptionRu": "Russian description",
         "descriptionEn": "English description",
         "area": "Area",
         "address": "Address",
@@ -357,6 +378,7 @@
         "baseDailyPrice": "Daily price",
         "currency": "Currency (TRY)"
       },
+      "advanced": "Additional details",
       "amenities": "Amenities",
       "save": "Save",
       "saved": "Changes saved.",
@@ -453,7 +475,8 @@
   },
   "rental": {
     "common": {
-      "perDay": "per day"
+      "perDay": "per day",
+      "perMonth": "per month"
     },
     "catalog": {
       "title": "Apartments for life by the sea",
@@ -467,7 +490,12 @@
     "property": {
       "capacity": "{{bedrooms}} bedrooms · up to {{guests}} guests",
       "galleryLabel": "Apartment photos",
-      "photoAlt": "Apartment photo {{index}}",
+      "photoAlt": "{{title}}, photo {{index}}",
+      "photoPosition": "Photo {{current}} of {{total}}",
+      "previousPhoto": "Previous photo",
+      "nextPhoto": "Next photo",
+      "photoNavigation": "Choose apartment photo",
+      "openPhoto": "Open photo {{index}}",
       "cover": "Cover photo",
       "bedrooms": "bedrooms",
       "guests": "guests",
@@ -504,16 +532,30 @@
       "crossesUnavailable": "The selected stay crosses unavailable dates."
     },
     "booking": {
+      "termTitle": "How would you like to rent?",
+      "dateRange": "For several weeks",
+      "dateRangeHint": "{{min}}–{{max}} days",
+      "monthly": "Long-term",
+      "monthlyHint": "From 1 month",
       "datesTitle": "Choose your dates",
+      "startDateTitle": "Choose a start date",
       "contactsTitle": "Guests and contact",
       "checkIn": "Check-in",
       "checkOut": "Check-out",
+      "expectedCheckOut": "Expected end date",
+      "monthsLabel": "Rental duration",
+      "months_one": "{{count}} month",
+      "months_other": "{{count}} months",
+      "decreaseMonths": "Decrease number of months",
+      "increaseMonths": "Increase number of months",
+      "monthlyPrice": "Monthly price",
       "guests": "Number of guests",
       "phone": "Phone number",
       "comment": "Comment",
       "commentPlaceholder": "Arrival time or other useful information",
       "quoteLoading": "Calculating your stay…",
       "selectDates": "Choose check-in and check-out dates. The server will calculate the price.",
+      "selectMonthlyStart": "Choose a start date. The server will check the full monthly period and calculate the price.",
       "stay_one": "{{count}} day stay",
       "stay_other": "{{count}} days stay",
       "longTermDiscount": "{{percent}}% extended-stay discount",
@@ -530,6 +572,7 @@
         "rental_booking_horizon_exceeded": "This check-in date is not open for booking yet.",
         "dates_not_available": "These dates are no longer available. Choose another stay.",
         "rental_active_booking_limit_exceeded": "You have reached the active booking limit.",
+        "invalid_rental_booking": "Check the selected rental term and dates.",
         "notificationAccess": "Allow notifications to receive booking confirmations."
       }
     },
@@ -553,6 +596,7 @@
       "comment": "Comment",
       "cancellationReason": "Cancellation reason",
       "dailyPrice": "Daily rate at booking",
+      "monthlyPrice": "Monthly rate at booking",
       "discount": "Discount",
       "cancel": "Cancel booking",
       "cancelConfirm": "Cancel this booking and release the dates?",
@@ -585,11 +629,13 @@
       "REJECTED": "Rejected",
       "CANCELLED": "Cancelled",
       "SERVICE_CATALOG": "Service catalog",
-      "RENT_CATALOG": "go-rent: apartments",
-      "RENT_PROPERTY": "go-rent: property",
-      "RENT_LONG_TERM": "go-rent: 30+ discount",
-      "RENT_BOOKINGS": "go-rent: my bookings",
-      "RENT_CONFIRMED": "go-rent: confirmed",
+      "RENT_CATALOG": "Rental: apartments",
+      "RENT_PROPERTY": "Rental: property",
+      "RENT_DATE_RANGE": "Rental: date range",
+      "RENT_MONTHLY": "Rental: monthly",
+      "RENT_MONTHLY_UNAVAILABLE": "Rental: monthly unavailable",
+      "RENT_BOOKINGS": "Rental: my bookings",
+      "RENT_CONFIRMED": "Rental: confirmed",
       "ADMIN_RENT_PROPERTIES": "admin: properties",
       "ADMIN_RENT_EDITOR": "admin: property editor",
       "ADMIN_RENT_CALENDAR": "admin: calendar",

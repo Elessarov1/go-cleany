@@ -159,8 +159,10 @@ class RentalBookingConcurrencyIntegrationTest extends BaseIntegrationTest {
                         customer,
                         new CreateRentalBookingRequest(
                                 propertyId,
+                                RentalTermType.DATE_RANGE,
                                 checkIn,
                                 checkOut,
+                                null,
                                 2,
                                 "+90 555 123 45 67",
                                 null

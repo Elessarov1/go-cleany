@@ -7,6 +7,7 @@ import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import type { RentalConfiguration, RentalProperty } from "../../domain/rental";
 import { formatPrice } from "../../domain/pricing";
 import { rentalCoverUrl, rentalLanguage, rentalPropertyTitle } from "../../utils/rental";
+import { BrandName } from "../../components/BrandName/BrandName";
 
 export function RentalCatalogPage() {
   const { t, i18n } = useTranslation();
@@ -44,7 +45,7 @@ export function RentalCatalogPage() {
     <div className="page page--rental-catalog">
       <header className="rental-hero">
         <div>
-          <span className="eyebrow">go-rent · Alanya</span>
+          <span className="eyebrow"><BrandName service="rental" /> · Alanya</span>
           <h1>{t("rental.catalog.title")}</h1>
           <p>{t("rental.catalog.subtitle")}</p>
         </div>

@@ -10,6 +10,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 
 import com.cleany.base.BaseIntegrationTest;
 import com.cleany.customer.CurrentCustomer;
@@ -19,6 +21,7 @@ import com.cleany.customer.CustomerExternalIdentityRepository;
 import com.cleany.media.MediaAssetRepository;
 import com.cleany.media.MediaProviderReferenceRepository;
 
+@RecordApplicationEvents
 class RentalBookingIntegrationTest extends BaseIntegrationTest {
 
     private static final long ADMIN_ACTOR_ID = 900001L;
@@ -68,6 +71,9 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private ApplicationEvents applicationEvents;
+
     @BeforeEach
     @AfterEach
     void cleanDatabase() {
@@ -86,14 +92,14 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
         CurrentCustomer customer = RentalTestFixtures.customer(customerAccountService, "910001");
         RentalPropertyResponse property = publishedProperty("financial-snapshot", "100.00");
         LocalDate checkIn = stayPolicy.today().plusDays(1);
-        LocalDate checkOut = checkIn.plusDays(30);
+        LocalDate checkOut = checkIn.plusMonths(1);
 
         RentalBookingQuoteResponse quote = bookingService.quote(
-                new RentalBookingQuoteRequest(property.id(), checkIn, checkOut)
+                monthlyQuoteRequest(property.id(), checkIn, 1)
         );
         RentalBookingResponse booking = bookingService.create(
                 customer,
-                request(property.id(), checkIn, checkOut)
+                monthlyRequest(property.id(), checkIn, 1)
         );
 
         propertyService.update(
@@ -104,11 +110,13 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
 
         Assertions.assertAll(
                 () -> Assertions.assertEquals(RentalBookingStatus.CONFIRMED, booking.status()),
-                () -> Assertions.assertEquals(30, booking.durationDays()),
+                () -> Assertions.assertEquals(RentalTermType.MONTHLY, booking.termType()),
+                () -> Assertions.assertEquals(1, booking.rentalMonths()),
                 () -> Assertions.assertEquals("100.00", quote.baseDailyPrice().toPlainString()),
                 () -> Assertions.assertEquals("300.00", quote.discountAmount().toPlainString()),
                 () -> Assertions.assertEquals("2700.00", quote.totalPrice().toPlainString()),
                 () -> Assertions.assertEquals("100.00", persisted.getBaseDailyPriceSnapshot().toPlainString()),
+                () -> Assertions.assertEquals("2700.00", persisted.getMonthlyPriceSnapshot().toPlainString()),
                 () -> Assertions.assertEquals("2700.00", persisted.getTotalPrice().toPlainString()),
                 () -> Assertions.assertTrue(
                         occupancyService.publicAvailability(
@@ -132,18 +140,20 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
 
         Assertions.assertThrows(
                 RentalPropertyNotAvailableException.class,
-                () -> bookingService.quote(new RentalBookingQuoteRequest(draft.id(), checkIn, checkOut))
+                () -> bookingService.quote(dateRangeQuoteRequest(draft.id(), checkIn, checkOut))
         );
 
-        propertyMediaService.add(draft.id(), new byte[]{
-                (byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 0x04, (byte) 0xD9
-        }, true);
+        propertyMediaService.add(
+                draft.id(),
+                RentalTestImages.jpeg(16, 12, java.awt.Color.GREEN),
+                true
+        );
         propertyService.publish(draft.id());
         propertyService.archive(draft.id());
 
         Assertions.assertThrows(
                 RentalPropertyNotAvailableException.class,
-                () -> bookingService.quote(new RentalBookingQuoteRequest(draft.id(), checkIn, checkOut))
+                () -> bookingService.quote(dateRangeQuoteRequest(draft.id(), checkIn, checkOut))
         );
     }
 
@@ -165,7 +175,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThrows(
                     RentalDatesNotAvailableException.class,
                     () -> bookingService.quote(
-                            new RentalBookingQuoteRequest(property.id(), start, end)
+                            dateRangeQuoteRequest(property.id(), start, end)
                     ),
                     type.name()
             );
@@ -200,7 +210,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertThrows(
                         RentalDatesNotAvailableException.class,
                         () -> bookingService.quote(
-                                new RentalBookingQuoteRequest(property.id(), start.plusDays(1), end.plusDays(1))
+                                dateRangeQuoteRequest(property.id(), start.plusDays(1), end.plusDays(1))
                         )
                 ),
                 () -> Assertions.assertThrows(
@@ -223,6 +233,34 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertEquals(
                         RentalBookingStatus.CONFIRMED,
                         bookingRepository.findById(first.id()).orElseThrow().getStatus()
+                )
+        );
+    }
+
+    @Test
+    void monthlyQuote_usesDerivedRangeAndRejectsOccupancyOverlap() {
+        RentalPropertyResponse property = publishedProperty("monthly-overlap", "100.00");
+        LocalDate start = stayPolicy.today().plusDays(10);
+        LocalDate expectedEnd = start.plusMonths(2);
+        occupancyService.createManual(
+                property.id(),
+                new UpsertRentalOccupancyRequest(
+                        start.plusDays(20),
+                        start.plusDays(25),
+                        RentalOccupancyType.OWNER_BLOCK,
+                        "Monthly overlap"
+                ),
+                ADMIN_ACTOR_ID
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertThrows(
+                        RentalDatesNotAvailableException.class,
+                        () -> bookingService.quote(monthlyQuoteRequest(property.id(), start, 2))
+                ),
+                () -> Assertions.assertEquals(
+                        expectedEnd,
+                        stayPolicy.resolve(RentalTermType.MONTHLY, start, null, 2).checkOutDate()
                 )
         );
     }
@@ -274,7 +312,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
                         ).unavailableRanges().isEmpty()
                 ),
                 () -> Assertions.assertDoesNotThrow(() -> bookingService.quote(
-                        new RentalBookingQuoteRequest(property.id(), checkIn, checkOut)
+                        dateRangeQuoteRequest(property.id(), checkIn, checkOut)
                 ))
         );
     }
@@ -315,12 +353,12 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
         );
         Assertions.assertAll(
                 () -> Assertions.assertDoesNotThrow(() -> bookingService.quote(
-                        new RentalBookingQuoteRequest(property.id(), firstStart, firstEnd)
+                        dateRangeQuoteRequest(property.id(), firstStart, firstEnd)
                 )),
                 () -> Assertions.assertThrows(
                         RentalDatesNotAvailableException.class,
                         () -> bookingService.quote(
-                                new RentalBookingQuoteRequest(property.id(), secondStart, secondEnd)
+                                dateRangeQuoteRequest(property.id(), secondStart, secondEnd)
                         )
                 ),
                 () -> Assertions.assertEquals(1, occupancies.size()),
@@ -345,11 +383,91 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
     ) {
         return new CreateRentalBookingRequest(
                 propertyId,
+                RentalTermType.DATE_RANGE,
                 checkIn,
                 checkOut,
+                null,
                 2,
                 "+90 555 123 45 67",
                 "Late arrival"
+        );
+    }
+
+    @Test
+    void customerLifecycle_publishesExactlyOneAdminEventForEachSuccessfulTransition() {
+        CurrentCustomer customer = RentalTestFixtures.customer(customerAccountService, "910008");
+        RentalPropertyResponse property = publishedProperty("admin-events", "100.00");
+        LocalDate checkIn = stayPolicy.today().plusDays(3);
+        RentalBookingResponse booking = bookingService.create(
+                customer,
+                request(property.id(), checkIn, checkIn.plusDays(7))
+        );
+
+        List<RentalBookingAdminEvent> createdEvents = applicationEvents
+                .stream(RentalBookingAdminEvent.class)
+                .toList();
+        applicationEvents.clear();
+        bookingService.cancel(customer, booking.id());
+        List<RentalBookingAdminEvent> cancelledEvents = applicationEvents
+                .stream(RentalBookingAdminEvent.class)
+                .toList();
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(1, createdEvents.size()),
+                () -> Assertions.assertEquals(
+                        RentalBookingAdminEvent.Type.CREATED,
+                        createdEvents.getFirst().type()
+                ),
+                () -> Assertions.assertEquals(1, cancelledEvents.size()),
+                () -> Assertions.assertEquals(
+                        RentalBookingAdminEvent.Type.CANCELLED_BY_CUSTOMER,
+                        cancelledEvents.getFirst().type()
+                )
+        );
+    }
+
+    private static CreateRentalBookingRequest monthlyRequest(
+            long propertyId,
+            LocalDate checkIn,
+            int months
+    ) {
+        return new CreateRentalBookingRequest(
+                propertyId,
+                RentalTermType.MONTHLY,
+                checkIn,
+                null,
+                months,
+                2,
+                "+90 555 123 45 67",
+                "Late arrival"
+        );
+    }
+
+    private static RentalBookingQuoteRequest dateRangeQuoteRequest(
+            long propertyId,
+            LocalDate checkIn,
+            LocalDate checkOut
+    ) {
+        return new RentalBookingQuoteRequest(
+                propertyId,
+                RentalTermType.DATE_RANGE,
+                checkIn,
+                checkOut,
+                null
+        );
+    }
+
+    private static RentalBookingQuoteRequest monthlyQuoteRequest(
+            long propertyId,
+            LocalDate checkIn,
+            int months
+    ) {
+        return new RentalBookingQuoteRequest(
+                propertyId,
+                RentalTermType.MONTHLY,
+                checkIn,
+                null,
+                months
         );
     }
 }

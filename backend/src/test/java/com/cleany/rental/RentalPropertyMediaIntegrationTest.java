@@ -1,6 +1,7 @@
 package com.cleany.rental;
 
 import java.math.BigDecimal;
+import java.awt.Color;
 import java.util.List;
 
 import org.junit.jupiter.api.Assertions;
@@ -17,12 +18,8 @@ import com.cleany.media.MediaStorage;
 
 class RentalPropertyMediaIntegrationTest extends BaseIntegrationTest {
 
-    private static final byte[] FIRST_JPEG = {
-            (byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 0x01, (byte) 0xD9
-    };
-    private static final byte[] SECOND_JPEG = {
-            (byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 0x02, (byte) 0xD9
-    };
+    private static final byte[] FIRST_JPEG = RentalTestImages.jpeg(64, 48, Color.BLUE);
+    private static final byte[] SECOND_JPEG = RentalTestImages.jpeg(80, 60, Color.GREEN);
 
     @Autowired
     private RentalPropertyService propertyService;
@@ -77,8 +74,22 @@ class RentalPropertyMediaIntegrationTest extends BaseIntegrationTest {
         Assertions.assertAll(
                 () -> Assertions.assertFalse(first.cover()),
                 () -> Assertions.assertTrue(second.cover()),
-                () -> Assertions.assertArrayEquals(FIRST_JPEG, mediaStorage.get(first.mediaAssetId()).content()),
-                () -> Assertions.assertArrayEquals(SECOND_JPEG, mediaStorage.get(second.mediaAssetId()).content())
+                () -> Assertions.assertEquals(
+                        "image/jpeg",
+                        mediaStorage.get(first.mediaAssetId()).contentType()
+                ),
+                () -> Assertions.assertEquals(
+                        64,
+                        RentalTestImages.read(
+                                mediaStorage.get(first.mediaAssetId()).content()
+                        ).getWidth()
+                ),
+                () -> Assertions.assertEquals(
+                        60,
+                        RentalTestImages.read(
+                                mediaStorage.get(second.mediaAssetId()).content()
+                        ).getHeight()
+                )
         );
 
         propertyMediaService.reorder(draft.id(), List.of(second.id(), first.id()));
@@ -92,6 +103,26 @@ class RentalPropertyMediaIntegrationTest extends BaseIntegrationTest {
                         draft.id(),
                         propertyService.getPublishedProperty("orange-residence").id()
                 )
+        );
+
+        propertyMediaService.setCover(draft.id(), first.id());
+        RentalPropertyResponse coverChanged = propertyService.getAdminProperty(draft.id());
+        RentalPropertyResponse publicCoverChanged = propertyService.getPublishedProperty(
+                "orange-residence"
+        );
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(
+                        1,
+                        propertyMediaRepository
+                                .findAllByProperty_IdOrderBySortOrderAscIdAsc(draft.id())
+                                .stream()
+                                .filter(RentalPropertyMedia::isCover)
+                                .count()
+                ),
+                () -> Assertions.assertTrue(coverChanged.media().stream()
+                        .anyMatch(media -> media.id() == first.id() && media.cover())),
+                () -> Assertions.assertTrue(publicCoverChanged.media().stream()
+                        .anyMatch(media -> media.id() == first.id() && media.cover()))
         );
 
         propertyMediaService.remove(draft.id(), second.id());
@@ -118,9 +149,9 @@ class RentalPropertyMediaIntegrationTest extends BaseIntegrationTest {
         Assertions.assertAll(
                 () -> Assertions.assertEquals(0, deletedOrphans),
                 () -> Assertions.assertTrue(mediaAssetRepository.existsById(first.mediaAssetId())),
-                () -> Assertions.assertArrayEquals(
-                        FIRST_JPEG,
-                        propertyMediaService.getAdminContent(draft.id(), first.id()).content()
+                () -> Assertions.assertEquals(
+                        "image/jpeg",
+                        propertyMediaService.getAdminContent(draft.id(), first.id()).contentType()
                 )
         );
 

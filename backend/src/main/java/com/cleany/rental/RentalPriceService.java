@@ -15,37 +15,74 @@ public class RentalPriceService {
 
     private final RentalProperties properties;
 
-    public RentalPriceQuote calculate(RentalProperty property, int durationDays) {
+    public RentalPriceQuote calculate(RentalProperty property, ResolvedRentalTerm term) {
         if (property.getBaseDailyPrice() == null || property.getCurrency() == null) {
             throw new RentalPropertyNotAvailableException(property.getId());
         }
-        if (durationDays <= 0) {
-            throw new InvalidRentalDateRangeException();
-        }
-
         BigDecimal dailyPrice = property.getBaseDailyPrice().setScale(MONEY_SCALE, RoundingMode.HALF_UP);
+        return switch (term.termType()) {
+            case DATE_RANGE -> dateRange(dailyPrice, property.getCurrency(), term);
+            case MONTHLY -> monthly(dailyPrice, property.getCurrency(), term);
+        };
+    }
+
+    private static RentalPriceQuote dateRange(
+            BigDecimal dailyPrice,
+            String currency,
+            ResolvedRentalTerm term
+    ) {
         BigDecimal baseAmount = dailyPrice
-                .multiply(BigDecimal.valueOf(durationDays))
+                .multiply(BigDecimal.valueOf(term.durationDays()))
                 .setScale(MONEY_SCALE, RoundingMode.HALF_UP);
-        boolean longTerm = durationDays >= properties.longTermMinDays();
-        BigDecimal discountRate = longTerm
-                ? properties.longTermDiscountRate()
-                : BigDecimal.ZERO;
+        return new RentalPriceQuote(
+                RentalTermType.DATE_RANGE,
+                null,
+                term.durationDays(),
+                dailyPrice,
+                null,
+                baseAmount,
+                false,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO.setScale(MONEY_SCALE),
+                baseAmount,
+                currency
+        );
+    }
+
+    private RentalPriceQuote monthly(
+            BigDecimal dailyPrice,
+            String currency,
+            ResolvedRentalTerm term
+    ) {
+        BigDecimal discountRate = properties.longTermDiscountRate();
+        BigDecimal monthlyBase = dailyPrice
+                .multiply(BigDecimal.valueOf(30))
+                .setScale(MONEY_SCALE, RoundingMode.HALF_UP);
+        BigDecimal monthlyPrice = monthlyBase
+                .multiply(BigDecimal.ONE.subtract(discountRate))
+                .setScale(MONEY_SCALE, RoundingMode.HALF_UP);
+        BigDecimal baseAmount = monthlyBase
+                .multiply(BigDecimal.valueOf(term.rentalMonths()))
+                .setScale(MONEY_SCALE, RoundingMode.HALF_UP);
+        BigDecimal totalPrice = monthlyPrice
+                .multiply(BigDecimal.valueOf(term.rentalMonths()))
+                .setScale(MONEY_SCALE, RoundingMode.HALF_UP);
         BigDecimal discountAmount = baseAmount
-                .multiply(discountRate)
-                .setScale(MONEY_SCALE, RoundingMode.HALF_UP);
-        BigDecimal totalPrice = baseAmount.subtract(discountAmount)
+                .subtract(totalPrice)
                 .setScale(MONEY_SCALE, RoundingMode.HALF_UP);
 
         return new RentalPriceQuote(
-                durationDays,
+                RentalTermType.MONTHLY,
+                term.rentalMonths(),
+                term.durationDays(),
                 dailyPrice,
+                monthlyPrice,
                 baseAmount,
-                longTerm,
+                discountRate.signum() > 0,
                 discountRate,
                 discountAmount,
                 totalPrice,
-                property.getCurrency()
+                currency
         );
     }
 }

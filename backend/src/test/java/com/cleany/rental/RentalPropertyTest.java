@@ -12,12 +12,13 @@ class RentalPropertyTest {
     private static final Instant NOW = Instant.parse("2026-08-23T09:00:00Z");
 
     @Test
-    void newDraft_mayRemainIncomplete() {
+    void newDraft_mayRemainIncompleteAndDefaultsToTry() {
         RentalProperty property = new RentalProperty(NOW);
 
         Assertions.assertAll(
                 () -> Assertions.assertEquals(RentalPropertyStatus.DRAFT, property.getStatus()),
                 () -> Assertions.assertNull(property.getSlug()),
+                () -> Assertions.assertEquals("TRY", property.getCurrency()),
                 () -> Assertions.assertTrue(property.getAmenities().isEmpty())
         );
     }
@@ -32,7 +33,8 @@ class RentalPropertyTest {
         );
 
         Assertions.assertAll(
-                () -> Assertions.assertTrue(exception.getMessage().contains("titleRu")),
+                () -> Assertions.assertTrue(exception.getMessage().contains("titleEn")),
+                () -> Assertions.assertFalse(exception.getMessage().contains("descriptionRu")),
                 () -> Assertions.assertTrue(exception.getMessage().contains("image")),
                 () -> Assertions.assertEquals(RentalPropertyStatus.DRAFT, property.getStatus())
         );
@@ -42,6 +44,7 @@ class RentalPropertyTest {
     void completeDraft_withImage_publishedAndCanBeArchived() {
         RentalProperty property = new RentalProperty(NOW);
         property.updateDetails(completeDetails(new BigDecimal("2500.00")), NOW.plusSeconds(1));
+        property.assignSlug("orange-residence");
 
         property.publish(true, NOW.plusSeconds(2));
 
@@ -57,12 +60,43 @@ class RentalPropertyTest {
         Assertions.assertEquals(RentalPropertyStatus.ARCHIVED, property.getStatus());
     }
 
+    @Test
+    void changingEnglishTitle_doesNotChangeAssignedSlug() {
+        RentalProperty property = new RentalProperty(NOW);
+        property.assignSlug("stable-public-url");
+        property.updateDetails(completeDetails(new BigDecimal("2500.00")), NOW.plusSeconds(1));
+
+        property.updateDetails(
+                new RentalPropertyDetails(
+                        "Новое название",
+                        "Completely Different English Title",
+                        "Updated English description",
+                        "Кестель",
+                        "New address",
+                        1,
+                        2,
+                        1,
+                        3,
+                        new BigDecimal("70.00"),
+                        2,
+                        new BigDecimal("1800.00"),
+                        null,
+                        Set.of(RentalAmenity.WIFI)
+                ),
+                NOW.plusSeconds(2)
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals("stable-public-url", property.getSlug()),
+                () -> Assertions.assertEquals("Completely Different English Title", property.getTitleEn()),
+                () -> Assertions.assertEquals("TRY", property.getCurrency())
+        );
+    }
+
     static RentalPropertyDetails completeDetails(BigDecimal dailyPrice) {
         return new RentalPropertyDetails(
-                " Orange-Residence ",
                 "Апартаменты Orange Residence",
-                "Orange Residence apartment",
-                "Светлые апартаменты рядом с морем",
+                "Orange Residence",
                 "Bright apartment near the sea",
                 "Махмутлар",
                 "Barbaros Cd. 24",

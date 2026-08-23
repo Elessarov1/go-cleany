@@ -6,19 +6,20 @@ import { AdminRentalMediaImage } from "../../components/AdminRentalMediaImage/Ad
 import { Icon } from "../../components/Icon/Icon";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import type { RentalAmenity, RentalProperty, UpdateRentalPropertyRequest } from "../../domain/rental";
+import { BrandName } from "../../components/BrandName/BrandName";
 
 const amenities: RentalAmenity[] = [
   "WIFI", "AIR_CONDITIONING", "WASHING_MACHINE", "DISHWASHER", "BALCONY", "SEA_VIEW",
   "POOL", "PARKING", "ELEVATOR", "WORKSPACE", "TV", "KITCHEN",
 ];
 
-type NullableTextKey = "slug" | "titleRu" | "titleEn" | "descriptionRu" | "descriptionEn" | "area" | "address" | "currency";
+type NullableTextKey = "titleRu" | "titleEn" | "descriptionEn" | "area" | "address" | "currency";
 type NullableNumberKey = "bedrooms" | "beds" | "bathrooms" | "maxGuests" | "areaSqm" | "floor" | "baseDailyPrice";
 
 function toUpdateRequest(property: RentalProperty): UpdateRentalPropertyRequest {
   return {
-    slug: property.slug, titleRu: property.titleRu, titleEn: property.titleEn,
-    descriptionRu: property.descriptionRu, descriptionEn: property.descriptionEn,
+    titleRu: property.titleRu, titleEn: property.titleEn,
+    descriptionEn: property.descriptionEn,
     area: property.area, address: property.address, bedrooms: property.bedrooms,
     beds: property.beds, bathrooms: property.bathrooms, maxGuests: property.maxGuests,
     areaSqm: property.areaSqm, floor: property.floor, baseDailyPrice: property.baseDailyPrice,
@@ -125,7 +126,7 @@ export function AdminRentalPropertyPage() {
       <Link className="back-link" to="/admin/rent/properties"><Icon name="arrow-left" size={17} />{t("common.back")}</Link>
       <header className="admin-rental-header admin-rental-header--editor">
         <div>
-          <span className="eyebrow">go-rent / #{property.id}</span>
+          <span className="eyebrow"><BrandName service="rental" /> / #{property.id}</span>
           <h1>{property.titleRu || property.titleEn || t("adminRental.properties.untitled")}</h1>
           <p><span className={`admin-rental-status admin-rental-status--${property.status.toLowerCase()}`}>{t(`adminRental.propertyStatus.${property.status}`)}</span></p>
         </div>
@@ -135,20 +136,24 @@ export function AdminRentalPropertyPage() {
       <section className="admin-rental-panel">
         <div className="admin-rental-section-heading"><div><h2>{t("adminRental.editor.mainTitle")}</h2><p>{t("adminRental.editor.mainText")}</p></div></div>
         <div className="admin-rental-form-grid">
-          {textField("slug")}{textField("area")}{textField("titleRu")}{textField("titleEn")}
+          {textField("titleEn")}{textField("titleRu")}{textField("area")}
           <div className="admin-rental-form-grid__wide">{textField("address")}</div>
-          <div className="admin-rental-form-grid__wide">{textField("descriptionRu", true)}</div>
+          {numberField("baseDailyPrice", "0.01")}{numberField("areaSqm", "0.01")}
+          {numberField("bedrooms")}{numberField("maxGuests")}
           <div className="admin-rental-form-grid__wide">{textField("descriptionEn", true)}</div>
-          {numberField("bedrooms")}{numberField("beds")}{numberField("bathrooms")}
-          {numberField("maxGuests")}{numberField("areaSqm", "0.01")}{numberField("floor")}
-          {numberField("baseDailyPrice", "0.01")}{textField("currency")}
         </div>
-        <fieldset className="admin-rental-amenities">
-          <legend>{t("adminRental.editor.amenities")}</legend>
-          {amenities.map((amenity) => (
-            <label key={amenity}><input type="checkbox" checked={property.amenities.includes(amenity)} onChange={() => toggleAmenity(amenity)} />{t(`rental.amenities.${amenity}`)}</label>
-          ))}
-        </fieldset>
+        <details className="admin-rental-advanced">
+          <summary>{t("adminRental.editor.advanced")}</summary>
+          <div className="admin-rental-form-grid">
+            {numberField("beds")}{numberField("bathrooms")}{numberField("floor")}{textField("currency")}
+          </div>
+          <fieldset className="admin-rental-amenities">
+            <legend>{t("adminRental.editor.amenities")}</legend>
+            {amenities.map((amenity) => (
+              <label key={amenity}><input type="checkbox" checked={property.amenities.includes(amenity)} onChange={() => toggleAmenity(amenity)} />{t(`rental.amenities.${amenity}`)}</label>
+            ))}
+          </fieldset>
+        </details>
         {actionError ? <p className="form-alert" role="alert">{t("adminRental.editor.actionError")}</p> : null}
         {saved ? <p className="admin-rental-success">{t("adminRental.editor.saved")}</p> : null}
         <div className="admin-rental-actions">
@@ -159,7 +164,7 @@ export function AdminRentalPropertyPage() {
       </section>
 
       <section className="admin-rental-panel">
-        <div className="admin-rental-section-heading"><div><h2>{t("adminRental.media.title")}</h2><p>{t("adminRental.media.subtitle")}</p></div><label className="button button--secondary admin-rental-upload"><Icon name="camera" size={18} />{t("adminRental.media.upload")}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={pending} onChange={upload} /></label></div>
+        <div className="admin-rental-section-heading"><div><h2>{t("adminRental.media.title")}</h2><p>{t("adminRental.media.subtitle")}</p></div><label className="button button--secondary admin-rental-upload"><Icon name="camera" size={18} />{t("adminRental.media.upload")}<input type="file" accept="image/jpeg,image/png" disabled={pending} onChange={upload} /></label></div>
         {property.media.length === 0 ? <p className="admin-orders__empty">{t("adminRental.media.empty")}</p> : (
           <div className="admin-rental-media-grid">
             {property.media.map((media, index) => (

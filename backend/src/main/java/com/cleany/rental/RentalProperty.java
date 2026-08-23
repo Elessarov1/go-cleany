@@ -43,9 +43,6 @@ public class RentalProperty {
     @Column(name = "title_en")
     private String titleEn;
 
-    @Column(name = "description_ru", length = 5000)
-    private String descriptionRu;
-
     @Column(name = "description_en", length = 5000)
     private String descriptionEn;
 
@@ -102,14 +99,13 @@ public class RentalProperty {
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
         this.updatedAt = createdAt;
         this.status = RentalPropertyStatus.DRAFT;
+        this.currency = "TRY";
     }
 
     public void updateDetails(RentalPropertyDetails details, Instant updatedAt) {
         RentalPropertyDetails required = Objects.requireNonNull(details, "details");
-        this.slug = required.slug();
         this.titleRu = required.titleRu();
         this.titleEn = required.titleEn();
-        this.descriptionRu = required.descriptionRu();
         this.descriptionEn = required.descriptionEn();
         this.area = required.area();
         this.address = required.address();
@@ -120,7 +116,9 @@ public class RentalProperty {
         this.areaSqm = required.areaSqm();
         this.floor = required.floor();
         this.baseDailyPrice = required.baseDailyPrice();
-        this.currency = required.currency();
+        if (required.currency() != null) {
+            this.currency = required.currency();
+        }
         this.amenities.clear();
         this.amenities.addAll(required.amenities());
         this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt");
@@ -129,18 +127,13 @@ public class RentalProperty {
     public void publish(boolean hasImage, Instant publishedAt) {
         var missing = new ArrayList<String>();
         requirePresent(missing, slug, "slug");
-        requirePresent(missing, titleRu, "titleRu");
         requirePresent(missing, titleEn, "titleEn");
-        requirePresent(missing, descriptionRu, "descriptionRu");
         requirePresent(missing, descriptionEn, "descriptionEn");
         requirePresent(missing, area, "area");
         requirePresent(missing, address, "address");
         requirePresent(missing, bedrooms, "bedrooms");
-        requirePresent(missing, beds, "beds");
-        requirePresent(missing, bathrooms, "bathrooms");
         requirePresent(missing, maxGuests, "maxGuests");
         requirePresent(missing, areaSqm, "areaSqm");
-        requirePresent(missing, floor, "floor");
         requirePresent(missing, baseDailyPrice, "baseDailyPrice");
         requirePresent(missing, currency, "currency");
         if (!hasImage) {
@@ -164,9 +157,28 @@ public class RentalProperty {
         updatedAt = Objects.requireNonNull(changedAt, "changedAt");
     }
 
+    public void unpublish(Instant unpublishedAt) {
+        if (status != RentalPropertyStatus.PUBLISHED) {
+            throw new RentalPropertyCannotBeUnpublishedException(requireId());
+        }
+        status = RentalPropertyStatus.DRAFT;
+        updatedAt = Objects.requireNonNull(unpublishedAt, "unpublishedAt");
+    }
+
+    public void assignSlug(String generatedSlug) {
+        if (slug != null) {
+            throw new IllegalStateException("Rental property slug is already assigned");
+        }
+        slug = Objects.requireNonNull(generatedSlug, "generatedSlug");
+    }
+
     private static void requirePresent(ArrayList<String> missing, Object value, String field) {
         if (value == null || value instanceof String text && text.isBlank()) {
             missing.add(field);
         }
+    }
+
+    private long requireId() {
+        return id == null ? 0 : id;
     }
 }

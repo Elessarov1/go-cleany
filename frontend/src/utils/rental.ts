@@ -10,16 +10,16 @@ export function rentalPropertyTitle(
   property: RentalProperty | RentalBookingProperty,
   language: RentalLanguage,
 ): string {
-  return (language === "ru" ? property.titleRu : property.titleEn) ?? "";
+  return language === "ru"
+    ? property.titleRu ?? property.titleEn ?? ""
+    : property.titleEn ?? property.titleRu ?? "";
 }
 
 export function rentalPropertyDescription(
   property: RentalProperty,
-  language: RentalLanguage,
+  _language: RentalLanguage,
 ): string {
-  return language === "ru"
-    ? property.descriptionRu ?? ""
-    : property.descriptionEn ?? "";
+  return property.descriptionEn ?? "";
 }
 
 export function rentalCoverUrl(property: RentalProperty): string | undefined {

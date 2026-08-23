@@ -10,16 +10,18 @@ import type {
   RentalBookingQuote,
   RentalBookingQuoteRequest,
   RentalConfiguration,
+  RentalAdminNotificationPreference,
   RentalOccupancy,
   RentalProperty,
   UpdateRentalPropertyRequest,
   UpsertRentalOccupancyRequest,
 } from "../domain/rental";
 import type { Platform } from "../platform/Platform";
+import { addMonthsToInputValue } from "../utils/format";
 import { ApiError } from "./ApiError";
 import type { RentalApi } from "./RentalApi";
 
-const STORAGE_KEY = "cleany.mock.rental-bookings.v1";
+const STORAGE_KEY = "cleany.mock.rental-bookings.v2";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const mockRentalConfiguration: RentalConfiguration = {
@@ -52,7 +54,6 @@ const properties: RentalProperty[] = [
     slug: "kestel-sea-breeze",
     titleRu: "Sea Breeze Residence",
     titleEn: "Sea Breeze Residence",
-    descriptionRu: "Светлая квартира рядом с морем, просторной гостиной и балконом для спокойного отдыха или длительного проживания.",
     descriptionEn: "A bright apartment near the sea with a spacious living room and a balcony for relaxed short or extended stays.",
     area: "Кестель",
     address: "Isa Küçülmez Cd., Kestel",
@@ -79,7 +80,6 @@ const properties: RentalProperty[] = [
     slug: "mahmurlar-calm-home",
     titleRu: "Calm Home Mahmutlar",
     titleEn: "Calm Home Mahmutlar",
-    descriptionRu: "Уютная квартира с рабочим местом и всем необходимым для комфортного проживания от недели до нескольких месяцев.",
     descriptionEn: "A calm apartment with a workspace and everything needed for stays from one week to several months.",
     area: "Махмутлар",
     address: "Barbaros Cd., Mahmutlar",
@@ -124,7 +124,7 @@ let manualOccupancies: RentalOccupancy[] = Object.entries(manualUnavailable).fla
 );
 
 function propertySummary(property: RentalProperty): RentalBookingProperty {
-  if (!property.slug || !property.titleRu || !property.titleEn || !property.area) {
+  if (!property.slug || !property.titleEn || !property.area) {
     throw new ApiError("Published rental property is incomplete", 500);
   }
   return {
@@ -144,14 +144,17 @@ function seedBooking(): RentalBooking {
   return {
     id: 501,
     property: propertySummary(property),
+    termType: "DATE_RANGE",
     checkInDate,
     checkOutDate,
+    rentalMonths: null,
     durationDays: duration,
     customerName: "Alex",
     phone: "+90 555 123 45 67",
     guests: 2,
     comment: "Позвонить за час до заселения",
     baseDailyPriceSnapshot: property.baseDailyPrice!,
+    monthlyPriceSnapshot: null,
     longTermDiscountRateSnapshot: 0,
     discountAmount: 0,
     totalPrice: property.baseDailyPrice! * duration,
@@ -184,6 +187,10 @@ function overlaps(range: RentalAvailabilityRange, start: string, end: string): b
 }
 
 export class MockRentalApi implements RentalApi {
+  private adminNotificationPreference: RentalAdminNotificationPreference = {
+    telegramEnabled: true,
+  };
+
   constructor(private readonly platform: Platform) {}
 
   getConfiguration(): Promise<RentalConfiguration> {
@@ -223,37 +230,55 @@ export class MockRentalApi implements RentalApi {
     if (!property || property.baseDailyPrice === null || !property.currency) {
       throw new ApiError("Rental property is unavailable", 404, "rental_property_not_available");
     }
-    const duration = durationDays(request.checkInDate, request.checkOutDate);
-    if (duration < mockRentalConfiguration.minStayDays) {
-      throw new ApiError("Minimum stay not met", 400, "rental_min_stay_not_met");
-    }
-    if (duration > mockRentalConfiguration.maxStayDays) {
+    const checkOutDate = request.termType === "MONTHLY"
+      ? addMonthsToInputValue(request.checkInDate, request.months)
+      : request.checkOutDate;
+    const duration = durationDays(request.checkInDate, checkOutDate);
+    if (request.termType === "DATE_RANGE") {
+      if (duration < mockRentalConfiguration.minStayDays) {
+        throw new ApiError("Minimum stay not met", 400, "rental_min_stay_not_met");
+      }
+      if (duration >= mockRentalConfiguration.longTermMinDays) {
+        throw new ApiError("Maximum date range exceeded", 400, "rental_max_stay_exceeded");
+      }
+    } else if (duration > mockRentalConfiguration.maxStayDays) {
       throw new ApiError("Maximum stay exceeded", 400, "rental_max_stay_exceeded");
     }
     const availability = await this.getAvailability(
       request.propertyId,
       request.checkInDate,
-      request.checkOutDate,
+      checkOutDate,
     );
-    if (availability.unavailableRanges.some((range) => overlaps(range, request.checkInDate, request.checkOutDate))) {
+    if (availability.unavailableRanges.some((range) => overlaps(range, request.checkInDate, checkOutDate))) {
       throw new ApiError("Dates are unavailable", 409, "dates_not_available");
     }
-    const baseAmount = roundMoney(property.baseDailyPrice * duration);
-    const discountRate = duration >= mockRentalConfiguration.longTermMinDays
+    const monthlyPrice = request.termType === "MONTHLY"
+      ? roundMoney(property.baseDailyPrice * 30 * (1 - mockRentalConfiguration.longTermDiscountRate))
+      : null;
+    const baseAmount = request.termType === "MONTHLY"
+      ? roundMoney(property.baseDailyPrice * 30 * request.months)
+      : roundMoney(property.baseDailyPrice * duration);
+    const discountRate = request.termType === "MONTHLY"
       ? mockRentalConfiguration.longTermDiscountRate
       : 0;
-    const discountAmount = roundMoney(baseAmount * discountRate);
+    const totalPrice = request.termType === "MONTHLY"
+      ? roundMoney(monthlyPrice! * request.months)
+      : baseAmount;
+    const discountAmount = roundMoney(baseAmount - totalPrice);
     return simulateNetwork({
       property: propertySummary(property),
+      termType: request.termType,
       checkInDate: request.checkInDate,
-      checkOutDate: request.checkOutDate,
+      checkOutDate,
+      rentalMonths: request.termType === "MONTHLY" ? request.months : null,
       durationDays: duration,
       baseDailyPrice: property.baseDailyPrice,
+      monthlyPrice,
       baseAmount,
       longTermDiscountApplied: discountRate > 0,
       discountRate,
       discountAmount,
-      totalPrice: roundMoney(baseAmount - discountAmount),
+      totalPrice,
       currency: property.currency,
     });
   }
@@ -273,8 +298,10 @@ export class MockRentalApi implements RentalApi {
     const booking: RentalBooking = {
       id: Date.now(),
       property: quote.property,
+      termType: quote.termType,
       checkInDate: quote.checkInDate,
       checkOutDate: quote.checkOutDate,
+      rentalMonths: quote.rentalMonths,
       durationDays: quote.durationDays,
       customerName: user
         ? [user.firstName, user.lastName].filter(Boolean).join(" ")
@@ -283,6 +310,7 @@ export class MockRentalApi implements RentalApi {
       guests: request.guests,
       comment: request.comment?.trim() || null,
       baseDailyPriceSnapshot: quote.baseDailyPrice,
+      monthlyPriceSnapshot: quote.monthlyPrice,
       longTermDiscountRateSnapshot: quote.discountRate,
       discountAmount: quote.discountAmount,
       totalPrice: quote.totalPrice,
@@ -329,9 +357,9 @@ export class MockRentalApi implements RentalApi {
     const timestamp = new Date().toISOString();
     const property: RentalProperty = {
       id: Date.now(), slug: null, titleRu: null, titleEn: null,
-      descriptionRu: null, descriptionEn: null, area: null, address: null,
+      descriptionEn: null, area: null, address: null,
       bedrooms: null, beds: null, bathrooms: null, maxGuests: null,
-      areaSqm: null, floor: null, baseDailyPrice: null, currency: null,
+      areaSqm: null, floor: null, baseDailyPrice: null, currency: "TRY",
       status: "DRAFT", amenities: [], media: [], createdAt: timestamp, updatedAt: timestamp,
     };
     properties.unshift(property);
@@ -347,7 +375,13 @@ export class MockRentalApi implements RentalApi {
 
   async updateAdminProperty(id: number, request: UpdateRentalPropertyRequest): Promise<RentalProperty> {
     const property = await this.getAdminProperty(id);
-    const updated = { ...property, ...request, updatedAt: new Date().toISOString() };
+    const updated = {
+      ...property,
+      ...request,
+      slug: property.slug ?? this.uniqueSlug(request.titleEn),
+      currency: request.currency ?? property.currency ?? "TRY",
+      updatedAt: new Date().toISOString(),
+    };
     this.replaceProperty(updated);
     return simulateNetwork(updated);
   }
@@ -355,10 +389,9 @@ export class MockRentalApi implements RentalApi {
   async publishAdminProperty(id: number): Promise<RentalProperty> {
     const property = await this.getAdminProperty(id);
     const required = [
-      property.slug, property.titleRu, property.titleEn, property.descriptionRu,
-      property.descriptionEn, property.area, property.address, property.bedrooms,
-      property.beds, property.bathrooms, property.maxGuests, property.areaSqm,
-      property.floor, property.baseDailyPrice, property.currency,
+      property.slug, property.titleEn, property.descriptionEn, property.area,
+      property.address, property.bedrooms, property.maxGuests, property.areaSqm,
+      property.baseDailyPrice, property.currency,
     ];
     if (required.some((value) => value === null || value === "") || property.media.length === 0) {
       throw new ApiError("Rental property is incomplete", 409, "rental_property_incomplete");
@@ -520,9 +553,63 @@ export class MockRentalApi implements RentalApi {
     return simulateNetwork(this.adminBooking(completed));
   }
 
+  getAdminRentalNotificationPreference(): Promise<RentalAdminNotificationPreference> {
+    return simulateNetwork({ ...this.adminNotificationPreference });
+  }
+
+  async updateAdminRentalNotificationPreference(
+    telegramEnabled: boolean,
+  ): Promise<RentalAdminNotificationPreference> {
+    this.adminNotificationPreference = { telegramEnabled };
+    return simulateNetwork({ ...this.adminNotificationPreference });
+  }
+
   private replaceProperty(property: RentalProperty): void {
     const index = properties.findIndex((item) => item.id === property.id);
     if (index >= 0) properties[index] = property;
+  }
+
+  async unpublishAdminProperty(id: number): Promise<RentalProperty> {
+    const property = await this.getAdminProperty(id);
+    if (property.status !== "PUBLISHED") {
+      throw new ApiError("Rental property is not published", 409, "rental_property_cannot_be_unpublished");
+    }
+    const updated = { ...property, status: "DRAFT" as const, updatedAt: new Date().toISOString() };
+    this.replaceProperty(updated);
+    return simulateNetwork(updated);
+  }
+
+  async deleteAdminProperty(id: number): Promise<void> {
+    const property = await this.getAdminProperty(id);
+    if (property.status !== "DRAFT" || readBookings().some((booking) => booking.property.id === id)) {
+      throw new ApiError("Rental property cannot be deleted", 409, "rental_property_cannot_be_deleted");
+    }
+    property.media.forEach((media) => {
+      if (media.url.startsWith("blob:")) URL.revokeObjectURL(media.url);
+    });
+    const index = properties.findIndex((item) => item.id === id);
+    if (index >= 0) properties.splice(index, 1);
+    manualOccupancies = manualOccupancies.filter((item) => item.propertyId !== id);
+    await simulateNetwork(undefined);
+  }
+
+  private uniqueSlug(title: string | null): string | null {
+    if (!title) return null;
+    const base = title.normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 120)
+      .replace(/-+$/g, "");
+    if (!base) return null;
+    let candidate = base;
+    let suffix = 2;
+    while (properties.some((item) => item.slug === candidate)) {
+      const suffixText = `-${suffix++}`;
+      candidate = `${base.slice(0, 120 - suffixText.length).replace(/-+$/g, "")}${suffixText}`;
+    }
+    return candidate;
   }
 
   private adminBooking(booking: RentalBooking): AdminRentalBooking {

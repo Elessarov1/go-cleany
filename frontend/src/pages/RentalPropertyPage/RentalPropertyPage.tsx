@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ApiError } from "../../api/ApiError";
@@ -7,16 +7,19 @@ import { useRentalApi } from "../../api/RentalApiProvider";
 import { Icon } from "../../components/Icon/Icon";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import { RentalCalendar } from "../../components/RentalCalendar/RentalCalendar";
+import { RentalGallery } from "../../components/RentalGallery/RentalGallery";
 import type {
   RentalAvailability,
   RentalBookingQuote,
   RentalConfiguration,
   RentalProperty,
+  RentalTermType,
 } from "../../domain/rental";
 import { formatPrice } from "../../domain/pricing";
 import { usePlatform } from "../../platform/PlatformProvider";
 import { addDaysToInputValue, addMonthsToInputValue, formatDate, todayAsInputValue } from "../../utils/format";
 import { rentalLanguage, rentalPropertyDescription, rentalPropertyTitle } from "../../utils/rental";
+import { BrandName } from "../../components/BrandName/BrandName";
 
 function bookingErrorMessage(error: unknown, t: (key: string, options?: Record<string, unknown>) => string): string {
   if (!(error instanceof ApiError)) return t("rental.booking.errors.generic");
@@ -26,6 +29,7 @@ function bookingErrorMessage(error: unknown, t: (key: string, options?: Record<s
     "rental_booking_horizon_exceeded",
     "dates_not_available",
     "rental_active_booking_limit_exceeded",
+    "invalid_rental_booking",
     "invalid_phone_number",
   ]);
   return knownCodes.has(error.code ?? "")
@@ -46,8 +50,10 @@ export function RentalPropertyPage() {
   const [availability, setAvailability] = useState<RentalAvailability | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [termType, setTermType] = useState<RentalTermType>("DATE_RANGE");
   const [checkInDate, setCheckInDate] = useState("");
   const [checkOutDate, setCheckOutDate] = useState("");
+  const [months, setMonths] = useState(1);
   const [calendarError, setCalendarError] = useState<string | null>(null);
   const [quote, setQuote] = useState<RentalBookingQuote | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
@@ -75,10 +81,21 @@ export function RentalPropertyPage() {
         setProperty(loadedProperty);
         setConfiguration(loadedConfiguration);
         setAvailability(loadedAvailability);
-        if (searchParams.get("scenario")?.toUpperCase() === "RENT_LONG_TERM") {
-          const previewCheckIn = addDaysToInputValue(fromDate, 80);
+        const scenario = searchParams.get("scenario")?.toUpperCase();
+        if (scenario === "RENT_MONTHLY" || scenario === "RENT_MONTHLY_UNAVAILABLE") {
+          const previewCheckIn = addDaysToInputValue(
+            fromDate,
+            scenario === "RENT_MONTHLY_UNAVAILABLE" ? 40 : 80,
+          );
+          setTermType("MONTHLY");
           setCheckInDate(previewCheckIn);
-          setCheckOutDate(addDaysToInputValue(previewCheckIn, 35));
+          setCheckOutDate("");
+          setMonths(scenario === "RENT_MONTHLY_UNAVAILABLE" ? 2 : 3);
+        } else if (scenario === "RENT_DATE_RANGE") {
+          const previewCheckIn = addDaysToInputValue(fromDate, 45);
+          setTermType("DATE_RANGE");
+          setCheckInDate(previewCheckIn);
+          setCheckOutDate(addDaysToInputValue(previewCheckIn, 10));
         }
       })
       .catch(() => {
@@ -102,7 +119,10 @@ export function RentalPropertyPage() {
   }, [customerApi]);
 
   useEffect(() => {
-    if (!property || !checkInDate || !checkOutDate) {
+    const hasCompleteTerm = termType === "DATE_RANGE"
+      ? Boolean(checkInDate && checkOutDate)
+      : Boolean(checkInDate && months > 0);
+    if (!property || !hasCompleteTerm) {
       setQuote(null);
       return;
     }
@@ -110,7 +130,20 @@ export function RentalPropertyPage() {
     setQuoteLoading(true);
     setQuote(null);
     setSubmitError(null);
-    api.quoteBooking({ propertyId: property.id, checkInDate, checkOutDate })
+    const request = termType === "DATE_RANGE"
+      ? {
+          propertyId: property.id,
+          termType,
+          checkInDate,
+          checkOutDate,
+        } as const
+      : {
+          propertyId: property.id,
+          termType,
+          checkInDate,
+          months,
+        } as const;
+    api.quoteBooking(request)
       .then((value) => {
         if (active) setQuote(value);
       })
@@ -123,12 +156,11 @@ export function RentalPropertyPage() {
     return () => {
       active = false;
     };
-  }, [api, checkInDate, checkOutDate, property, t]);
+  }, [api, checkInDate, checkOutDate, months, property, t, termType]);
 
-  const sortedMedia = useMemo(
-    () => [...(property?.media ?? [])].sort((first, second) => first.sortOrder - second.sortOrder),
-    [property],
-  );
+  const expectedCheckOutDate = termType === "MONTHLY" && checkInDate
+    ? addMonthsToInputValue(checkInDate, months)
+    : checkOutDate;
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -148,14 +180,26 @@ export function RentalPropertyPage() {
         setSubmitError(t("rental.booking.errors.notificationAccess"));
         return;
       }
-      const booking = await api.createBooking({
-        propertyId: property.id,
-        checkInDate,
-        checkOutDate,
+      const contactDetails = {
         guests,
         phone: phone.trim(),
         comment: comment.trim() || undefined,
-      });
+      };
+      const booking = termType === "DATE_RANGE"
+        ? await api.createBooking({
+            propertyId: property.id,
+            termType,
+            checkInDate,
+            checkOutDate,
+            ...contactDetails,
+          })
+        : await api.createBooking({
+            propertyId: property.id,
+            termType,
+            checkInDate,
+            months,
+            ...contactDetails,
+          });
       navigate(`/rent/bookings/${booking.id}`, { state: { justCreated: true } });
     } catch (error) {
       setSubmitError(bookingErrorMessage(error, t));
@@ -173,17 +217,13 @@ export function RentalPropertyPage() {
     <div className="page page--rental-property">
       <Link className="back-link" to="/rent"><Icon name="arrow-left" size={17} />{t("common.back")}</Link>
 
-      <div className="rental-gallery" aria-label={t("rental.property.galleryLabel")}>
-        {sortedMedia.map((media, index) => (
-          <figure key={media.id}>
-            <img src={media.url} alt={t("rental.property.photoAlt", { index: index + 1 })} />
-            {media.cover ? <span>{t("rental.property.cover")}</span> : null}
-          </figure>
-        ))}
-      </div>
+      <RentalGallery
+        media={property.media}
+        propertyTitle={rentalPropertyTitle(property, language)}
+      />
 
       <header className="rental-property-heading">
-        <span className="eyebrow">go-rent · {property.area}</span>
+        <span className="eyebrow"><BrandName service="rental" /> · {property.area}</span>
         <h1>{rentalPropertyTitle(property, language)}</h1>
         <p>{rentalPropertyDescription(property, language)}</p>
       </header>
@@ -214,17 +254,57 @@ export function RentalPropertyPage() {
       <form className="rental-booking-form" onSubmit={(event) => void submit(event)}>
         <section className="rental-section">
           <div className="rental-section__heading">
-            <div><span className="eyebrow">02</span><h2>{t("rental.booking.datesTitle")}</h2></div>
+            <div><span className="eyebrow">02</span><h2>{t("rental.booking.termTitle")}</h2></div>
             <strong className="rental-daily-price">
-              {formatPrice(property.baseDailyPrice!, property.currency!, locale)}
-              <small>{t("rental.common.perDay")}</small>
+              {quote?.termType === "MONTHLY" && quote.monthlyPrice !== null
+                ? formatPrice(quote.monthlyPrice, quote.currency, locale)
+                : formatPrice(property.baseDailyPrice!, property.currency!, locale)}
+              <small>{quote?.termType === "MONTHLY" ? t("rental.common.perMonth") : t("rental.common.perDay")}</small>
             </strong>
           </div>
+          <div className="rental-term-selector" role="radiogroup" aria-label={t("rental.booking.termTitle")}>
+            <button
+              className={termType === "DATE_RANGE" ? "is-selected" : ""}
+              type="button"
+              role="radio"
+              aria-checked={termType === "DATE_RANGE"}
+              onClick={() => {
+                setTermType("DATE_RANGE");
+                setCheckInDate("");
+                setCheckOutDate("");
+                setCalendarError(null);
+              }}
+            >
+              <Icon name="calendar-plus" size={22} />
+              <strong>{t("rental.booking.dateRange")}</strong>
+              <span>{t("rental.booking.dateRangeHint", { min: configuration.minStayDays, max: configuration.longTermMinDays - 1 })}</span>
+            </button>
+            <button
+              className={termType === "MONTHLY" ? "is-selected" : ""}
+              type="button"
+              role="radio"
+              aria-checked={termType === "MONTHLY"}
+              onClick={() => {
+                setTermType("MONTHLY");
+                setCheckInDate("");
+                setCheckOutDate("");
+                setCalendarError(null);
+              }}
+            >
+              <Icon name="home" size={22} />
+              <strong>{t("rental.booking.monthly")}</strong>
+              <span>{t("rental.booking.monthlyHint")}</span>
+            </button>
+          </div>
+          <h3 className="rental-booking-subtitle">
+            {termType === "DATE_RANGE" ? t("rental.booking.datesTitle") : t("rental.booking.startDateTitle")}
+          </h3>
           <RentalCalendar
             configuration={configuration}
             unavailableRanges={availability.unavailableRanges}
             checkInDate={checkInDate}
             checkOutDate={checkOutDate}
+            selectionMode={termType === "MONTHLY" ? "START" : "RANGE"}
             onChange={(checkIn, checkOut) => {
               setCheckInDate(checkIn);
               setCheckOutDate(checkOut);
@@ -233,10 +313,20 @@ export function RentalPropertyPage() {
             }}
             onValidationError={setCalendarError}
           />
+          {termType === "MONTHLY" ? (
+            <div className="rental-months-control">
+              <span>{t("rental.booking.monthsLabel")}</span>
+              <div>
+                <button type="button" aria-label={t("rental.booking.decreaseMonths")} disabled={months <= 1} onClick={() => setMonths((value) => Math.max(1, value - 1))}>−</button>
+                <strong>{t("rental.booking.months", { count: months })}</strong>
+                <button type="button" aria-label={t("rental.booking.increaseMonths")} onClick={() => setMonths((value) => value + 1)}>+</button>
+              </div>
+            </div>
+          ) : null}
           <div className="rental-date-selection">
             <div><span>{t("rental.booking.checkIn")}</span><strong>{checkInDate ? formatDate(checkInDate, locale) : "—"}</strong></div>
             <Icon name="arrow-right" size={18} />
-            <div><span>{t("rental.booking.checkOut")}</span><strong>{checkOutDate ? formatDate(checkOutDate, locale) : "—"}</strong></div>
+            <div><span>{termType === "MONTHLY" ? t("rental.booking.expectedCheckOut") : t("rental.booking.checkOut")}</span><strong>{expectedCheckOutDate ? formatDate(expectedCheckOutDate, locale) : "—"}</strong></div>
           </div>
           {calendarError ? <p className="form-alert" role="alert">{calendarError}</p> : null}
         </section>
@@ -286,9 +376,17 @@ export function RentalPropertyPage() {
           {quote ? (
             <>
               <div className="rental-quote-card__line">
-                <span>{t("rental.booking.stay", { count: quote.durationDays })}</span>
+                <span>{quote.termType === "MONTHLY"
+                  ? t("rental.booking.months", { count: quote.rentalMonths })
+                  : t("rental.booking.stay", { count: quote.durationDays })}</span>
                 <strong>{formatPrice(quote.baseAmount, quote.currency, locale)}</strong>
               </div>
+              {quote.termType === "MONTHLY" && quote.monthlyPrice !== null ? (
+                <div className="rental-quote-card__line">
+                  <span>{t("rental.booking.monthlyPrice")}</span>
+                  <strong>{formatPrice(quote.monthlyPrice, quote.currency, locale)} {t("rental.common.perMonth")}</strong>
+                </div>
+              ) : null}
               {quote.longTermDiscountApplied ? (
                 <div className="rental-quote-card__discount">
                   <span>{t("rental.booking.longTermDiscount", { percent: Math.round(quote.discountRate * 100) })}</span>
@@ -300,7 +398,7 @@ export function RentalPropertyPage() {
                 <strong>{formatPrice(quote.totalPrice, quote.currency, locale)}</strong>
               </div>
             </>
-          ) : <p>{t("rental.booking.selectDates")}</p>}
+          ) : <p>{termType === "MONTHLY" ? t("rental.booking.selectMonthlyStart") : t("rental.booking.selectDates")}</p>}
           {submitError ? <p className="form-alert" role="alert">{submitError}</p> : null}
           <button
             className="button button--primary button--full button--large"

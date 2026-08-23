@@ -8,6 +8,7 @@ import { OrderStatus } from "../../components/OrderStatus/OrderStatus";
 import type { CleaningOrder, ReferralSummary } from "../../domain/order";
 import { formatPrice } from "../../domain/pricing";
 import { formatDate } from "../../utils/format";
+import { BrandName } from "../../components/BrandName/BrandName";
 
 export function OrdersPage() {
   const { t, i18n } = useTranslation();
@@ -63,7 +64,7 @@ export function OrdersPage() {
       {referral ? (
         <section className="referral-card">
           <div>
-            <span className="eyebrow">go-cleany friends</span>
+            <span className="eyebrow"><BrandName service="cleaning" /> friends</span>
             <h2>{t("referrals.title")}</h2>
             <p>{t("referrals.text")}</p>
           </div>

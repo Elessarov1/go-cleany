@@ -16,7 +16,7 @@ This repository currently contains two working service verticals in one platform
 
 ```text
 go-cleany → apartment cleaning through a Telegram Mini App and cleaner bot
-go-rent   → apartment catalog, availability and rental bookings
+go-renty  → apartment catalog, availability and rental bookings
 ```
 
 Long-term direction:
@@ -29,7 +29,8 @@ Telegram
 
 The product is also expected to evolve into a broader service platform.
 
-`go-cleany` remains the cleaning vertical and `go-rent` remains the rental vertical. The platform may later contain more independent verticals such as:
+`go-cleany` remains the cleaning vertical and `go-renty` remains the user-facing rental brand. Its
+technical namespaces remain `rent`, `rental` and `Rental*`. The platform may later contain more independent verticals such as:
 
 ```text
 Cleaning

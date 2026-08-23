@@ -9,6 +9,7 @@ import type { RentalBooking } from "../../domain/rental";
 import { formatPrice } from "../../domain/pricing";
 import { formatDate } from "../../utils/format";
 import { rentalLanguage, rentalPropertyTitle } from "../../utils/rental";
+import { BrandName } from "../../components/BrandName/BrandName";
 
 export function RentalBookingsPage() {
   const { t, i18n } = useTranslation();
@@ -42,7 +43,7 @@ export function RentalBookingsPage() {
   return (
     <div className="page page--rental-bookings">
       <header className="page-header">
-        <span className="eyebrow">go-rent</span>
+        <span className="eyebrow"><BrandName service="rental" /></span>
         <h1>{t("rental.bookings.title")}</h1>
         <p>{t("rental.bookings.subtitle")}</p>
       </header>
@@ -67,7 +68,7 @@ export function RentalBookingsPage() {
               <div className="rental-booking-card__dates">
                 <div><small>{t("rental.booking.checkIn")}</small><strong>{formatDate(booking.checkInDate, locale)}</strong></div>
                 <Icon name="arrow-right" size={18} />
-                <div><small>{t("rental.booking.checkOut")}</small><strong>{formatDate(booking.checkOutDate, locale)}</strong></div>
+                <div><small>{booking.termType === "MONTHLY" ? t("rental.booking.expectedCheckOut") : t("rental.booking.checkOut")}</small><strong>{formatDate(booking.checkOutDate, locale)}</strong></div>
               </div>
               <div className="rental-booking-card__footer">
                 <strong>{formatPrice(booking.totalPrice, booking.currency, locale)}</strong>

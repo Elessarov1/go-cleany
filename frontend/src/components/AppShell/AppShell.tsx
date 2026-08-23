@@ -5,6 +5,8 @@ import { useCleaningApi } from "../../api/CleaningApiProvider";
 import { Icon } from "../Icon/Icon";
 import { LanguageSwitcher } from "../LanguageSwitcher/LanguageSwitcher";
 import { PreviewPanel } from "../PreviewPanel/PreviewPanel";
+import { BrandName } from "../BrandName/BrandName";
+import { getBrandName, type BrandService } from "../../brand/productBrand";
 
 function navClassName({ isActive }: { isActive: boolean }): string {
   return `bottom-nav__link${isActive ? " is-active" : ""}`;
@@ -35,17 +37,17 @@ export function AppShell() {
   const catalog = location.pathname === "/" || location.pathname === "/admin";
   const service = catalog ? "platform" : rental ? "rent" : "cleaning";
   const serviceHome = rental ? (admin ? "/admin/rent" : "/rent") : catalog ? (admin ? "/admin" : "/") : (admin ? "/admin/cleaning" : "/cleaning");
-  const brand = rental ? "rent" : catalog ? "services" : "cleany";
+  const brandService: BrandService | undefined = catalog ? undefined : rental ? "rental" : "cleaning";
 
   return (
     <div className="app-frame service-shell" data-service={service} data-layout={admin ? "admin" : "customer"}>
       <div className="app-container">
         <header className="topbar">
-          <NavLink className="brand" to={serviceHome} aria-label={t("app.homeLabel")}>
+          <NavLink className="brand" to={serviceHome} aria-label={t("app.homeLabel", { brand: getBrandName(brandService) })}>
             <span className="brand__mark" aria-hidden="true">
               <Icon name={rental ? "building" : "sparkles"} size={19} strokeWidth={2} />
             </span>
-            <span className="brand__word"><b>go</b>{brand === "services" ? "" : `-${brand}`}</span>
+            <span className="brand__word"><BrandName service={brandService} /></span>
           </NavLink>
           <LanguageSwitcher />
         </header>

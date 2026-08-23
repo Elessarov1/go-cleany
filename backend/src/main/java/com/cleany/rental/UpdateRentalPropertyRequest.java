@@ -10,12 +10,8 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record UpdateRentalPropertyRequest(
-        @Size(max = 120)
-        @Pattern(regexp = "^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$")
-        String slug,
         @Size(max = 255) String titleRu,
         @Size(max = 255) String titleEn,
-        @Size(max = 5000) String descriptionRu,
         @Size(max = 5000) String descriptionEn,
         @Size(max = 255) String area,
         @Size(max = 1000) String address,
@@ -32,10 +28,8 @@ public record UpdateRentalPropertyRequest(
 
     RentalPropertyDetails toDetails() {
         return new RentalPropertyDetails(
-                slug,
                 titleRu,
                 titleEn,
-                descriptionRu,
                 descriptionEn,
                 area,
                 address,

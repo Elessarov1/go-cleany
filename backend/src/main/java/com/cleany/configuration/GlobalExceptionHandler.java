@@ -38,10 +38,11 @@ import com.cleany.rental.RentalMaximumStayExceededException;
 import com.cleany.rental.RentalMinimumStayNotMetException;
 import com.cleany.rental.RentalOccupancyNotFoundException;
 import com.cleany.rental.RentalPropertyCannotBePublishedException;
+import com.cleany.rental.RentalPropertyCannotBeDeletedException;
+import com.cleany.rental.RentalPropertyCannotBeUnpublishedException;
 import com.cleany.rental.RentalPropertyMediaNotFoundException;
 import com.cleany.rental.RentalPropertyNotFoundException;
 import com.cleany.rental.RentalPropertyNotAvailableException;
-import com.cleany.rental.RentalPropertySlugConflictException;
 import com.cleany.telegram.CustomerAuthenticationRequiredException;
 import com.cleany.telegram.bot.TelegramWebhookAuthenticationException;
 
@@ -161,15 +162,27 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler(RentalPropertySlugConflictException.class)
-    ResponseEntity<ApiError> handleRentalPropertySlugConflict(
-            RentalPropertySlugConflictException exception
+    @ExceptionHandler(RentalPropertyCannotBeDeletedException.class)
+    ResponseEntity<ApiError> handleRentalPropertyCannotBeDeleted(
+            RentalPropertyCannotBeDeletedException exception
     ) {
         return response(
                 HttpStatus.CONFLICT,
-                "rental_property_slug_conflict",
+                "rental_property_cannot_be_deleted",
                 exception.getMessage(),
-                Map.of("slug", exception.getMessage())
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(RentalPropertyCannotBeUnpublishedException.class)
+    ResponseEntity<ApiError> handleRentalPropertyCannotBeUnpublished(
+            RentalPropertyCannotBeUnpublishedException exception
+    ) {
+        return response(
+                HttpStatus.CONFLICT,
+                "rental_property_cannot_be_unpublished",
+                exception.getMessage(),
+                Map.of()
         );
     }
 

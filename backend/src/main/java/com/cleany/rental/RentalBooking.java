@@ -41,11 +41,18 @@ public class RentalBooking {
     @JoinColumn(name = "property_id", nullable = false)
     private RentalProperty property;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "term_type", nullable = false, length = 32)
+    private RentalTermType termType;
+
     @Column(name = "check_in_date", nullable = false)
     private LocalDate checkInDate;
 
     @Column(name = "check_out_date", nullable = false)
     private LocalDate checkOutDate;
+
+    @Column(name = "rental_months")
+    private Integer rentalMonths;
 
     @Column(name = "duration_days", nullable = false)
     private int durationDays;
@@ -64,6 +71,9 @@ public class RentalBooking {
 
     @Column(name = "base_daily_price_snapshot", nullable = false, precision = 12, scale = 2)
     private BigDecimal baseDailyPriceSnapshot;
+
+    @Column(name = "monthly_price_snapshot", precision = 12, scale = 2)
+    private BigDecimal monthlyPriceSnapshot;
 
     @Column(name = "long_term_discount_rate_snapshot", nullable = false, precision = 5, scale = 4)
     private BigDecimal longTermDiscountRateSnapshot;
@@ -97,8 +107,7 @@ public class RentalBooking {
             long customerId,
             long communicationIdentityId,
             RentalProperty property,
-            LocalDate checkInDate,
-            LocalDate checkOutDate,
+            ResolvedRentalTerm term,
             String customerName,
             String phone,
             int guests,
@@ -110,11 +119,18 @@ public class RentalBooking {
             throw new IllegalArgumentException("Customer and communication identity ids must be positive");
         }
         RentalPriceQuote requiredQuote = Objects.requireNonNull(quote, "quote");
+        ResolvedRentalTerm requiredTerm = Objects.requireNonNull(term, "term");
+        if (requiredQuote.termType() != requiredTerm.termType()
+                || !Objects.equals(requiredQuote.rentalMonths(), requiredTerm.rentalMonths())) {
+            throw new IllegalArgumentException("Rental term and price quote must match");
+        }
         this.customerId = customerId;
         this.communicationIdentityId = communicationIdentityId;
         this.property = Objects.requireNonNull(property, "property");
-        this.checkInDate = Objects.requireNonNull(checkInDate, "checkInDate");
-        this.checkOutDate = Objects.requireNonNull(checkOutDate, "checkOutDate");
+        this.termType = requiredTerm.termType();
+        this.checkInDate = requiredTerm.checkInDate();
+        this.checkOutDate = requiredTerm.checkOutDate();
+        this.rentalMonths = requiredTerm.rentalMonths();
         this.durationDays = requiredQuote.durationDays();
         this.customerName = requireText(customerName, "customerName");
         this.phone = requireText(phone, "phone");
@@ -124,6 +140,7 @@ public class RentalBooking {
         this.guests = guests;
         this.comment = normalizeOptional(comment);
         this.baseDailyPriceSnapshot = requiredQuote.baseDailyPrice();
+        this.monthlyPriceSnapshot = requiredQuote.monthlyPrice();
         this.longTermDiscountRateSnapshot = requiredQuote.discountRate();
         this.discountAmount = requiredQuote.discountAmount();
         this.totalPrice = requiredQuote.totalPrice();
