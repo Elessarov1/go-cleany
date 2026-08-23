@@ -18,9 +18,14 @@ RU / EN i18n
 
 ## Product direction
 
-The current UI is the cleaning vertical (`go-cleany`).
+The current UI contains a shared service catalog and two real verticals:
 
-Future platform direction:
+```text
+go-cleany
+go-rent
+```
+
+Further platform direction:
 
 ```text
 service catalog
@@ -30,9 +35,7 @@ service catalog
 └── future verticals
 ```
 
-Do not show an empty service catalog while cleaning is the only real vertical.
-
-When route neutralization is implemented, `/` may continue redirecting/opening the cleaning flow until a second vertical exists.
+Keep the service catalog at `/` while both real verticals are available. Do not add placeholder cards for unimplemented services.
 
 ---
 
@@ -103,23 +106,26 @@ Prefer robust grid/flex layouts.
 
 ## Cleaning routes and future platform routes
 
-Current routing may still be:
+Current vertical routing is:
 
 ```text
 /
-/orders
-/orders/:id
-```
-
-Future direction is:
-
-```text
 /cleaning
 /cleaning/orders
 /cleaning/orders/:id
+/rent
+/rent/properties/:slug
+/rent/bookings
 ```
 
-Do not implement fake Handyman/Residence pages before those verticals exist.
+The shared admin shell separates vertical routes:
+
+```text
+/admin/cleaning
+/admin/rent
+```
+
+Legacy cleaning redirects may remain while controlled clients migrate. Do not implement fake Handyman/Residence pages before those verticals exist.
 
 Route migration should preserve current user experience.
 

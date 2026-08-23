@@ -31,13 +31,17 @@ Always verify current code and recent git history before assuming an architectur
 
 # 1. Product vision
 
-`go-cleany` is the first vertical of a future service platform.
+`go-cleany` was the first vertical of the service platform. `go-rent` is now the second real vertical.
 
 Today:
 
 ```text
-go-cleany
-→ apartment cleaning
+Service Platform
+
+├── go-cleany
+│   └── apartment cleaning
+└── go-rent
+    └── apartment rental
 ```
 
 Future:
@@ -47,6 +51,9 @@ Service Platform
 
 ├── go-cleany
 │   └── cleaning
+│
+├── go-rent
+│   └── apartment rental
 │
 ├── handyman / repair
 │   ├── electrician
@@ -67,9 +74,9 @@ The parent platform may receive a separate brand later.
 
 ---
 
-# 2. Future service catalog
+# 2. Service catalog
 
-When more than one real vertical exists, the entry screen should become a service catalog.
+The entry screen is now a service catalog because more than one real vertical exists.
 
 Concept:
 
@@ -77,8 +84,7 @@ Concept:
 What do you need?
 
 [ 🧹 Cleaning ]
-[ 🔧 Handyman / repair ]
-[ 🪪 Residence assistance ]
+[ 🏢 Apartment rental ]
 ```
 
 After selection:
@@ -87,6 +93,9 @@ After selection:
 Cleaning
 → go-cleany flow
 
+Apartment rental
+→ go-rent flow
+
 Handyman
 → handyman-specific flow
 
@@ -94,7 +103,7 @@ Residence
 → case/consultation-specific flow
 ```
 
-Do not add an empty service catalog while cleaning is the only real vertical.
+Only implemented verticals belong in the catalog. Do not add placeholder Handyman or Residence cards before those services exist.
 
 ---
 
@@ -121,6 +130,7 @@ Service verticals may include:
 
 ```text
 Cleaning
+Rental
 Handyman
 Residence assistance
 future services
@@ -231,6 +241,17 @@ appointments
 case lifecycle
 ```
 
+Rental currently contains:
+
+```text
+RentalProperty
+RentalBooking
+RentalOccupancy
+stay policy and pricing
+availability calendar
+rental administration
+```
+
 Keep separate aggregates such as:
 
 ```text
@@ -260,6 +281,10 @@ cleaning → customer
 cleaning → notification
 cleaning → media
 
+rental → customer
+rental → notification
+rental → media
+
 handyman → customer
 handyman → media
 
@@ -273,6 +298,8 @@ Avoid:
 platform → cleaning business logic
 handyman → cleaning
 residence → cleaning
+rental → cleaning
+cleaning → rental
 ```
 
 Verticals must remain independent from one another.
@@ -608,7 +635,7 @@ partner customer discount
 partner payout
 ```
 
-Do not generalize those financial rules to every future vertical.
+The addition of go-rent does not generalize those financial rules: rental bookings currently have no cleaning referral discounts, rewards or partner payouts.
 
 Future shared concepts might eventually include:
 
@@ -632,6 +659,7 @@ Target direction:
 
 ```text
 /api/v1/cleaning/...
+/api/v1/rental/...
 /api/v1/handyman/...
 /api/v1/residence/...
 ```
@@ -668,7 +696,19 @@ Future routing may evolve toward:
 /residence
 ```
 
-Until a second real vertical exists, `/` may continue opening or redirecting directly to cleaning.
+The current routes include:
+
+```text
+/
+→ ServiceCatalogPage
+
+/cleaning
+/cleaning/orders
+
+/rent
+/rent/properties/:slug
+/rent/bookings
+```
 
 Do not build placeholder verticals solely to satisfy future architecture.
 
@@ -676,7 +716,13 @@ Do not build placeholder verticals solely to satisfy future architecture.
 
 # 21. Admin direction
 
-Current admin should evolve incrementally.
+The admin has a shared service entry and separate cleaning and rental sections:
+
+```text
+/admin
+├── /admin/cleaning
+└── /admin/rent
+```
 
 Future shared shell may look like:
 
@@ -690,7 +736,7 @@ Admin
 └── System
 ```
 
-Do not rewrite the current cleaning admin before another vertical makes a shared shell useful.
+Shared navigation and access control belong to the platform shell. Cleaning and rental operations remain vertical-specific.
 
 ---
 
@@ -810,11 +856,11 @@ media
 
 ---
 
-# 26. Second vertical
+# 26. Multiple verticals
 
-A second service vertical will be the real test of service neutrality.
+go-rent is the second real vertical and validates that shared identity, communication, media, retention and UI infrastructure do not require a generic order aggregate.
 
-A likely candidate is handyman/repair because its lifecycle should differ substantially from cleaning.
+A future Handyman/repair vertical will further test the boundaries because its lifecycle should differ substantially from both cleaning and rental.
 
 Good architecture should allow:
 

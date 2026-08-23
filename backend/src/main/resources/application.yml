@@ -77,10 +77,21 @@ onsite-issue:
   max-photo-size: ${ONSITE_ISSUE_MAX_PHOTO_SIZE:5MB}
   supported-content-types: ${ONSITE_ISSUE_SUPPORTED_CONTENT_TYPES:image/jpeg,image/png}
 
+rental:
+  min-stay-days: ${RENTAL_MIN_STAY_DAYS:7}
+  long-term-min-days: ${RENTAL_LONG_TERM_MIN_DAYS:30}
+  long-term-discount-rate: ${RENTAL_LONG_TERM_DISCOUNT_RATE:0.10}
+  max-stay-days: ${RENTAL_MAX_STAY_DAYS:365}
+  booking-start-months-ahead: ${RENTAL_BOOKING_START_MONTHS_AHEAD:6}
+  max-active-bookings-per-customer: ${RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER:3}
+  zone-id: Europe/Istanbul
+
 data-retention:
   enabled: ${DATA_CLEANUP_ENABLED:true}
   days: ${DATA_RETENTION_DAYS:7}
   cron: "${DATA_CLEANUP_CRON:0 30 3 * * *}"
+  batch-size: ${DATA_CLEANUP_BATCH_SIZE:100}
+  max-batches-per-run: ${DATA_CLEANUP_MAX_BATCHES_PER_RUN:10}
 
 cleaner:
   telegram-ids: ${CLEANER_TELEGRAM_IDS:}

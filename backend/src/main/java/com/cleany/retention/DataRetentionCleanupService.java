@@ -26,9 +26,12 @@ public class DataRetentionCleanupService {
     private final MediaOrphanCleanupService mediaOrphanCleanupService;
 
     @Transactional
-    public DataRetentionCleanupResult cleanup(Instant cutoff) {
+    public DataRetentionCleanupResult cleanupBatch(Instant cutoff, int batchSize) {
         Objects.requireNonNull(cutoff, "cutoff");
-        List<Long> orderIds = orderRepository.findRetentionEligibleOrderIds(cutoff);
+        if (batchSize < 1) {
+            throw new IllegalArgumentException("batchSize must be positive");
+        }
+        List<Long> orderIds = orderRepository.findRetentionEligibleOrderIds(cutoff, batchSize);
         int completionPhotos = 0;
         int issuePhotos = 0;
         int auditEvents = 0;
@@ -37,14 +40,15 @@ public class DataRetentionCleanupService {
             issuePhotos = issuePhotoRepository.deleteResolvedByOrderIds(orderIds);
             auditEvents = eventRepository.deleteByOrderIds(orderIds);
         }
-        int mediaAssets = mediaOrphanCleanupService.deleteUnreferenced();
+        int mediaAssets = mediaOrphanCleanupService.deleteUnreferencedBatch(batchSize);
         return new DataRetentionCleanupResult(
                 cutoff,
                 orderIds.size(),
                 issuePhotos,
                 completionPhotos,
                 auditEvents,
-                mediaAssets
+                mediaAssets,
+                orderIds.size() == batchSize || mediaAssets == batchSize
         );
     }
 }

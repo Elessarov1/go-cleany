@@ -101,8 +101,12 @@ nano .env.production
 - `CLEANING_PRICES_*` — утверждённые цены в TRY.
 - `REFERRAL_*` — ставки и денежные caps реферальной модели; безопасные значения v1 уже находятся
   в `.env.production.example`.
+- `RENTAL_*` — минимальный/максимальный срок, long-term скидка, горизонт начала бронирования и
+  лимит активных броней клиента. Суточные цены квартир задаются в `/admin/rent`, а не в `.env`;
 - `DATA_RETENTION_DAYS` — срок хранения audit trail и фотографий терминальных заказов, по умолчанию 7 дней;
 - `DATA_CLEANUP_ENABLED` — аварийный выключатель scheduled cleanup;
+- `DATA_CLEANUP_BATCH_SIZE` — максимум записей одного типа в одной cleanup-транзакции;
+- `DATA_CLEANUP_MAX_BATCHES_PER_RUN` — максимум отдельных cleanup-транзакций за один запуск;
 - `GO_CLEANY_BACKUP_RETENTION_DAYS` — срок хранения завершённых PostgreSQL dump-файлов, по умолчанию 7 дней.
 
 Production Compose намеренно не включает профиль `local`, `LOCAL_TELEGRAM_USER_ID` и тестовое имя
@@ -179,9 +183,11 @@ ls -lh backups
 `GO_CLEANY_BACKUP_RETENTION_DAYS`. Новый dump и файлы `*.partial` pruning не затрагивает. Retention
 можно изменить в `.env.production`; каталог можно переопределить через `GO_CLEANY_BACKUP_DIR`.
 
-Backend раз в сутки в `03:30` по `cleaning.zone-id` очищает для старых терминальных заказов audit
-events, completion photos и binary evidence разрешённых onsite-инцидентов. Сам заказ, финансовый
-snapshot и metadata инцидента сохраняются. Проверить результат и длительность job можно в логах:
+Backend раз в сутки в `03:30` по `cleaning.zone-id` очищает ограниченными транзакционными пакетами
+audit events, completion photos и binary evidence разрешённых старых терминальных onsite-инцидентов.
+Сам заказ, финансовый snapshot и metadata инцидента сохраняются. Каталожные фотографии go-rent,
+включая фотографии архивных квартир, не являются operational payload и сохраняются, пока явно не
+удалены администратором. Проверить результат и длительность job можно в логах:
 
 ```bash
 docker compose --env-file .env.production -f compose.prod.yaml logs backend | grep 'Data retention cleanup'
@@ -214,6 +220,9 @@ Liquibase должны оставаться совместимыми хотя б
 2. клинер получает карточку, принимает заказ и отправляет фотоотчёт;
 3. клиент получает фотографии тем же ботом;
 4. администратор видит заказ в `/admin` и выполняет `/stats`, `/orders`, `/order <id>`;
-5. после перезапуска VPS заказ и история остаются в PostgreSQL;
-6. backup копируется со страницы VPS на внешнее хранилище;
-7. одновременно работает только один backend, выполняющий long polling этого bot token.
+5. администратор создаёт и публикует квартиру в `/admin/rent`, клиент бронирует свободные даты,
+   а бронь появляется в `/admin/rent/bookings` со статусом `CONFIRMED`;
+6. конкурентные или пересекающиеся даты отклоняются, а соседние диапазоны разрешены;
+7. после перезапуска VPS заказы, бронирования и каталожные фотографии остаются в PostgreSQL;
+8. backup копируется с VPS на внешнее хранилище;
+9. одновременно работает только один backend, выполняющий long polling этого bot token.

@@ -40,7 +40,7 @@ Avoid interface + single implementation pairs for ordinary domain/application se
 
 ## Domain boundaries
 
-Keep platform concerns separate from cleaning business concerns.
+Keep platform concerns separate from cleaning and rental business concerns.
 
 Platform-oriented backend code includes:
 
@@ -64,7 +64,16 @@ onsite issue
 cleaning referral economics
 ```
 
-Do not move cleaning-specific rules into generic platform classes merely to make them reusable.
+Rental-specific logic includes:
+
+```text
+rental properties and catalog publication
+availability and occupancy
+rental pricing and stay policies
+rental booking lifecycle
+```
+
+Do not move vertical-specific rules into generic platform classes merely to make them reusable, and do not couple rental workflows directly to cleaning aggregates.
 
 ---
 

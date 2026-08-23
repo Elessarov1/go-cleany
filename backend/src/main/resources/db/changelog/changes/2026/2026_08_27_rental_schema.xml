@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260827-01" author="go-cleany">
+        <comment>Create the independent go-rent property, booking, media, amenity, and occupancy model.</comment>
+
+        <sql dbms="postgresql">create extension if not exists btree_gist;</sql>
+
+        <createTable tableName="rental_property">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_rental_property" nullable="false"/>
+            </column>
+            <column name="slug" type="VARCHAR(120)"/>
+            <column name="title_ru" type="VARCHAR(255)"/>
+            <column name="title_en" type="VARCHAR(255)"/>
+            <column name="description_ru" type="VARCHAR(5000)"/>
+            <column name="description_en" type="VARCHAR(5000)"/>
+            <column name="area" type="VARCHAR(255)"/>
+            <column name="address" type="VARCHAR(1000)"/>
+            <column name="bedrooms" type="INTEGER"/>
+            <column name="beds" type="INTEGER"/>
+            <column name="bathrooms" type="INTEGER"/>
+            <column name="max_guests" type="INTEGER"/>
+            <column name="area_sqm" type="NUMERIC(8,2)"/>
+            <column name="floor" type="INTEGER"/>
+            <column name="base_daily_price" type="NUMERIC(12,2)"/>
+            <column name="currency" type="VARCHAR(3)"/>
+            <column name="status" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint
+                tableName="rental_property"
+                columnNames="slug"
+                constraintName="uq_rental_property_slug"/>
+        <createIndex tableName="rental_property" indexName="idx_rental_property_status">
+            <column name="status"/>
+        </createIndex>
+        <createIndex tableName="rental_property" indexName="idx_rental_property_created_at">
+            <column name="created_at"/>
+        </createIndex>
+
+        <createTable tableName="rental_property_amenity">
+            <column name="property_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="amenity" type="VARCHAR(64)"><constraints nullable="false"/></column>
+        </createTable>
+        <addPrimaryKey
+                tableName="rental_property_amenity"
+                columnNames="property_id, amenity"
+                constraintName="pk_rental_property_amenity"/>
+        <addForeignKeyConstraint
+                baseTableName="rental_property_amenity"
+                baseColumnNames="property_id"
+                constraintName="fk_rental_property_amenity_property"
+                referencedTableName="rental_property"
+                referencedColumnNames="id"
+                onDelete="CASCADE"/>
+
+        <createTable tableName="rental_property_media">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_rental_property_media" nullable="false"/>
+            </column>
+            <column name="property_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="media_asset_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="sort_order" type="INTEGER" defaultValueNumeric="0"><constraints nullable="false"/></column>
+            <column name="is_cover" type="BOOLEAN" defaultValueBoolean="false"><constraints nullable="false"/></column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint
+                baseTableName="rental_property_media"
+                baseColumnNames="property_id"
+                constraintName="fk_rental_property_media_property"
+                referencedTableName="rental_property"
+                referencedColumnNames="id"
+                onDelete="CASCADE"/>
+        <addForeignKeyConstraint
+                baseTableName="rental_property_media"
+                baseColumnNames="media_asset_id"
+                constraintName="fk_rental_property_media_asset"
+                referencedTableName="media_asset"
+                referencedColumnNames="id"
+                onDelete="RESTRICT"/>
+        <addUniqueConstraint
+                tableName="rental_property_media"
+                columnNames="property_id, media_asset_id"
+                constraintName="uq_rental_property_media_asset"/>
+        <createIndex tableName="rental_property_media" indexName="idx_rental_property_media_property">
+            <column name="property_id"/>
+            <column name="sort_order"/>
+        </createIndex>
+        <createIndex tableName="rental_property_media" indexName="idx_rental_property_media_asset">
+            <column name="media_asset_id"/>
+        </createIndex>
+
+        <createTable tableName="rental_booking">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_rental_booking" nullable="false"/>
+            </column>
+            <column name="customer_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="communication_identity_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="property_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="check_in_date" type="DATE"><constraints nullable="false"/></column>
+            <column name="check_out_date" type="DATE"><constraints nullable="false"/></column>
+            <column name="duration_days" type="INTEGER"><constraints nullable="false"/></column>
+            <column name="customer_name" type="VARCHAR(255)"><constraints nullable="false"/></column>
+            <column name="phone" type="VARCHAR(40)"><constraints nullable="false"/></column>
+            <column name="guests" type="INTEGER"><constraints nullable="false"/></column>
+            <column name="comment" type="VARCHAR(1000)"/>
+            <column name="base_daily_price_snapshot" type="NUMERIC(12,2)"><constraints nullable="false"/></column>
+            <column name="long_term_discount_rate_snapshot" type="NUMERIC(5,4)"><constraints nullable="false"/></column>
+            <column name="discount_amount" type="NUMERIC(12,2)"><constraints nullable="false"/></column>
+            <column name="total_price" type="NUMERIC(12,2)"><constraints nullable="false"/></column>
+            <column name="currency" type="VARCHAR(3)"><constraints nullable="false"/></column>
+            <column name="status" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="cancelled_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="cancellation_reason" type="VARCHAR(1000)"/>
+            <column name="completed_at" type="TIMESTAMP WITH TIME ZONE"/>
+        </createTable>
+        <addForeignKeyConstraint
+                baseTableName="rental_booking"
+                baseColumnNames="customer_id"
+                constraintName="fk_rental_booking_customer"
+                referencedTableName="customer_account"
+                referencedColumnNames="id"
+                onDelete="RESTRICT"/>
+        <addForeignKeyConstraint
+                baseTableName="rental_booking"
+                baseColumnNames="communication_identity_id, customer_id"
+                constraintName="fk_rental_booking_communication_identity"
+                referencedTableName="customer_external_identity"
+                referencedColumnNames="id, customer_id"
+                onDelete="RESTRICT"/>
+        <addForeignKeyConstraint
+                baseTableName="rental_booking"
+                baseColumnNames="property_id"
+                constraintName="fk_rental_booking_property"
+                referencedTableName="rental_property"
+                referencedColumnNames="id"
+                onDelete="RESTRICT"/>
+        <createIndex tableName="rental_booking" indexName="idx_rental_booking_customer_status">
+            <column name="customer_id"/>
+            <column name="status"/>
+            <column name="check_out_date"/>
+        </createIndex>
+        <createIndex tableName="rental_booking" indexName="idx_rental_booking_property_dates">
+            <column name="property_id"/>
+            <column name="check_in_date"/>
+            <column name="check_out_date"/>
+        </createIndex>
+        <createIndex tableName="rental_booking" indexName="idx_rental_booking_created_at">
+            <column name="created_at"/>
+        </createIndex>
+
+        <createTable tableName="rental_occupancy">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_rental_occupancy" nullable="false"/>
+            </column>
+            <column name="property_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="date_range" type="DATERANGE"><constraints nullable="false"/></column>
+            <column name="type" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="booking_id" type="BIGINT"/>
+            <column name="note" type="VARCHAR(1000)"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="created_by_admin_id" type="BIGINT"/>
+        </createTable>
+        <addForeignKeyConstraint
+                baseTableName="rental_occupancy"
+                baseColumnNames="property_id"
+                constraintName="fk_rental_occupancy_property"
+                referencedTableName="rental_property"
+                referencedColumnNames="id"
+                onDelete="RESTRICT"/>
+        <addForeignKeyConstraint
+                baseTableName="rental_occupancy"
+                baseColumnNames="booking_id"
+                constraintName="fk_rental_occupancy_booking"
+                referencedTableName="rental_booking"
+                referencedColumnNames="id"
+                onDelete="RESTRICT"/>
+        <addUniqueConstraint
+                tableName="rental_occupancy"
+                columnNames="booking_id"
+                constraintName="uq_rental_occupancy_booking"/>
+        <createIndex tableName="rental_occupancy" indexName="idx_rental_occupancy_property">
+            <column name="property_id"/>
+        </createIndex>
+        <createIndex tableName="rental_occupancy" indexName="idx_rental_occupancy_booking">
+            <column name="booking_id"/>
+        </createIndex>
+
+        <sql dbms="postgresql"><![CDATA[
+            alter table rental_property
+                add constraint ck_rental_property_slug check (
+                    slug is null or slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'
+                ),
+                add constraint ck_rental_property_status check (
+                    status in ('DRAFT', 'PUBLISHED', 'ARCHIVED')
+                ),
+                add constraint ck_rental_property_capacity check (
+                    (bedrooms is null or bedrooms >= 0)
+                    and (beds is null or beds >= 1)
+                    and (bathrooms is null or bathrooms >= 1)
+                    and (max_guests is null or max_guests >= 1)
+                    and (area_sqm is null or area_sqm > 0)
+                ),
+                add constraint ck_rental_property_price check (
+                    base_daily_price is null or base_daily_price > 0
+                ),
+                add constraint ck_rental_property_currency check (
+                    currency is null or currency ~ '^[A-Z]{3}$'
+                );
+
+            alter table rental_property_amenity
+                add constraint ck_rental_property_amenity check (
+                    amenity in (
+                        'WIFI', 'AIR_CONDITIONING', 'WASHING_MACHINE', 'DISHWASHER',
+                        'BALCONY', 'SEA_VIEW', 'POOL', 'PARKING', 'ELEVATOR',
+                        'WORKSPACE', 'TV', 'KITCHEN'
+                    )
+                );
+
+            alter table rental_property_media
+                add constraint ck_rental_property_media_sort_order check (sort_order >= 0);
+            create unique index uq_rental_property_media_cover
+                on rental_property_media (property_id)
+                where is_cover;
+
+            alter table rental_booking
+                add constraint ck_rental_booking_dates check (check_out_date > check_in_date),
+                add constraint ck_rental_booking_duration check (
+                    duration_days > 0 and duration_days = check_out_date - check_in_date
+                ),
+                add constraint ck_rental_booking_guests check (guests >= 1),
+                add constraint ck_rental_booking_money check (
+                    base_daily_price_snapshot > 0
+                    and long_term_discount_rate_snapshot >= 0
+                    and long_term_discount_rate_snapshot < 1
+                    and discount_amount >= 0
+                    and total_price >= 0
+                ),
+                add constraint ck_rental_booking_currency check (currency ~ '^[A-Z]{3}$'),
+                add constraint ck_rental_booking_status check (
+                    status in ('CONFIRMED', 'CANCELLED_BY_CUSTOMER', 'CANCELLED_BY_ADMIN', 'COMPLETED')
+                ),
+                add constraint ck_rental_booking_cancellation check (
+                    (status in ('CANCELLED_BY_CUSTOMER', 'CANCELLED_BY_ADMIN') and cancelled_at is not null)
+                    or (status in ('CONFIRMED', 'COMPLETED') and cancelled_at is null)
+                );
+
+            alter table rental_occupancy
+                add constraint ck_rental_occupancy_range check (not isempty(date_range)),
+                add constraint ck_rental_occupancy_type check (
+                    type in ('BOOKING', 'OWNER_BLOCK', 'EXTERNAL_BOOKING', 'MAINTENANCE')
+                ),
+                add constraint ck_rental_occupancy_booking_type check (
+                    (type = 'BOOKING' and booking_id is not null)
+                    or (type <> 'BOOKING' and booking_id is null)
+                ),
+                add constraint ex_rental_occupancy_no_overlap
+                    exclude using gist (property_id with =, date_range with &&);
+        ]]></sql>
+
+        <rollback>
+            <dropTable tableName="rental_occupancy"/>
+            <dropTable tableName="rental_booking"/>
+            <dropTable tableName="rental_property_media"/>
+            <dropTable tableName="rental_property_amenity"/>
+            <dropTable tableName="rental_property"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

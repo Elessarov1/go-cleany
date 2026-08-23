@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520">
+  <defs><linearGradient id="wall" x2="0" y2="1"><stop stop-color="#fff9f1"/><stop offset="1" stop-color="#f3e8d8"/></linearGradient><linearGradient id="sea" x2="0" y2="1"><stop stop-color="#a8d9e8"/><stop offset="1" stop-color="#4f9db9"/></linearGradient></defs>
+  <rect width="800" height="520" fill="url(#wall)"/><rect y="382" width="800" height="138" fill="#d5b991"/>
+  <rect x="470" y="54" width="270" height="260" rx="8" fill="#fff"/><rect x="484" y="68" width="242" height="232" fill="url(#sea)"/><path d="M484 185c75-32 145-20 242 8v107H484Z" fill="#83bfd0"/><path d="M605 68v232M484 184h242" stroke="#fff" stroke-width="10"/>
+  <rect x="86" y="276" width="388" height="116" rx="30" fill="#e9a96f"/><rect x="116" y="243" width="156" height="76" rx="24" fill="#f2bc87"/><rect x="288" y="243" width="156" height="76" rx="24" fill="#f2bc87"/>
+  <rect x="186" y="404" width="264" height="28" rx="14" fill="#9a6e4c"/><circle cx="625" cy="363" r="54" fill="#f3d59e"/><path d="M625 309v108M571 363h108" stroke="#fff4dc" stroke-width="3"/>
+  <path d="M68 65h275v132H68z" fill="#fefefe"/><path d="M91 174c48-70 92-80 138-20 31-45 58-52 92 20" fill="#c6d9c1"/>
+</svg>

@@ -80,10 +80,18 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
           ssh-keygen -y -f ~/.ssh/id_ed25519 </dev/null >/dev/null
 
-      - name: Validate staging access lists
+      - name: Validate staging variables
         env:
           CLEANER_TELEGRAM_IDS: ${{ vars.CLEANER_TELEGRAM_IDS }}
           ADMIN_TELEGRAM_IDS: ${{ vars.ADMIN_TELEGRAM_IDS }}
+          RENTAL_MIN_STAY_DAYS: ${{ vars.RENTAL_MIN_STAY_DAYS || '7' }}
+          RENTAL_LONG_TERM_MIN_DAYS: ${{ vars.RENTAL_LONG_TERM_MIN_DAYS || '30' }}
+          RENTAL_LONG_TERM_DISCOUNT_RATE: ${{ vars.RENTAL_LONG_TERM_DISCOUNT_RATE || '0.10' }}
+          RENTAL_MAX_STAY_DAYS: ${{ vars.RENTAL_MAX_STAY_DAYS || '365' }}
+          RENTAL_BOOKING_START_MONTHS_AHEAD: ${{ vars.RENTAL_BOOKING_START_MONTHS_AHEAD || '6' }}
+          RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER: ${{ vars.RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER || '3' }}
+          DATA_CLEANUP_BATCH_SIZE: ${{ vars.DATA_CLEANUP_BATCH_SIZE || '100' }}
+          DATA_CLEANUP_MAX_BATCHES_PER_RUN: ${{ vars.DATA_CLEANUP_MAX_BATCHES_PER_RUN || '10' }}
         run: |
           : "${CLEANER_TELEGRAM_IDS:?Missing CLEANER_TELEGRAM_IDS staging variable}"
           : "${ADMIN_TELEGRAM_IDS:?Missing ADMIN_TELEGRAM_IDS staging variable}"
@@ -95,6 +103,24 @@ jobs:
             echo "ADMIN_TELEGRAM_IDS must be comma-separated numeric Telegram IDs without spaces." >&2
             exit 1
           }
+          for variable in \
+            RENTAL_MIN_STAY_DAYS \
+            RENTAL_LONG_TERM_MIN_DAYS \
+            RENTAL_MAX_STAY_DAYS \
+            RENTAL_BOOKING_START_MONTHS_AHEAD \
+            RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER \
+            DATA_CLEANUP_BATCH_SIZE \
+            DATA_CLEANUP_MAX_BATCHES_PER_RUN
+          do
+            [[ "${!variable}" =~ ^[1-9][0-9]*$ ]] || {
+              echo "$variable must be a positive integer." >&2
+              exit 1
+            }
+          done
+          [[ "$RENTAL_LONG_TERM_DISCOUNT_RATE" =~ ^0([.][0-9]+)?$ ]] || {
+            echo "RENTAL_LONG_TERM_DISCOUNT_RATE must be greater than or equal to 0 and less than 1." >&2
+            exit 1
+          }
 
       - name: Deploy exact revision
         env:
@@ -103,6 +129,14 @@ jobs:
           SSH_USER: ${{ vars.STAGING_SSH_USER }}
           CLEANER_TELEGRAM_IDS: ${{ vars.CLEANER_TELEGRAM_IDS }}
           ADMIN_TELEGRAM_IDS: ${{ vars.ADMIN_TELEGRAM_IDS }}
+          RENTAL_MIN_STAY_DAYS: ${{ vars.RENTAL_MIN_STAY_DAYS || '7' }}
+          RENTAL_LONG_TERM_MIN_DAYS: ${{ vars.RENTAL_LONG_TERM_MIN_DAYS || '30' }}
+          RENTAL_LONG_TERM_DISCOUNT_RATE: ${{ vars.RENTAL_LONG_TERM_DISCOUNT_RATE || '0.10' }}
+          RENTAL_MAX_STAY_DAYS: ${{ vars.RENTAL_MAX_STAY_DAYS || '365' }}
+          RENTAL_BOOKING_START_MONTHS_AHEAD: ${{ vars.RENTAL_BOOKING_START_MONTHS_AHEAD || '6' }}
+          RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER: ${{ vars.RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER || '3' }}
+          DATA_CLEANUP_BATCH_SIZE: ${{ vars.DATA_CLEANUP_BATCH_SIZE || '100' }}
+          DATA_CLEANUP_MAX_BATCHES_PER_RUN: ${{ vars.DATA_CLEANUP_MAX_BATCHES_PER_RUN || '10' }}
         run: |
           : "${SSH_HOST:?Missing STAGING_SSH_HOST}"
           : "${SSH_PORT:?Missing STAGING_SSH_PORT}"
@@ -116,4 +150,15 @@ jobs:
             -i ~/.ssh/id_ed25519 \
             -p "$SSH_PORT" \
             "$SSH_USER@$SSH_HOST" \
-            "cd /opt/go-cleany && CLEANER_TELEGRAM_IDS='$CLEANER_TELEGRAM_IDS' ADMIN_TELEGRAM_IDS='$ADMIN_TELEGRAM_IDS' ./deploy/scripts/release.sh '$GITHUB_SHA'"
+            "cd /opt/go-cleany && \
+            CLEANER_TELEGRAM_IDS='$CLEANER_TELEGRAM_IDS' \
+            ADMIN_TELEGRAM_IDS='$ADMIN_TELEGRAM_IDS' \
+            RENTAL_MIN_STAY_DAYS='$RENTAL_MIN_STAY_DAYS' \
+            RENTAL_LONG_TERM_MIN_DAYS='$RENTAL_LONG_TERM_MIN_DAYS' \
+            RENTAL_LONG_TERM_DISCOUNT_RATE='$RENTAL_LONG_TERM_DISCOUNT_RATE' \
+            RENTAL_MAX_STAY_DAYS='$RENTAL_MAX_STAY_DAYS' \
+            RENTAL_BOOKING_START_MONTHS_AHEAD='$RENTAL_BOOKING_START_MONTHS_AHEAD' \
+            RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER='$RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER' \
+            DATA_CLEANUP_BATCH_SIZE='$DATA_CLEANUP_BATCH_SIZE' \
+            DATA_CLEANUP_MAX_BATCHES_PER_RUN='$DATA_CLEANUP_MAX_BATCHES_PER_RUN' \
+            ./deploy/scripts/release.sh '$GITHUB_SHA'"

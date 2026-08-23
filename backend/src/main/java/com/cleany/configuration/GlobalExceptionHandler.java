@@ -24,6 +24,24 @@ import com.cleany.order.InvalidOnsiteIssueException;
 import com.cleany.order.OrderClaimConflictException;
 import com.cleany.order.OrderNotFoundException;
 import com.cleany.referral.ReferralNotApplicableException;
+import com.cleany.rental.InvalidRentalBookingException;
+import com.cleany.rental.InvalidRentalDateRangeException;
+import com.cleany.rental.InvalidRentalOccupancyException;
+import com.cleany.rental.InvalidRentalPropertyMediaException;
+import com.cleany.rental.RentalActiveBookingLimitExceededException;
+import com.cleany.rental.RentalBookingCannotBeCancelledException;
+import com.cleany.rental.RentalBookingCannotBeCompletedException;
+import com.cleany.rental.RentalBookingHorizonExceededException;
+import com.cleany.rental.RentalBookingNotFoundException;
+import com.cleany.rental.RentalDatesNotAvailableException;
+import com.cleany.rental.RentalMaximumStayExceededException;
+import com.cleany.rental.RentalMinimumStayNotMetException;
+import com.cleany.rental.RentalOccupancyNotFoundException;
+import com.cleany.rental.RentalPropertyCannotBePublishedException;
+import com.cleany.rental.RentalPropertyMediaNotFoundException;
+import com.cleany.rental.RentalPropertyNotFoundException;
+import com.cleany.rental.RentalPropertyNotAvailableException;
+import com.cleany.rental.RentalPropertySlugConflictException;
 import com.cleany.telegram.CustomerAuthenticationRequiredException;
 import com.cleany.telegram.bot.TelegramWebhookAuthenticationException;
 
@@ -95,6 +113,184 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(OrderNotFoundException.class)
     ResponseEntity<ApiError> handleNotFound(OrderNotFoundException exception) {
         return response(HttpStatus.NOT_FOUND, "order_not_found", exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(RentalPropertyNotFoundException.class)
+    ResponseEntity<ApiError> handleRentalPropertyNotFound(RentalPropertyNotFoundException exception) {
+        return response(
+                HttpStatus.NOT_FOUND,
+                "rental_property_not_found",
+                exception.getMessage(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(RentalPropertyMediaNotFoundException.class)
+    ResponseEntity<ApiError> handleRentalPropertyMediaNotFound(
+            RentalPropertyMediaNotFoundException exception
+    ) {
+        return response(
+                HttpStatus.NOT_FOUND,
+                "rental_property_media_not_found",
+                exception.getMessage(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(InvalidRentalPropertyMediaException.class)
+    ResponseEntity<ApiError> handleInvalidRentalPropertyMedia(
+            InvalidRentalPropertyMediaException exception
+    ) {
+        return response(
+                HttpStatus.BAD_REQUEST,
+                "invalid_rental_property_media",
+                exception.getMessage(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(RentalPropertyCannotBePublishedException.class)
+    ResponseEntity<ApiError> handleRentalPropertyCannotBePublished(
+            RentalPropertyCannotBePublishedException exception
+    ) {
+        return response(
+                HttpStatus.CONFLICT,
+                "rental_property_cannot_be_published",
+                exception.getMessage(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(RentalPropertySlugConflictException.class)
+    ResponseEntity<ApiError> handleRentalPropertySlugConflict(
+            RentalPropertySlugConflictException exception
+    ) {
+        return response(
+                HttpStatus.CONFLICT,
+                "rental_property_slug_conflict",
+                exception.getMessage(),
+                Map.of("slug", exception.getMessage())
+        );
+    }
+
+    @ExceptionHandler(RentalBookingNotFoundException.class)
+    ResponseEntity<ApiError> handleRentalBookingNotFound(RentalBookingNotFoundException exception) {
+        return response(HttpStatus.NOT_FOUND, "rental_booking_not_found", exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(RentalOccupancyNotFoundException.class)
+    ResponseEntity<ApiError> handleRentalOccupancyNotFound(
+            RentalOccupancyNotFoundException exception
+    ) {
+        return response(
+                HttpStatus.NOT_FOUND,
+                "rental_occupancy_not_found",
+                exception.getMessage(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(InvalidRentalDateRangeException.class)
+    ResponseEntity<ApiError> handleInvalidRentalDateRange(InvalidRentalDateRangeException exception) {
+        return response(
+                HttpStatus.BAD_REQUEST,
+                "invalid_rental_date_range",
+                exception.getMessage(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(RentalMinimumStayNotMetException.class)
+    ResponseEntity<ApiError> handleRentalMinimumStay(RentalMinimumStayNotMetException exception) {
+        return response(
+                HttpStatus.BAD_REQUEST,
+                "rental_min_stay_not_met",
+                exception.getMessage(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(RentalMaximumStayExceededException.class)
+    ResponseEntity<ApiError> handleRentalMaximumStay(RentalMaximumStayExceededException exception) {
+        return response(
+                HttpStatus.BAD_REQUEST,
+                "rental_max_stay_exceeded",
+                exception.getMessage(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(RentalBookingHorizonExceededException.class)
+    ResponseEntity<ApiError> handleRentalBookingHorizon(
+            RentalBookingHorizonExceededException exception
+    ) {
+        return response(
+                HttpStatus.BAD_REQUEST,
+                "rental_booking_horizon_exceeded",
+                exception.getMessage(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler({InvalidRentalBookingException.class, InvalidRentalOccupancyException.class})
+    ResponseEntity<ApiError> handleInvalidRentalOperation(RuntimeException exception) {
+        String code = exception instanceof InvalidRentalBookingException
+                ? "invalid_rental_booking"
+                : "invalid_rental_occupancy";
+        return response(HttpStatus.BAD_REQUEST, code, exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(RentalPropertyNotAvailableException.class)
+    ResponseEntity<ApiError> handleRentalPropertyNotAvailable(
+            RentalPropertyNotAvailableException exception
+    ) {
+        return response(
+                HttpStatus.CONFLICT,
+                "rental_property_not_available",
+                exception.getMessage(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(RentalDatesNotAvailableException.class)
+    ResponseEntity<ApiError> handleRentalDatesNotAvailable(RentalDatesNotAvailableException exception) {
+        return response(HttpStatus.CONFLICT, "dates_not_available", exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(RentalActiveBookingLimitExceededException.class)
+    ResponseEntity<ApiError> handleRentalBookingLimit(
+            RentalActiveBookingLimitExceededException exception
+    ) {
+        return response(
+                HttpStatus.CONFLICT,
+                "rental_active_booking_limit_exceeded",
+                exception.getMessage(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(RentalBookingCannotBeCancelledException.class)
+    ResponseEntity<ApiError> handleRentalBookingCannotBeCancelled(
+            RentalBookingCannotBeCancelledException exception
+    ) {
+        return response(
+                HttpStatus.CONFLICT,
+                "rental_booking_cannot_be_cancelled",
+                exception.getMessage(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(RentalBookingCannotBeCompletedException.class)
+    ResponseEntity<ApiError> handleRentalBookingCannotBeCompleted(
+            RentalBookingCannotBeCompletedException exception
+    ) {
+        return response(
+                HttpStatus.CONFLICT,
+                "rental_booking_cannot_be_completed",
+                exception.getMessage(),
+                Map.of()
+        );
     }
 
     @ExceptionHandler(CustomerAuthenticationRequiredException.class)

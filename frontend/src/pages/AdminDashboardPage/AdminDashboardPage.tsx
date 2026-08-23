@@ -231,7 +231,7 @@ export function AdminDashboardPage() {
         ) : (
           <div className="admin-order-list">
             {orders.map((order) => (
-              <Link className="admin-order-row" key={order.id} to={`/admin/orders/${order.id}`}>
+              <Link className="admin-order-row" key={order.id} to={`/admin/cleaning/orders/${order.id}`}>
                 <div className="admin-order-row__main">
                   <span>#{order.id}</span>
                   <strong>{order.customerName}</strong>

@@ -8,6 +8,7 @@ public record DataRetentionCleanupResult(
         int deletedIssuePhotoCount,
         int deletedCompletionPhotoCount,
         int deletedAuditEventCount,
-        int deletedMediaAssetCount
+        int deletedMediaAssetCount,
+        boolean hasMoreWork
 ) {
 }

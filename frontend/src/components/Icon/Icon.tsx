@@ -2,6 +2,8 @@ export type IconName =
   | "admin"
   | "arrow-left"
   | "arrow-right"
+  | "bed"
+  | "building"
   | "calendar-plus"
   | "camera"
   | "check"
@@ -10,6 +12,7 @@ export type IconName =
   | "home"
   | "info"
   | "location"
+  | "moon"
   | "sparkles"
   | "user"
   | "wallet";
@@ -69,6 +72,19 @@ export function Icon({ name, size = 22, strokeWidth = 1.8 }: IconProps) {
           <path d="M5 10v10h14V10M9 20v-6h6v6" />
         </>
       ) : null}
+      {name === "building" ? (
+        <>
+          <path d="M4 21V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v16M17 9h3v12M2 21h20" />
+          <path d="M8 7h2M13 7h1M8 11h2M13 11h1M8 15h2M13 15h1M8 21v-3h5v3" />
+        </>
+      ) : null}
+      {name === "bed" ? (
+        <>
+          <path d="M3 19v-8M21 19v-6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v3M3 16h18" />
+          <path d="M6 11V8a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3" />
+        </>
+      ) : null}
+      {name === "moon" ? <path d="M20 15.5A8.5 8.5 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5Z" /> : null}
       {name === "wallet" ? (
         <>
           <path d="M4 6h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12" />

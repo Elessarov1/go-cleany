@@ -32,24 +32,60 @@ public class DataRetentionCleanupJob {
     public void run() {
         long startedAt = System.nanoTime();
         Instant cutoff = clock.instant().minus(Duration.ofDays(properties.days()));
+        int batchesExecuted = 0;
+        long eligibleOrders = 0;
+        long deletedIssuePhotos = 0;
+        long deletedCompletionPhotos = 0;
+        long deletedAuditEvents = 0;
+        long deletedMediaAssets = 0;
+        boolean stoppedBecauseNoMoreWork = false;
         try {
-            DataRetentionCleanupResult result = cleanupService.cleanup(cutoff);
+            for (int batch = 0; batch < properties.maxBatchesPerRun(); batch++) {
+                DataRetentionCleanupResult result = cleanupService.cleanupBatch(
+                        cutoff,
+                        properties.batchSize()
+                );
+                batchesExecuted++;
+                eligibleOrders += result.eligibleOrderCount();
+                deletedIssuePhotos += result.deletedIssuePhotoCount();
+                deletedCompletionPhotos += result.deletedCompletionPhotoCount();
+                deletedAuditEvents += result.deletedAuditEventCount();
+                deletedMediaAssets += result.deletedMediaAssetCount();
+                if (!result.hasMoreWork()) {
+                    stoppedBecauseNoMoreWork = true;
+                    break;
+                }
+            }
+            boolean maxBatchesReached = !stoppedBecauseNoMoreWork
+                    && batchesExecuted == properties.maxBatchesPerRun();
             log.info(
-                    "Data retention cleanup completed: cutoff={}, eligibleOrders={}, "
+                    "Data retention cleanup completed: cutoff={}, batchesExecuted={}, eligibleOrders={}, "
                             + "deletedIssuePhotos={}, deletedCompletionPhotos={}, "
-                            + "deletedAuditEvents={}, deletedMediaAssets={}, durationMs={}",
-                    result.cutoff(),
-                    result.eligibleOrderCount(),
-                    result.deletedIssuePhotoCount(),
-                    result.deletedCompletionPhotoCount(),
-                    result.deletedAuditEventCount(),
-                    result.deletedMediaAssetCount(),
-                    elapsedMillis(startedAt)
+                            + "deletedAuditEvents={}, deletedMediaAssets={}, durationMs={}, "
+                            + "stoppedBecauseNoMoreWork={}, maxBatchesReached={}",
+                    cutoff,
+                    batchesExecuted,
+                    eligibleOrders,
+                    deletedIssuePhotos,
+                    deletedCompletionPhotos,
+                    deletedAuditEvents,
+                    deletedMediaAssets,
+                    elapsedMillis(startedAt),
+                    stoppedBecauseNoMoreWork,
+                    maxBatchesReached
             );
         } catch (RuntimeException exception) {
             log.error(
-                    "Data retention cleanup failed: cutoff={}, durationMs={}",
+                    "Data retention cleanup failed: cutoff={}, completedBatches={}, "
+                            + "eligibleOrders={}, deletedIssuePhotos={}, deletedCompletionPhotos={}, "
+                            + "deletedAuditEvents={}, deletedMediaAssets={}, durationMs={}",
                     cutoff,
+                    batchesExecuted,
+                    eligibleOrders,
+                    deletedIssuePhotos,
+                    deletedCompletionPhotos,
+                    deletedAuditEvents,
+                    deletedMediaAssets,
                     elapsedMillis(startedAt),
                     exception
             );

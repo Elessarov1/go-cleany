@@ -1,5 +1,4 @@
 import type { CleaningConfiguration } from "../domain/configuration";
-import type { CustomerProfile } from "../domain/customer";
 import type {
   AdminDashboard,
   AdminOrderDetails,
@@ -25,7 +24,6 @@ export interface CleaningApi {
   createReferralPartner(name: string): Promise<ReferralPartner>;
   markPartnerPayoutPaid(id: number): Promise<PartnerPayout>;
   getConfiguration(): Promise<CleaningConfiguration>;
-  getCurrentCustomerProfile(): Promise<CustomerProfile>;
   quoteOrder(request: CleaningOrderQuoteRequest): Promise<CleaningOrderQuote>;
   createOrder(request: CreateCleaningOrderRequest): Promise<CleaningOrder>;
   getReferralSummary(): Promise<ReferralSummary>;
@@ -34,14 +32,4 @@ export interface CleaningApi {
   cancelOrder(id: number): Promise<CleaningOrder>;
 }
 
-export class CleaningApiError extends Error {
-  constructor(
-    message: string,
-    readonly status?: number,
-    readonly code?: string,
-    readonly fieldErrors: Record<string, string> = {},
-  ) {
-    super(message);
-    this.name = "CleaningApiError";
-  }
-}
+export { ApiError as CleaningApiError } from "./ApiError";

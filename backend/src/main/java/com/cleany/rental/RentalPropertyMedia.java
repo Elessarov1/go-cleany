@@ -1,0 +1,76 @@
+package com.cleany.rental;
+
+import java.time.Instant;
+import java.util.Objects;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Table(name = "rental_property_media")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class RentalPropertyMedia {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "property_id", nullable = false)
+    private RentalProperty property;
+
+    @Column(name = "media_asset_id", nullable = false)
+    private long mediaAssetId;
+
+    @Column(name = "sort_order", nullable = false)
+    private int sortOrder;
+
+    @Column(name = "is_cover", nullable = false)
+    private boolean cover;
+
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
+    public RentalPropertyMedia(
+            RentalProperty property,
+            long mediaAssetId,
+            int sortOrder,
+            boolean cover,
+            Instant createdAt
+    ) {
+        this.property = Objects.requireNonNull(property, "property");
+        if (mediaAssetId <= 0) {
+            throw new IllegalArgumentException("mediaAssetId must be positive");
+        }
+        if (sortOrder < 0) {
+            throw new IllegalArgumentException("sortOrder must not be negative");
+        }
+        this.mediaAssetId = mediaAssetId;
+        this.sortOrder = sortOrder;
+        this.cover = cover;
+        this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
+    }
+
+    public void setCover(boolean cover) {
+        this.cover = cover;
+    }
+
+    public void reorder(int sortOrder) {
+        if (sortOrder < 0) {
+            throw new IllegalArgumentException("sortOrder must not be negative");
+        }
+        this.sortOrder = sortOrder;
+    }
+}

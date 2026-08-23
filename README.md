@@ -1,6 +1,11 @@
-# go-cleany
+# go services: go-cleany + go-rent
 
-go-cleany is a mobile-first cleaning-order MVP for customers in Alanya. A customer creates an order, every configured cleaner receives it through the Telegram bot, and the first cleaner to accept becomes the assigned cleaner. The assigned cleaner sends the completed photo report through the bot, which forwards it to the customer and completes the order. Administrators can inspect operational statistics and the append-only order history in the web interface or through bot commands.
+This repository contains a mobile-first service platform for customers in Alanya with two independent verticals:
+
+- **go-cleany** — apartment cleaning with Telegram cleaner dispatch and photo reports;
+- **go-rent** — apartment catalog, server-side availability and pricing, immediate booking and rental administration.
+
+Both verticals share customer identity, communication, media, retention and the React application shell. Their aggregates and business rules remain separate: `CleaningOrder` is not reused as a rental booking.
 
 ## Repository layout
 
@@ -20,7 +25,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`. The frontend uses `BrowserPlatform` and `MockCleaningApi` when no backend URL is configured, so Telegram, a backend, and PostgreSQL are not required for the visual prototype.
+Open `http://localhost:5173`. Without a backend URL the frontend uses `BrowserPlatform` and mock APIs for cleaning, rental and customer data, so Telegram and PostgreSQL are not required for visual inspection.
 
 Developer scenarios are available at `http://localhost:5173/?preview=true`.
 
@@ -32,7 +37,7 @@ VITE_API_BASE_URL=http://localhost:8080
 
 ## Backend foundation
 
-The backend is a single Spring Boot application. It owns configuration, price calculation, customer-scoped order access, lifecycle validation, the concurrency-safe order claim operation, and Telegram photo-report delivery.
+The backend is a single Spring Boot application. It owns customer identity, canonical media, cleaning and rental configuration, server-side pricing, customer-scoped access and lifecycle validation. PostgreSQL protects both first-cleaner-wins claiming and non-overlapping rental occupancy under concurrency.
 
 Local backend startup uses the isolated `local` profile. See [`backend/README.md`](backend/README.md) for environment and PostgreSQL setup. The default profile validates Telegram Mini App `initData`; browser-preview identity remains available only in the `local` profile.
 
@@ -51,9 +56,23 @@ backend instance must own the bot token.
 After the first manual launch, [staging continuous deployment](docs/staging-continuous-deployment.md)
 can deploy each tested `main` revision automatically through GitHub Actions and SSH.
 
+## Main routes
+
+```text
+/                         service catalog
+/cleaning                 go-cleany customer flow
+/cleaning/orders          cleaning history
+/rent                     published rental catalog
+/rent/bookings            customer rental bookings
+/admin                    service-aware admin entry
+/admin/cleaning           cleaning administration
+/admin/rent               rental administration
+```
+
 ## Product constraints
 
 - Frontend UI remains independent from Telegram.
-- Prices and customer identity are never trusted from the frontend in production.
+- Prices, availability and customer identity are never trusted from the frontend in production.
 - Backend order acceptance must be concurrency-safe: the first successful claim wins.
-- The MVP intentionally excludes online payments, cleaner registration, automated dispatching, ratings, and object storage.
+- Rental bookings and cleaning orders are separate domain aggregates.
+- The pilot intentionally excludes online payments, rental marketplace integrations, cleaner registration, ratings, and object storage.

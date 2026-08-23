@@ -1,0 +1,46 @@
+import type {
+  AdminCancelRentalBookingRequest,
+  AdminRentalBooking,
+  AdminRentalBookingFilters,
+  CreateRentalBookingRequest,
+  RentalAvailability,
+  RentalBooking,
+  RentalBookingQuote,
+  RentalBookingQuoteRequest,
+  RentalConfiguration,
+  RentalProperty,
+  RentalOccupancy,
+  UpdateRentalPropertyRequest,
+  UpsertRentalOccupancyRequest,
+} from "../domain/rental";
+
+export interface RentalApi {
+  getConfiguration(): Promise<RentalConfiguration>;
+  getProperties(): Promise<RentalProperty[]>;
+  getProperty(slug: string): Promise<RentalProperty>;
+  getAvailability(propertyId: number, fromDate: string, toDate: string): Promise<RentalAvailability>;
+  quoteBooking(request: RentalBookingQuoteRequest): Promise<RentalBookingQuote>;
+  createBooking(request: CreateRentalBookingRequest): Promise<RentalBooking>;
+  getBookings(): Promise<RentalBooking[]>;
+  getBooking(id: number): Promise<RentalBooking>;
+  cancelBooking(id: number): Promise<RentalBooking>;
+  getAdminProperties(): Promise<RentalProperty[]>;
+  createAdminProperty(): Promise<RentalProperty>;
+  getAdminProperty(id: number): Promise<RentalProperty>;
+  updateAdminProperty(id: number, request: UpdateRentalPropertyRequest): Promise<RentalProperty>;
+  publishAdminProperty(id: number): Promise<RentalProperty>;
+  archiveAdminProperty(id: number): Promise<RentalProperty>;
+  addAdminPropertyMedia(id: number, file: File, cover: boolean): Promise<RentalProperty>;
+  removeAdminPropertyMedia(id: number, mediaId: number): Promise<RentalProperty>;
+  setAdminPropertyMediaCover(id: number, mediaId: number): Promise<RentalProperty>;
+  reorderAdminPropertyMedia(id: number, mediaIds: number[]): Promise<RentalProperty>;
+  getAdminPropertyMedia(id: number, mediaId: number): Promise<Blob>;
+  getAdminOccupancies(id: number, fromDate: string, toDate: string): Promise<RentalOccupancy[]>;
+  createAdminOccupancy(id: number, request: UpsertRentalOccupancyRequest): Promise<RentalOccupancy>;
+  updateAdminOccupancy(id: number, occupancyId: number, request: UpsertRentalOccupancyRequest): Promise<RentalOccupancy>;
+  deleteAdminOccupancy(id: number, occupancyId: number): Promise<void>;
+  getAdminBookings(filters?: AdminRentalBookingFilters): Promise<AdminRentalBooking[]>;
+  getAdminBooking(id: number): Promise<AdminRentalBooking>;
+  cancelAdminBooking(id: number, request: AdminCancelRentalBookingRequest): Promise<AdminRentalBooking>;
+  completeAdminBooking(id: number): Promise<AdminRentalBooking>;
+}

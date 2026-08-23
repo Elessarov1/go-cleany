@@ -25,10 +25,16 @@ public interface MediaAssetRepository extends JpaRepository<MediaAsset, Long> {
                          from cleaning_order_issue_photo issue_photo
                         where issue_photo.media_asset_id = asset.id
                    )
+               and not exists (
+                       select 1
+                         from rental_property_media rental_media
+                        where rental_media.media_asset_id = asset.id
+                   )
              order by asset.id
+             limit :batchSize
              for update of asset
             """, nativeQuery = true)
-    List<Long> lockAllUnreferencedIds();
+    List<Long> lockUnreferencedIds(@Param("batchSize") int batchSize);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from MediaAsset asset where asset.id in :mediaIds")
