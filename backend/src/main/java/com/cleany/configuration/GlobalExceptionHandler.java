@@ -26,7 +26,6 @@ import com.cleany.order.OrderNotFoundException;
 import com.cleany.referral.ReferralNotApplicableException;
 import com.cleany.telegram.CustomerAuthenticationRequiredException;
 import com.cleany.telegram.bot.TelegramWebhookAuthenticationException;
-import com.cleany.whatsapp.WhatsAppWebhookAuthenticationException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -103,11 +102,8 @@ public class GlobalExceptionHandler {
         return response(HttpStatus.UNAUTHORIZED, "authentication_required", exception.getMessage(), Map.of());
     }
 
-    @ExceptionHandler({
-            TelegramWebhookAuthenticationException.class,
-            WhatsAppWebhookAuthenticationException.class
-    })
-    ResponseEntity<ApiError> handleWebhookAuthentication(RuntimeException exception) {
+    @ExceptionHandler(TelegramWebhookAuthenticationException.class)
+    ResponseEntity<ApiError> handleWebhookAuthentication(TelegramWebhookAuthenticationException exception) {
         return response(HttpStatus.UNAUTHORIZED, "invalid_webhook_secret", exception.getMessage(), Map.of());
     }
 

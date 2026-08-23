@@ -21,13 +21,6 @@ if ! flock -n 9; then
   exit 1
 fi
 
-channel_env_overrides="${root}/.env.production.channels.next"
-if [[ -f ${channel_env_overrides} ]]; then
-  require_command awk
-  bash "${script_dir}/merge-production-env.sh" "${env_file}" "${channel_env_overrides}"
-  require_production_env "${env_file}"
-fi
-
 app_host=$(read_env_value "${env_file}" APP_HOST)
 if [[ -z ${app_host} || ${app_host} == *://* || ${app_host} == */* ]]; then
   echo "APP_HOST must contain only a hostname, without protocol or path." >&2

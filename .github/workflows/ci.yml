@@ -66,8 +66,6 @@ jobs:
       cancel-in-progress: false
 
     steps:
-      - uses: actions/checkout@v6
-
       - name: Configure SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
@@ -82,52 +80,40 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
           ssh-keygen -y -f ~/.ssh/id_ed25519 </dev/null >/dev/null
 
-      - name: Render staging environment
+      - name: Validate staging access lists
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           CLEANER_TELEGRAM_IDS: ${{ vars.CLEANER_TELEGRAM_IDS }}
           ADMIN_TELEGRAM_IDS: ${{ vars.ADMIN_TELEGRAM_IDS }}
-          WHATSAPP_ENABLED: ${{ vars.WHATSAPP_ENABLED }}
-          WHATSAPP_GRAPH_API_BASE_URL: ${{ vars.WHATSAPP_GRAPH_API_BASE_URL }}
-          WHATSAPP_GRAPH_API_VERSION: ${{ vars.WHATSAPP_GRAPH_API_VERSION }}
-          WHATSAPP_APP_ID: ${{ vars.WHATSAPP_APP_ID }}
-          WHATSAPP_BUSINESS_PORTFOLIO_ID: ${{ vars.WHATSAPP_BUSINESS_PORTFOLIO_ID }}
-          WHATSAPP_BUSINESS_ACCOUNT_ID: ${{ vars.WHATSAPP_BUSINESS_ACCOUNT_ID }}
-          WHATSAPP_PHONE_NUMBER_ID: ${{ vars.WHATSAPP_PHONE_NUMBER_ID }}
-          WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
-          WHATSAPP_SYSTEM_USER_ID: ${{ vars.WHATSAPP_SYSTEM_USER_ID }}
-          WHATSAPP_ACCESS_TOKEN_TYPE: ${{ vars.WHATSAPP_ACCESS_TOKEN_TYPE }}
-          WHATSAPP_ACCESS_TOKEN_EXPIRES_AT: ${{ vars.WHATSAPP_ACCESS_TOKEN_EXPIRES_AT }}
-          WHATSAPP_APP_SECRET: ${{ secrets.WHATSAPP_APP_SECRET }}
-          WHATSAPP_WEBHOOK_VERIFY_TOKEN: ${{ secrets.WHATSAPP_WEBHOOK_VERIFY_TOKEN }}
-          WHATSAPP_TEST_REPLY_ENABLED: ${{ vars.WHATSAPP_TEST_REPLY_ENABLED }}
         run: |
-          bash ./deploy/scripts/render-channel-env-overrides.sh "$RUNNER_TEMP/go-cleany.channels.env"
+          : "${CLEANER_TELEGRAM_IDS:?Missing CLEANER_TELEGRAM_IDS staging variable}"
+          : "${ADMIN_TELEGRAM_IDS:?Missing ADMIN_TELEGRAM_IDS staging variable}"
+          [[ "$CLEANER_TELEGRAM_IDS" =~ ^[0-9]+(,[0-9]+)*$ ]] || {
+            echo "CLEANER_TELEGRAM_IDS must be comma-separated numeric Telegram IDs without spaces." >&2
+            exit 1
+          }
+          [[ "$ADMIN_TELEGRAM_IDS" =~ ^[0-9]+(,[0-9]+)*$ ]] || {
+            echo "ADMIN_TELEGRAM_IDS must be comma-separated numeric Telegram IDs without spaces." >&2
+            exit 1
+          }
 
       - name: Deploy exact revision
         env:
           SSH_HOST: ${{ vars.STAGING_SSH_HOST }}
           SSH_PORT: ${{ vars.STAGING_SSH_PORT }}
           SSH_USER: ${{ vars.STAGING_SSH_USER }}
+          CLEANER_TELEGRAM_IDS: ${{ vars.CLEANER_TELEGRAM_IDS }}
+          ADMIN_TELEGRAM_IDS: ${{ vars.ADMIN_TELEGRAM_IDS }}
         run: |
           : "${SSH_HOST:?Missing STAGING_SSH_HOST}"
           : "${SSH_PORT:?Missing STAGING_SSH_PORT}"
           : "${SSH_USER:?Missing STAGING_SSH_USER}"
-          ssh_options=(
-            -o BatchMode=yes
-            -o ConnectTimeout=15
-            -o ServerAliveInterval=30
-            -o ServerAliveCountMax=3
-            -o StrictHostKeyChecking=yes
-            -i ~/.ssh/id_ed25519
-            -p "$SSH_PORT"
-          )
-          ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" \
-            "umask 077 && cat > /opt/go-cleany/.env.production.channels.next" \
-            < "$RUNNER_TEMP/go-cleany.channels.env"
-          ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" \
-            "set -eu; test -s /opt/go-cleany/.env.production.channels.next; chmod 600 /opt/go-cleany/.env.production.channels.next; cd /opt/go-cleany; ./deploy/scripts/release.sh '$GITHUB_SHA'"
-
-      - name: Remove rendered environment
-        if: ${{ always() }}
-        run: rm -f -- "$RUNNER_TEMP/go-cleany.channels.env"
+          ssh \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=3 \
+            -o StrictHostKeyChecking=yes \
+            -i ~/.ssh/id_ed25519 \
+            -p "$SSH_PORT" \
+            "$SSH_USER@$SSH_HOST" \
+            "cd /opt/go-cleany && CLEANER_TELEGRAM_IDS='$CLEANER_TELEGRAM_IDS' ADMIN_TELEGRAM_IDS='$ADMIN_TELEGRAM_IDS' ./deploy/scripts/release.sh '$GITHUB_SHA'"
