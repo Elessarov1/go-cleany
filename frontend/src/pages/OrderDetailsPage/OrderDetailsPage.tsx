@@ -66,7 +66,7 @@ export function OrderDetailsPage() {
 
   return (
     <div className="page page--details">
-      <Link className="back-link" to="/orders"><Icon name="arrow-left" size={17} /> {t("common.back")}</Link>
+      <Link className="back-link" to="/cleaning/orders"><Icon name="arrow-left" size={17} /> {t("common.back")}</Link>
       <header className="page-header page-header--compact">
         <span className="eyebrow">{t("details.eyebrow", { id: order.id })}</span>
         <h1>{t("details.title")}</h1>

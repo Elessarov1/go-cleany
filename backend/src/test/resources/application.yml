@@ -59,10 +59,21 @@ onsite-issue:
   max-photo-size: 5MB
   supported-content-types: image/jpeg,image/png
 
+rental:
+  min-stay-days: 7
+  long-term-min-days: 30
+  long-term-discount-rate: 0.10
+  max-stay-days: 365
+  booking-start-months-ahead: 6
+  max-active-bookings-per-customer: 3
+  zone-id: Europe/Istanbul
+
 data-retention:
   enabled: false
   days: 7
   cron: "0 30 3 * * *"
+  batch-size: 100
+  max-batches-per-run: 10
 
 cleaner:
   telegram-ids:

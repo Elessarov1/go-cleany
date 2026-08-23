@@ -95,14 +95,28 @@ class DataRetentionCleanupIntegrationTest extends BaseIntegrationTest {
         long oldCancelledOrderId = createCancelledOrder(old);
         ResolvedIssue resolvedIssue = createResolvedIssue(old);
 
-        DataRetentionCleanupResult firstRun = cleanupService.cleanup(cutoff);
+        DataRetentionCleanupResult firstBatch = cleanupService.cleanupBatch(cutoff, 2);
 
         Assertions.assertAll(
-                () -> Assertions.assertEquals(3, firstRun.eligibleOrderCount()),
-                () -> Assertions.assertEquals(1, firstRun.deletedIssuePhotoCount()),
-                () -> Assertions.assertEquals(2, firstRun.deletedCompletionPhotoCount()),
-                () -> Assertions.assertEquals(3, firstRun.deletedAuditEventCount()),
-                () -> Assertions.assertEquals(3, firstRun.deletedMediaAssetCount()),
+                () -> Assertions.assertEquals(2, firstBatch.eligibleOrderCount()),
+                () -> Assertions.assertEquals(0, firstBatch.deletedIssuePhotoCount()),
+                () -> Assertions.assertEquals(2, firstBatch.deletedCompletionPhotoCount()),
+                () -> Assertions.assertEquals(2, firstBatch.deletedAuditEventCount()),
+                () -> Assertions.assertEquals(2, firstBatch.deletedMediaAssetCount()),
+                () -> Assertions.assertTrue(firstBatch.hasMoreWork()),
+                () -> Assertions.assertEquals(1L,
+                        issuePhotoRepository.countByIssueReport_Id(resolvedIssue.reportId()))
+        );
+
+        DataRetentionCleanupResult secondBatch = cleanupService.cleanupBatch(cutoff, 2);
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(1, secondBatch.eligibleOrderCount()),
+                () -> Assertions.assertEquals(1, secondBatch.deletedIssuePhotoCount()),
+                () -> Assertions.assertEquals(0, secondBatch.deletedCompletionPhotoCount()),
+                () -> Assertions.assertEquals(1, secondBatch.deletedAuditEventCount()),
+                () -> Assertions.assertEquals(1, secondBatch.deletedMediaAssetCount()),
+                () -> Assertions.assertFalse(secondBatch.hasMoreWork()),
                 () -> Assertions.assertEquals(3L, mediaAssetRepository.count()),
                 () -> Assertions.assertEquals(3L, mediaProviderReferenceRepository.count()),
                 () -> Assertions.assertEquals(1L,
@@ -140,13 +154,14 @@ class DataRetentionCleanupIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertNotNull(retainedReport.getResolvedAt())
         );
 
-        DataRetentionCleanupResult secondRun = cleanupService.cleanup(cutoff);
+        DataRetentionCleanupResult emptyBatch = cleanupService.cleanupBatch(cutoff, 2);
         Assertions.assertAll(
-                () -> Assertions.assertEquals(0, secondRun.eligibleOrderCount()),
-                () -> Assertions.assertEquals(0, secondRun.deletedIssuePhotoCount()),
-                () -> Assertions.assertEquals(0, secondRun.deletedCompletionPhotoCount()),
-                () -> Assertions.assertEquals(0, secondRun.deletedAuditEventCount()),
-                () -> Assertions.assertEquals(0, secondRun.deletedMediaAssetCount())
+                () -> Assertions.assertEquals(0, emptyBatch.eligibleOrderCount()),
+                () -> Assertions.assertEquals(0, emptyBatch.deletedIssuePhotoCount()),
+                () -> Assertions.assertEquals(0, emptyBatch.deletedCompletionPhotoCount()),
+                () -> Assertions.assertEquals(0, emptyBatch.deletedAuditEventCount()),
+                () -> Assertions.assertEquals(0, emptyBatch.deletedMediaAssetCount()),
+                () -> Assertions.assertFalse(emptyBatch.hasMoreWork())
         );
     }
 

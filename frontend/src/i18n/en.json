@@ -6,6 +6,8 @@
       "label": "Primary navigation",
       "book": "Book",
       "orders": "Orders",
+      "apartments": "Apartments",
+      "bookings": "Bookings",
       "admin": "Admin"
     }
   },
@@ -302,6 +304,269 @@
     "loadError": "The administrative statistics could not be loaded.",
     "orderLoadError": "The order history could not be loaded."
   },
+  "adminPlatform": {
+    "title": "Service administration",
+    "subtitle": "Choose a vertical. Each service keeps its own data and workflows.",
+    "rent": "Rental administration",
+    "rentText": "Properties, occupancy and bookings",
+    "cleaning": "Cleaning administration",
+    "cleaningText": "Orders, photo reports and partners"
+  },
+  "adminRental": {
+    "nav": {
+      "properties": "Properties",
+      "bookings": "Bookings"
+    },
+    "filters": {
+      "all": "All statuses",
+      "allProperties": "All properties"
+    },
+    "propertyStatus": {
+      "DRAFT": "Draft",
+      "PUBLISHED": "Published",
+      "ARCHIVED": "Archived"
+    },
+    "properties": {
+      "title": "Properties",
+      "subtitle": "Publishing, photos and availability calendars for go-rent properties.",
+      "create": "Add property",
+      "creating": "Creating…",
+      "empty": "No properties yet. Create the first draft.",
+      "untitled": "Untitled property",
+      "edit": "Edit",
+      "calendar": "Calendar",
+      "loadError": "Could not load properties."
+    },
+    "editor": {
+      "mainTitle": "Description and terms",
+      "mainText": "An incomplete draft can be saved. The backend validates required data before publishing.",
+      "fields": {
+        "slug": "Page address (slug)",
+        "titleRu": "Russian title",
+        "titleEn": "English title",
+        "descriptionRu": "Russian description",
+        "descriptionEn": "English description",
+        "area": "Area",
+        "address": "Address",
+        "bedrooms": "Bedrooms",
+        "beds": "Beds",
+        "bathrooms": "Bathrooms",
+        "maxGuests": "Maximum guests",
+        "areaSqm": "Area, m²",
+        "floor": "Floor",
+        "baseDailyPrice": "Daily price",
+        "currency": "Currency (TRY)"
+      },
+      "amenities": "Amenities",
+      "save": "Save",
+      "saved": "Changes saved.",
+      "publish": "Publish",
+      "archive": "Archive",
+      "actionError": "The action failed. Check the fields and try again.",
+      "loadError": "Could not load the property."
+    },
+    "media": {
+      "title": "Photos",
+      "subtitle": "The cover photo appears in the catalog. Use the arrows to change the order.",
+      "upload": "Upload photo",
+      "empty": "No photos yet.",
+      "cover": "Cover photo",
+      "makeCover": "Make cover",
+      "remove": "Remove",
+      "photoAlt": "Property photo {{index}}"
+    },
+    "occupancy": {
+      "BOOKING": "Booking",
+      "OWNER_BLOCK": "Owner block",
+      "EXTERNAL_BOOKING": "External booking",
+      "MAINTENANCE": "Maintenance"
+    },
+    "occupancyShort": {
+      "BOOKING": "Booking",
+      "OWNER_BLOCK": "Owner",
+      "EXTERNAL_BOOKING": "External",
+      "MAINTENANCE": "Works"
+    },
+    "calendar": {
+      "title": "Occupancy calendar",
+      "createTitle": "Block dates",
+      "editTitle": "Edit period",
+      "formText": "The checkout date is not occupied and becomes available for the next check-in.",
+      "startDate": "Start",
+      "endDate": "End",
+      "type": "Reason",
+      "note": "Note",
+      "create": "Add period",
+      "update": "Save period",
+      "delete": "Delete period",
+      "deleteConfirm": "Delete this occupancy period?",
+      "newBlock": "New period",
+      "actionError": "Could not save the period. Check dates and overlaps.",
+      "loadError": "Could not load the calendar."
+    },
+    "bookings": {
+      "title": "Bookings",
+      "subtitle": "Upcoming, completed and cancelled stays across all properties.",
+      "statusFilter": "Status",
+      "propertyFilter": "Property",
+      "timeFilter": "Period",
+      "empty": "No bookings match the selected filters.",
+      "loadError": "Could not load bookings."
+    },
+    "time": {
+      "ALL": "All time",
+      "FUTURE": "Upcoming",
+      "PAST": "Past"
+    },
+    "booking": {
+      "stayTitle": "Stay",
+      "customerTitle": "Customer",
+      "customerName": "Name",
+      "customerId": "Customer ID",
+      "communicationIdentityId": "Communication identity ID",
+      "priceTitle": "Price",
+      "createdAt": "Created",
+      "actionsTitle": "Actions",
+      "actionsText": "When cancelling, release the dates or keep them unavailable.",
+      "reason": "Cancellation reason",
+      "keepDates": "Keep dates unavailable after cancellation",
+      "cancel": "Cancel booking",
+      "cancelConfirm": "Cancel this booking on behalf of the service?",
+      "complete": "Complete stay",
+      "completeConfirm": "Mark this booking as completed?",
+      "actionError": "Could not change the booking. Check its current status and dates.",
+      "loadError": "Could not load the booking."
+    }
+  },
+  "catalog": {
+    "title": "What do you need?",
+    "subtitle": "Choose a service — each one has its own flow, history, and team.",
+    "rent": {
+      "title": "Rent an apartment",
+      "text": "Verified Alanya apartments for stays from one week"
+    },
+    "cleaning": {
+      "title": "Order cleaning",
+      "text": "Clear fixed pricing and a completion photo report"
+    },
+    "note": "One profile, different services. Your contacts and history stay close."
+  },
+  "rental": {
+    "common": {
+      "perDay": "per day"
+    },
+    "catalog": {
+      "title": "Apartments for life by the sea",
+      "subtitle": "From one week to several months, with clear prices and live availability.",
+      "minStay": "Minimum {{count}} days",
+      "longTerm": "{{percent}}% off from {{count}} days",
+      "emptyTitle": "Apartments are coming soon",
+      "emptyText": "We are preparing the first homes and will open dates after review.",
+      "loadError": "We could not load the apartment catalog."
+    },
+    "property": {
+      "capacity": "{{bedrooms}} bedrooms · up to {{guests}} guests",
+      "galleryLabel": "Apartment photos",
+      "photoAlt": "Apartment photo {{index}}",
+      "cover": "Cover photo",
+      "bedrooms": "bedrooms",
+      "guests": "guests",
+      "area": "area",
+      "beds": "Beds",
+      "bathrooms": "Bathrooms",
+      "floor": "Floor",
+      "address": "Area and address",
+      "detailsTitle": "About this apartment",
+      "loadError": "We could not load this apartment."
+    },
+    "amenities": {
+      "WIFI": "Wi-Fi",
+      "AIR_CONDITIONING": "Air conditioning",
+      "WASHING_MACHINE": "Washing machine",
+      "DISHWASHER": "Dishwasher",
+      "BALCONY": "Balcony",
+      "SEA_VIEW": "Sea view",
+      "POOL": "Pool",
+      "PARKING": "Parking",
+      "ELEVATOR": "Elevator",
+      "WORKSPACE": "Workspace",
+      "TV": "TV",
+      "KITCHEN": "Kitchen"
+    },
+    "calendar": {
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "free": "Available",
+      "unavailable": "Unavailable",
+      "selected": "Selected",
+      "minimum": "The minimum stay is {{count}} days.",
+      "maximum": "The maximum stay is {{count}} days.",
+      "crossesUnavailable": "The selected stay crosses unavailable dates."
+    },
+    "booking": {
+      "datesTitle": "Choose your dates",
+      "contactsTitle": "Guests and contact",
+      "checkIn": "Check-in",
+      "checkOut": "Check-out",
+      "guests": "Number of guests",
+      "phone": "Phone number",
+      "comment": "Comment",
+      "commentPlaceholder": "Arrival time or other useful information",
+      "quoteLoading": "Calculating your stay…",
+      "selectDates": "Choose check-in and check-out dates. The server will calculate the price.",
+      "stay_one": "{{count}} day stay",
+      "stay_other": "{{count}} days stay",
+      "longTermDiscount": "{{percent}}% extended-stay discount",
+      "total": "Total",
+      "confirm": "Confirm booking",
+      "submitting": "Booking…",
+      "noPayment": "No payment is charged now. We will send confirmation after booking.",
+      "errors": {
+        "generic": "We could not complete the booking. Please try again.",
+        "guests": "Check the number of guests.",
+        "invalid_phone_number": "Enter a complete phone number with country code.",
+        "rental_min_stay_not_met": "The selected stay is shorter than the minimum.",
+        "rental_max_stay_exceeded": "The selected stay exceeds the maximum.",
+        "rental_booking_horizon_exceeded": "This check-in date is not open for booking yet.",
+        "dates_not_available": "These dates are no longer available. Choose another stay.",
+        "rental_active_booking_limit_exceeded": "You have reached the active booking limit.",
+        "notificationAccess": "Allow notifications to receive booking confirmations."
+      }
+    },
+    "bookings": {
+      "title": "My bookings",
+      "subtitle": "All upcoming and completed stays in one place.",
+      "emptyTitle": "No bookings yet",
+      "emptyText": "Choose an apartment and available dates. Confirmation appears here instantly.",
+      "emptyAction": "Browse apartments",
+      "open": "Details",
+      "loadError": "We could not load your bookings."
+    },
+    "bookingDetails": {
+      "eyebrow": "Booking #{{id}}",
+      "createdTitle": "Your apartment is booked",
+      "createdText": "The dates are confirmed. We sent the details in a message.",
+      "status": "Status",
+      "duration": "Stay",
+      "guests": "Guests",
+      "phone": "Phone",
+      "comment": "Comment",
+      "cancellationReason": "Cancellation reason",
+      "dailyPrice": "Daily rate at booking",
+      "discount": "Discount",
+      "cancel": "Cancel booking",
+      "cancelConfirm": "Cancel this booking and release the dates?",
+      "cancelling": "Cancelling…",
+      "cancelError": "The booking could not be cancelled.",
+      "loadError": "We could not find this booking."
+    },
+    "status": {
+      "CONFIRMED": "Confirmed",
+      "CANCELLED_BY_CUSTOMER": "Cancelled by you",
+      "CANCELLED_BY_ADMIN": "Cancelled by service",
+      "COMPLETED": "Completed"
+    }
+  },
   "notFound": {
     "title": "Page not found",
     "action": "Go home"
@@ -318,7 +583,17 @@
       "ONSITE_ISSUE_REPORTED": "Onsite issue",
       "COMPLETED": "Completed",
       "REJECTED": "Rejected",
-      "CANCELLED": "Cancelled"
+      "CANCELLED": "Cancelled",
+      "SERVICE_CATALOG": "Service catalog",
+      "RENT_CATALOG": "go-rent: apartments",
+      "RENT_PROPERTY": "go-rent: property",
+      "RENT_LONG_TERM": "go-rent: 30+ discount",
+      "RENT_BOOKINGS": "go-rent: my bookings",
+      "RENT_CONFIRMED": "go-rent: confirmed",
+      "ADMIN_RENT_PROPERTIES": "admin: properties",
+      "ADMIN_RENT_EDITOR": "admin: property editor",
+      "ADMIN_RENT_CALENDAR": "admin: calendar",
+      "ADMIN_RENT_BOOKING": "admin: booking"
     }
   }
 }

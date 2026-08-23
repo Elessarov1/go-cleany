@@ -1,5 +1,4 @@
 import type { CleaningConfiguration } from "../domain/configuration";
-import type { CustomerProfile } from "../domain/customer";
 import type {
   AdminDashboard,
   AdminOrderDetails,
@@ -292,10 +291,6 @@ export class MockCleaningApi implements CleaningApi {
 
   getConfiguration(): Promise<CleaningConfiguration> {
     return simulateNetwork(mockConfiguration);
-  }
-
-  getCurrentCustomerProfile(): Promise<CustomerProfile> {
-    return simulateNetwork({ phone: readStoredOrders()[0]?.phone ?? null });
   }
 
   quoteOrder(request: CleaningOrderQuoteRequest): Promise<CleaningOrderQuote> {

@@ -20,6 +20,7 @@ Read this for:
 - go-cleany as the cleaning vertical;
 - Telegram → WhatsApp → Flutter direction;
 - future multi-service platform;
+- current go-cleany and go-rent vertical boundaries;
 - platform vs vertical boundaries;
 - customer identity direction;
 - media and notification architecture direction;
@@ -31,6 +32,9 @@ This is the strategic architecture document.
 It should change only when the overall product or architecture direction changes.
 
 Before acting on anything described there, verify the current implementation and recent git history.
+
+Current rental rules such as stay limits and discount thresholds are configuration and code contracts;
+individual apartment content and daily prices are admin-managed PostgreSQL data.
 
 ---
 

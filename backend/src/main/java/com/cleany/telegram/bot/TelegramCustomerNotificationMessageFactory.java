@@ -1,14 +1,18 @@
 package com.cleany.telegram.bot;
 
 import java.math.BigDecimal;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 import org.springframework.stereotype.Component;
 
 import com.cleany.finance.ReferralFinancialProperties;
+import com.cleany.rental.RentalBookingCustomerNotification;
 
 @Component
 public class TelegramCustomerNotificationMessageFactory {
+
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     private final ReferralFinancialProperties financialProperties;
 
@@ -23,6 +27,72 @@ public class TelegramCustomerNotificationMessageFactory {
         return isEnglish(languageCode)
                 ? english(referralCode, friendDiscount, referrerReward)
                 : russian(referralCode, friendDiscount, referrerReward);
+    }
+
+    public String rentalConfirmed(
+            RentalBookingCustomerNotification.Confirmed notification,
+            String languageCode
+    ) {
+        String title = localizedTitle(notification.titleRu(), notification.titleEn(), languageCode);
+        return isEnglish(languageCode)
+                ? """
+                🏠 Booking #%d confirmed
+
+                %s
+                %s — %s
+                Total: %s %s
+                """.formatted(
+                        notification.bookingId(),
+                        title,
+                        DATE_FORMAT.format(notification.checkInDate()),
+                        DATE_FORMAT.format(notification.checkOutDate()),
+                        notification.totalPrice().stripTrailingZeros().toPlainString(),
+                        notification.currency()
+                ).strip()
+                : """
+                🏠 Бронирование №%d подтверждено
+
+                %s
+                %s — %s
+                Итого: %s %s
+                """.formatted(
+                        notification.bookingId(),
+                        title,
+                        DATE_FORMAT.format(notification.checkInDate()),
+                        DATE_FORMAT.format(notification.checkOutDate()),
+                        notification.totalPrice().stripTrailingZeros().toPlainString(),
+                        notification.currency()
+                ).strip();
+    }
+
+    public String rentalCancelled(
+            RentalBookingCustomerNotification.Cancelled notification,
+            String languageCode
+    ) {
+        String title = localizedTitle(notification.titleRu(), notification.titleEn(), languageCode);
+        return isEnglish(languageCode)
+                ? """
+                Booking #%d cancelled
+
+                %s
+                %s — %s
+                """.formatted(
+                        notification.bookingId(),
+                        title,
+                        DATE_FORMAT.format(notification.checkInDate()),
+                        DATE_FORMAT.format(notification.checkOutDate())
+                ).strip()
+                : """
+                Бронирование №%d отменено
+
+                %s
+                %s — %s
+                """.formatted(
+                        notification.bookingId(),
+                        title,
+                        DATE_FORMAT.format(notification.checkInDate()),
+                        DATE_FORMAT.format(notification.checkOutDate())
+                ).strip();
     }
 
     private static String russian(String code, String friendDiscount, String referrerReward) {
@@ -62,5 +132,9 @@ public class TelegramCustomerNotificationMessageFactory {
     private static boolean isEnglish(String languageCode) {
         return languageCode != null
                 && languageCode.toLowerCase(Locale.ROOT).startsWith("en");
+    }
+
+    private static String localizedTitle(String titleRu, String titleEn, String languageCode) {
+        return isEnglish(languageCode) ? titleEn : titleRu;
     }
 }

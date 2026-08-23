@@ -11,6 +11,8 @@ import org.springframework.validation.annotation.Validated;
 public record DataRetentionProperties(
         boolean enabled,
         @Min(1) int days,
-        @NotBlank String cron
+        @NotBlank String cron,
+        @Min(1) int batchSize,
+        @Min(1) int maxBatchesPerRun
 ) {
 }

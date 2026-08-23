@@ -14,6 +14,7 @@ import com.cleany.notification.CustomerNotification;
 import com.cleany.notification.CustomerNotificationSender;
 import com.cleany.notification.ReferralUnlockedCustomerNotification;
 import com.cleany.order.CleaningOrderCustomerNotification;
+import com.cleany.rental.RentalBookingCustomerNotification;
 
 import lombok.RequiredArgsConstructor;
 
@@ -81,6 +82,20 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
             );
             photos.forEach(photo -> botClient.sendPhoto(telegramUserId, photo.externalId()));
             sendMessage(telegramUserId, cleaningMessageFactory.customerOnsiteIssuePaused());
+            return;
+        }
+        if (notification instanceof RentalBookingCustomerNotification.Confirmed confirmed) {
+            sendMessage(
+                    telegramUserId,
+                    messageFactory.rentalConfirmed(confirmed, target.languageCode())
+            );
+            return;
+        }
+        if (notification instanceof RentalBookingCustomerNotification.Cancelled cancelled) {
+            sendMessage(
+                    telegramUserId,
+                    messageFactory.rentalCancelled(cancelled, target.languageCode())
+            );
             return;
         }
         throw new IllegalArgumentException(

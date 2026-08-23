@@ -69,10 +69,10 @@ export function OrderCreatedPage() {
       </section>
 
       <div className="action-stack">
-        <Link className="button button--primary button--full" to={`/orders/${order.id}`}>
+        <Link className="button button--primary button--full" to={`/cleaning/orders/${order.id}`}>
           {t("created.details")}
         </Link>
-        <Link className="button button--secondary button--full" to="/">
+        <Link className="button button--secondary button--full" to="/cleaning">
           {t("created.another")}
         </Link>
       </div>

@@ -1,12 +1,15 @@
 package com.cleany.telegram.bot;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.cleany.finance.ReferralFinancialProperties;
+import com.cleany.rental.RentalBookingCustomerNotification;
+import com.cleany.rental.RentalBookingStatus;
 
 class TelegramCustomerNotificationMessageFactoryTest {
 
@@ -53,6 +56,42 @@ class TelegramCustomerNotificationMessageFactoryTest {
                 () -> Assertions.assertTrue(message.contains("15% off")),
                 () -> Assertions.assertTrue(message.contains("10% off")),
                 () -> Assertions.assertTrue(message.contains("successfully completed"))
+        );
+    }
+
+    @Test
+    void rentalMessages_areLocalizedAndContainBookingSnapshot() {
+        var confirmed = new RentalBookingCustomerNotification.Confirmed(
+                42L,
+                "Квартира у моря",
+                "Seaside apartment",
+                LocalDate.of(2026, 9, 1),
+                LocalDate.of(2026, 9, 15),
+                new BigDecimal("3150.00"),
+                "TRY"
+        );
+        var cancelled = new RentalBookingCustomerNotification.Cancelled(
+                42L,
+                "Квартира у моря",
+                "Seaside apartment",
+                LocalDate.of(2026, 9, 1),
+                LocalDate.of(2026, 9, 15),
+                RentalBookingStatus.CANCELLED_BY_ADMIN
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertTrue(factory.rentalConfirmed(confirmed, "ru").contains(
+                        "Бронирование №42 подтверждено"
+                )),
+                () -> Assertions.assertTrue(factory.rentalConfirmed(confirmed, "en").contains(
+                        "Seaside apartment"
+                )),
+                () -> Assertions.assertTrue(factory.rentalConfirmed(confirmed, "ru").contains(
+                        "3150 TRY"
+                )),
+                () -> Assertions.assertTrue(factory.rentalCancelled(cancelled, "ru").contains(
+                        "Бронирование №42 отменено"
+                ))
         );
     }
 }

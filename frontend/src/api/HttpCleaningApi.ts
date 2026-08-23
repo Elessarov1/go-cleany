@@ -1,6 +1,5 @@
 import type { Platform } from "../platform/Platform";
 import type { CleaningConfiguration } from "../domain/configuration";
-import type { CustomerProfile } from "../domain/customer";
 import type {
   AdminDashboard,
   AdminOrderDetails,
@@ -82,10 +81,6 @@ export class HttpCleaningApi implements CleaningApi {
 
   getConfiguration(): Promise<CleaningConfiguration> {
     return this.request("/api/v1/cleaning/configuration");
-  }
-
-  getCurrentCustomerProfile(): Promise<CustomerProfile> {
-    return this.request("/api/v1/customers/me");
   }
 
   quoteOrder(request: CleaningOrderQuoteRequest): Promise<CleaningOrderQuote> {

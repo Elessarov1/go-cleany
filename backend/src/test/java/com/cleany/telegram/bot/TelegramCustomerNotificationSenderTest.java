@@ -19,6 +19,7 @@ import com.cleany.order.ApartmentType;
 import com.cleany.order.CleaningOrderCustomerNotification;
 import com.cleany.order.OnsiteIssueReason;
 import com.cleany.order.ServiceArea;
+import com.cleany.rental.RentalBookingCustomerNotification;
 
 class TelegramCustomerNotificationSenderTest {
 
@@ -224,6 +225,40 @@ class TelegramCustomerNotificationSenderTest {
         order.verify(botClient).sendMessage(900001L, "issue", TelegramBotClient.InlineKeyboard.empty());
         order.verify(botClient).sendPhoto(900001L, "evidence-1");
         order.verify(botClient).sendMessage(900001L, "paused", TelegramBotClient.InlineKeyboard.empty());
+    }
+
+    @Test
+    void rentalNotification_renderedByChannelAdapter() {
+        TelegramCustomerNotificationMessageFactory messageFactory =
+                Mockito.mock(TelegramCustomerNotificationMessageFactory.class);
+        CleaningOrderBotMessageFactory cleaningMessageFactory =
+                Mockito.mock(CleaningOrderBotMessageFactory.class);
+        TelegramBotClient botClient = Mockito.mock(TelegramBotClient.class);
+        var notification = new RentalBookingCustomerNotification.Confirmed(
+                43L,
+                "Квартира",
+                "Apartment",
+                LocalDate.of(2026, 9, 1),
+                LocalDate.of(2026, 9, 8),
+                new java.math.BigDecimal("700.00"),
+                "TRY"
+        );
+        Mockito.when(messageFactory.rentalConfirmed(notification, "ru"))
+                .thenReturn("rental confirmed");
+        var sender = new TelegramCustomerNotificationSender(
+                messageFactory,
+                cleaningMessageFactory,
+                botClient,
+                Mockito.mock(MediaProviderReferenceService.class)
+        );
+
+        sender.send(telegramTarget(), notification);
+
+        Mockito.verify(botClient).sendMessage(
+                900001L,
+                "rental confirmed",
+                TelegramBotClient.InlineKeyboard.empty()
+        );
     }
 
     private static MediaProviderReferenceData providerReference(

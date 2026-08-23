@@ -8,7 +8,18 @@ import { changeLanguage, type AppLanguage } from "../../i18n";
 const PREVIEW_ENABLED_KEY = "cleany.preview.enabled";
 const PREVIEW_SCENARIO_KEY = "cleany.preview.scenario";
 
-type PreviewScenario = CleaningOrderStatus | "empty";
+type PreviewScenario = CleaningOrderStatus
+  | "empty"
+  | "SERVICE_CATALOG"
+  | "RENT_CATALOG"
+  | "RENT_PROPERTY"
+  | "RENT_LONG_TERM"
+  | "RENT_BOOKINGS"
+  | "RENT_CONFIRMED"
+  | "ADMIN_RENT_PROPERTIES"
+  | "ADMIN_RENT_EDITOR"
+  | "ADMIN_RENT_CALENDAR"
+  | "ADMIN_RENT_BOOKING";
 
 const scenarios: PreviewScenario[] = [
   "empty",
@@ -19,6 +30,16 @@ const scenarios: PreviewScenario[] = [
   "COMPLETED",
   "REJECTED",
   "CANCELLED",
+  "SERVICE_CATALOG",
+  "RENT_CATALOG",
+  "RENT_PROPERTY",
+  "RENT_LONG_TERM",
+  "RENT_BOOKINGS",
+  "RENT_CONFIRMED",
+  "ADMIN_RENT_PROPERTIES",
+  "ADMIN_RENT_EDITOR",
+  "ADMIN_RENT_CALENDAR",
+  "ADMIN_RENT_BOOKING",
 ];
 
 export function PreviewPanel() {
@@ -64,11 +85,28 @@ export function PreviewPanel() {
     setScenario(nextScenario);
     sessionStorage.setItem(PREVIEW_SCENARIO_KEY, nextScenario);
     if (nextScenario === "empty") {
-      navigate("/orders?preview=true&scenario=empty");
+      navigate("/cleaning/orders?preview=true&scenario=empty");
+      return;
+    }
+    const rentalRoutes: Partial<Record<PreviewScenario, string>> = {
+      SERVICE_CATALOG: "/?preview=true&scenario=service_catalog",
+      RENT_CATALOG: "/rent?preview=true&scenario=rent_catalog",
+      RENT_PROPERTY: "/rent/properties/kestel-sea-breeze?preview=true&scenario=rent_property",
+      RENT_LONG_TERM: "/rent/properties/kestel-sea-breeze?preview=true&scenario=rent_long_term",
+      RENT_BOOKINGS: "/rent/bookings?preview=true&scenario=rent_bookings",
+      RENT_CONFIRMED: "/rent/bookings/501?preview=true&scenario=rent_confirmed",
+      ADMIN_RENT_PROPERTIES: "/admin/rent/properties?preview=true&scenario=admin_rent_properties",
+      ADMIN_RENT_EDITOR: "/admin/rent/properties/201?preview=true&scenario=admin_rent_editor",
+      ADMIN_RENT_CALENDAR: "/admin/rent/properties/201/calendar?preview=true&scenario=admin_rent_calendar",
+      ADMIN_RENT_BOOKING: "/admin/rent/bookings/501?preview=true&scenario=admin_rent_booking",
+    };
+    const rentalRoute = rentalRoutes[nextScenario];
+    if (rentalRoute) {
+      navigate(rentalRoute);
       return;
     }
     navigate(
-      `/orders/${getPreviewOrderId(nextScenario)}?preview=true&scenario=${nextScenario.toLowerCase()}`,
+      `/cleaning/orders/${getPreviewOrderId(nextScenario as CleaningOrderStatus)}?preview=true&scenario=${nextScenario.toLowerCase()}`,
     );
   };
 

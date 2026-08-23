@@ -8,7 +8,7 @@ push в main ИЛИ ручной Run workflow
   -> backend и frontend CI выполняются параллельно
   -> deploy_staging запускается только после двух успешных jobs
   -> GitHub Actions подключается к VPS по SSH
-  -> GitHub staging variables передают актуальные cleaner/admin Telegram IDs
+  -> GitHub staging variables передают роли и общую rental policy
   -> release.sh разворачивает точный commit SHA
   -> backup, Docker build, health checks
 ```
@@ -151,6 +151,12 @@ Repository -> Settings -> Environments -> staging
 | `STAGING_SSH_USER` | пользователь-владелец `/opt/go-cleany` |
 | `CLEANER_TELEGRAM_IDS` | `123456789,987654321` |
 | `ADMIN_TELEGRAM_IDS` | `123456789,555555555` |
+| `RENTAL_MIN_STAY_DAYS` | `7` |
+| `RENTAL_LONG_TERM_MIN_DAYS` | `30` |
+| `RENTAL_LONG_TERM_DISCOUNT_RATE` | `0.10` |
+| `RENTAL_MAX_STAY_DAYS` | `365` |
+| `RENTAL_BOOKING_START_MONTHS_AHEAD` | `6` |
+| `RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER` | `3` |
 
 `CLEANER_TELEGRAM_IDS` и `ADMIN_TELEGRAM_IDS` должны содержать только numeric Telegram IDs через
 запятую, без пробелов. Workflow валидирует этот формат до SSH/deploy.
@@ -160,6 +166,12 @@ fallback-значениями из `.env.production` при Docker Compose inter
 VPS не переписывается.
 
 Такой подход позволяет менять демо-роли непосредственно в GitHub и затем передеплоить staging.
+
+`RENTAL_*` определяют общую политику бронирования стенда. Workflow проверяет целочисленные значения,
+взаимное соотношение минимального/долгосрочного/максимального срока и диапазон скидки. Если variables
+не заданы, используются показанные безопасные defaults. Суточные цены и описания конкретных квартир
+не относятся к deployment configuration: администратор меняет их в `/admin/rent`, и они сохраняются
+в PostgreSQL.
 
 Отдельно в:
 
@@ -185,9 +197,9 @@ staging environment.
 2. ждёт успешные `backend` и `frontend` jobs;
 3. загружает `staging` environment;
 4. валидирует SSH credentials;
-5. валидирует `CLEANER_TELEGRAM_IDS` и `ADMIN_TELEGRAM_IDS`;
+5. валидирует `CLEANER_TELEGRAM_IDS`, `ADMIN_TELEGRAM_IDS` и rental policy;
 6. подключается к VPS через проверенный host key;
-7. передаёт оба списка ID в process environment remote command;
+7. передаёт списки ID и `RENTAL_*` в process environment remote command;
 8. вызывает `./deploy/scripts/release.sh "$GITHUB_SHA"`.
 
 В Docker Compose shell/process environment имеет приоритет над `--env-file`, поэтому backend

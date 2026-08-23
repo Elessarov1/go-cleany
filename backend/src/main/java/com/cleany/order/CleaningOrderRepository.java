@@ -54,9 +54,13 @@ public interface CleaningOrderRepository extends JpaRepository<CleaningOrder, Lo
                               and issue_report.resolved_at is not null
                        )
                    )
-             order by orders.id
+             order by orders.created_at, orders.id
+             limit :batchSize
             """, nativeQuery = true)
-    List<Long> findRetentionEligibleOrderIds(@Param("cutoff") Instant cutoff);
+    List<Long> findRetentionEligibleOrderIds(
+            @Param("cutoff") Instant cutoff,
+            @Param("batchSize") int batchSize
+    );
 
     Optional<CleaningOrder> findByCleanerTelegramUserIdAndReportInputActiveTrue(long cleanerTelegramUserId);
 

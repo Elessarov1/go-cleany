@@ -99,14 +99,14 @@ export function OrdersPage() {
           </div>
           <h2>{t("orders.emptyTitle")}</h2>
           <p>{t("orders.emptyText")}</p>
-          <Link className="button button--primary" to="/">
+          <Link className="button button--primary" to="/cleaning">
             {t("orders.emptyAction")}
           </Link>
         </section>
       ) : (
         <div className="order-list">
           {orders.map((order) => (
-            <Link className="order-card" key={order.id} to={`/orders/${order.id}`}>
+            <Link className="order-card" key={order.id} to={`/cleaning/orders/${order.id}`}>
               <div className="order-card__top">
                 <time dateTime={order.requestedDate}>
                   {formatDate(order.requestedDate, locale)}

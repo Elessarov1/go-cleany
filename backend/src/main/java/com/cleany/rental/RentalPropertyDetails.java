@@ -1,0 +1,86 @@
+package com.cleany.rental;
+
+import java.math.BigDecimal;
+import java.util.Locale;
+import java.util.Set;
+import java.util.regex.Pattern;
+
+public record RentalPropertyDetails(
+        String slug,
+        String titleRu,
+        String titleEn,
+        String descriptionRu,
+        String descriptionEn,
+        String area,
+        String address,
+        Integer bedrooms,
+        Integer beds,
+        Integer bathrooms,
+        Integer maxGuests,
+        BigDecimal areaSqm,
+        Integer floor,
+        BigDecimal baseDailyPrice,
+        String currency,
+        Set<RentalAmenity> amenities
+) {
+
+    private static final Pattern SLUG_PATTERN = Pattern.compile("^[a-z0-9]+(?:-[a-z0-9]+)*$");
+    private static final Pattern CURRENCY_PATTERN = Pattern.compile("^[A-Z]{3}$");
+
+    public RentalPropertyDetails {
+        slug = normalizeSlug(slug);
+        titleRu = normalizeOptional(titleRu);
+        titleEn = normalizeOptional(titleEn);
+        descriptionRu = normalizeOptional(descriptionRu);
+        descriptionEn = normalizeOptional(descriptionEn);
+        area = normalizeOptional(area);
+        address = normalizeOptional(address);
+        currency = normalizeCurrency(currency);
+        amenities = amenities == null ? Set.of() : Set.copyOf(amenities);
+
+        requireMinimum(bedrooms, 0, "bedrooms");
+        requireMinimum(beds, 1, "beds");
+        requireMinimum(bathrooms, 1, "bathrooms");
+        requireMinimum(maxGuests, 1, "maxGuests");
+        if (areaSqm != null && areaSqm.signum() <= 0) {
+            throw new IllegalArgumentException("areaSqm must be positive");
+        }
+        if (baseDailyPrice != null && baseDailyPrice.signum() <= 0) {
+            throw new IllegalArgumentException("baseDailyPrice must be positive");
+        }
+    }
+
+    private static String normalizeSlug(String value) {
+        String normalized = normalizeOptional(value);
+        if (normalized == null) {
+            return null;
+        }
+        normalized = normalized.toLowerCase(Locale.ROOT);
+        if (!SLUG_PATTERN.matcher(normalized).matches()) {
+            throw new IllegalArgumentException("slug must contain lowercase words separated by hyphens");
+        }
+        return normalized;
+    }
+
+    private static String normalizeCurrency(String value) {
+        String normalized = normalizeOptional(value);
+        if (normalized == null) {
+            return null;
+        }
+        normalized = normalized.toUpperCase(Locale.ROOT);
+        if (!CURRENCY_PATTERN.matcher(normalized).matches()) {
+            throw new IllegalArgumentException("currency must be a three-letter ISO code");
+        }
+        return normalized;
+    }
+
+    private static String normalizeOptional(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private static void requireMinimum(Integer value, int minimum, String name) {
+        if (value != null && value < minimum) {
+            throw new IllegalArgumentException(name + " must be at least " + minimum);
+        }
+    }
+}

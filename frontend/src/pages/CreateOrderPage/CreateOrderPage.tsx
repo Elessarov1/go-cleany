@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { CleaningApiError } from "../../api/CleaningApi";
 import { useCleaningApi } from "../../api/CleaningApiProvider";
+import { useCustomerApi } from "../../api/CustomerApiProvider";
 import { Icon } from "../../components/Icon/Icon";
 import { ServiceInfoDialog } from "../../components/ServiceInfoDialog/ServiceInfoDialog";
 import { LoadingState, ErrorState } from "../../components/PageState/PageState";
@@ -53,6 +54,7 @@ const initialForm: FormState = {
 export function CreateOrderPage() {
   const { t, i18n } = useTranslation();
   const api = useCleaningApi();
+  const customerApi = useCustomerApi();
   const platform = usePlatform();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -92,7 +94,7 @@ export function CreateOrderPage() {
 
     const loadPhone = async () => {
       try {
-        const profile = await api.getCurrentCustomerProfile();
+        const profile = await customerApi.getCurrentProfile();
         if (fillPhone(profile.phone)) return;
 
         const shared = await platform.requestPhoneNumber();
@@ -100,7 +102,7 @@ export function CreateOrderPage() {
 
         for (let attempt = 0; attempt < 10 && active; attempt += 1) {
           await new Promise((resolve) => window.setTimeout(resolve, 500));
-          const refreshedProfile = await api.getCurrentCustomerProfile();
+          const refreshedProfile = await customerApi.getCurrentProfile();
           if (fillPhone(refreshedProfile.phone)) return;
         }
       } catch {
@@ -112,7 +114,7 @@ export function CreateOrderPage() {
     return () => {
       active = false;
     };
-  }, [api, platform]);
+  }, [customerApi, platform]);
 
   useEffect(() => {
     let active = true;
@@ -259,7 +261,7 @@ export function CreateOrderPage() {
       }
 
       const order = await api.createOrder(request);
-      navigate(`/orders/${order.id}/created`);
+      navigate(`/cleaning/orders/${order.id}/created`);
     } catch (error) {
       if (
         error instanceof CleaningApiError &&

@@ -12,7 +12,12 @@ Task-specific Markdown files may be provided directly in a Codex session and do 
 
 ## Project direction
 
-`go-cleany` is currently a working apartment-cleaning product built around a Telegram Mini App and Telegram cleaner bot.
+This repository currently contains two working service verticals in one platform shell:
+
+```text
+go-cleany → apartment cleaning through a Telegram Mini App and cleaner bot
+go-rent   → apartment catalog, availability and rental bookings
+```
 
 Long-term direction:
 
@@ -24,7 +29,7 @@ Telegram
 
 The product is also expected to evolve into a broader service platform.
 
-`go-cleany` should remain the cleaning vertical, while the future platform may contain independent verticals such as:
+`go-cleany` remains the cleaning vertical and `go-rent` remains the rental vertical. The platform may later contain more independent verticals such as:
 
 ```text
 Cleaning
@@ -175,6 +180,16 @@ cleaner workflow
 photo completion report
 onsite issue
 cleaning referral economics
+```
+
+Rental-specific capabilities remain rental-specific:
+
+```text
+RentalProperty
+RentalBooking
+RentalOccupancy
+rental pricing and stay policy
+rental administration
 ```
 
 Future service verticals should have their own aggregates.

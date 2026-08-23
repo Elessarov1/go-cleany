@@ -15,8 +15,11 @@ public class MediaOrphanCleanupService {
     private final MediaProviderReferenceRepository providerReferenceRepository;
 
     @Transactional
-    public int deleteUnreferenced() {
-        List<Long> mediaIds = assetRepository.lockAllUnreferencedIds();
+    public int deleteUnreferencedBatch(int batchSize) {
+        if (batchSize < 1) {
+            throw new IllegalArgumentException("batchSize must be positive");
+        }
+        List<Long> mediaIds = assetRepository.lockUnreferencedIds(batchSize);
         if (mediaIds.isEmpty()) {
             return 0;
         }

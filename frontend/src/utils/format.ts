@@ -19,3 +19,14 @@ export function addDaysToInputValue(value: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
+export function addMonthsToInputValue(value: string, months: number): string {
+  const date = new Date(`${value}T12:00:00`);
+  date.setMonth(date.getMonth() + months);
+  return date.toISOString().slice(0, 10);
+}
+
+export function daysBetween(start: string, end: string): number {
+  const startDate = new Date(`${start}T12:00:00`);
+  const endDate = new Date(`${end}T12:00:00`);
+  return Math.round((endDate.getTime() - startDate.getTime()) / 86_400_000);
+}
