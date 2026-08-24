@@ -11,13 +11,20 @@ const PREVIEW_SCENARIO_KEY = "cleany.preview.scenario";
 type PreviewScenario = CleaningOrderStatus
   | "empty"
   | "SERVICE_CATALOG"
+  | "CLEANING_SHELL"
+  | "ADMIN_SERVICE_CATALOG"
+  | "ADMIN_CLEANING_ORDER"
   | "RENT_CATALOG"
   | "RENT_PROPERTY"
+  | "RENT_DATE_RANGE_EMPTY"
+  | "RENT_DATE_RANGE_CHECK_IN"
   | "RENT_DATE_RANGE"
+  | "RENT_MONTHLY_EMPTY"
   | "RENT_MONTHLY"
   | "RENT_MONTHLY_UNAVAILABLE"
   | "RENT_BOOKINGS"
   | "RENT_CONFIRMED"
+  | "RENT_BENEFIT"
   | "ADMIN_RENT_PROPERTIES"
   | "ADMIN_RENT_EDITOR"
   | "ADMIN_RENT_CALENDAR"
@@ -33,13 +40,20 @@ const scenarios: PreviewScenario[] = [
   "REJECTED",
   "CANCELLED",
   "SERVICE_CATALOG",
+  "CLEANING_SHELL",
+  "ADMIN_SERVICE_CATALOG",
+  "ADMIN_CLEANING_ORDER",
   "RENT_CATALOG",
   "RENT_PROPERTY",
+  "RENT_DATE_RANGE_EMPTY",
+  "RENT_DATE_RANGE_CHECK_IN",
   "RENT_DATE_RANGE",
+  "RENT_MONTHLY_EMPTY",
   "RENT_MONTHLY",
   "RENT_MONTHLY_UNAVAILABLE",
   "RENT_BOOKINGS",
   "RENT_CONFIRMED",
+  "RENT_BENEFIT",
   "ADMIN_RENT_PROPERTIES",
   "ADMIN_RENT_EDITOR",
   "ADMIN_RENT_CALENDAR",
@@ -94,13 +108,20 @@ export function PreviewPanel() {
     }
     const rentalRoutes: Partial<Record<PreviewScenario, string>> = {
       SERVICE_CATALOG: "/?preview=true&scenario=service_catalog",
+      CLEANING_SHELL: "/cleaning?preview=true&scenario=cleaning_shell",
+      ADMIN_SERVICE_CATALOG: "/admin?preview=true&scenario=admin_service_catalog",
+      ADMIN_CLEANING_ORDER: `/admin/cleaning/orders/${getPreviewOrderId("ONSITE_ISSUE_REPORTED")}?preview=true&scenario=admin_cleaning_order`,
       RENT_CATALOG: "/rent?preview=true&scenario=rent_catalog",
       RENT_PROPERTY: "/rent/properties/kestel-sea-breeze?preview=true&scenario=rent_property",
+      RENT_DATE_RANGE_EMPTY: "/rent/properties/kestel-sea-breeze?preview=true&scenario=rent_date_range_empty",
+      RENT_DATE_RANGE_CHECK_IN: "/rent/properties/kestel-sea-breeze?preview=true&scenario=rent_date_range_check_in",
       RENT_DATE_RANGE: "/rent/properties/kestel-sea-breeze?preview=true&scenario=rent_date_range",
+      RENT_MONTHLY_EMPTY: "/rent/properties/kestel-sea-breeze?preview=true&scenario=rent_monthly_empty",
       RENT_MONTHLY: "/rent/properties/kestel-sea-breeze?preview=true&scenario=rent_monthly",
       RENT_MONTHLY_UNAVAILABLE: "/rent/properties/kestel-sea-breeze?preview=true&scenario=rent_monthly_unavailable",
       RENT_BOOKINGS: "/rent/bookings?preview=true&scenario=rent_bookings",
       RENT_CONFIRMED: "/rent/bookings/501?preview=true&scenario=rent_confirmed",
+      RENT_BENEFIT: "/rent/bookings/501?preview=true&scenario=rent_benefit",
       ADMIN_RENT_PROPERTIES: "/admin/rent/properties?preview=true&scenario=admin_rent_properties",
       ADMIN_RENT_EDITOR: "/admin/rent/properties/201?preview=true&scenario=admin_rent_editor",
       ADMIN_RENT_CALENDAR: "/admin/rent/properties/201/calendar?preview=true&scenario=admin_rent_calendar",

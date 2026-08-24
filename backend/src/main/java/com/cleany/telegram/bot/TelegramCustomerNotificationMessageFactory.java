@@ -6,6 +6,7 @@ import java.util.Locale;
 
 import org.springframework.stereotype.Component;
 
+import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitCustomerNotification;
 import com.cleany.finance.ReferralFinancialProperties;
 import com.cleany.rental.RentalBookingCustomerNotification;
 
@@ -91,6 +92,41 @@ public class TelegramCustomerNotificationMessageFactory {
                         notification.bookingId(),
                         title,
                         DATE_FORMAT.format(notification.checkInDate()),
+                        DATE_FORMAT.format(notification.checkOutDate())
+                ).strip();
+    }
+
+    public String rentalCleaningBenefit(
+            RentalCleaningBenefitCustomerNotification notification,
+            String languageCode
+    ) {
+        return isEnglish(languageCode)
+                ? """
+                🧹 Your rental #%d has started
+
+                You now have a personal go-cleany benefit for checkout cleaning.
+                Promo code: %s
+
+                Use it for a cleaning scheduled between %s and %s.
+                Open go-cleany in the application to book your cleaning.
+                """.formatted(
+                        notification.rentalBookingId(),
+                        notification.code(),
+                        DATE_FORMAT.format(notification.earliestCleaningDate()),
+                        DATE_FORMAT.format(notification.checkOutDate())
+                ).strip()
+                : """
+                🧹 Ваша аренда №%d началась
+
+                Вам доступна персональная выгода go-cleany для уборки перед выездом.
+                Промокод: %s
+
+                Используйте его для уборки с %s по %s.
+                Откройте go-cleany в приложении, чтобы оформить заказ.
+                """.formatted(
+                        notification.rentalBookingId(),
+                        notification.code(),
+                        DATE_FORMAT.format(notification.earliestCleaningDate()),
                         DATE_FORMAT.format(notification.checkOutDate())
                 ).strip();
     }

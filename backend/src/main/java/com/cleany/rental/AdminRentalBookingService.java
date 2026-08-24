@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.admin.AdminAccessService;
+import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitCancellationService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,6 +23,7 @@ public class AdminRentalBookingService {
     private final RentalOccupancyRepository occupancyRepository;
     private final RentalPropertyService propertyService;
     private final RentalStayPolicy stayPolicy;
+    private final RentalCleaningBenefitCancellationService benefitCancellationService;
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -84,6 +86,7 @@ public class AdminRentalBookingService {
         RentalBooking booking = requireBooking(bookingId);
         propertyService.requirePropertyForUpdate(booking.getProperty().getId());
         booking.cancelByAdmin(request.reason(), clock.instant());
+        benefitCancellationService.revokeAvailableFor(booking);
         if (occupancyRepository.deleteByBookingId(bookingId) != 1) {
             throw new IllegalStateException("Booking occupancy not found: " + bookingId);
         }

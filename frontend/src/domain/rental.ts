@@ -150,6 +150,22 @@ export interface RentalBooking {
   completedAt?: string | null;
 }
 
+export type RentalCleaningBenefitStatus =
+  | "AVAILABLE"
+  | "RESERVED"
+  | "REDEEMED"
+  | "REVOKED";
+
+export interface RentalCleaningContext {
+  rentalBookingId: number;
+  address: string;
+  phone: string;
+  checkOutDate: string;
+  earliestBenefitCleaningDate: string;
+  benefitStatus: RentalCleaningBenefitStatus | null;
+  promoCode: string | null;
+}
+
 export interface UpdateRentalPropertyRequest {
   titleRu: string | null;
   titleEn: string | null;

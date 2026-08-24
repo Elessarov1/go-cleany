@@ -68,6 +68,14 @@ rental:
   max-active-bookings-per-customer: 3
   zone-id: Europe/Istanbul
 
+rental-cleaning-benefit:
+  issuance-enabled: false
+  issuance-cron: "0 15 4 * * *"
+  issuance-batch-size: 100
+  checkout-window-days: 3
+  discount-rate: 0.10
+  max-discount: 2000
+
 data-retention:
   enabled: false
   days: 7

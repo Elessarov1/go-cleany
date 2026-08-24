@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.configuration.CleanerProperties;
 import com.cleany.configuration.OnsiteIssueProperties;
+import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitService;
 import com.cleany.media.ImageMediaTypeDetector;
 import com.cleany.media.MediaProvider;
 import com.cleany.media.MediaProviderReferenceService;
@@ -29,6 +30,7 @@ public class OnsiteIssueService {
     private final CleanerProperties cleanerProperties;
     private final OnsiteIssueProperties properties;
     private final ReferralService referralService;
+    private final RentalCleaningBenefitService rentalCleaningBenefitService;
     private final MediaProviderReferenceService mediaProviderReferenceService;
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
@@ -41,6 +43,7 @@ public class OnsiteIssueService {
             CleanerProperties cleanerProperties,
             OnsiteIssueProperties properties,
             ReferralService referralService,
+            RentalCleaningBenefitService rentalCleaningBenefitService,
             MediaProviderReferenceService mediaProviderReferenceService,
             Clock clock,
             ApplicationEventPublisher eventPublisher
@@ -52,6 +55,7 @@ public class OnsiteIssueService {
         this.cleanerProperties = cleanerProperties;
         this.properties = properties;
         this.referralService = referralService;
+        this.rentalCleaningBenefitService = rentalCleaningBenefitService;
         this.mediaProviderReferenceService = mediaProviderReferenceService;
         this.clock = clock;
         this.eventPublisher = eventPublisher;
@@ -194,6 +198,7 @@ public class OnsiteIssueService {
         report.updateComment(comment);
         report.submit(submittedAt);
         referralService.releaseReward(order);
+        rentalCleaningBenefitService.release(order);
         recordEvent(
                 order,
                 OrderEventType.ONSITE_ISSUE_REPORTED,

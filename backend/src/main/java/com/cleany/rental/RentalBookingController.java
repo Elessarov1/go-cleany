@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.cleany.crossservice.rentalcleaning.RentalCleaningContextResponse;
+import com.cleany.crossservice.rentalcleaning.RentalCleaningContextService;
+
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -23,6 +26,7 @@ public class RentalBookingController {
     static final String BASE_PATH = "/api/v1/rental/bookings";
 
     private final RentalBookingService bookingService;
+    private final RentalCleaningContextService cleaningContextService;
 
     @PostMapping("/quote")
     public RentalBookingQuoteResponse quote(
@@ -49,6 +53,11 @@ public class RentalBookingController {
     @GetMapping("/{bookingId}")
     public RentalBookingResponse getBooking(@PathVariable long bookingId) {
         return bookingService.currentCustomerBooking(bookingId);
+    }
+
+    @GetMapping("/{bookingId}/cleaning-context")
+    public RentalCleaningContextResponse getCleaningContext(@PathVariable long bookingId) {
+        return cleaningContextService.currentCustomerContext(bookingId);
     }
 
     @PostMapping("/{bookingId}/cancel")

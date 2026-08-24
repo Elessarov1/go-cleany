@@ -5,7 +5,7 @@ import { useRentalApi } from "../../api/RentalApiProvider";
 import { Icon } from "../../components/Icon/Icon";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import { RentalBookingStatus } from "../../components/RentalBookingStatus/RentalBookingStatus";
-import type { RentalBooking } from "../../domain/rental";
+import type { RentalBooking, RentalCleaningContext } from "../../domain/rental";
 import { formatPrice } from "../../domain/pricing";
 import { formatDate, todayAsInputValue } from "../../utils/format";
 import { rentalLanguage, rentalPropertyTitle } from "../../utils/rental";
@@ -21,20 +21,26 @@ export function RentalBookingDetailsPage() {
   const { t, i18n } = useTranslation();
   const api = useRentalApi();
   const [booking, setBooking] = useState<RentalBooking | null>(null);
+  const [cleaningContext, setCleaningContext] = useState<RentalCleaningContext | null>(null);
   const [error, setError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState(false);
   const language = rentalLanguage(i18n.resolvedLanguage);
   const locale = language === "ru" ? "ru-RU" : "en-GB";
-  const justCreated = (location.state as BookingLocationState | null)?.justCreated === true;
+  const previewScenario = new URLSearchParams(location.search).get("scenario")?.toUpperCase();
+  const justCreated = (location.state as BookingLocationState | null)?.justCreated === true
+    || previewScenario === "RENT_CONFIRMED";
 
   useEffect(() => {
     let active = true;
     setError(false);
-    api.getBooking(bookingId)
-      .then((value) => {
-        if (active) setBooking(value);
+    Promise.all([api.getBooking(bookingId), api.getCleaningContext(bookingId)])
+      .then(([bookingValue, cleaningValue]) => {
+        if (active) {
+          setBooking(bookingValue);
+          setCleaningContext(cleaningValue);
+        }
       })
       .catch(() => {
         if (active) setError(true);
@@ -62,6 +68,12 @@ export function RentalBookingDetailsPage() {
   }
   if (!booking) return <LoadingState />;
   const canCancel = booking.status === "CONFIRMED" && booking.checkInDate > todayAsInputValue();
+  const showCleaningCta = booking.status === "CONFIRMED" || booking.status === "COMPLETED";
+  const cleaningParams = new URLSearchParams({ rentalBooking: String(booking.id) });
+  if (cleaningContext?.benefitStatus === "AVAILABLE" && cleaningContext.promoCode) {
+    cleaningParams.set("promo", cleaningContext.promoCode);
+  }
+  const cleaningLink = `/cleaning?${cleaningParams.toString()}`;
 
   return (
     <div className="page page--rental-booking-details">
@@ -111,6 +123,37 @@ export function RentalBookingDetailsPage() {
         ) : null}
         <div className="rental-price-snapshot__total"><span>{t("rental.booking.total")}</span><strong>{formatPrice(booking.totalPrice, booking.currency, locale)}</strong></div>
       </section>
+
+      {showCleaningCta && cleaningContext ? (
+        <section className="rental-cleaning-cta">
+          <div className="rental-cleaning-cta__heading">
+            <span><Icon name="sparkles" size={22} /></span>
+            <div>
+              <h2>{t("rental.bookingDetails.cleaningTitle")}</h2>
+              <p>{t("rental.bookingDetails.cleaningText")}</p>
+            </div>
+          </div>
+          {cleaningContext.benefitStatus ? (
+            <div className="rental-cleaning-cta__benefit">
+              <span>{t("rental.bookingDetails.cleaningBenefit")}</span>
+              <strong>{t(`rental.bookingDetails.benefitStatus.${cleaningContext.benefitStatus}`)}</strong>
+              {cleaningContext.promoCode ? <code>{cleaningContext.promoCode}</code> : null}
+              {cleaningContext.benefitStatus === "AVAILABLE" ? (
+                <small>{t("rental.bookingDetails.cleaningWindow", {
+                  from: formatDate(cleaningContext.earliestBenefitCleaningDate, locale),
+                  to: formatDate(cleaningContext.checkOutDate, locale),
+                })}</small>
+              ) : null}
+            </div>
+          ) : (
+            <p className="rental-cleaning-cta__future">{t("rental.bookingDetails.cleaningFutureBenefit")}</p>
+          )}
+          <Link className="button button--primary button--full" to={cleaningLink}>
+            {t("rental.bookingDetails.bookCleaning")}
+            <Icon name="arrow-right" size={17} />
+          </Link>
+        </section>
+      ) : null}
 
       {cancelError ? <p className="form-alert" role="alert">{t("rental.bookingDetails.cancelError")}</p> : null}
       {canCancel ? (

@@ -15,7 +15,8 @@ public record CreateCleaningOrderRequest(
         @NotNull LocalDate requestedDate,
         @NotBlank @Size(max = 40) String phone,
         @Size(max = 1000) String comment,
-        @Size(max = 32) String referralCode
+        @Size(max = 32) String referralCode,
+        @Size(max = 32) String rentalCleaningPromoCode
 ) {
 
     CreateCleaningOrderCommand toCommand() {
@@ -28,7 +29,8 @@ public record CreateCleaningOrderRequest(
                 requestedDate,
                 phone,
                 comment,
-                referralCode
+                referralCode,
+                rentalCleaningPromoCode
         );
     }
 }

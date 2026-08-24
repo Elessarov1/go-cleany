@@ -9,6 +9,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitCancellationService;
 import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountService;
 import com.cleany.order.PhoneNumberNormalizer;
@@ -25,6 +26,7 @@ public class RentalBookingService {
     private final RentalPriceService priceService;
     private final RentalStayPolicy stayPolicy;
     private final RentalProperties properties;
+    private final RentalCleaningBenefitCancellationService benefitCancellationService;
     private final CustomerAccountService customerAccountService;
     private final PhoneNumberNormalizer phoneNumberNormalizer;
     private final Clock clock;
@@ -137,6 +139,7 @@ public class RentalBookingService {
         RentalBooking booking = requireCustomerBooking(bookingId, customer.customerId());
         propertyService.requirePropertyForUpdate(booking.getProperty().getId());
         booking.cancelByCustomer(stayPolicy.today(), clock.instant());
+        benefitCancellationService.revokeAvailableFor(booking);
         deleteBookingOccupancy(bookingId);
         eventPublisher.publishEvent(new RentalBookingCustomerEvent.Cancelled(
                 booking.getId(),

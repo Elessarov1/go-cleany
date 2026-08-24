@@ -15,7 +15,8 @@ export type CustomerDiscountType =
   | "NONE"
   | "FRIEND_REFERRAL"
   | "REFERRER_REWARD"
-  | "PARTNER_REFERRAL";
+  | "PARTNER_REFERRAL"
+  | "RENTAL_CHECKOUT_PROMO";
 
 export type CleaningOrderStatus =
   | "NEW"
@@ -36,6 +37,7 @@ export interface CreateCleaningOrderRequest {
   phone: string;
   comment?: string;
   referralCode?: string;
+  rentalCleaningPromoCode?: string;
 }
 
 export interface CleaningOrderQuoteRequest {
@@ -43,6 +45,8 @@ export interface CleaningOrderQuoteRequest {
   duplex: boolean;
   cleaningType: CleaningType;
   referralCode?: string;
+  requestedDate?: string;
+  rentalCleaningPromoCode?: string;
 }
 
 export interface CleaningOrderQuote {

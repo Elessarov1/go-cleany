@@ -70,7 +70,7 @@ export function AdminOrderPage() {
 
   return (
     <div className="page page--admin-order">
-      <Link className="back-link" to="/admin">
+      <Link className="back-link" to="/admin/cleaning">
         <Icon name="arrow-left" size={17} /> {t("common.back")}
       </Link>
       <header className="page-header page-header--compact">

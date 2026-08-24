@@ -65,6 +65,31 @@ public class OrderFinancialCalculator {
         );
     }
 
+    public OrderFinancialSnapshot rentalCheckoutPromo(
+            BigDecimal basePrice,
+            BigDecimal discountRate,
+            BigDecimal maxDiscount
+    ) {
+        validateRentalCheckoutPromoRate(discountRate);
+        return calculate(
+                basePrice,
+                discountRate,
+                maxDiscount,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                AcquisitionSource.ORGANIC,
+                CustomerDiscountType.RENTAL_CHECKOUT_PROMO
+        );
+    }
+
+    public void validateRentalCheckoutPromoRate(BigDecimal discountRate) {
+        requireWithinPool(
+                "rental checkout discount",
+                discountRate,
+                properties.commissionRate()
+        );
+    }
+
     private OrderFinancialSnapshot calculate(
             BigDecimal rawBasePrice,
             BigDecimal discountRate,

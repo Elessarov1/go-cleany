@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitCustomerNotification;
 import com.cleany.finance.ReferralFinancialProperties;
 import com.cleany.rental.RentalBookingCustomerNotification;
 import com.cleany.rental.RentalBookingStatus;
@@ -92,6 +93,28 @@ class TelegramCustomerNotificationMessageFactoryTest {
                 () -> Assertions.assertTrue(factory.rentalCancelled(cancelled, "ru").contains(
                         "Бронирование №42 отменено"
                 ))
+        );
+    }
+
+    @Test
+    void rentalCleaningBenefitMessage_containsCodeAndCheckoutWindow() {
+        var notification = new RentalCleaningBenefitCustomerNotification(
+                42L,
+                "RC23456789",
+                LocalDate.of(2026, 9, 12),
+                LocalDate.of(2026, 9, 15)
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertTrue(
+                        factory.rentalCleaningBenefit(notification, "ru").contains("RC23456789")
+                ),
+                () -> Assertions.assertTrue(
+                        factory.rentalCleaningBenefit(notification, "en").contains("12.09.2026")
+                ),
+                () -> Assertions.assertTrue(
+                        factory.rentalCleaningBenefit(notification, "en").contains("15.09.2026")
+                )
         );
     }
 }

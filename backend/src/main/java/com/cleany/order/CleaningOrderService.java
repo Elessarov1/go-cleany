@@ -14,8 +14,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.configuration.CleanerProperties;
 import com.cleany.configuration.CleaningProperties;
+import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitNotApplicableException;
+import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitPlan;
+import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitService;
 import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountService;
+import com.cleany.finance.OrderFinancialSnapshot;
 import com.cleany.media.ImageMediaTypeDetector;
 import com.cleany.media.MediaProvider;
 import com.cleany.media.MediaProviderReferenceService;
@@ -47,6 +51,7 @@ public class CleaningOrderService {
     private final CleanerProperties cleanerProperties;
     private final CustomerAccountService customerAccountService;
     private final ReferralService referralService;
+    private final RentalCleaningBenefitService rentalCleaningBenefitService;
     private final MediaProviderReferenceService mediaProviderReferenceService;
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
@@ -69,13 +74,27 @@ public class CleaningOrderService {
                 command.cleaningType(),
                 command.duplex()
         );
-        boolean firstOrder = isAcquisitionEligible(customer.customerId());
-        OrderReferralPlan referralPlan = referralService.planForCreation(
-                customer.customerId(),
-                command.referralCode(),
-                basePrice,
-                firstOrder
-        );
+        requireNoIncentiveStacking(command.referralCode(), command.rentalCleaningPromoCode());
+        boolean rentalPromoRequested = hasText(command.rentalCleaningPromoCode());
+        RentalCleaningBenefitPlan rentalBenefitPlan = rentalPromoRequested
+                ? rentalCleaningBenefitService.planForCreation(
+                        customer.customerId(),
+                        command.rentalCleaningPromoCode(),
+                        command.requestedDate(),
+                        basePrice
+                )
+                : null;
+        OrderReferralPlan referralPlan = rentalPromoRequested
+                ? null
+                : referralService.planForCreation(
+                        customer.customerId(),
+                        command.referralCode(),
+                        basePrice,
+                        isAcquisitionEligible(customer.customerId())
+                );
+        OrderFinancialSnapshot financialSnapshot = rentalPromoRequested
+                ? rentalBenefitPlan.financialSnapshot()
+                : referralPlan.financialSnapshot();
 
         var order = new CleaningOrder(
                 customer.customerId(),
@@ -87,19 +106,23 @@ public class CleaningOrderService {
                 command.apartmentType(),
                 command.duplex(),
                 command.cleaningType(),
-                referralPlan.financialSnapshot(),
-                referralPlan.referralCodeId(),
-                referralPlan.referrerCustomerId(),
-                referralPlan.partnerId(),
-                referralPlan.rewardId(),
+                financialSnapshot,
+                referralPlan == null ? null : referralPlan.referralCodeId(),
+                referralPlan == null ? null : referralPlan.referrerCustomerId(),
+                referralPlan == null ? null : referralPlan.partnerId(),
+                referralPlan == null ? null : referralPlan.rewardId(),
+                rentalBenefitPlan == null ? null : rentalBenefitPlan.benefitId(),
                 cleaningProperties.currency().getCurrencyCode(),
                 command.requestedDate(),
                 normalizeOptional(command.comment()),
                 clock.instant()
         );
         CleaningOrder savedOrder = orderRepository.save(order);
-        if (referralPlan.rewardId() != null) {
+        if (referralPlan != null && referralPlan.rewardId() != null) {
             referralService.reserveReward(referralPlan, savedOrder.getId());
+        }
+        if (rentalBenefitPlan != null) {
+            rentalCleaningBenefitService.reserve(rentalBenefitPlan, savedOrder.getId());
         }
         recordEvent(
                 savedOrder,
@@ -125,20 +148,33 @@ public class CleaningOrderService {
             CleaningOrderQuoteRequest request
     ) {
         Objects.requireNonNull(customer, "customer");
+        if (request.requestedDate() != null) {
+            validateRequestedDate(request.requestedDate());
+        }
         var basePrice = priceService.calculate(
                 request.apartmentType(),
                 request.cleaningType(),
                 request.duplex()
         );
-        boolean firstOrder = isAcquisitionEligible(customer.customerId());
-        var plan = referralService.quote(
-                customer.customerId(),
-                request.referralCode(),
-                basePrice,
-                firstOrder
-        );
+        requireNoIncentiveStacking(request.referralCode(), request.rentalCleaningPromoCode());
+        OrderFinancialSnapshot financialSnapshot;
+        if (hasText(request.rentalCleaningPromoCode())) {
+            financialSnapshot = rentalCleaningBenefitService.quote(
+                    customer.customerId(),
+                    request.rentalCleaningPromoCode(),
+                    request.requestedDate(),
+                    basePrice
+            ).financialSnapshot();
+        } else {
+            financialSnapshot = referralService.quote(
+                    customer.customerId(),
+                    request.referralCode(),
+                    basePrice,
+                    isAcquisitionEligible(customer.customerId())
+            ).financialSnapshot();
+        }
         return CleaningOrderQuoteResponse.from(
-                plan.financialSnapshot(),
+                financialSnapshot,
                 cleaningProperties.currency().getCurrencyCode()
         );
     }
@@ -157,12 +193,18 @@ public class CleaningOrderService {
 
     @Transactional
     public CleaningOrder cancelCurrentCustomerOrder(long orderId) {
-        CurrentCustomer customer = customerAccountService.currentCustomer();
+        return cancel(customerAccountService.currentCustomer(), orderId);
+    }
+
+    @Transactional
+    public CleaningOrder cancel(CurrentCustomer customer, long orderId) {
+        Objects.requireNonNull(customer, "customer");
         long customerId = customer.customerId();
         var order = findCustomerOrder(orderId, customerId);
         CleaningOrderStatus previousStatus = order.getStatus();
         order.cancelByCustomer();
         referralService.releaseReward(order);
+        rentalCleaningBenefitService.release(order);
         recordEvent(
                 order,
                 OrderEventType.CANCELLED_BY_CUSTOMER,
@@ -333,6 +375,7 @@ public class CleaningOrderService {
         CleaningOrderStatus previousStatus = order.getStatus();
         order.cancelByCleaner(cleanerTelegramUserId);
         referralService.releaseReward(order);
+        rentalCleaningBenefitService.release(order);
         recordEvent(
                 order,
                 OrderEventType.CANCELLED_BY_CLEANER,
@@ -384,6 +427,7 @@ public class CleaningOrderService {
                 null,
                 completedAt
         ));
+        rentalCleaningBenefitService.redeem(order);
         String referralCode = referralService.completeOrder(order);
         eventPublisher.publishEvent(new CleaningOrderCustomerEvent.Completed(
                 order.getId(),
@@ -454,6 +498,18 @@ public class CleaningOrderService {
     private boolean isAcquisitionEligible(long customerId) {
         return !orderRepository.existsByCustomerIdAndStatus(customerId, CleaningOrderStatus.COMPLETED)
                 && !orderRepository.existsByCustomerIdAndStatusIn(customerId, ACTIVE_STATUSES);
+    }
+
+    private static void requireNoIncentiveStacking(String referralCode, String rentalPromoCode) {
+        if (hasText(referralCode) && hasText(rentalPromoCode)) {
+            throw new RentalCleaningBenefitNotApplicableException(
+                    "Rental cleaning benefit cannot be combined with a referral incentive"
+            );
+        }
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     private void requireConfiguredCleaner(long cleanerTelegramUserId) {

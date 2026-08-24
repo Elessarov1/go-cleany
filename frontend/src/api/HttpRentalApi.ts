@@ -5,6 +5,7 @@ import type {
   CreateRentalBookingRequest,
   RentalAvailability,
   RentalBooking,
+  RentalCleaningContext,
   RentalBookingQuote,
   RentalBookingQuoteRequest,
   RentalConfiguration,
@@ -67,6 +68,10 @@ export class HttpRentalApi implements RentalApi {
 
   getBooking(id: number): Promise<RentalBooking> {
     return this.client.request(`/api/v1/rental/bookings/${id}`);
+  }
+
+  getCleaningContext(id: number): Promise<RentalCleaningContext> {
+    return this.client.request(`/api/v1/rental/bookings/${id}/cleaning-context`);
   }
 
   cancelBooking(id: number): Promise<RentalBooking> {

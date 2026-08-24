@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260830-01" author="go-cleany">
+        <comment>Create the explicit rental-to-cleaning benefit bridge and its lifecycle constraints.</comment>
+
+        <createTable tableName="rental_cleaning_benefit">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints
+                        primaryKey="true"
+                        primaryKeyName="pk_rental_cleaning_benefit"
+                        nullable="false"/>
+            </column>
+            <column name="rental_booking_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="customer_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reserved_cleaning_order_id" type="BIGINT"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="available_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="redeemed_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="revoked_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint
+                tableName="rental_cleaning_benefit"
+                columnNames="rental_booking_id"
+                constraintName="uq_rental_cleaning_benefit_booking"/>
+        <addUniqueConstraint
+                tableName="rental_cleaning_benefit"
+                columnNames="code"
+                constraintName="uq_rental_cleaning_benefit_code"/>
+        <addForeignKeyConstraint
+                baseTableName="rental_cleaning_benefit"
+                baseColumnNames="rental_booking_id"
+                constraintName="fk_rental_cleaning_benefit_booking"
+                referencedTableName="rental_booking"
+                referencedColumnNames="id"
+                onDelete="RESTRICT"/>
+        <addForeignKeyConstraint
+                baseTableName="rental_cleaning_benefit"
+                baseColumnNames="customer_id"
+                constraintName="fk_rental_cleaning_benefit_customer"
+                referencedTableName="customer_account"
+                referencedColumnNames="id"
+                onDelete="RESTRICT"/>
+        <addForeignKeyConstraint
+                baseTableName="rental_cleaning_benefit"
+                baseColumnNames="reserved_cleaning_order_id"
+                constraintName="fk_rental_cleaning_benefit_cleaning_order"
+                referencedTableName="cleaning_order"
+                referencedColumnNames="id"
+                onDelete="RESTRICT"/>
+
+        <createIndex
+                tableName="rental_cleaning_benefit"
+                indexName="idx_rental_cleaning_benefit_customer_status">
+            <column name="customer_id"/>
+            <column name="status"/>
+        </createIndex>
+        <createIndex
+                tableName="rental_cleaning_benefit"
+                indexName="idx_rental_cleaning_benefit_reserved_order">
+            <column name="reserved_cleaning_order_id"/>
+        </createIndex>
+
+        <addColumn tableName="cleaning_order">
+            <column name="applied_rental_cleaning_benefit_id" type="BIGINT"/>
+        </addColumn>
+        <addForeignKeyConstraint
+                baseTableName="cleaning_order"
+                baseColumnNames="applied_rental_cleaning_benefit_id"
+                constraintName="fk_cleaning_order_rental_cleaning_benefit"
+                referencedTableName="rental_cleaning_benefit"
+                referencedColumnNames="id"
+                onDelete="RESTRICT"/>
+        <createIndex
+                tableName="cleaning_order"
+                indexName="idx_cleaning_order_rental_cleaning_benefit">
+            <column name="applied_rental_cleaning_benefit_id"/>
+        </createIndex>
+
+        <sql dbms="postgresql"><![CDATA[
+            alter table rental_cleaning_benefit
+                add constraint ck_rental_cleaning_benefit_status check (
+                    status in ('AVAILABLE', 'RESERVED', 'REDEEMED', 'REVOKED')
+                ),
+                add constraint ck_rental_cleaning_benefit_code check (
+                    code ~ '^RC[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{8}$'
+                ),
+                add constraint ck_rental_cleaning_benefit_state check (
+                    (status = 'AVAILABLE'
+                        and reserved_cleaning_order_id is null
+                        and redeemed_at is null
+                        and revoked_at is null)
+                    or (status = 'RESERVED'
+                        and reserved_cleaning_order_id is not null
+                        and redeemed_at is null
+                        and revoked_at is null)
+                    or (status = 'REDEEMED'
+                        and reserved_cleaning_order_id is null
+                        and redeemed_at is not null
+                        and revoked_at is null)
+                    or (status = 'REVOKED'
+                        and reserved_cleaning_order_id is null
+                        and redeemed_at is null
+                        and revoked_at is not null)
+                );
+
+            alter table cleaning_order
+                drop constraint ck_cleaning_order_customer_discount_type;
+            alter table cleaning_order
+                add constraint ck_cleaning_order_customer_discount_type check (
+                    customer_discount_type in (
+                        'NONE', 'FRIEND_REFERRAL', 'REFERRER_REWARD',
+                        'PARTNER_REFERRAL', 'RENTAL_CHECKOUT_PROMO'
+                    )
+                ),
+                add constraint ck_cleaning_order_rental_benefit_discount check (
+                    (applied_rental_cleaning_benefit_id is null
+                        and customer_discount_type <> 'RENTAL_CHECKOUT_PROMO')
+                    or (applied_rental_cleaning_benefit_id is not null
+                        and customer_discount_type = 'RENTAL_CHECKOUT_PROMO'
+                        and referral_code_id is null
+                        and referrer_customer_id is null
+                        and referral_partner_id is null
+                        and applied_reward_id is null)
+                );
+        ]]></sql>
+
+        <dropDefaultValue tableName="rental_cleaning_benefit" columnName="version"/>
+
+        <rollback>
+            <sql dbms="postgresql"><![CDATA[
+                alter table cleaning_order drop constraint ck_cleaning_order_rental_benefit_discount;
+                alter table cleaning_order drop constraint ck_cleaning_order_customer_discount_type;
+                alter table cleaning_order
+                    add constraint ck_cleaning_order_customer_discount_type check (
+                        customer_discount_type in (
+                            'NONE', 'FRIEND_REFERRAL', 'REFERRER_REWARD', 'PARTNER_REFERRAL'
+                        )
+                    );
+            ]]></sql>
+            <dropForeignKeyConstraint
+                    baseTableName="cleaning_order"
+                    constraintName="fk_cleaning_order_rental_cleaning_benefit"/>
+            <dropColumn
+                    tableName="cleaning_order"
+                    columnName="applied_rental_cleaning_benefit_id"/>
+            <dropTable tableName="rental_cleaning_benefit"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

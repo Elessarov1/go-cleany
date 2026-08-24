@@ -8,7 +8,7 @@ push в main ИЛИ ручной Run workflow
   -> backend и frontend CI выполняются параллельно
   -> deploy_staging запускается только после двух успешных jobs
   -> GitHub Actions подключается к VPS по SSH
-  -> GitHub staging variables передают роли и общую rental policy
+  -> GitHub staging variables передают роли, rental policy и экономику checkout-уборки
   -> release.sh разворачивает точный commit SHA
   -> backup, Docker build, health checks
 ```
@@ -157,6 +157,8 @@ Repository -> Settings -> Environments -> staging
 | `RENTAL_MAX_STAY_DAYS` | `365` |
 | `RENTAL_BOOKING_START_MONTHS_AHEAD` | `6` |
 | `RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER` | `3` |
+| `RENTAL_CLEANING_DISCOUNT_RATE` | `0.10` |
+| `RENTAL_CLEANING_MAX_DISCOUNT` | `2000` |
 
 `CLEANER_TELEGRAM_IDS` и `ADMIN_TELEGRAM_IDS` должны содержать только numeric Telegram IDs через
 запятую, без пробелов. Workflow валидирует этот формат до SSH/deploy.
@@ -172,6 +174,11 @@ VPS не переписывается.
 не заданы, используются показанные безопасные defaults. Суточные цены и описания конкретных квартир
 не относятся к deployment configuration: администратор меняет их в `/admin/rent`, и они сохраняются
 в PostgreSQL.
+
+`RENTAL_CLEANING_DISCOUNT_RATE` и `RENTAL_CLEANING_MAX_DISCOUNT` управляют персональной выгодой
+go-renty на уборку перед выездом. Значения берутся из GitHub Environment при каждой выкладке и имеют
+приоритет над `.env.production`. Backend дополнительно не позволит запуститься, если ставка выгоды
+превышает доступную комиссионную ставку: это защищает заказ от отрицательной экономики.
 
 Отдельно в:
 
@@ -197,7 +204,7 @@ staging environment.
 2. ждёт успешные `backend` и `frontend` jobs;
 3. загружает `staging` environment;
 4. валидирует SSH credentials;
-5. валидирует `CLEANER_TELEGRAM_IDS`, `ADMIN_TELEGRAM_IDS` и rental policy;
+5. валидирует `CLEANER_TELEGRAM_IDS`, `ADMIN_TELEGRAM_IDS`, rental policy и экономику checkout-уборки;
 6. подключается к VPS через проверенный host key;
 7. передаёт списки ID и `RENTAL_*` в process environment remote command;
 8. вызывает `./deploy/scripts/release.sh "$GITHUB_SHA"`.

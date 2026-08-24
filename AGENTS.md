@@ -201,6 +201,55 @@ Do not move all service-specific fields into one generic JSONB payload as the pr
 
 ---
 
+### Multi-vertical platform architecture
+
+The application is a multi-vertical platform implemented as one modular monolith.
+
+`CustomerAccount` is the shared platform customer identity. Cleaning, rental and future car-rental,
+master/repair or other verticals must reference that same identity rather than introduce
+service-specific customer records.
+
+Every vertical owns its own business aggregates, for example:
+
+```text
+CleaningOrder
+RentalBooking
+future CarBooking
+future MasterOrder
+```
+
+Do not introduce `UniversalOrder`, `UniversalBooking`, or a generic JSON-based service aggregate to
+unify those verticals. Cross-service features should use an explicit bridge/application model that
+may reference aggregates from more than one vertical without merging their domain models.
+
+Frontend, Telegram, future web/mobile applications and future MCP/agent integrations are adapters
+or entry points. Business rules must stay in reusable backend application/domain services and must
+not be duplicated in channel adapters, frontend code, or MCP tools.
+
+Prefer explicit operations such as:
+
+```text
+quoteCleaningOrder
+createCleaningOrder
+quoteRentalBooking
+createRentalBooking
+```
+
+over a generic `createOrder(service, payload)` API. Keep read/quote operations separate from
+state-changing operations.
+
+The backend remains authoritative for authenticated identity, prices, discounts, availability,
+ownership, eligibility and status transitions. Never trust a client- or agent-supplied customer ID,
+calculated price, discount, availability, or business status.
+
+Design state-changing application operations so additional adapters can expose them safely later.
+Future MCP/agent writes should support idempotency against retries and uncertain responses. Future
+MCP/agent access must use delegated authorization with explicit scopes, never an arbitrary
+`customerId`. Do not implement MCP, delegated OAuth, agent grants, or payment-agent flows until a
+concrete requirement exists.
+
+---
+
 ## Technical stack
 
 ### Backend

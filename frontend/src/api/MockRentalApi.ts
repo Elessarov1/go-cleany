@@ -6,6 +6,7 @@ import type {
   RentalAvailability,
   RentalAvailabilityRange,
   RentalBooking,
+  RentalCleaningContext,
   RentalBookingProperty,
   RentalBookingQuote,
   RentalBookingQuoteRequest,
@@ -37,6 +38,12 @@ function dateFromToday(offset: number): string {
   const date = new Date();
   date.setHours(12, 0, 0, 0);
   date.setDate(date.getDate() + offset);
+  return date.toISOString().slice(0, 10);
+}
+
+function addDays(value: string, offset: number): string {
+  const date = new Date(`${value}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + offset);
   return date.toISOString().slice(0, 10);
 }
 
@@ -331,6 +338,28 @@ export class MockRentalApi implements RentalApi {
     return booking
       ? simulateNetwork(booking)
       : Promise.reject(new ApiError("Rental booking not found", 404, "rental_booking_not_found"));
+  }
+
+  async getCleaningContext(id: number): Promise<RentalCleaningContext> {
+    const booking = await this.getBooking(id);
+    const property = properties.find((item) => item.id === booking.property.id);
+    if (!property?.address) {
+      throw new ApiError("Rental property address is unavailable", 404);
+    }
+    const previewBenefit = new URLSearchParams(window.location.search)
+      .get("scenario")?.toUpperCase() === "RENT_BENEFIT";
+    const benefitAvailable = previewBenefit || (
+      booking.status === "CONFIRMED" && booking.checkInDate <= dateFromToday(0)
+    );
+    return simulateNetwork({
+      rentalBookingId: booking.id,
+      address: property.address,
+      phone: booking.phone,
+      checkOutDate: booking.checkOutDate,
+      earliestBenefitCleaningDate: addDays(booking.checkOutDate, -3),
+      benefitStatus: benefitAvailable ? "AVAILABLE" : null,
+      promoCode: benefitAvailable ? "RCPREVIEW1" : null,
+    });
   }
 
   async cancelBooking(id: number): Promise<RentalBooking> {

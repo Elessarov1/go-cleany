@@ -38,6 +38,7 @@ export function AppShell() {
   const service = catalog ? "platform" : rental ? "rent" : "cleaning";
   const serviceHome = rental ? (admin ? "/admin/rent" : "/rent") : catalog ? (admin ? "/admin" : "/") : (admin ? "/admin/cleaning" : "/cleaning");
   const brandService: BrandService | undefined = catalog ? undefined : rental ? "rental" : "cleaning";
+  const showLocalNavigation = !catalog && (!admin || rental);
 
   return (
     <div className="app-frame service-shell" data-service={service} data-layout={admin ? "admin" : "customer"}>
@@ -49,16 +50,40 @@ export function AppShell() {
             </span>
             <span className="brand__word"><BrandName service={brandService} /></span>
           </NavLink>
-          <LanguageSwitcher />
+          <div className="topbar__actions">
+            {!catalog ? (
+              <NavLink
+                className="topbar__global-link"
+                to={admin ? "/admin" : "/"}
+                title={t(admin ? "app.navigation.adminServices" : "app.navigation.services")}
+                aria-label={t(admin ? "app.navigation.adminServices" : "app.navigation.services")}
+              >
+                <Icon name="services" size={18} />
+                <span>{t(admin ? "app.navigation.adminServices" : "app.navigation.services")}</span>
+              </NavLink>
+            ) : null}
+            {admin ? (
+              <NavLink
+                className="topbar__global-link"
+                to="/"
+                title={t("app.navigation.openApplication")}
+                aria-label={t("app.navigation.openApplication")}
+              >
+                <Icon name="home" size={18} />
+                <span>{t("app.navigation.openApplication")}</span>
+              </NavLink>
+            ) : null}
+            <LanguageSwitcher />
+          </div>
         </header>
 
         <main className="app-content">
           <Outlet />
         </main>
 
-        {!catalog ? (
+        {showLocalNavigation ? (
           <nav
-            className={`bottom-nav${hasAdminAccess ? " bottom-nav--admin" : ""}`}
+            className={`bottom-nav${hasAdminAccess && !admin ? " bottom-nav--three-items" : ""}`}
             aria-label={t("app.navigation.label")}
           >
             <NavLink className={navClassName} to={admin && rental ? "/admin/rent/properties" : rental ? "/rent" : "/cleaning"} end>
@@ -69,7 +94,7 @@ export function AppShell() {
               <span className="bottom-nav__icon"><Icon name="clipboard" size={21} /></span>
               <span>{t(rental ? "app.navigation.bookings" : "app.navigation.orders")}</span>
             </NavLink>
-            {hasAdminAccess ? (
+            {hasAdminAccess && !admin ? (
               <NavLink className={navClassName} to="/admin" end>
                 <span className="bottom-nav__icon"><Icon name="admin" size={21} /></span>
                 <span>{t("app.navigation.admin")}</span>

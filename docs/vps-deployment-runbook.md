@@ -103,6 +103,8 @@ nano .env.production
   в `.env.production.example`.
 - `RENTAL_*` — минимальный/максимальный срок, long-term скидка, горизонт начала бронирования и
   лимит активных броней клиента. Суточные цены квартир задаются в `/admin/rent`, а не в `.env`;
+- `RENTAL_CLEANING_*` — ежедневная выдача персональной выгоды на checkout-уборку, допустимое окно
+  дат, ставка и максимальная скидка. Ставка не может превышать `REFERRAL_COMMISSION_RATE`;
 - `DATA_RETENTION_DAYS` — срок хранения audit trail и фотографий терминальных заказов, по умолчанию 7 дней;
 - `DATA_CLEANUP_ENABLED` — аварийный выключатель scheduled cleanup;
 - `DATA_CLEANUP_BATCH_SIZE` — максимум записей одного типа в одной cleanup-транзакции;

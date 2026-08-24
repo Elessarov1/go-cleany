@@ -124,6 +124,9 @@ function getPreviewScenario(): PreviewScenario | null {
   if (scenario === "EMPTY") {
     return "empty";
   }
+  if (scenario === "ADMIN_CLEANING_ORDER") {
+    return "ONSITE_ISSUE_REPORTED";
+  }
 
   return validStatuses.includes(scenario as CleaningOrderStatus)
     ? (scenario as CleaningOrderStatus)
@@ -294,18 +297,33 @@ export class MockCleaningApi implements CleaningApi {
   }
 
   quoteOrder(request: CleaningOrderQuoteRequest): Promise<CleaningOrderQuote> {
+    if (request.referralCode && request.rentalCleaningPromoCode) {
+      return Promise.reject(new CleaningApiError(
+        "Rental benefit cannot be combined with a referral",
+        400,
+        "rental_cleaning_benefit_not_applicable",
+      ));
+    }
     const basePrice = calculateDisplayedPrice(
       mockConfiguration,
       request.apartmentType,
       request.cleaningType,
       request.duplex,
     );
-    const customerDiscount = request.referralCode ? basePrice * 0.15 : 0;
+    const customerDiscount = request.rentalCleaningPromoCode
+      ? basePrice * 0.1
+      : request.referralCode
+        ? basePrice * 0.15
+        : 0;
     return simulateNetwork({
       basePrice,
       customerDiscount,
       finalCustomerPrice: basePrice - customerDiscount,
-      customerDiscountType: request.referralCode ? "FRIEND_REFERRAL" : "NONE",
+      customerDiscountType: request.rentalCleaningPromoCode
+        ? "RENTAL_CHECKOUT_PROMO"
+        : request.referralCode
+          ? "FRIEND_REFERRAL"
+          : "NONE",
       currency: mockConfiguration.currency,
     });
   }

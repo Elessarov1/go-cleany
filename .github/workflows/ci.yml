@@ -90,6 +90,8 @@ jobs:
           RENTAL_MAX_STAY_DAYS: ${{ vars.RENTAL_MAX_STAY_DAYS || '365' }}
           RENTAL_BOOKING_START_MONTHS_AHEAD: ${{ vars.RENTAL_BOOKING_START_MONTHS_AHEAD || '6' }}
           RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER: ${{ vars.RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER || '3' }}
+          RENTAL_CLEANING_DISCOUNT_RATE: ${{ vars.RENTAL_CLEANING_DISCOUNT_RATE || '0.10' }}
+          RENTAL_CLEANING_MAX_DISCOUNT: ${{ vars.RENTAL_CLEANING_MAX_DISCOUNT || '2000' }}
           DATA_CLEANUP_BATCH_SIZE: ${{ vars.DATA_CLEANUP_BATCH_SIZE || '100' }}
           DATA_CLEANUP_MAX_BATCHES_PER_RUN: ${{ vars.DATA_CLEANUP_MAX_BATCHES_PER_RUN || '10' }}
         run: |
@@ -121,6 +123,14 @@ jobs:
             echo "RENTAL_LONG_TERM_DISCOUNT_RATE must be greater than or equal to 0 and less than 1." >&2
             exit 1
           }
+          [[ "$RENTAL_CLEANING_DISCOUNT_RATE" =~ ^0([.][0-9]+)?$ ]] || {
+            echo "RENTAL_CLEANING_DISCOUNT_RATE must be greater than or equal to 0 and less than 1." >&2
+            exit 1
+          }
+          [[ "$RENTAL_CLEANING_MAX_DISCOUNT" =~ ^[0-9]+([.][0-9]{1,2})?$ ]] || {
+            echo "RENTAL_CLEANING_MAX_DISCOUNT must be a non-negative monetary amount." >&2
+            exit 1
+          }
 
       - name: Deploy exact revision
         env:
@@ -135,6 +145,8 @@ jobs:
           RENTAL_MAX_STAY_DAYS: ${{ vars.RENTAL_MAX_STAY_DAYS || '365' }}
           RENTAL_BOOKING_START_MONTHS_AHEAD: ${{ vars.RENTAL_BOOKING_START_MONTHS_AHEAD || '6' }}
           RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER: ${{ vars.RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER || '3' }}
+          RENTAL_CLEANING_DISCOUNT_RATE: ${{ vars.RENTAL_CLEANING_DISCOUNT_RATE || '0.10' }}
+          RENTAL_CLEANING_MAX_DISCOUNT: ${{ vars.RENTAL_CLEANING_MAX_DISCOUNT || '2000' }}
           DATA_CLEANUP_BATCH_SIZE: ${{ vars.DATA_CLEANUP_BATCH_SIZE || '100' }}
           DATA_CLEANUP_MAX_BATCHES_PER_RUN: ${{ vars.DATA_CLEANUP_MAX_BATCHES_PER_RUN || '10' }}
         run: |
@@ -159,6 +171,8 @@ jobs:
             RENTAL_MAX_STAY_DAYS='$RENTAL_MAX_STAY_DAYS' \
             RENTAL_BOOKING_START_MONTHS_AHEAD='$RENTAL_BOOKING_START_MONTHS_AHEAD' \
             RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER='$RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER' \
+            RENTAL_CLEANING_DISCOUNT_RATE='$RENTAL_CLEANING_DISCOUNT_RATE' \
+            RENTAL_CLEANING_MAX_DISCOUNT='$RENTAL_CLEANING_MAX_DISCOUNT' \
             DATA_CLEANUP_BATCH_SIZE='$DATA_CLEANUP_BATCH_SIZE' \
             DATA_CLEANUP_MAX_BATCHES_PER_RUN='$DATA_CLEANUP_MAX_BATCHES_PER_RUN' \
             ./deploy/scripts/release.sh '$GITHUB_SHA'"

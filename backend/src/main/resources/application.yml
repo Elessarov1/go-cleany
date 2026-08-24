@@ -86,6 +86,14 @@ rental:
   max-active-bookings-per-customer: ${RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER:3}
   zone-id: Europe/Istanbul
 
+rental-cleaning-benefit:
+  issuance-enabled: ${RENTAL_CLEANING_BENEFIT_ENABLED:true}
+  issuance-cron: "${RENTAL_CLEANING_BENEFIT_CRON:0 15 4 * * *}"
+  issuance-batch-size: ${RENTAL_CLEANING_BENEFIT_BATCH_SIZE:100}
+  checkout-window-days: ${RENTAL_CLEANING_CHECKOUT_WINDOW_DAYS:3}
+  discount-rate: ${RENTAL_CLEANING_DISCOUNT_RATE:0.10}
+  max-discount: ${RENTAL_CLEANING_MAX_DISCOUNT:2000}
+
 data-retention:
   enabled: ${DATA_CLEANUP_ENABLED:true}
   days: ${DATA_RETENTION_DAYS:7}

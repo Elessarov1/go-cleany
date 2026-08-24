@@ -16,6 +16,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitNotApplicableException;
 import com.cleany.order.BookingDateNotAvailableException;
 import com.cleany.admin.AdminNotAuthorizedException;
 import com.cleany.order.CleanerNotAuthorizedException;
@@ -330,6 +331,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({InvalidOrderStateException.class, OrderClaimConflictException.class})
     ResponseEntity<ApiError> handleConflict(RuntimeException exception) {
         return response(HttpStatus.CONFLICT, "order_state_conflict", exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(RentalCleaningBenefitNotApplicableException.class)
+    ResponseEntity<ApiError> handleRentalCleaningBenefitNotApplicable(
+            RentalCleaningBenefitNotApplicableException exception
+    ) {
+        return response(
+                HttpStatus.BAD_REQUEST,
+                "rental_cleaning_benefit_not_applicable",
+                exception.getMessage(),
+                Map.of("rentalCleaningPromoCode", exception.getMessage())
+        );
     }
 
     @ExceptionHandler(OptimisticLockingFailureException.class)

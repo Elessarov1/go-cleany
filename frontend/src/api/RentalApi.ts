@@ -5,6 +5,7 @@ import type {
   CreateRentalBookingRequest,
   RentalAvailability,
   RentalBooking,
+  RentalCleaningContext,
   RentalBookingQuote,
   RentalBookingQuoteRequest,
   RentalConfiguration,
@@ -24,6 +25,7 @@ export interface RentalApi {
   createBooking(request: CreateRentalBookingRequest): Promise<RentalBooking>;
   getBookings(): Promise<RentalBooking[]>;
   getBooking(id: number): Promise<RentalBooking>;
+  getCleaningContext(id: number): Promise<RentalCleaningContext>;
   cancelBooking(id: number): Promise<RentalBooking>;
   getAdminProperties(): Promise<RentalProperty[]>;
   createAdminProperty(): Promise<RentalProperty>;

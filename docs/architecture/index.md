@@ -59,7 +59,20 @@ Do not generalize them to all future service verticals without a concrete second
 
 ---
 
-## 3. Runbooks
+## 3. Rental checkout-cleaning benefit
+
+```text
+../rental-cleaning-benefit.md
+```
+
+Read this for changes involving the explicit go-renty → go-cleany benefit, including issuance,
+ownership, checkout date eligibility, reservation lifecycle and financial configuration.
+
+This bridge does not merge rental and cleaning aggregates and is not a referral program.
+
+---
+
+## 4. Runbooks
 
 Operational documentation lives outside this architecture directory.
 

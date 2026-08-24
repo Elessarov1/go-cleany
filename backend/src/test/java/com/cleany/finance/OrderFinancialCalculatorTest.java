@@ -70,6 +70,38 @@ class OrderFinancialCalculatorTest {
     }
 
     @Test
+    void rentalCheckoutPromo_usesExplicitRateCapAndKeepsPlatformNetNonNegative() {
+        var snapshot = calculator().rentalCheckoutPromo(
+                amount("1000"),
+                amount("0.10"),
+                amount("2000")
+        );
+
+        Assertions.assertAll(
+                () -> assertAmount("100.00", snapshot.customerDiscount()),
+                () -> assertAmount("900.00", snapshot.finalCustomerPrice()),
+                () -> assertAmount("50.00", snapshot.platformNet()),
+                () -> Assertions.assertEquals(
+                        CustomerDiscountType.RENTAL_CHECKOUT_PROMO,
+                        snapshot.customerDiscountType()
+                ),
+                () -> Assertions.assertEquals(AcquisitionSource.ORGANIC, snapshot.acquisitionSource())
+        );
+    }
+
+    @Test
+    void rentalCheckoutPromo_rateAboveCommissionPoolRejected() {
+        Assertions.assertThrows(
+                InvalidFinancialConfigurationException.class,
+                () -> calculator().rentalCheckoutPromo(
+                        amount("1000"),
+                        amount("0.16"),
+                        amount("2000")
+                )
+        );
+    }
+
+    @Test
     void invalidPartnerRates_applicationConfigurationRejected() {
         var properties = properties(
                 new ReferralFinancialProperties.Partner(

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitCustomerNotification;
 import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.media.MediaProvider;
 import com.cleany.media.MediaProviderReferenceData;
@@ -257,6 +258,37 @@ class TelegramCustomerNotificationSenderTest {
         Mockito.verify(botClient).sendMessage(
                 900001L,
                 "rental confirmed",
+                TelegramBotClient.InlineKeyboard.empty()
+        );
+    }
+
+    @Test
+    void rentalCleaningBenefit_renderedByChannelAdapter() {
+        TelegramCustomerNotificationMessageFactory messageFactory =
+                Mockito.mock(TelegramCustomerNotificationMessageFactory.class);
+        CleaningOrderBotMessageFactory cleaningMessageFactory =
+                Mockito.mock(CleaningOrderBotMessageFactory.class);
+        TelegramBotClient botClient = Mockito.mock(TelegramBotClient.class);
+        var notification = new RentalCleaningBenefitCustomerNotification(
+                43L,
+                "RC23456789",
+                LocalDate.of(2026, 9, 5),
+                LocalDate.of(2026, 9, 8)
+        );
+        Mockito.when(messageFactory.rentalCleaningBenefit(notification, "ru"))
+                .thenReturn("benefit available");
+        var sender = new TelegramCustomerNotificationSender(
+                messageFactory,
+                cleaningMessageFactory,
+                botClient,
+                Mockito.mock(MediaProviderReferenceService.class)
+        );
+
+        sender.send(telegramTarget(), notification);
+
+        Mockito.verify(botClient).sendMessage(
+                900001L,
+                "benefit available",
                 TelegramBotClient.InlineKeyboard.empty()
         );
     }

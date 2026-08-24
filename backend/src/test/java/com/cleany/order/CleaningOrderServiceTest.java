@@ -22,6 +22,7 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import com.cleany.configuration.CleanerProperties;
 import com.cleany.configuration.CleaningProperties;
+import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitService;
 import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountService;
 import com.cleany.customer.ExternalIdentityProvider;
@@ -51,6 +52,7 @@ class CleaningOrderServiceTest {
     private ApplicationEventPublisher eventPublisher;
     private CustomerAccountService customerAccountService;
     private ReferralService referralService;
+    private RentalCleaningBenefitService rentalCleaningBenefitService;
     private MediaProviderReferenceService mediaProviderReferenceService;
     private CleaningOrderService service;
 
@@ -62,6 +64,7 @@ class CleaningOrderServiceTest {
         eventPublisher = Mockito.mock(ApplicationEventPublisher.class);
         customerAccountService = Mockito.mock(CustomerAccountService.class);
         referralService = Mockito.mock(ReferralService.class);
+        rentalCleaningBenefitService = Mockito.mock(RentalCleaningBenefitService.class);
         mediaProviderReferenceService = Mockito.mock(MediaProviderReferenceService.class);
         CleaningProperties properties = properties();
         Mockito.when(customerAccountService.currentCustomer()).thenReturn(
@@ -97,6 +100,7 @@ class CleaningOrderServiceTest {
                 new CleanerProperties(List.of(CLEANER_ID)),
                 customerAccountService,
                 referralService,
+                rentalCleaningBenefitService,
                 mediaProviderReferenceService,
                 Clock.fixed(NOW, ZoneOffset.UTC),
                 eventPublisher

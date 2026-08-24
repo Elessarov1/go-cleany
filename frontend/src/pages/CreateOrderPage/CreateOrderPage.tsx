@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { CleaningApiError } from "../../api/CleaningApi";
 import { useCleaningApi } from "../../api/CleaningApiProvider";
 import { useCustomerApi } from "../../api/CustomerApiProvider";
+import { useRentalApi } from "../../api/RentalApiProvider";
 import { Icon } from "../../components/Icon/Icon";
 import { ServiceInfoDialog } from "../../components/ServiceInfoDialog/ServiceInfoDialog";
 import { LoadingState, ErrorState } from "../../components/PageState/PageState";
@@ -15,9 +16,10 @@ import type {
   CreateCleaningOrderRequest,
   ServiceArea,
 } from "../../domain/order";
+import type { RentalCleaningContext } from "../../domain/rental";
 import { calculateDisplayedPrice, formatPrice } from "../../domain/pricing";
 import { usePlatform } from "../../platform/PlatformProvider";
-import { addDaysToInputValue, todayAsInputValue } from "../../utils/format";
+import { addDaysToInputValue, formatDate, todayAsInputValue } from "../../utils/format";
 import { getBrandName } from "../../brand/productBrand";
 
 interface FormState {
@@ -41,7 +43,7 @@ type FormField =
   | "phone"
   | "referralCode";
 
-type SubmitError = "notificationAccess" | "createOrder" | null;
+type SubmitError = "notificationAccess" | "createOrder" | "rentalBenefit" | null;
 
 const initialForm: FormState = {
   duplex: false,
@@ -56,6 +58,7 @@ export function CreateOrderPage() {
   const { t, i18n } = useTranslation();
   const api = useCleaningApi();
   const customerApi = useCustomerApi();
+  const rentalApi = useRentalApi();
   const platform = usePlatform();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -70,17 +73,57 @@ export function CreateOrderPage() {
   const [quote, setQuote] = useState<CleaningOrderQuote | null>(null);
   const [isQuoteLoading, setIsQuoteLoading] = useState(false);
   const [quoteReferralError, setQuoteReferralError] = useState(false);
+  const [rentalContext, setRentalContext] = useState<RentalCleaningContext | null>(null);
+  const [rentalPromoCode, setRentalPromoCode] = useState("");
+  const [rentalBenefitError, setRentalBenefitError] = useState(false);
   const locale = i18n.resolvedLanguage === "ru" ? "ru-RU" : "en-GB";
 
   useEffect(() => {
     const referralCode = searchParams.get("ref")?.trim();
-    if (referralCode) {
+    if (referralCode && !searchParams.get("rentalBooking")) {
       setForm((current) => ({
         ...current,
         referralCode: referralCode.slice(0, 32).toUpperCase(),
       }));
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    const rawBookingId = searchParams.get("rentalBooking");
+    const bookingId = rawBookingId === null ? Number.NaN : Number(rawBookingId);
+    if (!Number.isSafeInteger(bookingId) || bookingId <= 0) {
+      setRentalContext(null);
+      setRentalPromoCode("");
+      return;
+    }
+    let active = true;
+    rentalApi.getCleaningContext(bookingId)
+      .then((context) => {
+        if (!active) return;
+        setRentalContext(context);
+        setForm((current) => ({
+          ...current,
+          address: current.address.trim() ? current.address : context.address,
+          phone: current.phone.trim() ? current.phone : context.phone,
+          referralCode: "",
+        }));
+        const requestedPromo = searchParams.get("promo")?.trim().toUpperCase();
+        setRentalPromoCode(
+          requestedPromo && context.promoCode === requestedPromo
+            ? context.promoCode
+            : "",
+        );
+      })
+      .catch(() => {
+        if (active) {
+          setRentalContext(null);
+          setRentalPromoCode("");
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [rentalApi, searchParams]);
 
   useEffect(() => {
     let active = true;
@@ -151,17 +194,27 @@ export function CreateOrderPage() {
       setQuoteReferralError(false);
       return;
     }
+    if (rentalPromoCode && !form.requestedDate) {
+      setQuote(null);
+      setIsQuoteLoading(false);
+      setQuoteReferralError(false);
+      setRentalBenefitError(false);
+      return;
+    }
 
     let active = true;
     setQuote(null);
     setIsQuoteLoading(true);
     setQuoteReferralError(false);
+    setRentalBenefitError(false);
     const timeout = window.setTimeout(() => {
       api.quoteOrder({
         apartmentType: form.apartmentType!,
         cleaningType: form.cleaningType!,
         duplex: form.duplex,
-        referralCode: form.referralCode.trim() || undefined,
+        referralCode: rentalPromoCode ? undefined : form.referralCode.trim() || undefined,
+        requestedDate: form.requestedDate || undefined,
+        rentalCleaningPromoCode: rentalPromoCode || undefined,
       })
         .then((value) => {
           if (active) {
@@ -181,6 +234,11 @@ export function CreateOrderPage() {
               ...current,
               referralCode: t("create.validation.referralCode"),
             }));
+          } else if (
+            error instanceof CleaningApiError
+            && error.code === "rental_cleaning_benefit_not_applicable"
+          ) {
+            setRentalBenefitError(true);
           }
         })
         .finally(() => {
@@ -192,7 +250,16 @@ export function CreateOrderPage() {
       active = false;
       window.clearTimeout(timeout);
     };
-  }, [api, form.apartmentType, form.cleaningType, form.duplex, form.referralCode, t]);
+  }, [
+    api,
+    form.apartmentType,
+    form.cleaningType,
+    form.duplex,
+    form.referralCode,
+    form.requestedDate,
+    rentalPromoCode,
+    t,
+  ]);
 
   const price = quote?.finalCustomerPrice ?? displayedBasePrice;
 
@@ -250,7 +317,8 @@ export function CreateOrderPage() {
       address: form.address.trim(),
       phone: form.phone.trim(),
       comment: form.comment.trim() || undefined,
-      referralCode: form.referralCode.trim() || undefined,
+      referralCode: rentalPromoCode ? undefined : form.referralCode.trim() || undefined,
+      rentalCleaningPromoCode: rentalPromoCode || undefined,
     };
 
     try {
@@ -300,6 +368,12 @@ export function CreateOrderPage() {
           behavior: "smooth",
           block: "center",
         });
+      } else if (
+        error instanceof CleaningApiError
+        && error.code === "rental_cleaning_benefit_not_applicable"
+      ) {
+        setRentalBenefitError(true);
+        setSubmitError("rentalBenefit");
       } else {
         setSubmitError("createOrder");
       }
@@ -336,6 +410,23 @@ export function CreateOrderPage() {
           <span className="broom-icon hero__broom-icon" />
         </div>
       </section>
+
+      {rentalContext ? (
+        <section className="rental-cleaning-context">
+          <span><Icon name="building" size={21} /></span>
+          <div>
+            <strong>{t("create.rentalContext.title", { id: rentalContext.rentalBookingId })}</strong>
+            <p>{t("create.rentalContext.prefilled")}</p>
+            {rentalPromoCode ? (
+              <small>{t("create.rentalContext.benefit", {
+                code: rentalPromoCode,
+                from: formatDate(rentalContext.earliestBenefitCleaningDate, locale),
+                to: formatDate(rentalContext.checkOutDate, locale),
+              })}</small>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
       <form className="booking-form" noValidate onSubmit={handleSubmit}>
         <section className="form-section">
@@ -507,7 +598,7 @@ export function CreateOrderPage() {
             />
           </div>
 
-          <div className="field">
+          {!rentalPromoCode ? <div className="field">
             <label htmlFor="referral-code">
               {t("create.details.referralCode")} <span>{t("common.optional")}</span>
             </label>
@@ -521,7 +612,7 @@ export function CreateOrderPage() {
             />
             <small>{t("create.details.referralCodeHint")}</small>
             {errors.referralCode ? <p className="field-error">{errors.referralCode}</p> : null}
-          </div>
+          </div> : null}
         </section>
 
         <section className="price-summary">
@@ -557,7 +648,10 @@ export function CreateOrderPage() {
             <span><Icon name="wallet" size={17} /></span>
             <p>{t("create.summary.directPayment", { brand: getBrandName("cleaning") })}</p>
           </div>
-          {submitError ? (
+          {rentalBenefitError ? (
+            <p className="form-alert" role="alert">{t("create.rentalContext.notApplicable")}</p>
+          ) : null}
+          {submitError && submitError !== "rentalBenefit" ? (
             <p className="form-alert" role="alert">
               {t(
                 submitError === "notificationAccess"
@@ -569,7 +663,7 @@ export function CreateOrderPage() {
           <button
             className="button button--primary button--full button--large"
             type="submit"
-            disabled={isSubmitting || isQuoteLoading || price === null || quoteReferralError}
+            disabled={isSubmitting || isQuoteLoading || price === null || quoteReferralError || rentalBenefitError}
           >
             {isSubmitting
               ? t("create.submitting")

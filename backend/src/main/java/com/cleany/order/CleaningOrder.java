@@ -101,6 +101,9 @@ public class CleaningOrder {
     @Column(name = "applied_reward_id")
     private Long appliedRewardId;
 
+    @Column(name = "applied_rental_cleaning_benefit_id")
+    private Long appliedRentalCleaningBenefitId;
+
     @Column(name = "currency", nullable = false, length = 3)
     private String currency;
 
@@ -159,6 +162,50 @@ public class CleaningOrder {
             String customerComment,
             Instant createdAt
     ) {
+        this(
+                customerId,
+                communicationIdentityId,
+                customerName,
+                phone,
+                area,
+                address,
+                apartmentType,
+                duplex,
+                cleaningType,
+                financialSnapshot,
+                referralCodeId,
+                referrerCustomerId,
+                referralPartnerId,
+                appliedRewardId,
+                null,
+                currency,
+                requestedDate,
+                customerComment,
+                createdAt
+        );
+    }
+
+    CleaningOrder(
+            long customerId,
+            long communicationIdentityId,
+            String customerName,
+            String phone,
+            ServiceArea area,
+            String address,
+            ApartmentType apartmentType,
+            boolean duplex,
+            CleaningType cleaningType,
+            OrderFinancialSnapshot financialSnapshot,
+            Long referralCodeId,
+            Long referrerCustomerId,
+            Long referralPartnerId,
+            Long appliedRewardId,
+            Long appliedRentalCleaningBenefitId,
+            String currency,
+            LocalDate requestedDate,
+            String customerComment,
+            Instant createdAt
+    ) {
         this.customerId = customerId;
         if (communicationIdentityId <= 0) {
             throw new IllegalArgumentException("communicationIdentityId must be positive");
@@ -186,6 +233,7 @@ public class CleaningOrder {
         this.referrerCustomerId = referrerCustomerId;
         this.referralPartnerId = referralPartnerId;
         this.appliedRewardId = appliedRewardId;
+        this.appliedRentalCleaningBenefitId = appliedRentalCleaningBenefitId;
         this.currency = Objects.requireNonNull(currency);
         this.requestedDate = Objects.requireNonNull(requestedDate);
         this.customerComment = customerComment;
@@ -375,6 +423,10 @@ public class CleaningOrder {
 
     public Long getAppliedRewardId() {
         return appliedRewardId;
+    }
+
+    public Long getAppliedRentalCleaningBenefitId() {
+        return appliedRentalCleaningBenefitId;
     }
 
     public String getCurrency() {

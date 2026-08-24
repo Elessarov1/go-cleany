@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitCustomerNotification;
 import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.media.MediaProvider;
 import com.cleany.media.MediaProviderReferenceData;
@@ -56,6 +57,13 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
                             unlocked.referralCode(),
                             target.languageCode()
                     )
+            );
+            return;
+        }
+        if (notification instanceof RentalCleaningBenefitCustomerNotification benefit) {
+            sendMessage(
+                    telegramUserId,
+                    messageFactory.rentalCleaningBenefit(benefit, target.languageCode())
             );
             return;
         }
