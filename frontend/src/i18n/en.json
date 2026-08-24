@@ -9,6 +9,8 @@
       "apartments": "Apartments",
       "bookings": "Bookings",
       "admin": "Admin",
+      "main": "Home",
+      "serviceHome": "Service home",
       "services": "Services",
       "adminServices": "Admin sections",
       "openApplication": "Open application"

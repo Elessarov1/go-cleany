@@ -6,10 +6,21 @@ import { Icon } from "../Icon/Icon";
 import { LanguageSwitcher } from "../LanguageSwitcher/LanguageSwitcher";
 import { PreviewPanel } from "../PreviewPanel/PreviewPanel";
 import { BrandName } from "../BrandName/BrandName";
-import { getBrandName, type BrandService } from "../../brand/productBrand";
+import type { BrandService } from "../../brand/productBrand";
 
 function navClassName({ isActive }: { isActive: boolean }): string {
   return `bottom-nav__link${isActive ? " is-active" : ""}`;
+}
+
+function logoTarget(pathname: string): string {
+  if (pathname === "/admin") return "/";
+  if (pathname.startsWith("/admin/")) return "/admin";
+  if (pathname === "/cleaning" || pathname === "/rent" || pathname === "/rent/properties") {
+    return "/";
+  }
+  if (pathname.startsWith("/cleaning/")) return "/cleaning";
+  if (pathname.startsWith("/rent/")) return "/rent";
+  return "/";
 }
 
 export function AppShell() {
@@ -35,8 +46,16 @@ export function AppShell() {
   const admin = location.pathname.startsWith("/admin");
   const rental = location.pathname.startsWith("/rent") || location.pathname.startsWith("/admin/rent");
   const catalog = location.pathname === "/" || location.pathname === "/admin";
+  const customerServiceHome = location.pathname === "/cleaning"
+    || location.pathname === "/rent"
+    || location.pathname === "/rent/properties";
   const service = catalog ? "platform" : rental ? "rent" : "cleaning";
-  const serviceHome = rental ? (admin ? "/admin/rent" : "/rent") : catalog ? (admin ? "/admin" : "/") : (admin ? "/admin/cleaning" : "/cleaning");
+  const parentRoute = logoTarget(location.pathname);
+  const parentLabel = admin && !catalog
+    ? t("app.navigation.adminServices")
+    : !admin && !catalog && !customerServiceHome
+      ? t("app.navigation.serviceHome")
+      : t("app.navigation.main");
   const brandService: BrandService | undefined = catalog ? undefined : rental ? "rental" : "cleaning";
   const showLocalNavigation = !catalog && (!admin || rental);
 
@@ -44,25 +63,30 @@ export function AppShell() {
     <div className="app-frame service-shell" data-service={service} data-layout={admin ? "admin" : "customer"}>
       <div className="app-container">
         <header className="topbar">
-          <NavLink className="brand" to={serviceHome} aria-label={t("app.homeLabel", { brand: getBrandName(brandService) })}>
+          <NavLink
+            className="brand"
+            to={parentRoute}
+            title={parentLabel}
+            aria-label={parentLabel}
+          >
             <span className="brand__mark" aria-hidden="true">
               <Icon name={rental ? "building" : "sparkles"} size={19} strokeWidth={2} />
             </span>
             <span className="brand__word"><BrandName service={brandService} /></span>
           </NavLink>
           <div className="topbar__actions">
-            {!catalog ? (
+            {!admin && !catalog && !customerServiceHome ? (
               <NavLink
                 className="topbar__global-link"
-                to={admin ? "/admin" : "/"}
-                title={t(admin ? "app.navigation.adminServices" : "app.navigation.services")}
-                aria-label={t(admin ? "app.navigation.adminServices" : "app.navigation.services")}
+                to="/"
+                title={t("app.navigation.services")}
+                aria-label={t("app.navigation.services")}
               >
                 <Icon name="services" size={18} />
-                <span>{t(admin ? "app.navigation.adminServices" : "app.navigation.services")}</span>
+                <span>{t("app.navigation.services")}</span>
               </NavLink>
             ) : null}
-            {admin ? (
+            {admin && !catalog ? (
               <NavLink
                 className="topbar__global-link"
                 to="/"
