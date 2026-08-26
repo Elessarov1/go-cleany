@@ -6,7 +6,7 @@ import { Icon } from "../../components/Icon/Icon";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import type { RentalConfiguration, RentalProperty } from "../../domain/rental";
 import { formatPrice } from "../../domain/pricing";
-import { rentalCoverUrl, rentalLanguage, rentalPropertyTitle } from "../../utils/rental";
+import { rentalCoverUrl, rentalLanguage, rentalPropertyDescription, rentalPropertyTitle } from "../../utils/rental";
 import { BrandName } from "../../components/BrandName/BrandName";
 
 export function RentalCatalogPage() {
@@ -70,6 +70,7 @@ export function RentalCatalogPage() {
         <div className="rental-property-list">
           {properties.map((property) => {
             const coverUrl = rentalCoverUrl(property);
+            const description = rentalPropertyDescription(property, language);
             return (
               <Link
                 className="rental-property-card"
@@ -81,18 +82,24 @@ export function RentalCatalogPage() {
                   <span>{property.area}</span>
                 </div>
                 <div className="rental-property-card__body">
-                  <div>
+                  <div className="rental-property-card__copy">
                     <h2>{rentalPropertyTitle(property, language)}</h2>
-                    <p>
+                    <p className="rental-property-card__facts">
                       {t("rental.property.capacity", {
                         bedrooms: property.bedrooms,
                         guests: property.maxGuests,
-                      })}
+                      })} · {property.areaSqm} м²
                     </p>
+                    {description ? (
+                      <p className="rental-property-card__description">
+                        {description}
+                      </p>
+                    ) : null}
                   </div>
                   <div className="rental-property-card__price">
                     <strong>{formatPrice(property.baseDailyPrice!, property.currency!, locale)}</strong>
                     <span>{t("rental.common.perDay")}</span>
+                    <Icon name="arrow-right" size={19} />
                   </div>
                 </div>
               </Link>

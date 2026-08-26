@@ -456,11 +456,11 @@ export function CreateOrderPage() {
           <div className="section-heading">
             <span className="section-heading__number">{t("create.area.step")}</span>
             <div>
-              <h2>{t("create.area.title")}</h2>
+              <h2 id="cleaning-area-heading">{t("create.area.title")}</h2>
               <p>{t("create.area.hint")}</p>
             </div>
           </div>
-          <div className="choice-grid choice-grid--areas">
+          <div className="choice-grid choice-grid--areas" role="group" aria-labelledby="cleaning-area-heading">
             {configuration.areas.map((area) => (
               <button
                 key={area}
@@ -480,9 +480,9 @@ export function CreateOrderPage() {
         <section className="form-section">
           <div className="section-heading">
             <span className="section-heading__number">{t("create.apartment.step")}</span>
-            <div><h2>{t("create.apartment.title")}</h2></div>
+            <div><h2 id="cleaning-apartment-heading">{t("create.apartment.title")}</h2></div>
           </div>
-          <div className="choice-grid choice-grid--apartments">
+          <div className="choice-grid choice-grid--apartments" role="group" aria-labelledby="cleaning-apartment-heading">
             {configuration.apartmentTypes.map(({ type }) => (
               <button
                 key={type}
@@ -517,9 +517,9 @@ export function CreateOrderPage() {
         <section className="form-section">
           <div className="section-heading">
             <span className="section-heading__number">{t("create.cleaning.step")}</span>
-            <div><h2>{t("create.cleaning.title")}</h2></div>
+            <div><h2 id="cleaning-type-heading">{t("create.cleaning.title")}</h2></div>
           </div>
-          <div className="cleaning-options">
+          <div className="cleaning-options" role="group" aria-labelledby="cleaning-type-heading">
             {(["REGULAR", "DEEP"] as CleaningType[]).map((type) => (
               <article
                 key={type}
@@ -565,77 +565,86 @@ export function CreateOrderPage() {
             <div><h2>{t("create.details.title")}</h2></div>
           </div>
 
-          <div className="field">
-            <label htmlFor="requested-date">{t("create.details.date")}</label>
-            <input
-              id="requested-date"
-              type="date"
-              min={today}
-              max={lastBookingDate}
-              value={form.requestedDate}
-              onChange={(event) => updateForm("requestedDate", event.target.value)}
-            />
-            <small>{t("create.details.dateHint")}</small>
-            {errors.requestedDate ? <p className="field-error">{errors.requestedDate}</p> : null}
-          </div>
+          <div className="form-grid form-grid--cleaning-details">
+            <div className="field field--date">
+              <label htmlFor="requested-date">{t("create.details.date")}</label>
+              <input
+                id="requested-date"
+                type="date"
+                min={today}
+                max={lastBookingDate}
+                value={form.requestedDate}
+                onChange={(event) => updateForm("requestedDate", event.target.value)}
+                aria-invalid={Boolean(errors.requestedDate)}
+                aria-describedby={`requested-date-hint${errors.requestedDate ? " requested-date-error" : ""}`}
+              />
+              <small id="requested-date-hint">{t("create.details.dateHint")}</small>
+              {errors.requestedDate ? <p className="field-error" id="requested-date-error">{errors.requestedDate}</p> : null}
+            </div>
 
-          <div className="field">
-            <label htmlFor="address">{t("create.details.address")}</label>
-            <input
-              id="address"
-              autoComplete="street-address"
-              placeholder={t("create.details.addressPlaceholder")}
-              value={form.address}
-              onChange={(event) => updateForm("address", event.target.value)}
-            />
-            {errors.address ? <p className="field-error">{errors.address}</p> : null}
-          </div>
+            <div className="field field--address">
+              <label htmlFor="address">{t("create.details.address")}</label>
+              <input
+                id="address"
+                autoComplete="street-address"
+                placeholder={t("create.details.addressPlaceholder")}
+                value={form.address}
+                onChange={(event) => updateForm("address", event.target.value)}
+                aria-invalid={Boolean(errors.address)}
+                aria-describedby={errors.address ? "address-error" : undefined}
+              />
+              {errors.address ? <p className="field-error" id="address-error">{errors.address}</p> : null}
+            </div>
 
-          <div className="field">
-            <label htmlFor="phone">{t("create.details.phone")}</label>
-            <input
-              id="phone"
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              maxLength={40}
-              placeholder={t("create.details.phonePlaceholder")}
-              value={form.phone}
-              onChange={(event) => updateForm("phone", event.target.value)}
-              aria-describedby="phone-hint"
-            />
-            <small id="phone-hint">{t("create.details.phoneHint")}</small>
-            {errors.phone ? <p className="field-error">{errors.phone}</p> : null}
-          </div>
+            <div className="field field--phone">
+              <label htmlFor="phone">{t("create.details.phone")}</label>
+              <input
+                id="phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                maxLength={40}
+                placeholder={t("create.details.phonePlaceholder")}
+                value={form.phone}
+                onChange={(event) => updateForm("phone", event.target.value)}
+                aria-describedby={`phone-hint${errors.phone ? " phone-error" : ""}`}
+                aria-invalid={Boolean(errors.phone)}
+              />
+              <small id="phone-hint">{t("create.details.phoneHint")}</small>
+              {errors.phone ? <p className="field-error" id="phone-error">{errors.phone}</p> : null}
+            </div>
 
-          <div className="field">
-            <label htmlFor="comment">
-              {t("create.details.comment")} <span>{t("common.optional")}</span>
-            </label>
-            <textarea
-              id="comment"
-              rows={3}
-              placeholder={t("create.details.commentPlaceholder")}
-              value={form.comment}
-              onChange={(event) => updateForm("comment", event.target.value)}
-            />
-          </div>
+            <div className="field field--comment">
+              <label htmlFor="comment">
+                {t("create.details.comment")} <span>{t("common.optional")}</span>
+              </label>
+              <textarea
+                id="comment"
+                rows={3}
+                placeholder={t("create.details.commentPlaceholder")}
+                value={form.comment}
+                onChange={(event) => updateForm("comment", event.target.value)}
+              />
+            </div>
 
-          {!rentalPromoCode ? <div className="field">
-            <label htmlFor="referral-code">
-              {t("create.details.referralCode")} <span>{t("common.optional")}</span>
-            </label>
-            <input
-              id="referral-code"
-              autoComplete="off"
-              maxLength={32}
-              placeholder={t("create.details.referralCodePlaceholder")}
-              value={form.referralCode}
-              onChange={(event) => updateForm("referralCode", event.target.value.toUpperCase())}
-            />
-            <small>{t("create.details.referralCodeHint")}</small>
-            {errors.referralCode ? <p className="field-error">{errors.referralCode}</p> : null}
-          </div> : null}
+            {!rentalPromoCode ? <div className="field field--referral">
+              <label htmlFor="referral-code">
+                {t("create.details.referralCode")} <span>{t("common.optional")}</span>
+              </label>
+              <input
+                id="referral-code"
+                autoComplete="off"
+                maxLength={32}
+                placeholder={t("create.details.referralCodePlaceholder")}
+                value={form.referralCode}
+                onChange={(event) => updateForm("referralCode", event.target.value.toUpperCase())}
+                aria-invalid={Boolean(errors.referralCode)}
+                aria-describedby={`referral-code-hint${errors.referralCode ? " referral-code-error" : ""}`}
+              />
+              <small id="referral-code-hint">{t("create.details.referralCodeHint")}</small>
+              {errors.referralCode ? <p className="field-error" id="referral-code-error">{errors.referralCode}</p> : null}
+            </div> : null}
+          </div>
         </section>
 
         <section className="price-summary">

@@ -283,36 +283,39 @@ export function RentalPropertyPage() {
         propertyTitle={rentalPropertyTitle(property, language)}
       />
 
-      <header className="rental-property-heading">
-        <span className="eyebrow"><BrandName service="rental" /> · {property.area}</span>
-        <h1>{rentalPropertyTitle(property, language)}</h1>
-        <p>{rentalPropertyDescription(property, language)}</p>
-      </header>
+      <div className="rental-property-layout">
+        <div className="rental-property-main">
+          <header className="rental-property-heading">
+            <span className="eyebrow"><BrandName service="rental" /> · {property.area}</span>
+            <h1>{rentalPropertyTitle(property, language)}</h1>
+            <p>{rentalPropertyDescription(property, language)}</p>
+          </header>
 
-      <section className="rental-facts">
-        <div><Icon name="bed" size={21} /><strong>{property.bedrooms}</strong><span>{t("rental.property.bedrooms")}</span></div>
-        <div><Icon name="user" size={21} /><strong>{property.maxGuests}</strong><span>{t("rental.property.guests")}</span></div>
-        <div><Icon name="home" size={21} /><strong>{property.areaSqm} м²</strong><span>{t("rental.property.area")}</span></div>
-      </section>
+          <section className="rental-facts" aria-label={t("rental.property.detailsTitle")}>
+            <div><Icon name="bed" size={21} /><strong>{property.bedrooms}</strong><span>{t("rental.property.bedrooms")}</span></div>
+            <div><Icon name="user" size={21} /><strong>{property.maxGuests}</strong><span>{t("rental.property.guests")}</span></div>
+            <div><Icon name="home" size={21} /><strong>{property.areaSqm} м²</strong><span>{t("rental.property.area")}</span></div>
+          </section>
 
-      <section className="rental-section">
-        <div className="rental-section__heading">
-          <div><span className="eyebrow">01</span><h2>{t("rental.property.detailsTitle")}</h2></div>
+          <section className="rental-section rental-property-details">
+            <div className="rental-section__heading">
+              <div><span className="eyebrow">01</span><h2>{t("rental.property.detailsTitle")}</h2></div>
+            </div>
+            <dl className="rental-detail-grid">
+              <div><dt>{t("rental.property.beds")}</dt><dd>{property.beds}</dd></div>
+              <div><dt>{t("rental.property.bathrooms")}</dt><dd>{property.bathrooms}</dd></div>
+              <div><dt>{t("rental.property.floor")}</dt><dd>{property.floor}</dd></div>
+              <div><dt>{t("rental.property.address")}</dt><dd>{property.address}</dd></div>
+            </dl>
+            <div className="rental-amenities">
+              {property.amenities.map((amenity) => (
+                <span key={amenity}><Icon name="check" size={14} />{t(`rental.amenities.${amenity}`)}</span>
+              ))}
+            </div>
+          </section>
         </div>
-        <dl className="rental-detail-grid">
-          <div><dt>{t("rental.property.beds")}</dt><dd>{property.beds}</dd></div>
-          <div><dt>{t("rental.property.bathrooms")}</dt><dd>{property.bathrooms}</dd></div>
-          <div><dt>{t("rental.property.floor")}</dt><dd>{property.floor}</dd></div>
-          <div><dt>{t("rental.property.address")}</dt><dd>{property.address}</dd></div>
-        </dl>
-        <div className="rental-amenities">
-          {property.amenities.map((amenity) => (
-            <span key={amenity}><Icon name="check" size={14} />{t(`rental.amenities.${amenity}`)}</span>
-          ))}
-        </div>
-      </section>
 
-      <form className="rental-booking-form" onSubmit={(event) => void submit(event)}>
+        <form className="rental-booking-form" onSubmit={(event) => void submit(event)}>
         <section className="rental-section">
           <div className="rental-section__heading">
             <div><span className="eyebrow">02</span><h2>{t("rental.booking.termTitle")}</h2></div>
@@ -530,7 +533,8 @@ export function RentalPropertyPage() {
             </>
           ) : <AuthenticationRequiredState compact />}
         </section>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }

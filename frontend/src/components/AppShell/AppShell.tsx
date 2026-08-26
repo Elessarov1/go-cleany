@@ -58,68 +58,70 @@ export function AppShell() {
     >
       <div className="app-container">
         <header className="topbar">
-          <NavLink
-            className="brand"
-            to={parentRoute}
-            title={parentLabel}
-            aria-label={parentLabel}
-          >
-            <span className="brand__mark" aria-hidden="true">
-              <Icon name={rental ? "building" : "sparkles"} size={19} strokeWidth={2} />
-            </span>
-            <span className="brand__word"><BrandName service={brandService} /></span>
-          </NavLink>
-          {standaloneWeb && !admin ? (
-            <nav className="web-primary-nav" aria-label={t("app.navigation.label")}>
-              <NavLink to="/" end>{t("app.navigation.services")}</NavLink>
-              <NavLink to="/cleaning"><BrandName service="cleaning" /></NavLink>
-              <NavLink to="/rent"><BrandName service="rental" /></NavLink>
-            </nav>
-          ) : null}
-          <div className="topbar__actions">
-            {!admin && !catalog && !customerServiceHome ? (
-              <NavLink
-                className="topbar__global-link"
-                to="/"
-                title={t("app.navigation.services")}
-                aria-label={t("app.navigation.services")}
-              >
-                <Icon name="services" size={18} />
-                <span>{t("app.navigation.services")}</span>
-              </NavLink>
+          <div className="topbar__inner">
+            <NavLink
+              className="brand"
+              to={parentRoute}
+              title={parentLabel}
+              aria-label={parentLabel}
+            >
+              <span className="brand__mark" aria-hidden="true">
+                <Icon name={rental ? "building" : "sparkles"} size={19} strokeWidth={2} />
+              </span>
+              <span className="brand__word"><BrandName service={brandService} /></span>
+            </NavLink>
+            {standaloneWeb && !admin ? (
+              <nav className="web-primary-nav" aria-label={t("app.navigation.label")}>
+                <NavLink to="/" end>{t("app.navigation.services")}</NavLink>
+                <NavLink to="/cleaning"><BrandName service="cleaning" /></NavLink>
+                <NavLink to="/rent"><BrandName service="rental" /></NavLink>
+              </nav>
             ) : null}
-            {admin && !catalog ? (
-              <NavLink
-                className="topbar__global-link"
-                to="/"
-                title={t("app.navigation.openApplication")}
-                aria-label={t("app.navigation.openApplication")}
-              >
-                <Icon name="home" size={18} />
-                <span>{t("app.navigation.openApplication")}</span>
-              </NavLink>
-            ) : null}
-            {standaloneWeb && authentication.status === "READY" ? (
-              authentication.current.authenticated ? (
-                <button
-                  className="topbar__auth-action"
-                  type="button"
-                  onClick={() => void authentication.logout()}
+            <div className="topbar__actions">
+              {!admin && !catalog && !customerServiceHome ? (
+                <NavLink
+                  className="topbar__global-link"
+                  to="/"
+                  title={t("app.navigation.services")}
+                  aria-label={t("app.navigation.services")}
                 >
-                  <Icon name="user" size={17} />
-                  <span>{t("auth.logout")}</span>
-                </button>
-              ) : authentication.googleAvailable ? (
-                <a
-                  className="topbar__auth-action"
-                  href={authentication.googleLoginUrl(`${location.pathname}${location.search}`)}
+                  <Icon name="services" size={18} />
+                  <span>{t("app.navigation.services")}</span>
+                </NavLink>
+              ) : null}
+              {admin && !catalog ? (
+                <NavLink
+                  className="topbar__global-link"
+                  to="/"
+                  title={t("app.navigation.openApplication")}
+                  aria-label={t("app.navigation.openApplication")}
                 >
-                  <Icon name="user" size={17} />
-                  <span>{t("auth.login")}</span>
-                </a>
-              ) : null
-            ) : null}
-            <LanguageSwitcher />
+                  <Icon name="home" size={18} />
+                  <span>{t("app.navigation.openApplication")}</span>
+                </NavLink>
+              ) : null}
+              {standaloneWeb && authentication.status === "READY" ? (
+                authentication.current.authenticated ? (
+                  <button
+                    className="topbar__auth-action"
+                    type="button"
+                    onClick={() => void authentication.logout()}
+                  >
+                    <Icon name="user" size={17} />
+                    <span>{t("auth.logout")}</span>
+                  </button>
+                ) : authentication.googleAvailable ? (
+                  <a
+                    className="topbar__auth-action"
+                    href={authentication.googleLoginUrl(`${location.pathname}${location.search}`)}
+                  >
+                    <Icon name="user" size={17} />
+                    <span>{t("auth.login")}</span>
+                  </a>
+                ) : null
+              ) : null}
+              <LanguageSwitcher />
+            </div>
           </div>
         </header>
 
