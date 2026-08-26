@@ -20,6 +20,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.context.ApplicationEventPublisher;
 
+import com.cleany.catalog.PlatformServiceAccessService;
+import com.cleany.catalog.PlatformService;
+import com.cleany.catalog.PlatformServiceNotAvailableException;
 import com.cleany.configuration.CleanerProperties;
 import com.cleany.configuration.CleaningProperties;
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitService;
@@ -49,6 +52,7 @@ class CleaningOrderServiceTest {
     private CleaningOrderRepository repository;
     private CleaningOrderPhotoRepository photoRepository;
     private CleaningOrderEventRepository eventRepository;
+    private PlatformServiceAccessService platformServiceAccessService;
     private ApplicationEventPublisher eventPublisher;
     private CustomerAccountService customerAccountService;
     private ReferralService referralService;
@@ -61,6 +65,7 @@ class CleaningOrderServiceTest {
         repository = Mockito.mock(CleaningOrderRepository.class);
         photoRepository = Mockito.mock(CleaningOrderPhotoRepository.class);
         eventRepository = Mockito.mock(CleaningOrderEventRepository.class);
+        platformServiceAccessService = Mockito.mock(PlatformServiceAccessService.class);
         eventPublisher = Mockito.mock(ApplicationEventPublisher.class);
         customerAccountService = Mockito.mock(CustomerAccountService.class);
         referralService = Mockito.mock(ReferralService.class);
@@ -94,6 +99,7 @@ class CleaningOrderServiceTest {
                 repository,
                 photoRepository,
                 eventRepository,
+                platformServiceAccessService,
                 new CleaningPriceService(properties),
                 new PhoneNumberNormalizer(),
                 properties,
@@ -200,6 +206,40 @@ class CleaningOrderServiceTest {
                 Mockito.eq(true)
         );
         Mockito.verify(customerAccountService, Mockito.never()).currentCustomer();
+    }
+
+    @Test
+    void unavailableCleaningCannotBeBypassedWithReferralCode() {
+        CurrentCustomer customer = new CurrentCustomer(
+                91L,
+                92L,
+                ExternalIdentityProvider.WHATSAPP,
+                "905559876543",
+                null,
+                "WhatsApp Alex",
+                "ru"
+        );
+        var command = new CreateCleaningOrderCommand(
+                ServiceArea.MAHMUTLAR,
+                "Barbaros Cd. 24",
+                ApartmentType.TWO_PLUS_ONE,
+                false,
+                CleaningType.REGULAR,
+                LocalDate.of(2026, 8, 18),
+                "+90 555 123 45 67",
+                null,
+                "FRIEND10"
+        );
+        Mockito.doThrow(new PlatformServiceNotAvailableException(PlatformService.CLEANING))
+                .when(platformServiceAccessService)
+                .requireCanStartCustomerFlow(PlatformService.CLEANING, customer.customerId());
+
+        Assertions.assertThrows(
+                PlatformServiceNotAvailableException.class,
+                () -> service.createOrder(customer, command)
+        );
+
+        Mockito.verifyNoInteractions(referralService, repository, eventRepository, eventPublisher);
     }
 
     @ParameterizedTest

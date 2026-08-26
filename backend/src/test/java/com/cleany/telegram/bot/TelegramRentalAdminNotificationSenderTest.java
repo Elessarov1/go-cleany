@@ -21,7 +21,7 @@ class TelegramRentalAdminNotificationSenderTest {
     private final TelegramBotClient botClient = Mockito.mock(TelegramBotClient.class);
     private final TelegramRentalAdminNotificationSender sender =
             new TelegramRentalAdminNotificationSender(
-                    new AdminProperties(List.of(1001L, 1002L, 1003L)),
+                    new AdminProperties(List.of(1001L, 1002L, 1003L), List.of()),
                     preferenceService,
                     new TelegramRentalAdminMessageFactory(),
                     botClient

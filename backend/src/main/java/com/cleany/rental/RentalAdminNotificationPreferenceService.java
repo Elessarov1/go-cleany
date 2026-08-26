@@ -12,6 +12,10 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.admin.AdminAccessService;
+import com.cleany.admin.AdminNotAuthorizedException;
+import com.cleany.customer.CustomerAccountService;
+import com.cleany.customer.CurrentCustomer;
+import com.cleany.customer.ExternalIdentityProvider;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,20 +24,20 @@ import lombok.RequiredArgsConstructor;
 public class RentalAdminNotificationPreferenceService {
 
     private final AdminAccessService accessService;
+    private final CustomerAccountService customerAccountService;
     private final RentalAdminNotificationPreferenceRepository repository;
     private final Clock clock;
 
     @Transactional(readOnly = true)
     public RentalAdminNotificationPreferenceResponse current() {
-        long adminId = accessService.requireCurrentAdmin();
-        return new RentalAdminNotificationPreferenceResponse(isEnabled(adminId));
+        return new RentalAdminNotificationPreferenceResponse(isEnabled(currentTelegramAdminId()));
     }
 
     @Transactional
     public RentalAdminNotificationPreferenceResponse update(
             UpdateRentalAdminNotificationPreferenceRequest request
     ) {
-        long adminId = accessService.requireCurrentAdmin();
+        long adminId = currentTelegramAdminId();
         boolean enabled = request.telegramEnabled();
         RentalAdminNotificationPreference preference = repository.findById(adminId)
                 .orElseGet(() -> new RentalAdminNotificationPreference(
@@ -71,5 +75,18 @@ public class RentalAdminNotificationPreferenceService {
         return repository.findById(adminId)
                 .map(RentalAdminNotificationPreference::isTelegramEnabled)
                 .orElse(true);
+    }
+
+    private long currentTelegramAdminId() {
+        CurrentCustomer customer = customerAccountService.currentCustomer();
+        accessService.requireAdmin(customer.customerId());
+        if (customer.provider() != ExternalIdentityProvider.TELEGRAM) {
+            throw new AdminNotAuthorizedException();
+        }
+        try {
+            return Long.parseLong(customer.externalSubject());
+        } catch (NumberFormatException exception) {
+            throw new AdminNotAuthorizedException();
+        }
     }
 }

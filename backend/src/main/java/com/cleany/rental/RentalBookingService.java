@@ -9,6 +9,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cleany.catalog.PlatformService;
+import com.cleany.catalog.PlatformServiceAccessService;
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitCancellationService;
 import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountService;
@@ -21,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 public class RentalBookingService {
 
     private final RentalBookingRepository bookingRepository;
+    private final PlatformServiceAccessService platformServiceAccessService;
     private final RentalOccupancyRepository occupancyRepository;
     private final RentalPropertyService propertyService;
     private final RentalPriceService priceService;
@@ -34,6 +37,18 @@ public class RentalBookingService {
 
     @Transactional(readOnly = true)
     public RentalBookingQuoteResponse quote(RentalBookingQuoteRequest request) {
+        return quote(customerAccountService.currentCustomer(), request);
+    }
+
+    @Transactional(readOnly = true)
+    public RentalBookingQuoteResponse quote(
+            CurrentCustomer customer,
+            RentalBookingQuoteRequest request
+    ) {
+        platformServiceAccessService.requireCanStartCustomerFlow(
+                PlatformService.RENTAL,
+                customer.customerId()
+        );
         RentalProperty property = propertyService.requirePublishedProperty(request.propertyId());
         ResolvedRentalTerm term = stayPolicy.resolve(
                 request.termType(),
@@ -57,6 +72,10 @@ public class RentalBookingService {
 
     @Transactional
     public RentalBookingResponse create(CurrentCustomer customer, CreateRentalBookingRequest request) {
+        platformServiceAccessService.requireCanStartCustomerFlow(
+                PlatformService.RENTAL,
+                customer.customerId()
+        );
         // This lock serializes the per-customer active-booking limit. Date overlap is enforced
         // independently by the rental_occupancy exclusion constraint.
         customerAccountService.lock(customer.customerId());
@@ -124,8 +143,18 @@ public class RentalBookingService {
 
     @Transactional(readOnly = true)
     public RentalBookingResponse currentCustomerBooking(long bookingId) {
-        long customerId = customerAccountService.currentCustomer().customerId();
-        return RentalBookingResponse.from(requireCustomerBooking(bookingId, customerId));
+        return currentCustomerBooking(customerAccountService.currentCustomer(), bookingId);
+    }
+
+    @Transactional(readOnly = true)
+    public RentalBookingResponse currentCustomerBooking(
+            CurrentCustomer customer,
+            long bookingId
+    ) {
+        return RentalBookingResponse.from(requireCustomerBooking(
+                bookingId,
+                customer.customerId()
+        ));
     }
 
     @Transactional

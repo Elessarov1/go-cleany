@@ -21,7 +21,7 @@ public interface RentalBookingRepository extends JpaRepository<RentalBooking, Lo
             select booking.id
             from rental_booking booking
             where booking.status = 'CONFIRMED'
-              and booking.check_in_date <= :today
+              and booking.check_out_date between :today and :windowEnd
               and not exists (
                   select 1
                   from rental_cleaning_benefit benefit
@@ -32,6 +32,7 @@ public interface RentalBookingRepository extends JpaRepository<RentalBooking, Lo
             """, nativeQuery = true)
     List<Long> findRentalCleaningBenefitCandidates(
             @Param("today") LocalDate today,
+            @Param("windowEnd") LocalDate windowEnd,
             @Param("batchSize") int batchSize
     );
 

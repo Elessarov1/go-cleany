@@ -9,7 +9,7 @@ class AdminPropertiesTest {
 
     @Test
     void telegramIds_duplicatesRemovedAndMembershipChecked() {
-        AdminProperties properties = new AdminProperties(List.of(10L, 10L, 20L));
+        AdminProperties properties = new AdminProperties(List.of(10L, 10L, 20L), List.of());
 
         Assertions.assertAll(
                 () -> Assertions.assertEquals(List.of(10L, 20L), properties.telegramIds()),
@@ -22,7 +22,7 @@ class AdminPropertiesTest {
     void telegramIds_nonPositiveValue_rejected() {
         Assertions.assertThrows(
                 IllegalArgumentException.class,
-                () -> new AdminProperties(List.of(0L))
+                () -> new AdminProperties(List.of(0L), List.of())
         );
     }
 }

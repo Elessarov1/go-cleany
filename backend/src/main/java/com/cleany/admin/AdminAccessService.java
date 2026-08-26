@@ -2,45 +2,31 @@ package com.cleany.admin;
 
 import org.springframework.stereotype.Service;
 
-import com.cleany.configuration.AdminProperties;
-import com.cleany.customer.CustomerIdentityProvider;
-import com.cleany.customer.ExternalIdentityProvider;
+import com.cleany.authorization.PlatformRole;
+import com.cleany.authorization.PlatformRoleService;
+import com.cleany.customer.CustomerAccountService;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class AdminAccessService {
 
-    private final AdminProperties adminProperties;
-    private final CustomerIdentityProvider identityProvider;
+    private final CustomerAccountService customerAccountService;
+    private final PlatformRoleService roleService;
 
-    public AdminAccessService(
-            AdminProperties adminProperties,
-            CustomerIdentityProvider identityProvider
-    ) {
-        this.adminProperties = adminProperties;
-        this.identityProvider = identityProvider;
-    }
-
-    public boolean isAdmin(long telegramUserId) {
-        return adminProperties.contains(telegramUserId);
+    public boolean isAdmin(long customerId) {
+        return roleService.hasRole(customerId, PlatformRole.ADMIN);
     }
 
     public long requireCurrentAdmin() {
-        var identity = identityProvider.currentIdentity();
-        if (identity.provider() != ExternalIdentityProvider.TELEGRAM) {
-            throw new AdminNotAuthorizedException();
-        }
-        long telegramUserId;
-        try {
-            telegramUserId = Long.parseLong(identity.externalSubject());
-        } catch (NumberFormatException exception) {
-            throw new AdminNotAuthorizedException();
-        }
-        requireAdmin(telegramUserId);
-        return telegramUserId;
+        long customerId = customerAccountService.currentCustomer().customerId();
+        requireAdmin(customerId);
+        return customerId;
     }
 
-    public void requireAdmin(long telegramUserId) {
-        if (!isAdmin(telegramUserId)) {
+    public void requireAdmin(long customerId) {
+        if (!isAdmin(customerId)) {
             throw new AdminNotAuthorizedException();
         }
     }

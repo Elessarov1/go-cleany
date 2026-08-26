@@ -16,13 +16,19 @@ The daily job considers bookings with:
 
 ```text
 status = CONFIRMED
-checkInDate <= today in Europe/Istanbul
+today is between checkOutDate - RENTAL_CLEANING_CHECKOUT_WINDOW_DAYS and checkOutDate
 no existing benefit for the booking
+the booking customer may currently start the CLEANING flow
 ```
 
-The `<=` rule lets the scheduler recover missed runs. Unique constraints on both booking ID and code
-are the final idempotency/concurrency guards. Historical completed bookings are not backfilled;
-currently confirmed bookings whose stay has already started may receive one benefit after rollout.
+The inclusive checkout window lets the scheduler recover a missed run inside that window without
+advertising cleaning at check-in. Unique constraints on both booking ID and code are the final
+idempotency/concurrency guards. Historical stays and future bookings outside the window are not
+backfilled.
+
+Service state applies at issuance and notification time: `ENABLED` allows eligible customers,
+`IN_TEST` allows only `ADMIN`, and `DISABLED` allows nobody. An already issued benefit is not revoked
+by a later service-state change, but its promo/CTA is hidden and new cleaning creation remains blocked.
 
 A rental cancelled before check-in cannot receive a benefit. If a still-available benefit exists
 when an eligible rental is cancelled by the service, it becomes `REVOKED`. Redeemed history is not

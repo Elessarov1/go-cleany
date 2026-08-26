@@ -145,6 +145,26 @@ h3 {
   background: var(--color-primary-soft);
 }
 
+.topbar__auth-action {
+  display: inline-flex;
+  min-height: 38px;
+  padding: 8px 10px;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-primary-dark);
+  background: transparent;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.topbar__auth-action:hover,
+.topbar__auth-action:focus-visible {
+  background: var(--color-primary-soft);
+}
+
 .brand {
   display: inline-flex;
   align-items: center;
@@ -1986,6 +2006,31 @@ h3 {
 }
 .service-card__copy strong { font-size: 20px; letter-spacing: -0.035em; }
 .service-card__copy span { color: var(--color-muted); font-size: 12px; line-height: 1.45; }
+.service-test-badge {
+  width: fit-content;
+  padding: 3px 7px;
+  color: #72500f;
+  background: #fff0b9;
+  border: 1px solid #efd479;
+  border-radius: 999px;
+  font-size: 9px;
+  letter-spacing: 0.09em;
+  line-height: 1.2;
+}
+
+.admin-login .page-state__symbol {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+}
+.service-catalog__empty {
+  margin: 0;
+  padding: 22px;
+  color: var(--color-muted);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 18px;
+  text-align: center;
+}
 .service-catalog__note { margin: 24px 10px 0; text-align: center; font-size: 12px; }
 
 .rental-hero {
@@ -2601,6 +2646,15 @@ h3 {
   gap: 16px;
 }
 
+.admin-service-panel {
+  min-width: 0;
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 24px;
+  box-shadow: var(--shadow-small);
+}
+
 .admin-service-card {
   display: grid;
   min-width: 0;
@@ -2610,9 +2664,7 @@ h3 {
   align-items: center;
   gap: 18px;
   background: var(--color-surface);
-  border: 1px solid var(--color-line);
-  border-radius: 24px;
-  box-shadow: var(--shadow-small);
+  border: 0;
 }
 
 .admin-service-card > span {
@@ -2624,12 +2676,45 @@ h3 {
   border-radius: 18px;
 }
 
-.admin-service-card--rent > span { background: #d77d3e; }
-.admin-service-card--cleaning > span { background: #1685b3; }
+.admin-service-panel--rent .admin-service-card > span { background: #d77d3e; }
+.admin-service-panel--cleaning .admin-service-card > span { background: #1685b3; }
 .admin-service-card div { display: grid; min-width: 0; gap: 5px; }
 .admin-service-card small { color: var(--color-muted); font-size: 10px; font-weight: 850; letter-spacing: 0.1em; text-transform: uppercase; }
 .admin-service-card strong { font-size: 21px; letter-spacing: -0.035em; }
 .admin-service-card p { margin: 0; color: var(--color-muted); font-size: 12px; line-height: 1.5; }
+.admin-service-state {
+  display: grid;
+  gap: 8px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--color-line);
+}
+.admin-service-state label {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.admin-service-state select {
+  width: 100%;
+  padding: 11px 12px;
+  color: var(--color-ink);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  font-weight: 720;
+}
+.admin-service-state p,
+.admin-service-state__error {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.admin-service-state__error {
+  margin: -10px 0 18px;
+  color: var(--color-danger);
+}
 
 .page--admin-rental {
   display: grid;

@@ -6,8 +6,10 @@ import java.time.Clock;
 import java.util.Objects;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cleany.authorization.CustomerRoleBootstrapService;
 import com.cleany.order.PhoneNumberNormalizer;
 
 import lombok.RequiredArgsConstructor;
@@ -19,15 +21,16 @@ public class CustomerAccountService {
     private final CustomerIdentityProvider identityProvider;
     private final CustomerAccountRepository accountRepository;
     private final CustomerExternalIdentityRepository externalIdentityRepository;
+    private final CustomerRoleBootstrapService roleBootstrapService;
     private final PhoneNumberNormalizer phoneNumberNormalizer;
     private final Clock clock;
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public CurrentCustomer currentCustomer() {
         return resolveCustomer(identityProvider.currentIdentity());
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public CurrentCustomer resolveCustomer(AuthenticatedCustomerIdentity authenticatedIdentity) {
         Objects.requireNonNull(authenticatedIdentity, "authenticatedIdentity");
         ResolvedCustomer resolved = resolveAccount(
@@ -35,9 +38,12 @@ public class CustomerAccountService {
                 authenticatedIdentity.externalSubject(),
                 authenticatedIdentity.username(),
                 authenticatedIdentity.displayName(),
-                authenticatedIdentity.languageCode()
+                authenticatedIdentity.languageCode(),
+                authenticatedIdentity.email(),
+                authenticatedIdentity.emailVerified()
         );
         CustomerExternalIdentity externalIdentity = resolved.externalIdentity();
+        roleBootstrapService.bootstrap(authenticatedIdentity, resolved.account().getId());
 
         return new CurrentCustomer(
                 resolved.account().getId(),
@@ -84,7 +90,9 @@ public class CustomerAccountService {
                 requireExternalSubject(externalSubject),
                 username,
                 displayName,
-                languageCode
+                languageCode,
+                null,
+                false
         ).account();
         account.updatePhone(phoneNumberNormalizer.normalize(rawPhone));
     }
@@ -100,7 +108,9 @@ public class CustomerAccountService {
             String externalSubject,
             String username,
             String displayName,
-            String languageCode
+            String languageCode,
+            String email,
+            boolean emailVerified
     ) {
         var now = clock.instant();
         var existingIdentity = externalIdentityRepository.findByProviderAndExternalSubject(
@@ -113,6 +123,8 @@ public class CustomerAccountService {
                     normalizeOptional(username),
                     normalizeDisplayName(displayName, externalSubject),
                     normalizeLanguageCode(languageCode),
+                    normalizeOptional(email),
+                    emailVerified,
                     now
             );
             CustomerAccount account = accountRepository.findById(identity.getCustomerId())
@@ -130,6 +142,8 @@ public class CustomerAccountService {
                 normalizeOptional(username),
                 normalizeDisplayName(displayName, externalSubject),
                 normalizeLanguageCode(languageCode),
+                normalizeOptional(email),
+                emailVerified,
                 now
         ));
         return new ResolvedCustomer(account, identity);

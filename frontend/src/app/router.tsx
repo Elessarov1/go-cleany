@@ -18,6 +18,8 @@ import { AdminRentalPropertyPage } from "../pages/AdminRentalPropertyPage/AdminR
 import { AdminRentalCalendarPage } from "../pages/AdminRentalCalendarPage/AdminRentalCalendarPage";
 import { AdminRentalBookingsPage } from "../pages/AdminRentalBookingsPage/AdminRentalBookingsPage";
 import { AdminRentalBookingPage } from "../pages/AdminRentalBookingPage/AdminRentalBookingPage";
+import { ServiceAvailabilityGate } from "../components/ServiceAvailabilityGate/ServiceAvailabilityGate";
+import { AdminAccessGate } from "../components/AdminAccessGate/AdminAccessGate";
 
 function LegacyCleaningOrderRedirect({ created = false }: { created?: boolean }) {
   const { id } = useParams();
@@ -34,28 +36,34 @@ export const router = createBrowserRouter([
     element: <AppShell />,
     children: [
       { path: "/", element: <ServiceCatalogPage /> },
-      { path: "/cleaning", element: <CreateOrderPage /> },
+      { path: "/cleaning", element: <ServiceAvailabilityGate service="CLEANING"><CreateOrderPage /></ServiceAvailabilityGate> },
       { path: "/cleaning/orders", element: <OrdersPage /> },
       { path: "/cleaning/orders/:id", element: <OrderDetailsPage /> },
       { path: "/cleaning/orders/:id/created", element: <OrderCreatedPage /> },
-      { path: "/rent", element: <RentalCatalogPage /> },
-      { path: "/rent/properties", element: <RentalCatalogPage /> },
-      { path: "/rent/properties/:slug", element: <RentalPropertyPage /> },
+      { path: "/rent", element: <ServiceAvailabilityGate service="RENTAL"><RentalCatalogPage /></ServiceAvailabilityGate> },
+      { path: "/rent/properties", element: <ServiceAvailabilityGate service="RENTAL"><RentalCatalogPage /></ServiceAvailabilityGate> },
+      { path: "/rent/properties/:slug", element: <ServiceAvailabilityGate service="RENTAL"><RentalPropertyPage /></ServiceAvailabilityGate> },
       { path: "/rent/bookings", element: <RentalBookingsPage /> },
       { path: "/rent/bookings/:id", element: <RentalBookingDetailsPage /> },
       { path: "/orders", element: <Navigate replace to="/cleaning/orders" /> },
       { path: "/orders/:id", element: <LegacyCleaningOrderRedirect /> },
       { path: "/orders/:id/created", element: <LegacyCleaningOrderRedirect created /> },
-      { path: "/admin", element: <AdminServiceCatalogPage /> },
-      { path: "/admin/cleaning", element: <AdminDashboardPage /> },
-      { path: "/admin/cleaning/orders/:id", element: <AdminOrderPage /> },
-      { path: "/admin/rent", element: <Navigate replace to="/admin/rent/properties" /> },
-      { path: "/admin/rent/properties", element: <AdminRentalPropertiesPage /> },
-      { path: "/admin/rent/properties/:id", element: <AdminRentalPropertyPage /> },
-      { path: "/admin/rent/properties/:id/calendar", element: <AdminRentalCalendarPage /> },
-      { path: "/admin/rent/bookings", element: <AdminRentalBookingsPage /> },
-      { path: "/admin/rent/bookings/:id", element: <AdminRentalBookingPage /> },
-      { path: "/admin/orders/:id", element: <LegacyAdminOrderRedirect /> },
+      {
+        path: "/admin",
+        element: <AdminAccessGate />,
+        children: [
+          { index: true, element: <AdminServiceCatalogPage /> },
+          { path: "cleaning", element: <AdminDashboardPage /> },
+          { path: "cleaning/orders/:id", element: <AdminOrderPage /> },
+          { path: "rent", element: <Navigate replace to="/admin/rent/properties" /> },
+          { path: "rent/properties", element: <AdminRentalPropertiesPage /> },
+          { path: "rent/properties/:id", element: <AdminRentalPropertyPage /> },
+          { path: "rent/properties/:id/calendar", element: <AdminRentalCalendarPage /> },
+          { path: "rent/bookings", element: <AdminRentalBookingsPage /> },
+          { path: "rent/bookings/:id", element: <AdminRentalBookingPage /> },
+          { path: "orders/:id", element: <LegacyAdminOrderRedirect /> },
+        ],
+      },
       { path: "*", element: <NotFoundPage /> },
     ],
   },

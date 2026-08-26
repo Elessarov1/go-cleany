@@ -21,7 +21,7 @@ public record TelegramPrincipal(
         return name.isBlank() ? "Telegram user " + id : name;
     }
 
-    AuthenticatedCustomerIdentity authenticatedIdentity() {
+    public AuthenticatedCustomerIdentity authenticatedIdentity() {
         return new AuthenticatedCustomerIdentity(
                 ExternalIdentityProvider.TELEGRAM,
                 Long.toString(id),

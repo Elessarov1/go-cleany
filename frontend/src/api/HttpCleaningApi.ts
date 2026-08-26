@@ -1,4 +1,3 @@
-import type { Platform } from "../platform/Platform";
 import type { CleaningConfiguration } from "../domain/configuration";
 import type {
   AdminDashboard,
@@ -18,18 +17,10 @@ import {
   CleaningApiError,
   type CleaningApi,
 } from "./CleaningApi";
-
-interface ApiErrorResponse {
-  code?: string;
-  message?: string;
-  fieldErrors?: Record<string, string> | null;
-}
+import { HttpApiClient } from "./HttpApiClient";
 
 export class HttpCleaningApi implements CleaningApi {
-  constructor(
-    private readonly baseUrl: string,
-    private readonly platform: Platform,
-  ) {}
+  constructor(private readonly client: HttpApiClient) {}
 
   async hasAdminAccess(): Promise<boolean> {
     try {
@@ -114,55 +105,10 @@ export class HttpCleaningApi implements CleaningApi {
   }
 
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
-    const headers = new Headers(init.headers);
-    headers.set("Accept", "application/json");
-
-    if (init.body) {
-      headers.set("Content-Type", "application/json");
-    }
-
-    const authData = this.platform.getAuthData();
-    if (authData) {
-      headers.set("Authorization", `tma ${authData}`);
-    }
-
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      ...init,
-      headers,
-    });
-
-    if (!response.ok) {
-      let apiError: ApiErrorResponse | null = null;
-      try {
-        apiError = (await response.json()) as ApiErrorResponse;
-      } catch {
-        // Preserve a useful status-only error when the response is not JSON.
-      }
-      throw new CleaningApiError(
-        apiError?.message ?? `Request failed with status ${response.status}`,
-        response.status,
-        apiError?.code,
-        apiError?.fieldErrors ?? {},
-      );
-    }
-
-    return (await response.json()) as T;
+    return this.client.request(path, init);
   }
 
-  private async requestBlob(path: string): Promise<Blob> {
-    const headers = new Headers({ Accept: "image/jpeg, image/png" });
-    const authData = this.platform.getAuthData();
-    if (authData) {
-      headers.set("Authorization", `tma ${authData}`);
-    }
-
-    const response = await fetch(`${this.baseUrl}${path}`, { headers });
-    if (!response.ok) {
-      throw new CleaningApiError(
-        `Request failed with status ${response.status}`,
-        response.status,
-      );
-    }
-    return response.blob();
+  private requestBlob(path: string): Promise<Blob> {
+    return this.client.requestBlob(path);
   }
 }

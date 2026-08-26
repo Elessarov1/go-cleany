@@ -164,6 +164,7 @@ export interface RentalCleaningContext {
   earliestBenefitCleaningDate: string;
   benefitStatus: RentalCleaningBenefitStatus | null;
   promoCode: string | null;
+  cleaningFlowAvailable: boolean;
 }
 
 export interface UpdateRentalPropertyRequest {

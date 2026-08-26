@@ -68,6 +68,18 @@ skew are configured with `TELEGRAM_INIT_DATA_MAX_AGE` and
 The `local` profile never reuses or weakens production Telegram authentication. It selects a separate
 fixed local identity so the frontend can be exercised in a regular browser.
 
+## Standalone web authentication
+
+The production browser uses direct Google OIDC through Spring Security OAuth2 Client. A successful
+login resolves `GOOGLE:<sub>` through `CustomerExternalIdentity` to the shared `CustomerAccount` and
+stores the authenticated session in PostgreSQL through Spring Session JDBC. Google ID/access tokens
+are not exposed through frontend DTOs or browser storage.
+
+Web writes use Spring CSRF protection. Telegram Mini App requests remain authenticated by the
+explicit `Authorization: tma ...` header and are exempt only on that request semantics. Configure
+`GOOGLE_AUTH_ENABLED`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_GOOGLE_EMAILS` and optional
+`WEB_SESSION_TIMEOUT`; see [`docs/web-authentication.md`](../docs/web-authentication.md).
+
 ## Cleaner Telegram bot
 
 The cleaner bot is enabled by default outside the `local` and `test` profiles. It requires:
@@ -114,9 +126,11 @@ see [`docs/local-docker-runbook.md`](../docs/local-docker-runbook.md).
 
 ## Administration
 
-`ADMIN_TELEGRAM_IDS` is a comma-separated whitelist independent from the cleaner whitelist. An
-authorized user sees the shared `/admin` entry with separate `/admin/cleaning` and `/admin/rent`
-sections and can use these cleaning commands in the same bot chat:
+`ADMIN` is stored against `CustomerAccount`. `ADMIN_TELEGRAM_IDS` and verified
+`ADMIN_GOOGLE_EMAILS` are idempotent bootstrap allowlists, not reusable authorization keys. Telegram
+administrators see the shared `/admin` entry; standalone web intentionally hides it and admins open
+`/admin` directly. The sections remain `/admin/cleaning` and `/admin/rent`. Telegram admins can use
+these cleaning commands in the same bot chat:
 
 - `/admin` — command reference;
 - `/stats` — current order totals and completed revenue;
@@ -127,7 +141,8 @@ Every cleaning lifecycle transition, added photo, and cleaner-comment update is 
 `cleaning_order_event`. Existing orders receive an `IMPORTED` event when the migration is first
 applied. Cleaning administration includes statistics, referral/partner operations and onsite-issue
 resolution. Rental administration manages properties, photos, occupancy and bookings. Every admin
-API verifies the current authenticated Telegram user; there is no second admin authentication model.
+API resolves the current `CustomerAccount` and verifies its persisted `ADMIN` role regardless of
+whether authentication came from Telegram or Google.
 
 Successful booking creation and customer cancellation publish transport-neutral rental admin events.
 An `AFTER_COMMIT` listener routes them to the Telegram adapter, which uses the existing
@@ -167,4 +182,5 @@ The production/default profile requires real prices and a Telegram bot token thr
 - `CleaningOrder` and `RentalBooking` remain separate aggregates.
 - The `local` identity provider exists only under the `local` Spring profile.
 - Database schema changes belong in Liquibase.
-- Tests are not run automatically by the implementation agent; run them explicitly when requested.
+- On this Windows workspace, backend validation uses `./scripts/test.ps1` so the temporary
+  Testcontainers Docker proxy is created and cleaned up consistently.

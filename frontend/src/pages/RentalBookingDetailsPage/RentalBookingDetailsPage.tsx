@@ -68,7 +68,8 @@ export function RentalBookingDetailsPage() {
   }
   if (!booking) return <LoadingState />;
   const canCancel = booking.status === "CONFIRMED" && booking.checkInDate > todayAsInputValue();
-  const showCleaningCta = booking.status === "CONFIRMED" || booking.status === "COMPLETED";
+  const showCleaningCta = cleaningContext?.cleaningFlowAvailable === true
+    && cleaningContext.benefitStatus !== null;
   const cleaningParams = new URLSearchParams({ rentalBooking: String(booking.id) });
   if (cleaningContext?.benefitStatus === "AVAILABLE" && cleaningContext.promoCode) {
     cleaningParams.set("promo", cleaningContext.promoCode);
@@ -133,25 +134,23 @@ export function RentalBookingDetailsPage() {
               <p>{t("rental.bookingDetails.cleaningText")}</p>
             </div>
           </div>
-          {cleaningContext.benefitStatus ? (
-            <div className="rental-cleaning-cta__benefit">
-              <span>{t("rental.bookingDetails.cleaningBenefit")}</span>
-              <strong>{t(`rental.bookingDetails.benefitStatus.${cleaningContext.benefitStatus}`)}</strong>
-              {cleaningContext.promoCode ? <code>{cleaningContext.promoCode}</code> : null}
-              {cleaningContext.benefitStatus === "AVAILABLE" ? (
-                <small>{t("rental.bookingDetails.cleaningWindow", {
-                  from: formatDate(cleaningContext.earliestBenefitCleaningDate, locale),
-                  to: formatDate(cleaningContext.checkOutDate, locale),
-                })}</small>
-              ) : null}
-            </div>
-          ) : (
-            <p className="rental-cleaning-cta__future">{t("rental.bookingDetails.cleaningFutureBenefit")}</p>
-          )}
-          <Link className="button button--primary button--full" to={cleaningLink}>
-            {t("rental.bookingDetails.bookCleaning")}
-            <Icon name="arrow-right" size={17} />
-          </Link>
+          <div className="rental-cleaning-cta__benefit">
+            <span>{t("rental.bookingDetails.cleaningBenefit")}</span>
+            <strong>{t(`rental.bookingDetails.benefitStatus.${cleaningContext.benefitStatus}`)}</strong>
+            {cleaningContext.promoCode ? <code>{cleaningContext.promoCode}</code> : null}
+            {cleaningContext.benefitStatus === "AVAILABLE" ? (
+              <small>{t("rental.bookingDetails.cleaningWindow", {
+                from: formatDate(cleaningContext.earliestBenefitCleaningDate, locale),
+                to: formatDate(cleaningContext.checkOutDate, locale),
+              })}</small>
+            ) : null}
+          </div>
+          {cleaningContext.benefitStatus === "AVAILABLE" && cleaningContext.promoCode ? (
+            <Link className="button button--primary button--full" to={cleaningLink}>
+              {t("rental.bookingDetails.bookCleaning")}
+              <Icon name="arrow-right" size={17} />
+            </Link>
+          ) : null}
         </section>
       ) : null}
 

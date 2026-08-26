@@ -17,12 +17,16 @@ import org.mockito.Mockito;
 
 import com.cleany.admin.AdminAccessService;
 import com.cleany.admin.AdminNotAuthorizedException;
+import com.cleany.customer.CurrentCustomer;
+import com.cleany.customer.CustomerAccountService;
+import com.cleany.customer.ExternalIdentityProvider;
 
 class RentalAdminNotificationPreferenceServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-08-23T10:15:30Z");
 
     private final AdminAccessService accessService = Mockito.mock(AdminAccessService.class);
+    private final CustomerAccountService customerAccountService = Mockito.mock(CustomerAccountService.class);
     private final RentalAdminNotificationPreferenceRepository repository =
             Mockito.mock(RentalAdminNotificationPreferenceRepository.class);
     private final AtomicLong currentAdmin = new AtomicLong(1001L);
@@ -31,13 +35,22 @@ class RentalAdminNotificationPreferenceServiceTest {
     private final RentalAdminNotificationPreferenceService service =
             new RentalAdminNotificationPreferenceService(
                     accessService,
+                    customerAccountService,
                     repository,
                     Clock.fixed(NOW, ZoneOffset.UTC)
             );
 
     @BeforeEach
     void configureRepository() {
-        Mockito.when(accessService.requireCurrentAdmin()).thenAnswer(ignored -> currentAdmin.get());
+        Mockito.when(customerAccountService.currentCustomer()).thenAnswer(ignored -> new CurrentCustomer(
+                77L,
+                88L,
+                ExternalIdentityProvider.TELEGRAM,
+                Long.toString(currentAdmin.get()),
+                "alex",
+                "Alex",
+                "ru"
+        ));
         Mockito.when(repository.findById(Mockito.anyLong())).thenAnswer(invocation ->
                 Optional.ofNullable(preferences.get(invocation.getArgument(0)))
         );
@@ -78,8 +91,8 @@ class RentalAdminNotificationPreferenceServiceTest {
 
     @Test
     void unauthorizedActor_cannotReadOrUpdatePreference() {
-        Mockito.when(accessService.requireCurrentAdmin())
-                .thenThrow(new AdminNotAuthorizedException());
+        Mockito.doThrow(new AdminNotAuthorizedException()).when(accessService)
+                .requireAdmin(77L);
 
         Assertions.assertAll(
                 () -> Assertions.assertThrows(

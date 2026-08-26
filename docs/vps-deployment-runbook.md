@@ -98,6 +98,10 @@ nano .env.production
 - `TELEGRAM_BOT_TOKEN` — секрет от BotFather;
 - `CLEANER_TELEGRAM_IDS` — ID клинеров через запятую;
 - `ADMIN_TELEGRAM_IDS` — ID администраторов через запятую;
+- `GOOGLE_AUTH_ENABLED` — включает standalone web-вход через Google;
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — backend-only OAuth credentials;
+- `ADMIN_GOOGLE_EMAILS` — verified Google emails для bootstrap роли `ADMIN`;
+- `WEB_SESSION_TIMEOUT` — срок server-side web-сессии, по умолчанию `12h`;
 - `CLEANING_PRICES_*` — утверждённые цены в TRY.
 - `REFERRAL_*` — ставки и денежные caps реферальной модели; безопасные значения v1 уже находятся
   в `.env.production.example`.
@@ -112,7 +116,9 @@ nano .env.production
 - `GO_CLEANY_BACKUP_RETENTION_DAYS` — срок хранения завершённых PostgreSQL dump-файлов, по умолчанию 7 дней.
 
 Production Compose намеренно не включает профиль `local`, `LOCAL_TELEGRAM_USER_ID` и тестовое имя
-`Alex`. Клиент определяется только по проверенному Telegram `initData`.
+`Alex`. Клиент определяется только по проверенному Telegram `initData` или Google OIDC session.
+Настройка Google Console, callback и отзыв роли описаны в
+[web authentication guide](web-authentication.md).
 
 ## 6. Первый деплой
 

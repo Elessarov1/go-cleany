@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { getPreviewOrderId } from "../../api/MockCleaningApi";
 import type { CleaningOrderStatus } from "../../domain/order";
 import { changeLanguage, type AppLanguage } from "../../i18n";
+import { usePlatform } from "../../platform/PlatformProvider";
 
 const PREVIEW_ENABLED_KEY = "cleany.preview.enabled";
 const PREVIEW_SCENARIO_KEY = "cleany.preview.scenario";
@@ -11,6 +12,10 @@ const PREVIEW_SCENARIO_KEY = "cleany.preview.scenario";
 type PreviewScenario = CleaningOrderStatus
   | "empty"
   | "SERVICE_CATALOG"
+  | "SERVICE_CATALOG_CLEANING_DISABLED"
+  | "SERVICE_CATALOG_RENTAL_DISABLED"
+  | "SERVICE_CATALOG_CLEANING_IN_TEST_ADMIN"
+  | "SERVICE_CATALOG_CLEANING_IN_TEST_CUSTOMER"
   | "CLEANING_SHELL"
   | "ADMIN_SERVICE_CATALOG"
   | "ADMIN_CLEANING_ORDER"
@@ -28,7 +33,10 @@ type PreviewScenario = CleaningOrderStatus
   | "ADMIN_RENT_PROPERTIES"
   | "ADMIN_RENT_EDITOR"
   | "ADMIN_RENT_CALENDAR"
-  | "ADMIN_RENT_BOOKING";
+  | "ADMIN_RENT_BOOKING"
+  | "WEB_UNAUTHENTICATED"
+  | "WEB_CUSTOMER"
+  | "WEB_ADMIN";
 
 const scenarios: PreviewScenario[] = [
   "empty",
@@ -40,6 +48,10 @@ const scenarios: PreviewScenario[] = [
   "REJECTED",
   "CANCELLED",
   "SERVICE_CATALOG",
+  "SERVICE_CATALOG_CLEANING_DISABLED",
+  "SERVICE_CATALOG_RENTAL_DISABLED",
+  "SERVICE_CATALOG_CLEANING_IN_TEST_ADMIN",
+  "SERVICE_CATALOG_CLEANING_IN_TEST_CUSTOMER",
   "CLEANING_SHELL",
   "ADMIN_SERVICE_CATALOG",
   "ADMIN_CLEANING_ORDER",
@@ -58,12 +70,16 @@ const scenarios: PreviewScenario[] = [
   "ADMIN_RENT_EDITOR",
   "ADMIN_RENT_CALENDAR",
   "ADMIN_RENT_BOOKING",
+  "WEB_UNAUTHENTICATED",
+  "WEB_CUSTOMER",
+  "WEB_ADMIN",
 ];
 
 export function PreviewPanel() {
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
+  const platform = usePlatform();
   const query = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const requested = query.get("preview") === "true";
   const [enabled, setEnabled] = useState(
@@ -95,7 +111,7 @@ export function PreviewPanel() {
     }
   }, [queryScenario]);
 
-  if (!import.meta.env.DEV || !enabled) {
+  if (platform.kind !== "PREVIEW" || !import.meta.env.DEV || !enabled) {
     return null;
   }
 
@@ -108,6 +124,10 @@ export function PreviewPanel() {
     }
     const rentalRoutes: Partial<Record<PreviewScenario, string>> = {
       SERVICE_CATALOG: "/?preview=true&scenario=service_catalog",
+      SERVICE_CATALOG_CLEANING_DISABLED: "/?preview=true&scenario=service_catalog_cleaning_disabled",
+      SERVICE_CATALOG_RENTAL_DISABLED: "/?preview=true&scenario=service_catalog_rental_disabled",
+      SERVICE_CATALOG_CLEANING_IN_TEST_ADMIN: "/?preview=true&scenario=service_catalog_cleaning_in_test_admin",
+      SERVICE_CATALOG_CLEANING_IN_TEST_CUSTOMER: "/?preview=true&scenario=service_catalog_cleaning_in_test_customer",
       CLEANING_SHELL: "/cleaning?preview=true&scenario=cleaning_shell",
       ADMIN_SERVICE_CATALOG: "/admin?preview=true&scenario=admin_service_catalog",
       ADMIN_CLEANING_ORDER: `/admin/cleaning/orders/${getPreviewOrderId("ONSITE_ISSUE_REPORTED")}?preview=true&scenario=admin_cleaning_order`,
@@ -126,9 +146,16 @@ export function PreviewPanel() {
       ADMIN_RENT_EDITOR: "/admin/rent/properties/201?preview=true&scenario=admin_rent_editor",
       ADMIN_RENT_CALENDAR: "/admin/rent/properties/201/calendar?preview=true&scenario=admin_rent_calendar",
       ADMIN_RENT_BOOKING: "/admin/rent/bookings/501?preview=true&scenario=admin_rent_booking",
+      WEB_UNAUTHENTICATED: "/admin?preview=true&scenario=web_unauthenticated",
+      WEB_CUSTOMER: "/admin?preview=true&scenario=web_customer",
+      WEB_ADMIN: "/admin?preview=true&scenario=web_admin",
     };
     const rentalRoute = rentalRoutes[nextScenario];
     if (rentalRoute) {
+      if (nextScenario.startsWith("WEB_")) {
+        window.location.assign(rentalRoute);
+        return;
+      }
       navigate(rentalRoute);
       return;
     }

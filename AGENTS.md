@@ -91,6 +91,27 @@ Do not introduce new business dependencies on Telegram user IDs when `customerId
 
 External channels and authentication providers belong behind identity/adapters.
 
+`ADMIN` is a persisted platform role of `CustomerAccount`, not a Telegram-specific property.
+Telegram IDs and verified Google emails may be used only as idempotent bootstrap allowlists.
+
+Service vertical customer availability is persisted platform state:
+
+```text
+ENABLED
+IN_TEST
+DISABLED
+```
+
+`IN_TEST` allows new customer flows only for `ADMIN`; `DISABLED` blocks all new customer flows.
+Existing owned transactions and admin operational workflows remain available.
+
+Standalone web authentication uses direct Google OIDC through Spring Security OAuth2 Client and
+PostgreSQL-backed server sessions. The application is not an OIDC authorization server. Google
+provider values are backend deployment secrets and must never be exposed through Vite.
+
+Verified Telegram ↔ Google account linking is a planned later capability. Never automatically merge
+external identities by email, phone, display name, username or other correlation.
+
 ---
 
 ### Channel neutrality
@@ -363,6 +384,7 @@ phone-based referral anti-abuse across multiple identities
 durable notification delivery checkpoints / duplicate partial delivery
 frontend date timezone vs backend Europe/Istanbul timezone
 branch protection / required checks hardening
+verified Telegram ↔ Google account linking
 ```
 
 Do not repeatedly rediscover these as new urgent tasks.

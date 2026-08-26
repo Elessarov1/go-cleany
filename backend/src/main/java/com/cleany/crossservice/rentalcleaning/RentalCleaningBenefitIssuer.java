@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.cleany.rental.RentalBooking;
 import com.cleany.rental.RentalBookingRepository;
 import com.cleany.rental.RentalBookingStatus;
+import com.cleany.catalog.PlatformService;
+import com.cleany.catalog.PlatformServiceAccessService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +27,8 @@ public class RentalCleaningBenefitIssuer {
 
     private final RentalBookingRepository bookingRepository;
     private final RentalCleaningBenefitRepository benefitRepository;
+    private final RentalCleaningBenefitProperties properties;
+    private final PlatformServiceAccessService serviceAccessService;
     private final RentalCleaningBenefitCodeGenerator codeGenerator;
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
@@ -34,7 +38,14 @@ public class RentalCleaningBenefitIssuer {
         RentalBooking booking = bookingRepository.findByIdForUpdate(bookingId).orElse(null);
         if (booking == null
                 || booking.getStatus() != RentalBookingStatus.CONFIRMED
-                || booking.getCheckInDate().isAfter(today)) {
+                || today.isBefore(booking.getCheckOutDate().minusDays(
+                        properties.checkoutWindowDays()
+                ))
+                || today.isAfter(booking.getCheckOutDate())
+                || !serviceAccessService.canStartCustomerFlow(
+                        PlatformService.CLEANING,
+                        booking.getCustomerId()
+                )) {
             log.debug(
                     "Rental cleaning benefit issuance skipped: bookingId={}, reason=ineligible",
                     bookingId

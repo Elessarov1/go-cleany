@@ -14,6 +14,7 @@ import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
 import com.cleany.base.BaseIntegrationTest;
+import com.cleany.catalog.PlatformServiceNotAvailableException;
 import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountRepository;
 import com.cleany.customer.CustomerAccountService;
@@ -85,6 +86,11 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
         mediaAssetRepository.deleteAll();
         identityRepository.deleteAll();
         accountRepository.deleteAll();
+        jdbcTemplate.update("""
+                update platform_service_state
+                   set status = 'ENABLED',
+                       updated_by_customer_id = null
+                """);
     }
 
     @Test
@@ -95,6 +101,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
         LocalDate checkOut = checkIn.plusMonths(1);
 
         RentalBookingQuoteResponse quote = bookingService.quote(
+                customer,
                 monthlyQuoteRequest(property.id(), checkIn, 1)
         );
         RentalBookingResponse booking = bookingService.create(
@@ -129,7 +136,53 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void disabledRentalBlocksNewFlowButKeepsOwnedBookingAndAdminOperationsAvailable() {
+        CurrentCustomer customer = RentalTestFixtures.customer(customerAccountService, "910013");
+        CurrentCustomer admin = RentalTestFixtures.customer(
+                customerAccountService,
+                Long.toString(ADMIN_ACTOR_ID)
+        );
+        RentalPropertyResponse property = publishedProperty("disabled-existing", "100.00");
+        LocalDate checkIn = stayPolicy.today().plusDays(10);
+        LocalDate checkOut = checkIn.plusDays(7);
+        var request = request(property.id(), checkIn, checkOut);
+        RentalBookingResponse existing = bookingService.create(customer, request);
+
+        jdbcTemplate.update("""
+                update platform_service_state
+                   set status = 'DISABLED'
+                 where service = 'RENTAL'
+                """);
+
+        Assertions.assertAll(
+                () -> Assertions.assertThrows(
+                        PlatformServiceNotAvailableException.class,
+                        () -> bookingService.quote(
+                                customer,
+                                dateRangeQuoteRequest(property.id(), checkIn, checkOut)
+                        )
+                ),
+                () -> Assertions.assertThrows(
+                        PlatformServiceNotAvailableException.class,
+                        () -> bookingService.create(customer, request)
+                ),
+                () -> Assertions.assertEquals(
+                        existing.id(),
+                        bookingService.currentCustomerBooking(customer, existing.id()).id()
+                ),
+                () -> Assertions.assertEquals(
+                        existing.id(),
+                        adminBookingService.getBooking(
+                                admin.customerId(),
+                                existing.id()
+                        ).booking().id()
+                )
+        );
+    }
+
+    @Test
     void draftAndArchivedProperties_cannotBeQuotedOrBooked() {
+        CurrentCustomer customer = RentalTestFixtures.customer(customerAccountService, "910010");
         RentalPropertyResponse draft = propertyService.createDraft();
         propertyService.update(
                 draft.id(),
@@ -140,7 +193,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
 
         Assertions.assertThrows(
                 RentalPropertyNotAvailableException.class,
-                () -> bookingService.quote(dateRangeQuoteRequest(draft.id(), checkIn, checkOut))
+                () -> bookingService.quote(customer, dateRangeQuoteRequest(draft.id(), checkIn, checkOut))
         );
 
         propertyMediaService.add(
@@ -153,12 +206,13 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
 
         Assertions.assertThrows(
                 RentalPropertyNotAvailableException.class,
-                () -> bookingService.quote(dateRangeQuoteRequest(draft.id(), checkIn, checkOut))
+                () -> bookingService.quote(customer, dateRangeQuoteRequest(draft.id(), checkIn, checkOut))
         );
     }
 
     @Test
     void everyOccupancyType_blocksOverlapAndAdjacentBookingIsAllowed() {
+        CurrentCustomer quoteCustomer = RentalTestFixtures.customer(customerAccountService, "910011");
         RentalPropertyResponse property = publishedProperty("occupancy-types", "100.00");
         LocalDate start = stayPolicy.today().plusDays(10);
         LocalDate end = start.plusDays(7);
@@ -175,6 +229,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
             Assertions.assertThrows(
                     RentalDatesNotAvailableException.class,
                     () -> bookingService.quote(
+                            quoteCustomer,
                             dateRangeQuoteRequest(property.id(), start, end)
                     ),
                     type.name()
@@ -210,6 +265,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertThrows(
                         RentalDatesNotAvailableException.class,
                         () -> bookingService.quote(
+                                firstCustomer,
                                 dateRangeQuoteRequest(property.id(), start.plusDays(1), end.plusDays(1))
                         )
                 ),
@@ -239,6 +295,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void monthlyQuote_usesDerivedRangeAndRejectsOccupancyOverlap() {
+        CurrentCustomer customer = RentalTestFixtures.customer(customerAccountService, "910012");
         RentalPropertyResponse property = publishedProperty("monthly-overlap", "100.00");
         LocalDate start = stayPolicy.today().plusDays(10);
         LocalDate expectedEnd = start.plusMonths(2);
@@ -256,7 +313,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
         Assertions.assertAll(
                 () -> Assertions.assertThrows(
                         RentalDatesNotAvailableException.class,
-                        () -> bookingService.quote(monthlyQuoteRequest(property.id(), start, 2))
+                        () -> bookingService.quote(customer, monthlyQuoteRequest(property.id(), start, 2))
                 ),
                 () -> Assertions.assertEquals(
                         expectedEnd,
@@ -312,6 +369,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
                         ).unavailableRanges().isEmpty()
                 ),
                 () -> Assertions.assertDoesNotThrow(() -> bookingService.quote(
+                        customer,
                         dateRangeQuoteRequest(property.id(), checkIn, checkOut)
                 ))
         );
@@ -320,6 +378,10 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
     @Test
     void adminCancellation_canReleaseOrReplaceBookingWithOwnerBlock() {
         CurrentCustomer customer = RentalTestFixtures.customer(customerAccountService, "910006");
+        CurrentCustomer admin = RentalTestFixtures.customer(
+                customerAccountService,
+                Long.toString(ADMIN_ACTOR_ID)
+        );
         RentalPropertyResponse property = publishedProperty("admin-cancel", "100.00");
         LocalDate firstStart = stayPolicy.today().plusDays(10);
         LocalDate firstEnd = firstStart.plusDays(7);
@@ -329,7 +391,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
         );
 
         adminBookingService.cancel(
-                ADMIN_ACTOR_ID,
+                admin.customerId(),
                 released.id(),
                 new AdminCancelRentalBookingRequest("Changed plans", false)
         );
@@ -341,7 +403,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
                 request(property.id(), secondStart, secondEnd)
         );
         adminBookingService.cancel(
-                ADMIN_ACTOR_ID,
+                admin.customerId(),
                 retained.id(),
                 new AdminCancelRentalBookingRequest("Owner requested a block", true)
         );
@@ -353,11 +415,13 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
         );
         Assertions.assertAll(
                 () -> Assertions.assertDoesNotThrow(() -> bookingService.quote(
+                        customer,
                         dateRangeQuoteRequest(property.id(), firstStart, firstEnd)
                 )),
                 () -> Assertions.assertThrows(
                         RentalDatesNotAvailableException.class,
                         () -> bookingService.quote(
+                                customer,
                                 dateRangeQuoteRequest(property.id(), secondStart, secondEnd)
                         )
                 ),

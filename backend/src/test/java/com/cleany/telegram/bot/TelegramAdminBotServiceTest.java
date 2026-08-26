@@ -13,15 +13,20 @@ import com.cleany.admin.AdminDashboardResponse;
 import com.cleany.admin.AdminQueryService;
 import com.cleany.admin.AdminStatsResponse;
 import com.cleany.configuration.AdminProperties;
+import com.cleany.customer.CurrentCustomer;
+import com.cleany.customer.CustomerAccountService;
+import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.order.OnsiteIssueReason;
 import com.cleany.telegram.bot.TelegramBotClient.InlineKeyboard;
 
 class TelegramAdminBotServiceTest {
 
     private static final long ADMIN_ID = 900001L;
+    private static final long ADMIN_CUSTOMER_ID = 77L;
 
     private AdminAccessService accessService;
     private AdminQueryService queryService;
+    private CustomerAccountService customerAccountService;
     private AdminBotMessageFactory messageFactory;
     private TelegramBotClient botClient;
     private TelegramAdminBotService service;
@@ -30,11 +35,13 @@ class TelegramAdminBotServiceTest {
     void setUp() {
         accessService = Mockito.mock(AdminAccessService.class);
         queryService = Mockito.mock(AdminQueryService.class);
+        customerAccountService = Mockito.mock(CustomerAccountService.class);
         messageFactory = Mockito.mock(AdminBotMessageFactory.class);
         botClient = Mockito.mock(TelegramBotClient.class);
         service = new TelegramAdminBotService(
                 accessService,
-                new AdminProperties(List.of(ADMIN_ID, 900002L)),
+                new AdminProperties(List.of(ADMIN_ID, 900002L), List.of()),
+                customerAccountService,
                 queryService,
                 messageFactory,
                 botClient
@@ -43,15 +50,16 @@ class TelegramAdminBotServiceTest {
 
     @Test
     void unsupportedMessage_notHandled() {
-        Assertions.assertFalse(service.handleIfSupported(ADMIN_ID, "обычное сообщение"));
+        Assertions.assertFalse(service.handleIfSupported(user(ADMIN_ID), "обычное сообщение"));
         Mockito.verifyNoInteractions(accessService, queryService, messageFactory, botClient);
     }
 
     @Test
     void adminCommand_userOutsideWhitelist_receivesDenial() {
-        Mockito.when(accessService.isAdmin(777L)).thenReturn(false);
+        stubCustomer(777L, 78L);
+        Mockito.when(accessService.isAdmin(78L)).thenReturn(false);
 
-        Assertions.assertTrue(service.handleIfSupported(777L, "/stats"));
+        Assertions.assertTrue(service.handleIfSupported(user(777L), "/stats"));
 
         Mockito.verify(botClient).sendMessage(
                 777L,
@@ -65,20 +73,22 @@ class TelegramAdminBotServiceTest {
     void statsCommand_authorizedAdmin_receivesFormattedStats() {
         var stats = new AdminStatsResponse(5, 2, 1, 2, 1, 1, BigDecimal.valueOf(1100), "TRY");
         var dashboard = new AdminDashboardResponse(stats, List.of());
-        Mockito.when(accessService.isAdmin(ADMIN_ID)).thenReturn(true);
-        Mockito.when(queryService.getDashboard(ADMIN_ID, 1)).thenReturn(dashboard);
+        stubCustomer(ADMIN_ID, ADMIN_CUSTOMER_ID);
+        Mockito.when(accessService.isAdmin(ADMIN_CUSTOMER_ID)).thenReturn(true);
+        Mockito.when(queryService.getDashboard(ADMIN_CUSTOMER_ID, 1)).thenReturn(dashboard);
         Mockito.when(messageFactory.stats(stats)).thenReturn("stats-message");
 
-        Assertions.assertTrue(service.handleIfSupported(ADMIN_ID, "/stats@go_cleany_bot"));
+        Assertions.assertTrue(service.handleIfSupported(user(ADMIN_ID), "/stats@go_cleany_bot"));
 
         Mockito.verify(botClient).sendMessage(ADMIN_ID, "stats-message", InlineKeyboard.empty());
     }
 
     @Test
     void orderCommand_withoutNumber_explainsExpectedFormat() {
-        Mockito.when(accessService.isAdmin(ADMIN_ID)).thenReturn(true);
+        stubCustomer(ADMIN_ID, ADMIN_CUSTOMER_ID);
+        Mockito.when(accessService.isAdmin(ADMIN_CUSTOMER_ID)).thenReturn(true);
 
-        Assertions.assertTrue(service.handleIfSupported(ADMIN_ID, "/order"));
+        Assertions.assertTrue(service.handleIfSupported(user(ADMIN_ID), "/order"));
 
         Mockito.verify(botClient).sendMessage(
                 ADMIN_ID,
@@ -97,5 +107,27 @@ class TelegramAdminBotServiceTest {
 
         Mockito.verify(botClient).sendMessage(ADMIN_ID, "onsite-issue-alert", InlineKeyboard.empty());
         Mockito.verify(botClient).sendMessage(900002L, "onsite-issue-alert", InlineKeyboard.empty());
+    }
+
+    private void stubCustomer(long telegramId, long customerId) {
+        Mockito.when(customerAccountService.resolveCustomer(Mockito.any())).thenReturn(new CurrentCustomer(
+                customerId,
+                customerId + 100,
+                ExternalIdentityProvider.TELEGRAM,
+                Long.toString(telegramId),
+                "alex",
+                "Alex",
+                "ru"
+        ));
+    }
+
+    private static TelegramUpdate.TelegramUser user(long telegramId) {
+        return new TelegramUpdate.TelegramUser(
+                telegramId,
+                "alex",
+                "Alex",
+                null,
+                "ru"
+        );
     }
 }

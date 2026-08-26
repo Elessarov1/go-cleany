@@ -1,63 +1,55 @@
 package com.cleany.admin;
 
-import java.util.List;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import com.cleany.configuration.AdminProperties;
-import com.cleany.customer.AuthenticatedCustomerIdentity;
-import com.cleany.customer.CustomerIdentityProvider;
+import com.cleany.authorization.PlatformRole;
+import com.cleany.authorization.PlatformRoleService;
+import com.cleany.customer.CurrentCustomer;
+import com.cleany.customer.CustomerAccountService;
 import com.cleany.customer.ExternalIdentityProvider;
 
 class AdminAccessServiceTest {
 
-    private static final long ADMIN_ID = 900001L;
+    private static final long CUSTOMER_ID = 77L;
 
     @Test
-    void currentTelegramIdentity_configuredAsAdmin_accessGranted() {
-        CustomerIdentityProvider identityProvider = Mockito.mock(CustomerIdentityProvider.class);
-        Mockito.when(identityProvider.currentIdentity()).thenReturn(identity(
-                ExternalIdentityProvider.TELEGRAM,
-                Long.toString(ADMIN_ID)
+    void currentCustomerWithAdminRole_accessGrantedRegardlessOfProvider() {
+        CustomerAccountService customerAccountService = Mockito.mock(CustomerAccountService.class);
+        PlatformRoleService roleService = Mockito.mock(PlatformRoleService.class);
+        Mockito.when(customerAccountService.currentCustomer()).thenReturn(customer(
+                ExternalIdentityProvider.GOOGLE,
+                "google-subject"
         ));
-        var service = new AdminAccessService(new AdminProperties(List.of(ADMIN_ID)), identityProvider);
+        Mockito.when(roleService.hasRole(CUSTOMER_ID, PlatformRole.ADMIN)).thenReturn(true);
+        var service = new AdminAccessService(customerAccountService, roleService);
 
-        Assertions.assertEquals(ADMIN_ID, service.requireCurrentAdmin());
+        Assertions.assertEquals(CUSTOMER_ID, service.requireCurrentAdmin());
     }
 
     @Test
-    void currentNonTelegramIdentity_accessRejected() {
-        CustomerIdentityProvider identityProvider = Mockito.mock(CustomerIdentityProvider.class);
-        Mockito.when(identityProvider.currentIdentity()).thenReturn(identity(
-                ExternalIdentityProvider.WHATSAPP,
-                Long.toString(ADMIN_ID)
+    void currentCustomerWithoutAdminRole_accessRejected() {
+        CustomerAccountService customerAccountService = Mockito.mock(CustomerAccountService.class);
+        PlatformRoleService roleService = Mockito.mock(PlatformRoleService.class);
+        Mockito.when(customerAccountService.currentCustomer()).thenReturn(customer(
+                ExternalIdentityProvider.TELEGRAM,
+                "900001"
         ));
-        var service = new AdminAccessService(new AdminProperties(List.of(ADMIN_ID)), identityProvider);
+        var service = new AdminAccessService(customerAccountService, roleService);
 
         Assertions.assertThrows(AdminNotAuthorizedException.class, service::requireCurrentAdmin);
     }
 
-    @Test
-    void currentTelegramIdentity_withNonNumericSubject_accessRejected() {
-        CustomerIdentityProvider identityProvider = Mockito.mock(CustomerIdentityProvider.class);
-        Mockito.when(identityProvider.currentIdentity()).thenReturn(identity(
-                ExternalIdentityProvider.TELEGRAM,
-                "not-a-telegram-id"
-        ));
-        var service = new AdminAccessService(new AdminProperties(List.of(ADMIN_ID)), identityProvider);
-
-        Assertions.assertThrows(AdminNotAuthorizedException.class, service::requireCurrentAdmin);
-    }
-
-    private static AuthenticatedCustomerIdentity identity(
+    private static CurrentCustomer customer(
             ExternalIdentityProvider provider,
-            String externalSubject
+            String subject
     ) {
-        return new AuthenticatedCustomerIdentity(
+        return new CurrentCustomer(
+                CUSTOMER_ID,
+                88L,
                 provider,
-                externalSubject,
+                subject,
                 "alex",
                 "Alex",
                 "ru"

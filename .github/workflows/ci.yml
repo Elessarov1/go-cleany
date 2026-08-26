@@ -84,6 +84,11 @@ jobs:
         env:
           CLEANER_TELEGRAM_IDS: ${{ vars.CLEANER_TELEGRAM_IDS }}
           ADMIN_TELEGRAM_IDS: ${{ vars.ADMIN_TELEGRAM_IDS }}
+          GOOGLE_AUTH_ENABLED: ${{ vars.GOOGLE_AUTH_ENABLED || 'false' }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          ADMIN_GOOGLE_EMAILS: ${{ secrets.ADMIN_GOOGLE_EMAILS }}
+          WEB_SESSION_TIMEOUT: ${{ vars.WEB_SESSION_TIMEOUT || '12h' }}
           RENTAL_MIN_STAY_DAYS: ${{ vars.RENTAL_MIN_STAY_DAYS || '7' }}
           RENTAL_LONG_TERM_MIN_DAYS: ${{ vars.RENTAL_LONG_TERM_MIN_DAYS || '30' }}
           RENTAL_LONG_TERM_DISCOUNT_RATE: ${{ vars.RENTAL_LONG_TERM_DISCOUNT_RATE || '0.10' }}
@@ -97,6 +102,19 @@ jobs:
         run: |
           : "${CLEANER_TELEGRAM_IDS:?Missing CLEANER_TELEGRAM_IDS staging variable}"
           : "${ADMIN_TELEGRAM_IDS:?Missing ADMIN_TELEGRAM_IDS staging variable}"
+          [[ "$GOOGLE_AUTH_ENABLED" == "true" || "$GOOGLE_AUTH_ENABLED" == "false" ]] || {
+            echo "GOOGLE_AUTH_ENABLED must be true or false." >&2
+            exit 1
+          }
+          if [[ "$GOOGLE_AUTH_ENABLED" == "true" ]]; then
+            : "${GOOGLE_CLIENT_ID:?Missing GOOGLE_CLIENT_ID staging secret}"
+            : "${GOOGLE_CLIENT_SECRET:?Missing GOOGLE_CLIENT_SECRET staging secret}"
+            : "${ADMIN_GOOGLE_EMAILS:?Missing ADMIN_GOOGLE_EMAILS staging secret}"
+          fi
+          [[ "$WEB_SESSION_TIMEOUT" =~ ^[1-9][0-9]*(ms|s|m|h|d)$ ]] || {
+            echo "WEB_SESSION_TIMEOUT must be a positive duration such as 30m or 12h." >&2
+            exit 1
+          }
           [[ "$CLEANER_TELEGRAM_IDS" =~ ^[0-9]+(,[0-9]+)*$ ]] || {
             echo "CLEANER_TELEGRAM_IDS must be comma-separated numeric Telegram IDs without spaces." >&2
             exit 1
@@ -139,6 +157,11 @@ jobs:
           SSH_USER: ${{ vars.STAGING_SSH_USER }}
           CLEANER_TELEGRAM_IDS: ${{ vars.CLEANER_TELEGRAM_IDS }}
           ADMIN_TELEGRAM_IDS: ${{ vars.ADMIN_TELEGRAM_IDS }}
+          GOOGLE_AUTH_ENABLED: ${{ vars.GOOGLE_AUTH_ENABLED || 'false' }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          ADMIN_GOOGLE_EMAILS: ${{ secrets.ADMIN_GOOGLE_EMAILS }}
+          WEB_SESSION_TIMEOUT: ${{ vars.WEB_SESSION_TIMEOUT || '12h' }}
           RENTAL_MIN_STAY_DAYS: ${{ vars.RENTAL_MIN_STAY_DAYS || '7' }}
           RENTAL_LONG_TERM_MIN_DAYS: ${{ vars.RENTAL_LONG_TERM_MIN_DAYS || '30' }}
           RENTAL_LONG_TERM_DISCOUNT_RATE: ${{ vars.RENTAL_LONG_TERM_DISCOUNT_RATE || '0.10' }}
@@ -153,6 +176,9 @@ jobs:
           : "${SSH_HOST:?Missing STAGING_SSH_HOST}"
           : "${SSH_PORT:?Missing STAGING_SSH_PORT}"
           : "${SSH_USER:?Missing STAGING_SSH_USER}"
+          google_client_id_b64=$(printf '%s' "$GOOGLE_CLIENT_ID" | base64 -w 0)
+          google_client_secret_b64=$(printf '%s' "$GOOGLE_CLIENT_SECRET" | base64 -w 0)
+          admin_google_emails_b64=$(printf '%s' "$ADMIN_GOOGLE_EMAILS" | base64 -w 0)
           ssh \
             -o BatchMode=yes \
             -o ConnectTimeout=15 \
@@ -165,6 +191,11 @@ jobs:
             "cd /opt/go-cleany && \
             CLEANER_TELEGRAM_IDS='$CLEANER_TELEGRAM_IDS' \
             ADMIN_TELEGRAM_IDS='$ADMIN_TELEGRAM_IDS' \
+            GOOGLE_AUTH_ENABLED='$GOOGLE_AUTH_ENABLED' \
+            GOOGLE_CLIENT_ID=\$(printf '%s' '$google_client_id_b64' | base64 --decode) \
+            GOOGLE_CLIENT_SECRET=\$(printf '%s' '$google_client_secret_b64' | base64 --decode) \
+            ADMIN_GOOGLE_EMAILS=\$(printf '%s' '$admin_google_emails_b64' | base64 --decode) \
+            WEB_SESSION_TIMEOUT='$WEB_SESSION_TIMEOUT' \
             RENTAL_MIN_STAY_DAYS='$RENTAL_MIN_STAY_DAYS' \
             RENTAL_LONG_TERM_MIN_DAYS='$RENTAL_LONG_TERM_MIN_DAYS' \
             RENTAL_LONG_TERM_DISCOUNT_RATE='$RENTAL_LONG_TERM_DISCOUNT_RATE' \

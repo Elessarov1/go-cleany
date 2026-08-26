@@ -85,6 +85,13 @@ Typical examples:
 
 Use these for deployment and local environment work rather than architecture decisions.
 
+Web authentication, Google OAuth Console setup, session security and pilot ADMIN revocation are
+documented in:
+
+```text
+../web-authentication.md
+```
+
 ---
 
 ## Task-specific specifications

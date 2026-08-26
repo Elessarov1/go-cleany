@@ -8,6 +8,10 @@ import org.springframework.stereotype.Service;
 import com.cleany.admin.AdminAccessService;
 import com.cleany.admin.AdminQueryService;
 import com.cleany.configuration.AdminProperties;
+import com.cleany.customer.AuthenticatedCustomerIdentity;
+import com.cleany.customer.CustomerAccountService;
+import com.cleany.customer.CurrentCustomer;
+import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.order.OnsiteIssueReason;
 import com.cleany.order.OrderNotFoundException;
 
@@ -19,6 +23,7 @@ public class TelegramAdminBotService {
 
     private final AdminAccessService accessService;
     private final AdminProperties adminProperties;
+    private final CustomerAccountService customerAccountService;
     private final AdminQueryService queryService;
     private final AdminBotMessageFactory messageFactory;
     private final TelegramBotClient botClient;
@@ -26,12 +31,14 @@ public class TelegramAdminBotService {
     public TelegramAdminBotService(
             AdminAccessService accessService,
             AdminProperties adminProperties,
+            CustomerAccountService customerAccountService,
             AdminQueryService queryService,
             AdminBotMessageFactory messageFactory,
             TelegramBotClient botClient
     ) {
         this.accessService = accessService;
         this.adminProperties = adminProperties;
+        this.customerAccountService = customerAccountService;
         this.queryService = queryService;
         this.messageFactory = messageFactory;
         this.botClient = botClient;
@@ -42,12 +49,14 @@ public class TelegramAdminBotService {
         adminProperties.telegramIds().forEach(adminId -> safeSend(adminId, message));
     }
 
-    public boolean handleIfSupported(long telegramUserId, String text) {
+    public boolean handleIfSupported(TelegramUpdate.TelegramUser telegramUser, String text) {
         AdminCommand command = parse(text);
         if (command == null) {
             return false;
         }
-        if (!accessService.isAdmin(telegramUserId)) {
+        long telegramUserId = telegramUser.id();
+        CurrentCustomer customer = customerAccountService.resolveCustomer(identity(telegramUser));
+        if (!accessService.isAdmin(customer.customerId())) {
             safeSend(telegramUserId, "Эта команда доступна только администратору.");
             return true;
         }
@@ -56,29 +65,45 @@ public class TelegramAdminBotService {
             case "/admin" -> safeSend(telegramUserId, messageFactory.help());
             case "/stats" -> safeSend(
                     telegramUserId,
-                    messageFactory.stats(queryService.getDashboard(telegramUserId, 1).stats())
+                    messageFactory.stats(queryService.getDashboard(customer.customerId(), 1).stats())
             );
             case "/orders" -> safeSend(
                     telegramUserId,
-                    messageFactory.recentOrders(queryService.getDashboard(telegramUserId, 10))
+                    messageFactory.recentOrders(queryService.getDashboard(customer.customerId(), 10))
             );
-            case "/order" -> sendOrder(telegramUserId, command.argument());
+            case "/order" -> sendOrder(telegramUserId, customer.customerId(), command.argument());
             default -> throw new IllegalStateException("Unsupported admin command: " + command.name());
         }
         return true;
     }
 
-    private void sendOrder(long telegramUserId, String argument) {
+    private void sendOrder(long telegramUserId, long adminCustomerId, String argument) {
         if (argument == null || !argument.matches("[1-9][0-9]*")) {
             safeSend(telegramUserId, "Используйте команду в формате /order <номер заказа>.");
             return;
         }
         try {
             long orderId = Long.parseLong(argument);
-            safeSend(telegramUserId, messageFactory.order(queryService.getOrder(telegramUserId, orderId)));
+            safeSend(telegramUserId, messageFactory.order(queryService.getOrder(adminCustomerId, orderId)));
         } catch (NumberFormatException | OrderNotFoundException exception) {
             safeSend(telegramUserId, "Заказ с таким номером не найден.");
         }
+    }
+
+    private static AuthenticatedCustomerIdentity identity(TelegramUpdate.TelegramUser user) {
+        String displayName = ((user.firstName() == null ? "" : user.firstName())
+                + " "
+                + (user.lastName() == null ? "" : user.lastName())).trim();
+        if (displayName.isBlank()) {
+            displayName = "Telegram user " + user.id();
+        }
+        return new AuthenticatedCustomerIdentity(
+                ExternalIdentityProvider.TELEGRAM,
+                Long.toString(user.id()),
+                user.username(),
+                displayName,
+                user.languageCode()
+        );
     }
 
     private void safeSend(long chatId, String text) {

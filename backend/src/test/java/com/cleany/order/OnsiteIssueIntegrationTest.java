@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.cleany.base.BaseIntegrationTest;
 import com.cleany.customer.CustomerAccountRepository;
 import com.cleany.customer.CustomerExternalIdentityRepository;
+import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.customer.CustomerIdentityTestFixture;
 import com.cleany.finance.AcquisitionSource;
 import com.cleany.finance.CustomerDiscountType;
@@ -275,6 +276,11 @@ class OnsiteIssueIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("admin_not_authorized"));
 
+        long adminCustomerId = customerIdentityRepository
+                .findByProviderAndExternalSubject(ExternalIdentityProvider.TELEGRAM, Long.toString(ADMIN_ID))
+                .orElseThrow()
+                .getCustomerId();
+
         mvc.perform(post("/api/v1/admin/orders/{id}/issues/resolve", order.getId())
                         .header("Authorization", adminAuth)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -283,7 +289,7 @@ class OnsiteIssueIntegrationTest extends BaseIntegrationTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.order.status").value("CANCELLED"))
-                .andExpect(jsonPath("$.onsiteIssue.resolvedBy").value(ADMIN_ID))
+                .andExpect(jsonPath("$.onsiteIssue.resolvedBy").value(adminCustomerId))
                 .andExpect(jsonPath("$.onsiteIssue.resolutionComment")
                         .value("Инцидент проверен, заказ закрыт администратором"));
 
@@ -291,7 +297,7 @@ class OnsiteIssueIntegrationTest extends BaseIntegrationTest {
         Assertions.assertAll(
                 () -> Assertions.assertEquals(CleaningOrderStatus.CANCELLED, reloaded(order).getStatus()),
                 () -> Assertions.assertNotNull(resolved.getResolvedAt()),
-                () -> Assertions.assertEquals(ADMIN_ID, resolved.getResolvedBy()),
+                () -> Assertions.assertEquals(adminCustomerId, resolved.getResolvedBy()),
                 () -> Assertions.assertEquals(3L, issuePhotoRepository.countByIssueReport_Id(report.getId()))
         );
 

@@ -349,7 +349,9 @@ export class MockRentalApi implements RentalApi {
     const previewBenefit = new URLSearchParams(window.location.search)
       .get("scenario")?.toUpperCase() === "RENT_BENEFIT";
     const benefitAvailable = previewBenefit || (
-      booking.status === "CONFIRMED" && booking.checkInDate <= dateFromToday(0)
+      booking.status === "CONFIRMED"
+      && booking.checkOutDate >= dateFromToday(0)
+      && booking.checkOutDate <= dateFromToday(3)
     );
     return simulateNetwork({
       rentalBookingId: booking.id,
@@ -359,6 +361,7 @@ export class MockRentalApi implements RentalApi {
       earliestBenefitCleaningDate: addDays(booking.checkOutDate, -3),
       benefitStatus: benefitAvailable ? "AVAILABLE" : null,
       promoCode: benefitAvailable ? "RCPREVIEW1" : null,
+      cleaningFlowAvailable: true,
     });
   }
 

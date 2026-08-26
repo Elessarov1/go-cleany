@@ -1,14 +1,16 @@
 import type { Platform, PlatformUser } from "./Platform";
 
-const BROWSER_USER: PlatformUser = {
+const PREVIEW_USER: PlatformUser = {
   id: 900_001,
   username: "browser_preview",
   firstName: "Alex",
 };
 
-export class BrowserPlatform implements Platform {
+export class PreviewPlatform implements Platform {
+  readonly kind = "PREVIEW" as const;
+
   getUser(): PlatformUser {
-    return BROWSER_USER;
+    return PREVIEW_USER;
   }
 
   getAuthData(): null {
@@ -28,7 +30,7 @@ export class BrowserPlatform implements Platform {
   }
 
   ready(): void {
-    // Ordinary browsers require no platform handshake.
+    // Preview mode requires no platform handshake.
   }
 
   close(): void {

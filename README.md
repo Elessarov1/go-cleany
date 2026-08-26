@@ -28,15 +28,21 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`. Without a backend URL the frontend uses `BrowserPlatform` and mock APIs for cleaning, rental and customer data, so Telegram and PostgreSQL are not required for visual inspection.
+Copy `frontend/.env.example` to `frontend/.env.local` and keep `VITE_PREVIEW_MODE=true` to use
+`PreviewPlatform` and mock APIs without Telegram or PostgreSQL. Production browser mode uses
+`WebPlatform`, has no hardcoded identity and talks to the same-origin backend even when
+`VITE_API_BASE_URL` is empty.
 
 Developer scenarios are available at `http://localhost:5173/?preview=true`.
 
-To connect the frontend to a locally running backend, create `frontend/.env.local`:
+To connect the frontend to a locally running backend, use:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8080
+VITE_PREVIEW_MODE=false
+VITE_API_BASE_URL=
 ```
+
+The Vite dev server proxies `/api`, `/oauth2` and the Google callback to `localhost:8080`.
 
 ## Backend foundation
 
@@ -55,6 +61,9 @@ A production Compose stack, automatic HTTPS through Caddy, pre-deployment Postgr
 small release/rollback scripts are included under `deploy/`. Follow the
 [VPS deployment runbook](docs/vps-deployment-runbook.md). Telegram remains on long polling, so one
 backend instance must own the bot token.
+
+Standalone web login and Google OAuth Console setup are described in
+[the web authentication guide](docs/web-authentication.md).
 
 After the first manual launch, [staging continuous deployment](docs/staging-continuous-deployment.md)
 can deploy each tested `main` revision automatically through GitHub Actions and SSH.

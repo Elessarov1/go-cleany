@@ -13,10 +13,10 @@ push в main ИЛИ ручной Run workflow
   -> backup, Docker build, health checks
 ```
 
-Чувствительные application secrets (`TELEGRAM_BOT_TOKEN`, пароль PostgreSQL и т.д.) остаются в
-`.env.production` только на VPS. Списки Telegram ID клинеров и администраторов для staging управляются
-через GitHub Environment variables, чтобы их можно было менять перед демо без SSH на сервер и без
-коммита в репозиторий.
+Долгоживущие infrastructure secrets (`TELEGRAM_BOT_TOKEN`, пароль PostgreSQL и т.д.) остаются в
+`.env.production` только на VPS. Google OIDC credentials и web-admin allowlist передаются из GitHub
+Environment Secrets только в runtime конкретной выкладки. Списки Telegram ID клинеров и
+администраторов управляются через Environment variables.
 
 ## 1. Предварительные условия
 
@@ -141,6 +141,9 @@ Repository -> Settings -> Environments -> staging
 | --- | --- |
 | `STAGING_SSH_PRIVATE_KEY` | приватный `go-cleany-staging-actions` |
 | `STAGING_SSH_KNOWN_HOSTS` | проверенный SSH host key VPS |
+| `GOOGLE_CLIENT_ID` | Google OAuth web client ID для staging |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth web client secret для staging |
+| `ADMIN_GOOGLE_EMAILS` | bootstrap allowlist verified Google emails через запятую |
 
 ### Environment variables
 
@@ -151,6 +154,8 @@ Repository -> Settings -> Environments -> staging
 | `STAGING_SSH_USER` | пользователь-владелец `/opt/go-cleany` |
 | `CLEANER_TELEGRAM_IDS` | `123456789,987654321` |
 | `ADMIN_TELEGRAM_IDS` | `123456789,555555555` |
+| `GOOGLE_AUTH_ENABLED` | `true` |
+| `WEB_SESSION_TIMEOUT` | `12h` |
 | `RENTAL_MIN_STAY_DAYS` | `7` |
 | `RENTAL_LONG_TERM_MIN_DAYS` | `30` |
 | `RENTAL_LONG_TERM_DISCOUNT_RATE` | `0.10` |
@@ -162,6 +167,11 @@ Repository -> Settings -> Environments -> staging
 
 `CLEANER_TELEGRAM_IDS` и `ADMIN_TELEGRAM_IDS` должны содержать только numeric Telegram IDs через
 запятую, без пробелов. Workflow валидирует этот формат до SSH/deploy.
+
+Google provider values и email allowlist хранятся именно в Environment **Secrets**, не Variables.
+При `GOOGLE_AUTH_ENABLED=true` workflow проверяет их наличие и передаёт только в runtime backend;
+frontend build их не получает. Для staging-host заранее добавьте callback
+`https://<STAGING_HOST>/login/oauth2/code/google` в Google OAuth Console.
 
 Эти два значения передаются `release.sh` как process environment и имеют приоритет над одноимёнными
 fallback-значениями из `.env.production` при Docker Compose interpolation. Файл `.env.production` на
@@ -204,9 +214,11 @@ staging environment.
 2. ждёт успешные `backend` и `frontend` jobs;
 3. загружает `staging` environment;
 4. валидирует SSH credentials;
-5. валидирует `CLEANER_TELEGRAM_IDS`, `ADMIN_TELEGRAM_IDS`, rental policy и экономику checkout-уборки;
+5. валидирует Telegram role lists, Google auth secrets при включённом OIDC, session timeout, rental
+   policy и экономику checkout-уборки;
 6. подключается к VPS через проверенный host key;
-7. передаёт списки ID и `RENTAL_*` в process environment remote command;
+7. передаёт списки ID, Google OIDC secrets, session timeout и `RENTAL_*` в process environment
+   remote command;
 8. вызывает `./deploy/scripts/release.sh "$GITHUB_SHA"`.
 
 В Docker Compose shell/process environment имеет приоритет над `--env-file`, поэтому backend

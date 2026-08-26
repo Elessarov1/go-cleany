@@ -29,6 +29,7 @@ import com.cleany.customer.CustomerExternalIdentityRepository;
 import com.cleany.media.MediaAssetRepository;
 import com.cleany.media.MediaProviderReferenceRepository;
 import com.cleany.notification.CustomerNotificationDispatcher;
+import com.cleany.catalog.PlatformServiceStatus;
 
 @RecordApplicationEvents
 class RentalCleaningBenefitIssuanceIntegrationTest extends BaseIntegrationTest {
@@ -101,14 +102,15 @@ class RentalCleaningBenefitIssuanceIntegrationTest extends BaseIntegrationTest {
         mediaAssetRepository.deleteAll();
         identityRepository.deleteAll();
         accountRepository.deleteAll();
+        jdbcTemplate.update("update platform_service_state set status = 'ENABLED'");
     }
 
     @Test
-    void confirmedStartedRental_schedulerRetriesCreateExactlyOneBenefit() {
+    void confirmedRentalInCheckoutWindow_schedulerRetriesCreateExactlyOneBenefit() {
         LocalDate today = stayPolicy.today();
         CurrentCustomer customer = RentalTestFixtures.customer(customerAccountService, "940001");
         RentalBookingResponse booking = futureBooking(customer, "benefit-idempotency");
-        moveBookingDates(booking.id(), today, today.plusDays(7));
+        moveBookingDates(booking.id(), today.minusDays(7), today.plusDays(3));
 
         RentalCleaningBenefitIssuanceResult first = issuanceService.issueEligible(today, 100);
         RentalCleaningBenefitIssuanceResult retry = issuanceService.issueEligible(today, 100);
@@ -134,11 +136,95 @@ class RentalCleaningBenefitIssuanceIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void checkInAndDaysBeforeCheckoutWindow_doNotIssueOrPublishPromo() {
+        LocalDate today = stayPolicy.today();
+        CurrentCustomer customer = RentalTestFixtures.customer(customerAccountService, "940011");
+        RentalBookingResponse booking = futureBooking(customer, "benefit-not-at-check-in");
+        moveBookingDates(booking.id(), today, today.plusDays(7));
+
+        RentalCleaningBenefitIssuanceResult atCheckIn = issuanceService.issueEligible(today, 100);
+        RentalCleaningBenefitIssuanceResult beforeWindow = issuanceService.issueEligible(
+                today.plusDays(3),
+                100
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(0, atCheckIn.candidates()),
+                () -> Assertions.assertEquals(0, beforeWindow.candidates()),
+                () -> Assertions.assertFalse(
+                        benefitRepository.existsByRentalBookingId(booking.id())
+                ),
+                () -> Assertions.assertEquals(
+                        0L,
+                        applicationEvents.stream(RentalCleaningBenefitIssuedEvent.class).count()
+                )
+        );
+    }
+
+    @Test
+    void inTestIssuesOnlyForAdminAndDisabledIssuesForNobody() {
+        LocalDate today = stayPolicy.today();
+        CurrentCustomer ordinary = RentalTestFixtures.customer(customerAccountService, "940012");
+        CurrentCustomer admin = RentalTestFixtures.customer(
+                customerAccountService,
+                Long.toString(ADMIN_ACTOR_ID)
+        );
+        RentalBookingResponse ordinaryBooking = futureBooking(ordinary, "benefit-in-test-customer");
+        RentalBookingResponse adminBooking = futureBooking(admin, "benefit-in-test-admin");
+        moveBookingDates(ordinaryBooking.id(), today.minusDays(5), today.plusDays(2));
+        moveBookingDates(adminBooking.id(), today.minusDays(5), today.plusDays(2));
+        setCleaningStatus(PlatformServiceStatus.IN_TEST);
+
+        RentalCleaningBenefitIssuanceResult inTest = issuanceService.issueEligible(today, 100);
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(1, inTest.issued()),
+                () -> Assertions.assertEquals(1, inTest.ineligible()),
+                () -> Assertions.assertFalse(
+                        benefitRepository.existsByRentalBookingId(ordinaryBooking.id())
+                ),
+                () -> Assertions.assertTrue(
+                        benefitRepository.existsByRentalBookingId(adminBooking.id())
+                )
+        );
+
+        CurrentCustomer disabledCustomer = RentalTestFixtures.customer(
+                customerAccountService,
+                "940013"
+        );
+        RentalBookingResponse disabledBooking = futureBooking(
+                disabledCustomer,
+                "benefit-disabled"
+        );
+        moveBookingDates(disabledBooking.id(), today.minusDays(5), today.plusDays(2));
+        setCleaningStatus(PlatformServiceStatus.DISABLED);
+
+        RentalCleaningBenefitIssuanceResult disabled = issuanceService.issueEligible(today, 100);
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(0, disabled.issued()),
+                () -> Assertions.assertFalse(
+                        benefitRepository.existsByRentalBookingId(disabledBooking.id())
+                ),
+                () -> Assertions.assertEquals(
+                        RentalCleaningBenefitStatus.AVAILABLE,
+                        benefitRepository.findByRentalBookingId(adminBooking.id())
+                                .orElseThrow()
+                                .getStatus()
+                )
+        );
+    }
+
+    @Test
     void cancelledBeforeCheckIn_neverReceivesBenefit() {
         CurrentCustomer customer = RentalTestFixtures.customer(customerAccountService, "940002");
+        CurrentCustomer admin = RentalTestFixtures.customer(
+                customerAccountService,
+                Long.toString(ADMIN_ACTOR_ID)
+        );
         RentalBookingResponse booking = futureBooking(customer, "benefit-cancelled-before-start");
         adminBookingService.cancel(
-                ADMIN_ACTOR_ID,
+                admin.customerId(),
                 booking.id(),
                 new AdminCancelRentalBookingRequest("Cancelled before arrival", false)
         );
@@ -160,12 +246,16 @@ class RentalCleaningBenefitIssuanceIntegrationTest extends BaseIntegrationTest {
     void issuedAvailableBenefit_adminCancellationRevokesIt() {
         LocalDate today = stayPolicy.today();
         CurrentCustomer customer = RentalTestFixtures.customer(customerAccountService, "940003");
+        CurrentCustomer admin = RentalTestFixtures.customer(
+                customerAccountService,
+                Long.toString(ADMIN_ACTOR_ID)
+        );
         RentalBookingResponse booking = futureBooking(customer, "benefit-revocation");
-        moveBookingDates(booking.id(), today, today.plusDays(7));
+        moveBookingDates(booking.id(), today.minusDays(7), today.plusDays(3));
         issuanceService.issueEligible(today, 100);
 
         adminBookingService.cancel(
-                ADMIN_ACTOR_ID,
+                admin.customerId(),
                 booking.id(),
                 new AdminCancelRentalBookingRequest("Rental became unavailable", false)
         );
@@ -187,7 +277,7 @@ class RentalCleaningBenefitIssuanceIntegrationTest extends BaseIntegrationTest {
         LocalDate today = stayPolicy.today();
         CurrentCustomer customer = RentalTestFixtures.customer(customerAccountService, "940004");
         RentalBookingResponse booking = futureBooking(customer, "benefit-notification-failure");
-        moveBookingDates(booking.id(), today, today.plusDays(7));
+        moveBookingDates(booking.id(), today.minusDays(7), today.plusDays(3));
         Mockito.when(notificationDispatcher.send(
                 ArgumentMatchers.anyLong(),
                 ArgumentMatchers.anyLong(),
@@ -233,6 +323,13 @@ class RentalCleaningBenefitIssuanceIntegrationTest extends BaseIntegrationTest {
                 checkOut,
                 Math.toIntExact(checkOut.toEpochDay() - checkIn.toEpochDay()),
                 bookingId
+        );
+    }
+
+    private void setCleaningStatus(PlatformServiceStatus status) {
+        jdbcTemplate.update(
+                "update platform_service_state set status = ? where service = 'CLEANING'",
+                status.name()
         );
     }
 }

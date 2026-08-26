@@ -19,6 +19,19 @@ spring:
     database-change-log-table: cleany_changelog
     database-change-log-lock-table: cleany_changelog_lock
 
+  session:
+    timeout: 30m
+    jdbc:
+      initialize-schema: never
+
+server:
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        secure: true
+        same-site: lax
+
 cleaning:
   booking-days-ahead: 7
   currency: TRY
@@ -91,6 +104,12 @@ cleaner:
 admin:
   telegram-ids:
     - 900001
+  google-emails:
+    - admin@example.test
+
+web-auth:
+  google:
+    enabled: false
 
 telegram:
   bot-token: 123456789:test-token

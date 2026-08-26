@@ -2,6 +2,7 @@ package com.cleany.customer;
 
 import static com.cleany.common.text.TextValues.normalizeOptional;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 public record AuthenticatedCustomerIdentity(
@@ -9,8 +10,20 @@ public record AuthenticatedCustomerIdentity(
         String externalSubject,
         String username,
         String displayName,
-        String languageCode
-) {
+        String languageCode,
+        String email,
+        boolean emailVerified
+) implements Serializable {
+
+    public AuthenticatedCustomerIdentity(
+            ExternalIdentityProvider provider,
+            String externalSubject,
+            String username,
+            String displayName,
+            String languageCode
+    ) {
+        this(provider, externalSubject, username, displayName, languageCode, null, false);
+    }
 
     public AuthenticatedCustomerIdentity {
         provider = Objects.requireNonNull(provider, "provider");
@@ -18,6 +31,8 @@ public record AuthenticatedCustomerIdentity(
         username = normalizeOptional(username);
         displayName = requireText(displayName, "displayName");
         languageCode = normalizeOptional(languageCode);
+        email = normalizeEmail(email);
+        emailVerified = email != null && emailVerified;
     }
 
     private static String requireText(String value, String name) {
@@ -25,6 +40,11 @@ public record AuthenticatedCustomerIdentity(
             throw new IllegalArgumentException(name + " must not be blank");
         }
         return value.trim();
+    }
+
+    private static String normalizeEmail(String value) {
+        String normalized = normalizeOptional(value);
+        return normalized == null ? null : normalized.toLowerCase(java.util.Locale.ROOT);
     }
 
 }

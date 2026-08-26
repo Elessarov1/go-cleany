@@ -9,6 +9,7 @@ public record RentalCleaningContextResponse(
         LocalDate checkOutDate,
         LocalDate earliestBenefitCleaningDate,
         RentalCleaningBenefitStatus benefitStatus,
-        String promoCode
+        String promoCode,
+        boolean cleaningFlowAvailable
 ) {
 }

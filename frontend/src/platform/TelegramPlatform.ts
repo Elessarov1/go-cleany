@@ -38,6 +38,8 @@ function getWebApp(): TelegramWebApp {
 }
 
 export class TelegramPlatform implements Platform {
+  readonly kind = "TELEGRAM" as const;
+
   private writeAccessGrantedInSession = false;
   private phoneRequestedInSession = false;
 

@@ -122,6 +122,7 @@ class RentalCleaningBenefitRedemptionIntegrationTest extends BaseIntegrationTest
         mediaAssetRepository.deleteAll();
         identityRepository.deleteAll();
         accountRepository.deleteAll();
+        jdbcTemplate.update("update platform_service_state set status = 'ENABLED'");
     }
 
     @Test
@@ -195,7 +196,7 @@ class RentalCleaningBenefitRedemptionIntegrationTest extends BaseIntegrationTest
                         RentalCleaningBenefitNotApplicableException.class,
                         () -> cleaningOrderService.createOrder(
                                 context.customer(),
-                                command(context.code(), context.checkOutDate().minusDays(4), null)
+                                command(context.code(), context.checkOutDate().plusDays(1), null)
                         )
                 ),
                 () -> Assertions.assertThrows(
@@ -271,6 +272,7 @@ class RentalCleaningBenefitRedemptionIntegrationTest extends BaseIntegrationTest
                 () -> Assertions.assertEquals("Barbaros Cd. 24", response.address()),
                 () -> Assertions.assertEquals("+905551234567", response.phone()),
                 () -> Assertions.assertEquals(context.code(), response.promoCode()),
+                () -> Assertions.assertTrue(response.cleaningFlowAvailable()),
                 () -> Assertions.assertEquals(
                         context.checkOutDate().minusDays(3),
                         response.earliestBenefitCleaningDate()
@@ -278,6 +280,31 @@ class RentalCleaningBenefitRedemptionIntegrationTest extends BaseIntegrationTest
                 () -> Assertions.assertThrows(
                         RentalBookingNotFoundException.class,
                         () -> contextService.context(anotherCustomer, context.bookingId())
+                )
+        );
+    }
+
+    @Test
+    void unavailableCleaningHidesExistingBenefitWithoutRevokingIt() {
+        BenefitContext context = createAvailableBenefit("950007", "benefit-service-state");
+        jdbcTemplate.update(
+                "update platform_service_state set status = 'DISABLED' where service = 'CLEANING'"
+        );
+
+        RentalCleaningContextResponse response = contextService.context(
+                context.customer(),
+                context.bookingId()
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertFalse(response.cleaningFlowAvailable()),
+                () -> Assertions.assertNull(response.benefitStatus()),
+                () -> Assertions.assertNull(response.promoCode()),
+                () -> Assertions.assertEquals(
+                        RentalCleaningBenefitStatus.AVAILABLE,
+                        benefitRepository.findByRentalBookingId(context.bookingId())
+                                .orElseThrow()
+                                .getStatus()
                 )
         );
     }
@@ -299,7 +326,7 @@ class RentalCleaningBenefitRedemptionIntegrationTest extends BaseIntegrationTest
 
     private BenefitContext createAvailableBenefit(String subject, String slug) {
         LocalDate today = stayPolicy.today();
-        LocalDate checkOut = today.plusDays(7);
+        LocalDate checkOut = today.plusDays(3);
         CurrentCustomer customer = RentalTestFixtures.customer(customerAccountService, subject);
         RentalPropertyResponse property = RentalTestFixtures.publishedProperty(
                 propertyService,
@@ -327,7 +354,7 @@ class RentalCleaningBenefitRedemptionIntegrationTest extends BaseIntegrationTest
                 set check_in_date = ?, check_out_date = ?, duration_days = 7
                 where id = ?
                 """,
-                today,
+                today.minusDays(4),
                 checkOut,
                 booking.id()
         );

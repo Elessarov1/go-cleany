@@ -1,8 +1,8 @@
-package com.cleany.telegram;
+package com.cleany.authentication;
 
 public class CustomerAuthenticationRequiredException extends RuntimeException {
 
     public CustomerAuthenticationRequiredException() {
-        super("Valid Telegram Mini App authentication is required");
+        super("Customer authentication is required");
     }
 }

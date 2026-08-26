@@ -39,6 +39,12 @@ public class CustomerExternalIdentity {
     @Column(name = "language_code", length = 16)
     private String languageCode;
 
+    @Column(name = "email", length = 320)
+    private String email;
+
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified;
+
     @Column(name = "last_seen_at", nullable = false)
     private Instant lastSeenAt;
 
@@ -54,19 +60,58 @@ public class CustomerExternalIdentity {
             String languageCode,
             Instant lastSeenAt
     ) {
+        this(
+                customerId,
+                provider,
+                externalSubject,
+                username,
+                displayName,
+                languageCode,
+                null,
+                false,
+                lastSeenAt
+        );
+    }
+
+    CustomerExternalIdentity(
+            long customerId,
+            ExternalIdentityProvider provider,
+            String externalSubject,
+            String username,
+            String displayName,
+            String languageCode,
+            String email,
+            boolean emailVerified,
+            Instant lastSeenAt
+    ) {
         this.customerId = customerId;
         this.provider = Objects.requireNonNull(provider);
         this.externalSubject = Objects.requireNonNull(externalSubject);
         this.username = username;
         this.displayName = Objects.requireNonNull(displayName);
         this.languageCode = languageCode;
+        this.email = email;
+        this.emailVerified = email != null && emailVerified;
         this.lastSeenAt = Objects.requireNonNull(lastSeenAt);
     }
 
     void refresh(String username, String displayName, String languageCode, Instant seenAt) {
+        refresh(username, displayName, languageCode, null, false, seenAt);
+    }
+
+    void refresh(
+            String username,
+            String displayName,
+            String languageCode,
+            String email,
+            boolean emailVerified,
+            Instant seenAt
+    ) {
         this.username = username;
         this.displayName = Objects.requireNonNull(displayName);
         this.languageCode = languageCode;
+        this.email = email;
+        this.emailVerified = email != null && emailVerified;
         this.lastSeenAt = Objects.requireNonNull(seenAt);
     }
 
@@ -96,5 +141,13 @@ public class CustomerExternalIdentity {
 
     public String getLanguageCode() {
         return languageCode;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
     }
 }

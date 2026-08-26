@@ -28,6 +28,14 @@
     "notProvided": "Not provided",
     "errorTitle": "Something went wrong"
   },
+  "auth": {
+    "login": "Sign in",
+    "logout": "Sign out",
+    "adminTitle": "Admin sign-in",
+    "adminText": "Continue with Google. Access is available only to an account with the administrator role.",
+    "continueWithGoogle": "Continue with Google",
+    "loadError": "We could not verify the current session. Please try again."
+  },
   "create": {
     "eyebrow": "Apartment cleaning in Alanya",
     "title": "Book a cleaner in a few taps",
@@ -319,6 +327,18 @@
   "adminPlatform": {
     "title": "Service administration",
     "subtitle": "Choose a vertical. Each service keeps its own data and workflows.",
+    "statusLabel": "Customer availability",
+    "status": {
+      "ENABLED": "Enabled",
+      "IN_TEST": "In test",
+      "DISABLED": "Disabled"
+    },
+    "inTestDescription": "Visible and usable in the customer application only to administrators.",
+    "disableTitle": "Disable this service?",
+    "disableDescription": "New customer orders or bookings will become unavailable immediately. Existing operations and administration remain accessible.",
+    "disableConfirm": "Disable",
+    "stateLoadError": "Could not load service states.",
+    "stateSaveError": "Could not change the service state.",
     "rent": "Rental administration",
     "rentText": "Properties, occupancy and bookings",
     "cleaning": "Cleaning administration",
@@ -475,6 +495,10 @@
   "catalog": {
     "title": "What do you need?",
     "subtitle": "Choose a service — each one has its own flow, history, and team.",
+    "testBadge": "TEST",
+    "loadError": "Could not load the available services.",
+    "unavailable": "This service is currently unavailable for new requests.",
+    "empty": "No services are currently available. Your existing orders and bookings remain in history.",
     "rent": {
       "title": "Rent an apartment",
       "text": "Verified Alanya apartments for stays from one week"
@@ -633,7 +657,7 @@
       "cleaningText": "Book the apartment cleaning through go-cleany. We will prefill the address and phone from your booking.",
       "cleaningBenefit": "Checkout cleaning benefit",
       "cleaningWindow": "For cleaning from {{from}} to {{to}}",
-      "cleaningFutureBenefit": "A personal checkout-cleaning benefit will appear here after your rental starts.",
+      "cleaningFutureBenefit": "A personal cleaning benefit will appear shortly before checkout.",
       "bookCleaning": "Book cleaning",
       "benefitStatus": {
         "AVAILABLE": "Available",
@@ -667,6 +691,10 @@
       "REJECTED": "Rejected",
       "CANCELLED": "Cancelled",
       "SERVICE_CATALOG": "Service catalog",
+      "SERVICE_CATALOG_CLEANING_DISABLED": "Catalog: cleaning disabled",
+      "SERVICE_CATALOG_RENTAL_DISABLED": "Catalog: rental disabled",
+      "SERVICE_CATALOG_CLEANING_IN_TEST_ADMIN": "Catalog: cleaning test (admin)",
+      "SERVICE_CATALOG_CLEANING_IN_TEST_CUSTOMER": "Catalog: cleaning test (customer)",
       "CLEANING_SHELL": "Cleaning: home",
       "ADMIN_SERVICE_CATALOG": "admin: service catalog",
       "ADMIN_CLEANING_ORDER": "admin: cleaning order",
@@ -684,7 +712,10 @@
       "ADMIN_RENT_PROPERTIES": "admin: properties",
       "ADMIN_RENT_EDITOR": "admin: property editor",
       "ADMIN_RENT_CALENDAR": "admin: calendar",
-      "ADMIN_RENT_BOOKING": "admin: booking"
+      "ADMIN_RENT_BOOKING": "admin: booking",
+      "WEB_UNAUTHENTICATED": "web: signed out",
+      "WEB_CUSTOMER": "web: customer",
+      "WEB_ADMIN": "web: administrator"
     }
   }
 }

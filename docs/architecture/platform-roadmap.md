@@ -107,6 +107,11 @@ Residence
 
 Only implemented verticals belong in the catalog. Do not add placeholder Handyman or Residence cards before those services exist.
 
+Customer availability is platform-owned operational state persisted as `ENABLED`, `IN_TEST` or
+`DISABLED`. `IN_TEST` customer flows are available only to `CustomerAccount` records with `ADMIN`;
+`DISABLED` blocks every new customer flow. Neither state may hide existing owned transactions or
+disable vertical administration.
+
 ---
 
 # 3. Two dimensions of neutrality
@@ -830,6 +835,21 @@ iOS building/signing will require macOS/Xcode at that stage.
 ---
 
 # 24. Standalone authentication
+
+The standalone browser currently authenticates through direct Google OIDC using Spring Security
+OAuth2 Client. Google is an external identity provider only. The application owns `CustomerAccount`,
+platform roles, authorization and PostgreSQL-backed server sessions; it is not an authorization
+server and does not depend on Keycloak, Firebase Auth or Google Identity Platform.
+
+`ADMIN` is a persisted role of `CustomerAccount`. Telegram IDs and verified Google emails may grant
+it through deployment bootstrap allowlists, but reusable authorization always checks the role.
+
+Telegram TMA headers and Google web sessions resolve through one generic authenticated customer
+boundary. Cookie-authenticated writes require CSRF; explicit TMA credentials remain stateless.
+
+Cross-provider account linking is intentionally deferred. Telegram and Google identities may belong
+to separate accounts until a later explicit verified linking flow. Never merge identities
+automatically by email, phone, display name or username.
 
 Do not solve mobile authentication prematurely.
 

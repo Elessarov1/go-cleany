@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260901-01" author="go-cleany">
+        <addColumn tableName="customer_external_identity">
+            <column name="email" type="VARCHAR(320)"/>
+            <column name="email_verified" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <dropDefaultValue tableName="customer_external_identity" columnName="email_verified"/>
+
+        <rollback>
+            <dropColumn tableName="customer_external_identity" columnName="email_verified"/>
+            <dropColumn tableName="customer_external_identity" columnName="email"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="20260901-02" author="go-cleany">
+        <createTable tableName="spring_session">
+            <column name="primary_id" type="CHAR(36)">
+                <constraints primaryKey="true" primaryKeyName="pk_spring_session" nullable="false"/>
+            </column>
+            <column name="session_id" type="CHAR(36)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_spring_session_id"/>
+            </column>
+            <column name="creation_time" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_access_time" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_inactive_interval" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expiry_time" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="principal_name" type="VARCHAR(100)"/>
+        </createTable>
+        <createIndex tableName="spring_session" indexName="idx_spring_session_expiry_time">
+            <column name="expiry_time"/>
+        </createIndex>
+        <createIndex tableName="spring_session" indexName="idx_spring_session_principal_name">
+            <column name="principal_name"/>
+        </createIndex>
+
+        <createTable tableName="spring_session_attributes">
+            <column name="session_primary_id" type="CHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="attribute_name" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="attribute_bytes" type="BYTEA">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey
+                tableName="spring_session_attributes"
+                columnNames="session_primary_id, attribute_name"
+                constraintName="pk_spring_session_attributes"/>
+        <addForeignKeyConstraint
+                baseTableName="spring_session_attributes"
+                baseColumnNames="session_primary_id"
+                constraintName="fk_spring_session_attributes_session"
+                referencedTableName="spring_session"
+                referencedColumnNames="primary_id"
+                onDelete="CASCADE"/>
+
+        <rollback>
+            <dropTable tableName="spring_session_attributes"/>
+            <dropTable tableName="spring_session"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

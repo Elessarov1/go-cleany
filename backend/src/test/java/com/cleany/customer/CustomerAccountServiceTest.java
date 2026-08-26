@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
+import com.cleany.authorization.CustomerRoleBootstrapService;
 import com.cleany.order.PhoneNumberNormalizer;
 
 class CustomerAccountServiceTest {
@@ -20,6 +21,7 @@ class CustomerAccountServiceTest {
     private CustomerIdentityProvider identityProvider;
     private CustomerAccountRepository accountRepository;
     private CustomerExternalIdentityRepository identityRepository;
+    private CustomerRoleBootstrapService roleBootstrapService;
     private PhoneNumberNormalizer phoneNumberNormalizer;
     private CustomerAccountService service;
 
@@ -28,11 +30,13 @@ class CustomerAccountServiceTest {
         identityProvider = Mockito.mock(CustomerIdentityProvider.class);
         accountRepository = Mockito.mock(CustomerAccountRepository.class);
         identityRepository = Mockito.mock(CustomerExternalIdentityRepository.class);
+        roleBootstrapService = Mockito.mock(CustomerRoleBootstrapService.class);
         phoneNumberNormalizer = Mockito.mock(PhoneNumberNormalizer.class);
         service = new CustomerAccountService(
                 identityProvider,
                 accountRepository,
                 identityRepository,
+                roleBootstrapService,
                 phoneNumberNormalizer,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
@@ -138,7 +142,14 @@ class CustomerAccountServiceTest {
         CurrentCustomer first = service.resolveCustomer(firstIdentity);
         CurrentCustomer second = service.resolveCustomer(refreshedIdentity);
 
-        Mockito.verify(persistedIdentity).refresh("new-name", "Alex Updated", "en-us", NOW);
+        Mockito.verify(persistedIdentity).refresh(
+                "new-name",
+                "Alex Updated",
+                "en-us",
+                null,
+                false,
+                NOW
+        );
         Assertions.assertAll(
                 () -> Assertions.assertEquals(first.customerId(), second.customerId()),
                 () -> Assertions.assertEquals(first.externalIdentityId(), second.externalIdentityId()),

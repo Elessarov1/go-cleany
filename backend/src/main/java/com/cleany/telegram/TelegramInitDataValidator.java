@@ -20,6 +20,8 @@ import tools.jackson.databind.ObjectMapper;
 
 import org.springframework.stereotype.Component;
 
+import com.cleany.authentication.CustomerAuthenticationRequiredException;
+
 import com.cleany.configuration.TelegramProperties;
 
 @Component

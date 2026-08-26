@@ -8,6 +8,8 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.cleany.notification.CustomerNotificationDispatcher;
+import com.cleany.catalog.PlatformService;
+import com.cleany.catalog.PlatformServiceAccessService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,11 +23,24 @@ public class RentalCleaningBenefitNotificationListener {
 
     private final CustomerNotificationDispatcher dispatcher;
     private final RentalCleaningBenefitNotificationQueryService queryService;
+    private final PlatformServiceAccessService serviceAccessService;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Order(10)
     public void notifyCustomer(RentalCleaningBenefitIssuedEvent event) {
         try {
+            if (!serviceAccessService.canStartCustomerFlow(
+                    PlatformService.CLEANING,
+                    event.customerId()
+            )) {
+                log.info(
+                        "Rental cleaning benefit notification skipped: benefitId={}, "
+                                + "bookingId={}, reason=cleaning_unavailable",
+                        event.benefitId(),
+                        event.rentalBookingId()
+                );
+                return;
+            }
             dispatcher.send(
                     event.customerId(),
                     event.communicationIdentityId(),

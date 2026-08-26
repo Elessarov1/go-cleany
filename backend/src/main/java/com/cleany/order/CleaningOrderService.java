@@ -12,6 +12,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cleany.catalog.PlatformService;
+import com.cleany.catalog.PlatformServiceAccessService;
 import com.cleany.configuration.CleanerProperties;
 import com.cleany.configuration.CleaningProperties;
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitNotApplicableException;
@@ -45,6 +47,7 @@ public class CleaningOrderService {
     private final CleaningOrderRepository orderRepository;
     private final CleaningOrderPhotoRepository photoRepository;
     private final CleaningOrderEventRepository orderEventRepository;
+    private final PlatformServiceAccessService platformServiceAccessService;
     private final CleaningPriceService priceService;
     private final PhoneNumberNormalizer phoneNumberNormalizer;
     private final CleaningProperties cleaningProperties;
@@ -64,6 +67,10 @@ public class CleaningOrderService {
     @Transactional
     public CleaningOrder createOrder(CurrentCustomer customer, CreateCleaningOrderCommand command) {
         Objects.requireNonNull(customer, "customer");
+        platformServiceAccessService.requireCanStartCustomerFlow(
+                PlatformService.CLEANING,
+                customer.customerId()
+        );
         customerAccountService.lock(customer.customerId());
         validateRequestedDate(command.requestedDate());
         String normalizedPhone = phoneNumberNormalizer.normalize(command.phone());
@@ -148,6 +155,10 @@ public class CleaningOrderService {
             CleaningOrderQuoteRequest request
     ) {
         Objects.requireNonNull(customer, "customer");
+        platformServiceAccessService.requireCanStartCustomerFlow(
+                PlatformService.CLEANING,
+                customer.customerId()
+        );
         if (request.requestedDate() != null) {
             validateRequestedDate(request.requestedDate());
         }

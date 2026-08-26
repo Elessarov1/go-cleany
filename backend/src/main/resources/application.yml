@@ -22,6 +22,11 @@ spring:
     database-change-log-table: cleany_changelog
     database-change-log-lock-table: cleany_changelog_lock
 
+  session:
+    timeout: ${WEB_SESSION_TIMEOUT:12h}
+    jdbc:
+      initialize-schema: never
+
   http:
     clients:
       connect-timeout: ${TELEGRAM_API_CONNECT_TIMEOUT:3s}
@@ -30,6 +35,15 @@ spring:
     error:
       include-stacktrace: never
       include-message: never
+
+server:
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        secure: ${WEB_SESSION_COOKIE_SECURE:true}
+        same-site: lax
 
 cleany:
   postgres:
@@ -106,6 +120,13 @@ cleaner:
 
 admin:
   telegram-ids: ${ADMIN_TELEGRAM_IDS:}
+  google-emails: ${ADMIN_GOOGLE_EMAILS:}
+
+web-auth:
+  google:
+    enabled: ${GOOGLE_AUTH_ENABLED:false}
+    client-id: ${GOOGLE_CLIENT_ID:}
+    client-secret: ${GOOGLE_CLIENT_SECRET:}
 
 telegram:
   bot-token: ${TELEGRAM_BOT_TOKEN}

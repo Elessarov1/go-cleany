@@ -9,6 +9,8 @@ import java.time.ZoneOffset;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.cleany.authentication.CustomerAuthenticationRequiredException;
+
 import tools.jackson.databind.ObjectMapper;
 
 import com.cleany.configuration.TelegramProperties;

@@ -5,6 +5,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountService;
+import com.cleany.catalog.PlatformService;
+import com.cleany.catalog.PlatformServiceAccessService;
 import com.cleany.rental.RentalBooking;
 import com.cleany.rental.RentalBookingNotFoundException;
 import com.cleany.rental.RentalBookingRepository;
@@ -19,6 +21,7 @@ public class RentalCleaningContextService {
     private final RentalBookingRepository bookingRepository;
     private final RentalCleaningBenefitRepository benefitRepository;
     private final RentalCleaningBenefitProperties properties;
+    private final PlatformServiceAccessService serviceAccessService;
 
     @Transactional(readOnly = true)
     public RentalCleaningContextResponse currentCustomerContext(long rentalBookingId) {
@@ -36,14 +39,19 @@ public class RentalCleaningContextService {
         RentalCleaningBenefit benefit = benefitRepository
                 .findByRentalBookingId(rentalBookingId)
                 .orElse(null);
+        boolean cleaningFlowAvailable = serviceAccessService.canStartCustomerFlow(
+                PlatformService.CLEANING,
+                customer.customerId()
+        );
         return new RentalCleaningContextResponse(
                 booking.getId(),
                 booking.getProperty().getAddress(),
                 booking.getPhone(),
                 booking.getCheckOutDate(),
                 booking.getCheckOutDate().minusDays(properties.checkoutWindowDays()),
-                benefit == null ? null : benefit.getStatus(),
-                visibleCode(benefit)
+                cleaningFlowAvailable && benefit != null ? benefit.getStatus() : null,
+                cleaningFlowAvailable ? visibleCode(benefit) : null,
+                cleaningFlowAvailable
         );
     }
 

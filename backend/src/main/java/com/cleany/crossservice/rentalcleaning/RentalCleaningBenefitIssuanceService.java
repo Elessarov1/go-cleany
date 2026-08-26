@@ -22,10 +22,12 @@ public class RentalCleaningBenefitIssuanceService {
 
     private final RentalBookingRepository bookingRepository;
     private final RentalCleaningBenefitIssuer issuer;
+    private final RentalCleaningBenefitProperties properties;
 
     public RentalCleaningBenefitIssuanceResult issueEligible(LocalDate today, int batchSize) {
         List<Long> bookingIds = bookingRepository.findRentalCleaningBenefitCandidates(
                 today,
+                today.plusDays(properties.checkoutWindowDays()),
                 batchSize
         );
         int issued = 0;

@@ -164,7 +164,7 @@ public class TelegramCleanerBotService {
             safeSend(cleanerId, "Ваш Telegram ID: " + cleanerId);
             return;
         }
-        if (adminBotService.handleIfSupported(cleanerId, message.text())) {
+        if (adminBotService.handleIfSupported(message.from(), message.text())) {
             return;
         }
         if (!cleanerProperties.contains(cleanerId)) {

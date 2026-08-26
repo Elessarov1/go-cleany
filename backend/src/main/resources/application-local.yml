@@ -13,6 +13,12 @@ spring:
     database-change-log-table: cleany_changelog
     database-change-log-lock-table: cleany_changelog_lock
 
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false
+
 cleany:
   postgres:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/cleany?ApplicationName=cleany}
@@ -71,6 +77,11 @@ cleaner:
 
 admin:
   telegram-ids: ${ADMIN_TELEGRAM_IDS:${LOCAL_TELEGRAM_USER_ID:900001}}
+  google-emails: ${ADMIN_GOOGLE_EMAILS:}
+
+web-auth:
+  google:
+    enabled: false
 
 telegram:
   bot-token: ${TELEGRAM_BOT_TOKEN:local-not-configured}

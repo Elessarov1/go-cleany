@@ -5,7 +5,10 @@ export interface PlatformUser {
   lastName?: string;
 }
 
+export type PlatformKind = "TELEGRAM" | "WEB" | "PREVIEW";
+
 export interface Platform {
+  readonly kind: PlatformKind;
   getUser(): PlatformUser | null;
   getAuthData(): string | null;
   getLanguage(): string | null;

@@ -366,11 +366,15 @@ class TelegramCleanerBotServiceTest {
 
     @Test
     void adminCommand_delegatedBeforeCleanerWhitelistCheck() {
-        Mockito.when(adminBotService.handleIfSupported(777L, "/stats")).thenReturn(true);
+        Mockito.when(adminBotService.handleIfSupported(Mockito.any(), Mockito.eq("/stats")))
+                .thenReturn(true);
 
         cleanerBotService.handle(textUpdate(777L, "/stats"));
 
-        Mockito.verify(adminBotService).handleIfSupported(777L, "/stats");
+        Mockito.verify(adminBotService).handleIfSupported(
+                Mockito.argThat(user -> user.id() == 777L),
+                Mockito.eq("/stats")
+        );
         Mockito.verifyNoInteractions(orderService, botClient);
     }
 

@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useCleaningApi } from "../../api/CleaningApiProvider";
+import { useAuthentication } from "../../api/AuthApiProvider";
+import { usePlatform } from "../../platform/PlatformProvider";
 import { Icon } from "../Icon/Icon";
 import { LanguageSwitcher } from "../LanguageSwitcher/LanguageSwitcher";
 import { PreviewPanel } from "../PreviewPanel/PreviewPanel";
@@ -26,22 +26,10 @@ function logoTarget(pathname: string): string {
 export function AppShell() {
   const { t } = useTranslation();
   const location = useLocation();
-  const api = useCleaningApi();
-  const [hasAdminAccess, setHasAdminAccess] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    api.hasAdminAccess()
-      .then((allowed) => {
-        if (active) setHasAdminAccess(allowed);
-      })
-      .catch(() => {
-        if (active) setHasAdminAccess(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [api]);
+  const platform = usePlatform();
+  const authentication = useAuthentication();
+  const hasAdminAccess = authentication.isAdmin;
+  const showAdminNavigation = platform.kind !== "WEB" && hasAdminAccess;
 
   const admin = location.pathname.startsWith("/admin");
   const rental = location.pathname.startsWith("/rent") || location.pathname.startsWith("/admin/rent");
@@ -97,6 +85,23 @@ export function AppShell() {
                 <span>{t("app.navigation.openApplication")}</span>
               </NavLink>
             ) : null}
+            {platform.kind === "WEB" && authentication.status === "READY" ? (
+              authentication.current.authenticated ? (
+                <button
+                  className="topbar__auth-action"
+                  type="button"
+                  onClick={() => void authentication.logout()}
+                >
+                  <Icon name="user" size={17} />
+                  <span>{t("auth.logout")}</span>
+                </button>
+              ) : (
+                <a className="topbar__auth-action" href={authentication.googleLoginUrl}>
+                  <Icon name="user" size={17} />
+                  <span>{t("auth.login")}</span>
+                </a>
+              )
+            ) : null}
             <LanguageSwitcher />
           </div>
         </header>
@@ -107,7 +112,7 @@ export function AppShell() {
 
         {showLocalNavigation ? (
           <nav
-            className={`bottom-nav${hasAdminAccess && !admin ? " bottom-nav--three-items" : ""}`}
+            className={`bottom-nav${showAdminNavigation && !admin ? " bottom-nav--three-items" : ""}`}
             aria-label={t("app.navigation.label")}
           >
             <NavLink className={navClassName} to={admin && rental ? "/admin/rent/properties" : rental ? "/rent" : "/cleaning"} end>
@@ -118,7 +123,7 @@ export function AppShell() {
               <span className="bottom-nav__icon"><Icon name="clipboard" size={21} /></span>
               <span>{t(rental ? "app.navigation.bookings" : "app.navigation.orders")}</span>
             </NavLink>
-            {hasAdminAccess && !admin ? (
+            {showAdminNavigation && !admin ? (
               <NavLink className={navClassName} to="/admin" end>
                 <span className="bottom-nav__icon"><Icon name="admin" size={21} /></span>
                 <span>{t("app.navigation.admin")}</span>

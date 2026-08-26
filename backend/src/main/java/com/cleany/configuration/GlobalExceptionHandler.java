@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitNotApplicableException;
+import com.cleany.catalog.PlatformServiceNotAvailableException;
 import com.cleany.order.BookingDateNotAvailableException;
 import com.cleany.admin.AdminNotAuthorizedException;
 import com.cleany.order.CleanerNotAuthorizedException;
@@ -45,7 +46,7 @@ import com.cleany.rental.RentalPropertyCannotBeUnpublishedException;
 import com.cleany.rental.RentalPropertyMediaNotFoundException;
 import com.cleany.rental.RentalPropertyNotFoundException;
 import com.cleany.rental.RentalPropertyNotAvailableException;
-import com.cleany.telegram.CustomerAuthenticationRequiredException;
+import com.cleany.authentication.CustomerAuthenticationRequiredException;
 import com.cleany.telegram.bot.TelegramWebhookAuthenticationException;
 
 @RestControllerAdvice
@@ -331,6 +332,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({InvalidOrderStateException.class, OrderClaimConflictException.class})
     ResponseEntity<ApiError> handleConflict(RuntimeException exception) {
         return response(HttpStatus.CONFLICT, "order_state_conflict", exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(PlatformServiceNotAvailableException.class)
+    ResponseEntity<ApiError> handlePlatformServiceNotAvailable(
+            PlatformServiceNotAvailableException exception
+    ) {
+        return response(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "service_not_available",
+                "The requested service is not currently available",
+                Map.of()
+        );
     }
 
     @ExceptionHandler(RentalCleaningBenefitNotApplicableException.class)
