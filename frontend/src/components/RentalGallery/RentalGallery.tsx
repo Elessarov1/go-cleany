@@ -100,6 +100,20 @@ export function RentalGallery({ media, propertyTitle }: RentalGalleryProps) {
               />
             ))}
           </div>
+          <div className="rental-gallery__thumbnails" aria-label={t("rental.property.photoNavigation")}>
+            {orderedMedia.map((item, index) => (
+              <button
+                className={index === activeIndex ? "is-active" : ""}
+                key={item.id}
+                type="button"
+                aria-label={t("rental.property.openPhoto", { index: index + 1 })}
+                aria-current={index === activeIndex ? "true" : undefined}
+                onClick={() => show(index)}
+              >
+                <img src={item.url} alt="" loading="lazy" />
+              </button>
+            ))}
+          </div>
         </>
       ) : null}
     </section>

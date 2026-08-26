@@ -11,13 +11,16 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
+import lombok.RequiredArgsConstructor;
+
 @Component
+@RequiredArgsConstructor
 public class GoogleLoginSuccessHandler implements AuthenticationSuccessHandler {
 
     static final String SUCCESS_TARGET_SESSION_ATTRIBUTE =
             GoogleLoginSuccessHandler.class.getName() + ".SUCCESS_TARGET";
 
-    private static final String DEFAULT_TARGET = "/";
+    private final LoginTargetValidator loginTargetValidator;
 
     @Override
     public void onAuthenticationSuccess(
@@ -30,10 +33,10 @@ public class GoogleLoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private String successTarget(HttpSession session) {
         if (session == null) {
-            return DEFAULT_TARGET;
+            return loginTargetValidator.normalize(null);
         }
         var target = session.getAttribute(SUCCESS_TARGET_SESSION_ATTRIBUTE);
         session.removeAttribute(SUCCESS_TARGET_SESSION_ATTRIBUTE);
-        return target instanceof String path && "/admin".equals(path) ? path : DEFAULT_TARGET;
+        return loginTargetValidator.normalize(target instanceof String path ? path : null);
     }
 }

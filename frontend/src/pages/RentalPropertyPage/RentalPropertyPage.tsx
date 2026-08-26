@@ -26,6 +26,8 @@ import {
 } from "../../utils/format";
 import { rentalLanguage, rentalPropertyDescription, rentalPropertyTitle } from "../../utils/rental";
 import { BrandName } from "../../components/BrandName/BrandName";
+import { useAuthentication } from "../../api/AuthApiProvider";
+import { AuthenticationRequiredState } from "../../components/CustomerAccessGate/CustomerAccessGate";
 
 function bookingErrorMessage(
   error: unknown,
@@ -56,6 +58,7 @@ export function RentalPropertyPage() {
   const api = useRentalApi();
   const customerApi = useCustomerApi();
   const platform = usePlatform();
+  const authentication = useAuthentication();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [property, setProperty] = useState<RentalProperty | null>(null);
@@ -134,6 +137,10 @@ export function RentalPropertyPage() {
   }, [api, slug, reloadKey, searchParams]);
 
   useEffect(() => {
+    if (!authentication.current.authenticated) {
+      setPhone("");
+      return;
+    }
     let active = true;
     customerApi.getCurrentProfile()
       .then((profile) => {
@@ -143,9 +150,14 @@ export function RentalPropertyPage() {
     return () => {
       active = false;
     };
-  }, [customerApi]);
+  }, [authentication.current.authenticated, customerApi]);
 
   useEffect(() => {
+    if (!authentication.current.authenticated) {
+      setQuote(null);
+      setQuoteLoading(false);
+      return;
+    }
     const hasCompleteTerm = termType === "DATE_RANGE"
       ? Boolean(checkInDate && checkOutDate)
       : Boolean(checkInDate && months > 0);
@@ -186,7 +198,7 @@ export function RentalPropertyPage() {
     return () => {
       active = false;
     };
-  }, [api, checkInDate, checkOutDate, months, property, t, termType]);
+  }, [api, authentication.current.authenticated, checkInDate, checkOutDate, months, property, t, termType]);
 
   const expectedCheckOutDate = termType === "MONTHLY" && checkInDate
     ? addMonthsToInputValue(checkInDate, months)
@@ -212,6 +224,7 @@ export function RentalPropertyPage() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!authentication.current.authenticated) return;
     if (!property || !quote || !configuration) return;
     setSubmitError(null);
     if (guests < 1 || guests > (property.maxGuests ?? 0)) {
@@ -504,14 +517,18 @@ export function RentalPropertyPage() {
             </>
           ) : <p>{termType === "MONTHLY" ? t("rental.booking.selectMonthlyStart") : t("rental.booking.selectDates")}</p>}
           {submitError ? <p className="form-alert" role="alert">{submitError}</p> : null}
-          <button
-            className="button button--primary button--full button--large"
-            type="submit"
-            disabled={!quote || quoteLoading || submitting}
-          >
-            {submitting ? t("rental.booking.submitting") : t("rental.booking.confirm")}
-          </button>
-          <small className="rental-quote-card__note">{t("rental.booking.noPayment")}</small>
+          {authentication.current.authenticated ? (
+            <>
+              <button
+                className="button button--primary button--full button--large"
+                type="submit"
+                disabled={!quote || quoteLoading || submitting}
+              >
+                {submitting ? t("rental.booking.submitting") : t("rental.booking.confirm")}
+              </button>
+              <small className="rental-quote-card__note">{t("rental.booking.noPayment")}</small>
+            </>
+          ) : <AuthenticationRequiredState compact />}
         </section>
       </form>
     </div>

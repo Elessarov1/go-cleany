@@ -34,6 +34,9 @@
     "adminTitle": "Вход в админку",
     "adminText": "Продолжите через Google. Доступ откроется только для аккаунта с ролью администратора.",
     "continueWithGoogle": "Продолжить через Google",
+    "customerTitle": "Войдите, чтобы продолжить",
+    "customerText": "Войдите через Google, чтобы создавать заказы и бронирования и управлять ими.",
+    "googleUnavailable": "Вход через Google временно недоступен. Попробуйте позже.",
     "loadError": "Не удалось проверить текущую сессию. Попробуйте ещё раз."
   },
   "create": {
@@ -722,6 +725,7 @@
       "ADMIN_RENT_CALENDAR": "admin: календарь",
       "ADMIN_RENT_BOOKING": "admin: бронирование",
       "WEB_UNAUTHENTICATED": "web: без сессии",
+      "WEB_GOOGLE_UNAVAILABLE": "web: Google недоступен",
       "WEB_CUSTOMER": "web: обычный пользователь",
       "WEB_ADMIN": "web: администратор"
     }

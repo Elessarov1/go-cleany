@@ -13,8 +13,8 @@ export class HttpAuthApi implements AuthApi {
     return this.client.request("/api/v1/auth/logout", { method: "POST" });
   }
 
-  googleLoginUrl(): string {
-    return this.client.resolveUrl("/oauth2/authorization/google");
+  googleLoginUrl(returnTo = "/"): string {
+    return this.client.resolveUrl(`/api/v1/auth/google/login?returnTo=${encodeURIComponent(returnTo)}`);
   }
 
   googleAdminLoginUrl(): string {

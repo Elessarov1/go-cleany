@@ -21,6 +21,8 @@ import { calculateDisplayedPrice, formatPrice } from "../../domain/pricing";
 import { usePlatform } from "../../platform/PlatformProvider";
 import { addDaysToInputValue, formatDate, todayAsInputValue } from "../../utils/format";
 import { getBrandName } from "../../brand/productBrand";
+import { useAuthentication } from "../../api/AuthApiProvider";
+import { AuthenticationRequiredState } from "../../components/CustomerAccessGate/CustomerAccessGate";
 
 interface FormState {
   area?: ServiceArea;
@@ -60,6 +62,7 @@ export function CreateOrderPage() {
   const customerApi = useCustomerApi();
   const rentalApi = useRentalApi();
   const platform = usePlatform();
+  const authentication = useAuthentication();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [configuration, setConfiguration] = useState<CleaningConfiguration | null>(null);
@@ -89,6 +92,14 @@ export function CreateOrderPage() {
   }, [searchParams]);
 
   useEffect(() => {
+    if (!authentication.current.authenticated) {
+      setRentalContext(null);
+      setRentalPromoCode("");
+      setForm((current) => current.address || current.phone
+        ? { ...current, address: "", phone: "" }
+        : current);
+      return;
+    }
     const rawBookingId = searchParams.get("rentalBooking");
     const bookingId = rawBookingId === null ? Number.NaN : Number(rawBookingId);
     if (!Number.isSafeInteger(bookingId) || bookingId <= 0) {
@@ -123,9 +134,13 @@ export function CreateOrderPage() {
     return () => {
       active = false;
     };
-  }, [rentalApi, searchParams]);
+  }, [authentication.current.authenticated, rentalApi, searchParams]);
 
   useEffect(() => {
+    if (!authentication.current.authenticated) {
+      setForm((current) => current.phone ? { ...current, phone: "" } : current);
+      return;
+    }
     let active = true;
 
     const fillPhone = (phone?: string | null): boolean => {
@@ -158,7 +173,7 @@ export function CreateOrderPage() {
     return () => {
       active = false;
     };
-  }, [customerApi, platform]);
+  }, [authentication.current.authenticated, customerApi, platform]);
 
   useEffect(() => {
     let active = true;
@@ -188,6 +203,12 @@ export function CreateOrderPage() {
   }, [configuration, form.apartmentType, form.cleaningType, form.duplex]);
 
   useEffect(() => {
+    if (!authentication.current.authenticated) {
+      setQuote(null);
+      setIsQuoteLoading(false);
+      setQuoteReferralError(false);
+      return;
+    }
     if (!form.apartmentType || !form.cleaningType) {
       setQuote(null);
       setIsQuoteLoading(false);
@@ -252,6 +273,7 @@ export function CreateOrderPage() {
     };
   }, [
     api,
+    authentication.current.authenticated,
     form.apartmentType,
     form.cleaningType,
     form.duplex,
@@ -292,6 +314,7 @@ export function CreateOrderPage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!authentication.current.authenticated) return;
     const nextErrors = validate();
     setErrors(nextErrors);
     setSubmitError(null);
@@ -660,19 +683,21 @@ export function CreateOrderPage() {
               )}
             </p>
           ) : null}
-          <button
-            className="button button--primary button--full button--large"
-            type="submit"
-            disabled={isSubmitting || isQuoteLoading || price === null || quoteReferralError || rentalBenefitError}
-          >
-            {isSubmitting
-              ? t("create.submitting")
-              : price === null
-                ? t("create.summary.pending")
-                : t("create.submit", {
-                    price: formatPrice(price, configuration.currency, locale),
-                  })}
-          </button>
+          {authentication.current.authenticated ? (
+            <button
+              className="button button--primary button--full button--large"
+              type="submit"
+              disabled={isSubmitting || isQuoteLoading || price === null || quoteReferralError || rentalBenefitError}
+            >
+              {isSubmitting
+                ? t("create.submitting")
+                : price === null
+                  ? t("create.summary.pending")
+                  : t("create.submit", {
+                      price: formatPrice(price, configuration.currency, locale),
+                    })}
+            </button>
+          ) : <AuthenticationRequiredState compact />}
         </section>
       </form>
 

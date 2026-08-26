@@ -20,6 +20,7 @@ import { AdminRentalBookingsPage } from "../pages/AdminRentalBookingsPage/AdminR
 import { AdminRentalBookingPage } from "../pages/AdminRentalBookingPage/AdminRentalBookingPage";
 import { ServiceAvailabilityGate } from "../components/ServiceAvailabilityGate/ServiceAvailabilityGate";
 import { AdminAccessGate } from "../components/AdminAccessGate/AdminAccessGate";
+import { CustomerAccessGate } from "../components/CustomerAccessGate/CustomerAccessGate";
 
 function LegacyCleaningOrderRedirect({ created = false }: { created?: boolean }) {
   const { id } = useParams();
@@ -37,17 +38,22 @@ export const router = createBrowserRouter([
     children: [
       { path: "/", element: <ServiceCatalogPage /> },
       { path: "/cleaning", element: <ServiceAvailabilityGate service="CLEANING"><CreateOrderPage /></ServiceAvailabilityGate> },
-      { path: "/cleaning/orders", element: <OrdersPage /> },
-      { path: "/cleaning/orders/:id", element: <OrderDetailsPage /> },
-      { path: "/cleaning/orders/:id/created", element: <OrderCreatedPage /> },
+      {
+        element: <CustomerAccessGate />,
+        children: [
+          { path: "/cleaning/orders", element: <OrdersPage /> },
+          { path: "/cleaning/orders/:id", element: <OrderDetailsPage /> },
+          { path: "/cleaning/orders/:id/created", element: <OrderCreatedPage /> },
+          { path: "/rent/bookings", element: <RentalBookingsPage /> },
+          { path: "/rent/bookings/:id", element: <RentalBookingDetailsPage /> },
+          { path: "/orders", element: <Navigate replace to="/cleaning/orders" /> },
+          { path: "/orders/:id", element: <LegacyCleaningOrderRedirect /> },
+          { path: "/orders/:id/created", element: <LegacyCleaningOrderRedirect created /> },
+        ],
+      },
       { path: "/rent", element: <ServiceAvailabilityGate service="RENTAL"><RentalCatalogPage /></ServiceAvailabilityGate> },
       { path: "/rent/properties", element: <ServiceAvailabilityGate service="RENTAL"><RentalCatalogPage /></ServiceAvailabilityGate> },
       { path: "/rent/properties/:slug", element: <ServiceAvailabilityGate service="RENTAL"><RentalPropertyPage /></ServiceAvailabilityGate> },
-      { path: "/rent/bookings", element: <RentalBookingsPage /> },
-      { path: "/rent/bookings/:id", element: <RentalBookingDetailsPage /> },
-      { path: "/orders", element: <Navigate replace to="/cleaning/orders" /> },
-      { path: "/orders/:id", element: <LegacyCleaningOrderRedirect /> },
-      { path: "/orders/:id/created", element: <LegacyCleaningOrderRedirect created /> },
       {
         path: "/admin",
         element: <AdminAccessGate />,

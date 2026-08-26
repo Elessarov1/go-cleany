@@ -27,6 +27,37 @@ if [[ -z ${app_host} || ${app_host} == *://* || ${app_host} == */* ]]; then
   exit 1
 fi
 
+google_auth_enabled=${GOOGLE_AUTH_ENABLED:-}
+if [[ -z ${google_auth_enabled} ]]; then
+  google_auth_enabled=$(read_env_value "${env_file}" GOOGLE_AUTH_ENABLED)
+fi
+google_auth_enabled=${google_auth_enabled:-false}
+if [[ ${google_auth_enabled} != true && ${google_auth_enabled} != false ]]; then
+  echo "GOOGLE_AUTH_ENABLED must be true or false." >&2
+  exit 1
+fi
+if [[ ${google_auth_enabled} == true ]]; then
+  for required_google_setting in GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET ADMIN_GOOGLE_EMAILS; do
+    required_google_value=${!required_google_setting:-}
+    if [[ -z ${required_google_value} ]]; then
+      required_google_value=$(read_env_value "${env_file}" "${required_google_setting}")
+    fi
+    if [[ -z ${required_google_value} ]]; then
+      echo "${required_google_setting} is required when GOOGLE_AUTH_ENABLED=true." >&2
+      exit 1
+    fi
+  done
+fi
+
+web_session_timeout=${WEB_SESSION_TIMEOUT:-}
+if [[ -z ${web_session_timeout} ]]; then
+  web_session_timeout=$(read_env_value "${env_file}" WEB_SESSION_TIMEOUT)
+fi
+if [[ -n ${web_session_timeout} && ! ${web_session_timeout} =~ ^[1-9][0-9]*(ms|s|m|h|d)$ ]]; then
+  echo "WEB_SESSION_TIMEOUT must be a positive duration such as 30m or 12h." >&2
+  exit 1
+fi
+
 echo "Validating production configuration..."
 "${COMPOSE[@]}" config --quiet
 

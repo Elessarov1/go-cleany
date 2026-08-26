@@ -29,7 +29,8 @@ export function AppShell() {
   const platform = usePlatform();
   const authentication = useAuthentication();
   const hasAdminAccess = authentication.isAdmin;
-  const showAdminNavigation = platform.kind !== "WEB" && hasAdminAccess;
+  const standaloneWeb = platform.kind !== "TELEGRAM";
+  const showAdminNavigation = !standaloneWeb && hasAdminAccess;
 
   const admin = location.pathname.startsWith("/admin");
   const rental = location.pathname.startsWith("/rent") || location.pathname.startsWith("/admin/rent");
@@ -46,9 +47,15 @@ export function AppShell() {
       : t("app.navigation.main");
   const brandService: BrandService | undefined = catalog ? undefined : rental ? "rental" : "cleaning";
   const showLocalNavigation = !catalog && (!admin || rental);
+  const showWebAdminSidebar = standaloneWeb && admin && hasAdminAccess;
 
   return (
-    <div className="app-frame service-shell" data-service={service} data-layout={admin ? "admin" : "customer"}>
+    <div
+      className="app-frame service-shell"
+      data-service={service}
+      data-layout={admin ? "admin" : "customer"}
+      data-platform={standaloneWeb ? "web" : "telegram"}
+    >
       <div className="app-container">
         <header className="topbar">
           <NavLink
@@ -62,6 +69,13 @@ export function AppShell() {
             </span>
             <span className="brand__word"><BrandName service={brandService} /></span>
           </NavLink>
+          {standaloneWeb && !admin ? (
+            <nav className="web-primary-nav" aria-label={t("app.navigation.label")}>
+              <NavLink to="/" end>{t("app.navigation.services")}</NavLink>
+              <NavLink to="/cleaning"><BrandName service="cleaning" /></NavLink>
+              <NavLink to="/rent"><BrandName service="rental" /></NavLink>
+            </nav>
+          ) : null}
           <div className="topbar__actions">
             {!admin && !catalog && !customerServiceHome ? (
               <NavLink
@@ -85,7 +99,7 @@ export function AppShell() {
                 <span>{t("app.navigation.openApplication")}</span>
               </NavLink>
             ) : null}
-            {platform.kind === "WEB" && authentication.status === "READY" ? (
+            {standaloneWeb && authentication.status === "READY" ? (
               authentication.current.authenticated ? (
                 <button
                   className="topbar__auth-action"
@@ -95,20 +109,47 @@ export function AppShell() {
                   <Icon name="user" size={17} />
                   <span>{t("auth.logout")}</span>
                 </button>
-              ) : (
-                <a className="topbar__auth-action" href={authentication.googleLoginUrl}>
+              ) : authentication.googleAvailable ? (
+                <a
+                  className="topbar__auth-action"
+                  href={authentication.googleLoginUrl(`${location.pathname}${location.search}`)}
+                >
                   <Icon name="user" size={17} />
                   <span>{t("auth.login")}</span>
                 </a>
-              )
+              ) : null
             ) : null}
             <LanguageSwitcher />
           </div>
         </header>
 
-        <main className="app-content">
-          <Outlet />
-        </main>
+        <div className={`shell-body${showWebAdminSidebar ? " shell-body--admin" : ""}`}>
+          {showWebAdminSidebar ? (
+            <aside className="admin-sidebar">
+              <nav aria-label={t("app.navigation.admin")}>
+                <NavLink to="/admin" end>
+                  <Icon name="services" size={19} />
+                  <span>{t("app.navigation.services")}</span>
+                </NavLink>
+                <NavLink to="/admin/cleaning">
+                  <Icon name="calendar-plus" size={19} />
+                  <span><BrandName service="cleaning" /></span>
+                </NavLink>
+                <NavLink to="/admin/rent/properties">
+                  <Icon name="building" size={19} />
+                  <span>{t("app.navigation.apartments")}</span>
+                </NavLink>
+                <NavLink to="/admin/rent/bookings">
+                  <Icon name="clipboard" size={19} />
+                  <span>{t("app.navigation.bookings")}</span>
+                </NavLink>
+              </nav>
+            </aside>
+          ) : null}
+          <main className="app-content">
+            <Outlet />
+          </main>
+        </div>
 
         {showLocalNavigation ? (
           <nav

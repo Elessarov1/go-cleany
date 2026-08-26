@@ -36,7 +36,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @AutoConfigureMockMvc
@@ -82,7 +81,8 @@ class WebSecurityIntegrationTest extends BaseIntegrationTest {
     void anonymousAndOidcCurrentUserResponsesExposeNoProviderTokens() throws Exception {
         mvc.perform(get("/api/v1/auth/me"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.authenticated").value(false));
+                .andExpect(jsonPath("$.authenticated").value(false))
+                .andExpect(jsonPath("$.loginProviders.google.available").value(false));
 
         mvc.perform(get("/api/v1/auth/me").with(oidcLogin().oidcUser(user(
                         "google-web-1",
@@ -117,24 +117,18 @@ class WebSecurityIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void adminGoogleLoginRemembersAdminReturnTarget() throws Exception {
-        var result = mvc.perform(get("/api/v1/auth/google/admin"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/oauth2/authorization/google"))
-                .andReturn();
+    void disabledGoogleIsReportedAndUnavailableRoutesNeverBecomeInternalError() throws Exception {
+        mvc.perform(get("/api/v1/auth/google/login").param("returnTo", "/rent/bookings"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("login_provider_unavailable"));
 
-        var sessionCookie = result.getResponse().getCookie("SESSION");
-        org.assertj.core.api.Assertions.assertThat(sessionCookie).isNotNull();
-        var sessionId = new String(
-                Base64.getDecoder().decode(sessionCookie.getValue()),
-                StandardCharsets.UTF_8
-        );
-        org.assertj.core.api.Assertions.assertThat(sessionRepository.findById(sessionId))
-                .isNotNull()
-                .extracting(session -> session.getAttribute(
-                        GoogleLoginSuccessHandler.SUCCESS_TARGET_SESSION_ATTRIBUTE
-                ))
-                .isEqualTo("/admin");
+        mvc.perform(get("/api/v1/auth/google/admin"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("login_provider_unavailable"));
+
+        mvc.perform(get("/oauth2/authorization/google"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("resource_not_found"));
     }
 
     @Test

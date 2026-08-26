@@ -8,7 +8,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class GoogleLoginSuccessHandlerTest {
 
-    private final GoogleLoginSuccessHandler handler = new GoogleLoginSuccessHandler();
+    private final LoginTargetValidator loginTargetValidator = new LoginTargetValidator();
+    private final GoogleLoginSuccessHandler handler = new GoogleLoginSuccessHandler(
+            loginTargetValidator
+    );
 
     @Test
     void adminLoginReturnsToAdminAndConsumesTarget() throws Exception {
@@ -43,5 +46,20 @@ class GoogleLoginSuccessHandlerTest {
 
         assertThat(ordinaryResponse.getRedirectedUrl()).isEqualTo("/");
         assertThat(unsafeResponse.getRedirectedUrl()).isEqualTo("/");
+    }
+
+    @Test
+    void protectedCustomerTargetSurvivesLogin() throws Exception {
+        var request = new MockHttpServletRequest();
+        request.getSession().setAttribute(
+                GoogleLoginSuccessHandler.SUCCESS_TARGET_SESSION_ATTRIBUTE,
+                "/rent/bookings/42?from=notification"
+        );
+        var response = new MockHttpServletResponse();
+
+        handler.onAuthenticationSuccess(request, response, null);
+
+        assertThat(response.getRedirectedUrl())
+                .isEqualTo("/rent/bookings/42?from=notification");
     }
 }

@@ -15,6 +15,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitNotApplicableException;
 import com.cleany.catalog.PlatformServiceNotAvailableException;
@@ -364,6 +365,16 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT,
                 "concurrent_update_conflict",
                 "The resource was changed by another request",
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    ResponseEntity<ApiError> handleNoResource(NoResourceFoundException exception) {
+        return response(
+                HttpStatus.NOT_FOUND,
+                "resource_not_found",
+                "The requested resource was not found",
                 Map.of()
         );
     }

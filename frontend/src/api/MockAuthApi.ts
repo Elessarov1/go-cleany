@@ -7,6 +7,7 @@ const ANONYMOUS: CurrentAuthentication = {
   displayName: null,
   provider: null,
   roles: [],
+  loginProviders: { google: { available: true } },
 };
 
 const CUSTOMER: CurrentAuthentication = {
@@ -15,6 +16,7 @@ const CUSTOMER: CurrentAuthentication = {
   displayName: "Preview Customer",
   provider: "GOOGLE",
   roles: [],
+  loginProviders: { google: { available: true } },
 };
 
 const ADMIN: CurrentAuthentication = {
@@ -23,6 +25,12 @@ const ADMIN: CurrentAuthentication = {
   displayName: "Alex",
   provider: "TELEGRAM",
   roles: ["ADMIN"],
+  loginProviders: { google: { available: true } },
+};
+
+const GOOGLE_UNAVAILABLE: CurrentAuthentication = {
+  ...ANONYMOUS,
+  loginProviders: { google: { available: false } },
 };
 
 export class MockAuthApi implements AuthApi {
@@ -30,8 +38,10 @@ export class MockAuthApi implements AuthApi {
 
   constructor(scenario = new URLSearchParams(window.location.search).get("scenario")) {
     const normalized = scenario?.toUpperCase();
-    this.current = normalized === "WEB_UNAUTHENTICATED"
-      ? ANONYMOUS
+    this.current = normalized === "WEB_GOOGLE_UNAVAILABLE"
+      ? GOOGLE_UNAVAILABLE
+      : normalized === "WEB_UNAUTHENTICATED"
+        ? ANONYMOUS
       : normalized === "WEB_CUSTOMER"
         || normalized === "SERVICE_CATALOG_CLEANING_IN_TEST_CUSTOMER"
         ? CUSTOMER
@@ -46,8 +56,11 @@ export class MockAuthApi implements AuthApi {
     this.current = ANONYMOUS;
   }
 
-  googleLoginUrl(): string {
-    return "/admin?preview=true&scenario=WEB_ADMIN";
+  googleLoginUrl(returnTo = "/"): string {
+    const target = new URL(returnTo, window.location.origin);
+    target.searchParams.set("preview", "true");
+    target.searchParams.set("scenario", "WEB_CUSTOMER");
+    return `${target.pathname}${target.search}`;
   }
 
   googleAdminLoginUrl(): string {

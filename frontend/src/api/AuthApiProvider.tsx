@@ -15,7 +15,8 @@ interface AuthenticationContextValue {
   current: CurrentAuthentication;
   status: AuthenticationStatus;
   isAdmin: boolean;
-  googleLoginUrl: string;
+  googleAvailable: boolean;
+  googleLoginUrl(returnTo?: string): string;
   googleAdminLoginUrl: string;
   logout(): Promise<void>;
   reload(): Promise<void>;
@@ -27,6 +28,7 @@ const ANONYMOUS: CurrentAuthentication = {
   displayName: null,
   provider: null,
   roles: [],
+  loginProviders: { google: { available: false } },
 };
 
 const AuthenticationContext = createContext<AuthenticationContextValue | null>(null);
@@ -58,7 +60,8 @@ export function AuthApiProvider({ api, children }: AuthApiProviderProps) {
     current,
     status,
     isAdmin: current.roles.includes("ADMIN"),
-    googleLoginUrl: api.googleLoginUrl(),
+    googleAvailable: current.loginProviders.google.available,
+    googleLoginUrl: (returnTo?: string) => api.googleLoginUrl(returnTo),
     googleAdminLoginUrl: api.googleAdminLoginUrl(),
     logout: async () => {
       setStatus("LOADING");

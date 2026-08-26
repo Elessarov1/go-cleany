@@ -34,6 +34,9 @@
     "adminTitle": "Admin sign-in",
     "adminText": "Continue with Google. Access is available only to an account with the administrator role.",
     "continueWithGoogle": "Continue with Google",
+    "customerTitle": "Sign in to continue",
+    "customerText": "Sign in with Google to create and manage your orders and bookings.",
+    "googleUnavailable": "Google sign-in is temporarily unavailable. Please try again later.",
     "loadError": "We could not verify the current session. Please try again."
   },
   "create": {
@@ -714,6 +717,7 @@
       "ADMIN_RENT_CALENDAR": "admin: calendar",
       "ADMIN_RENT_BOOKING": "admin: booking",
       "WEB_UNAUTHENTICATED": "web: signed out",
+      "WEB_GOOGLE_UNAVAILABLE": "web: Google unavailable",
       "WEB_CUSTOMER": "web: customer",
       "WEB_ADMIN": "web: administrator"
     }

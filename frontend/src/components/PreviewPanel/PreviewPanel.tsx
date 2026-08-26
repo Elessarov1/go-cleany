@@ -35,6 +35,7 @@ type PreviewScenario = CleaningOrderStatus
   | "ADMIN_RENT_CALENDAR"
   | "ADMIN_RENT_BOOKING"
   | "WEB_UNAUTHENTICATED"
+  | "WEB_GOOGLE_UNAVAILABLE"
   | "WEB_CUSTOMER"
   | "WEB_ADMIN";
 
@@ -71,6 +72,7 @@ const scenarios: PreviewScenario[] = [
   "ADMIN_RENT_CALENDAR",
   "ADMIN_RENT_BOOKING",
   "WEB_UNAUTHENTICATED",
+  "WEB_GOOGLE_UNAVAILABLE",
   "WEB_CUSTOMER",
   "WEB_ADMIN",
 ];
@@ -147,6 +149,7 @@ export function PreviewPanel() {
       ADMIN_RENT_CALENDAR: "/admin/rent/properties/201/calendar?preview=true&scenario=admin_rent_calendar",
       ADMIN_RENT_BOOKING: "/admin/rent/bookings/501?preview=true&scenario=admin_rent_booking",
       WEB_UNAUTHENTICATED: "/admin?preview=true&scenario=web_unauthenticated",
+      WEB_GOOGLE_UNAVAILABLE: "/?preview=true&scenario=web_google_unavailable",
       WEB_CUSTOMER: "/admin?preview=true&scenario=web_customer",
       WEB_ADMIN: "/admin?preview=true&scenario=web_admin",
     };

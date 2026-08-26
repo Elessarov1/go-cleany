@@ -87,7 +87,7 @@ where customer_id = <CUSTOMER_ID>
 
 Выход выполняется через `POST /api/v1/auth/logout`, инвалидирует JDBC session и удаляет session/CSRF
 cookies. Текущая сессия доступна через `GET /api/v1/auth/me`; DTO содержит только внутренний customer,
-display name, provider и platform roles.
+display name, provider, platform roles и признак доступности login provider без его credentials.
 
 ## Отложенное связывание аккаунтов
 
@@ -95,3 +95,29 @@ display name, provider и platform roles.
 считается доказательством владения. Проверенное связывание нескольких external identities с одним
 `CustomerAccount` — отдельный следующий этап; текущая модель `CustomerExternalIdentity →
 CustomerAccount` сохраняет такую возможность.
+
+## Активация постоянного домена и Google Login
+
+До покупки домена оставляйте `GOOGLE_AUTH_ENABLED=false`: backend запускается без Google credentials,
+`GET /api/v1/auth/me` сообщает `loginProviders.google.available=false`, а frontend не показывает
+неработающую кнопку входа. Значение `APP_HOST` остаётся единственной настройкой публичного hostname;
+маршруты `/api/**`, `/oauth2/**` и `/login/oauth2/**` уже направляются nginx в backend до SPA fallback.
+
+После покупки домена выполните этот чек-лист:
+
+1. Создайте DNS A-запись домена на публичный IP VPS и дождитесь её разрешения.
+2. Замените `APP_HOST` в deployment/GitHub Environment на новый hostname без протокола и пути.
+3. Выполните деплой и убедитесь, что Caddy получил корректный HTTPS-сертификат.
+4. В Google Cloud Console создайте OAuth 2.0 Client ID типа **Web application**.
+5. Добавьте authorized origin `https://<final-domain>`.
+6. Добавьте redirect URI `https://<final-domain>/login/oauth2/code/google`.
+7. Запишите `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_GOOGLE_EMAILS` в GitHub Environment
+   Secrets либо в защищённый `.env.production` на VPS.
+8. Установите `GOOGLE_AUTH_ENABLED=true` и выполните деплой. Скрипт остановится до сборки, если
+   обязательные Google-настройки отсутствуют.
+9. Проверьте маршрут `/`: вход через Google, callback и возврат на исходную страницу.
+10. Проверьте `GET /api/v1/auth/me`, затем logout и повторный анонимный ответ.
+11. Откройте `/admin` напрямую и проверьте вход allowlisted Google-аккаунтом с ролью `ADMIN`.
+
+Для этой активации не требуется изменение приложения или отдельный auth-сервис. Связывание Telegram
+и Google identities в этот чек-лист не входит и остаётся отдельным подтверждаемым пользовательским flow.

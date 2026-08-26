@@ -10,10 +10,18 @@ public record CurrentAuthenticationResponse(
         Long customerId,
         String displayName,
         ExternalIdentityProvider provider,
-        Set<PlatformRole> roles
+        Set<PlatformRole> roles,
+        LoginProvidersResponse loginProviders
 ) {
 
-    static CurrentAuthenticationResponse anonymous() {
-        return new CurrentAuthenticationResponse(false, null, null, null, Set.of());
+    static CurrentAuthenticationResponse anonymous(LoginProvidersResponse loginProviders) {
+        return new CurrentAuthenticationResponse(
+                false,
+                null,
+                null,
+                null,
+                Set.of(),
+                loginProviders
+        );
     }
 }
