@@ -478,9 +478,21 @@ export function CreateOrderPage() {
         </section>
 
         <section className="form-section">
-          <div className="section-heading">
+          <div className="section-heading section-heading--with-control">
             <span className="section-heading__number">{t("create.apartment.step")}</span>
             <div><h2 id="cleaning-apartment-heading">{t("create.apartment.title")}</h2></div>
+            <div className="section-heading__control">
+              <strong>{t("create.apartment.duplexTitle")}</strong>
+              <button
+                className={`switch${form.duplex ? " is-on" : ""}`}
+                type="button"
+                role="switch"
+                aria-checked={form.duplex}
+                onClick={() => updateForm("duplex", !form.duplex)}
+              >
+                <span />
+              </button>
+            </div>
           </div>
           <div className="choice-grid choice-grid--apartments" role="group" aria-labelledby="cleaning-apartment-heading">
             {configuration.apartmentTypes.map(({ type }) => (
@@ -496,22 +508,6 @@ export function CreateOrderPage() {
             ))}
           </div>
           {errors.apartmentType ? <p className="field-error">{errors.apartmentType}</p> : null}
-
-          <div className="toggle-row">
-            <div>
-              <strong>{t("create.apartment.duplexTitle")}</strong>
-              <p>{t("create.apartment.duplexHint")}</p>
-            </div>
-            <button
-              className={`switch${form.duplex ? " is-on" : ""}`}
-              type="button"
-              role="switch"
-              aria-checked={form.duplex}
-              onClick={() => updateForm("duplex", !form.duplex)}
-            >
-              <span />
-            </button>
-          </div>
         </section>
 
         <section className="form-section">
@@ -578,7 +574,7 @@ export function CreateOrderPage() {
                 aria-invalid={Boolean(errors.requestedDate)}
                 aria-describedby={`requested-date-hint${errors.requestedDate ? " requested-date-error" : ""}`}
               />
-              <small id="requested-date-hint">{t("create.details.dateHint")}</small>
+              <small className="field__helper--compact" id="requested-date-hint">{t("create.details.dateHint")}</small>
               {errors.requestedDate ? <p className="field-error" id="requested-date-error">{errors.requestedDate}</p> : null}
             </div>
 
@@ -610,7 +606,7 @@ export function CreateOrderPage() {
                 aria-describedby={`phone-hint${errors.phone ? " phone-error" : ""}`}
                 aria-invalid={Boolean(errors.phone)}
               />
-              <small id="phone-hint">{t("create.details.phoneHint")}</small>
+              <small className="field__helper--compact" id="phone-hint">{t("create.details.phoneHint")}</small>
               {errors.phone ? <p className="field-error" id="phone-error">{errors.phone}</p> : null}
             </div>
 
@@ -620,14 +616,16 @@ export function CreateOrderPage() {
               </label>
               <textarea
                 id="comment"
-                rows={3}
+                rows={1}
                 placeholder={t("create.details.commentPlaceholder")}
                 value={form.comment}
                 onChange={(event) => updateForm("comment", event.target.value)}
               />
             </div>
+          </div>
 
-            {!rentalPromoCode ? <div className="field field--referral">
+          {!rentalPromoCode ? <div className="cleaning-referral">
+            <div className="field field--referral">
               <label htmlFor="referral-code">
                 {t("create.details.referralCode")} <span>{t("common.optional")}</span>
               </label>
@@ -643,8 +641,8 @@ export function CreateOrderPage() {
               />
               <small id="referral-code-hint">{t("create.details.referralCodeHint")}</small>
               {errors.referralCode ? <p className="field-error" id="referral-code-error">{errors.referralCode}</p> : null}
-            </div> : null}
-          </div>
+            </div>
+          </div> : null}
         </section>
 
         <section className="price-summary">

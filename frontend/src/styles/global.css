@@ -496,6 +496,36 @@ h3 {
   transform: translateX(20px);
 }
 
+.section-heading--with-control { align-items: center; }
+
+.section-heading__control {
+  display: flex;
+  margin-left: auto;
+  align-items: center;
+  gap: 9px;
+}
+
+.section-heading__control strong {
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.section-heading__control .switch {
+  flex-basis: 42px;
+  width: 42px;
+  height: 26px;
+}
+
+.section-heading__control .switch span {
+  width: 20px;
+  height: 20px;
+}
+
+.section-heading__control .switch.is-on span {
+  transform: translateX(16px);
+}
+
 .cleaning-options {
   display: grid;
   gap: 10px;
@@ -653,6 +683,12 @@ h3 {
 
 .form-grid .field + .field {
   margin-top: 0;
+}
+
+.cleaning-referral {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-line);
 }
 
 .field > small {
@@ -3422,8 +3458,7 @@ h3 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-areas:
       "date address"
-      "phone comment"
-      "referral comment";
+      "phone comment";
     align-items: start;
     gap: 18px;
   }
@@ -3432,8 +3467,22 @@ h3 {
   .service-shell[data-platform="web"] .form-grid--cleaning-details .field--address { grid-area: address; }
   .service-shell[data-platform="web"] .form-grid--cleaning-details .field--phone { grid-area: phone; }
   .service-shell[data-platform="web"] .form-grid--cleaning-details .field--comment { grid-area: comment; }
-  .service-shell[data-platform="web"] .form-grid--cleaning-details .field--referral { grid-area: referral; }
-  .service-shell[data-platform="web"] .form-grid--cleaning-details .field--comment textarea { min-height: 138px; }
+  .service-shell[data-platform="web"] .form-grid--cleaning-details .field--comment textarea {
+    height: 48px;
+    min-height: 48px;
+  }
+
+  .service-shell[data-platform="web"] .form-grid--cleaning-details .field__helper--compact {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .service-shell[data-platform="web"] .cleaning-referral .field {
+    max-width: calc(50% - 9px);
+  }
 
   .service-shell[data-platform="web"] .admin-service-card small,
   .service-shell[data-platform="web"] .admin-rental-property-card__body small { font-size: 11px; }
@@ -3444,6 +3493,19 @@ h3 {
 }
 
 @media (min-width: 1024px) {
+  .service-shell[data-platform="web"] .page--create .section-heading--with-control {
+    min-height: 52px;
+    align-items: flex-start;
+  }
+
+  .service-shell[data-platform="web"] .page--create .choice-grid--apartments {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .service-shell[data-platform="web"] .page--create .choice-card--compact {
+    min-height: 74px;
+  }
+
   .service-shell[data-platform="web"] .rental-property-list {
     grid-template-columns: minmax(0, 1fr);
     gap: 20px;
@@ -3584,4 +3646,10 @@ h3 {
   .service-shell[data-platform="web"] .rental-quote-card__discount { font-size: 13px; }
   .service-shell[data-platform="web"] .rental-quote-card__total { font-size: 18px !important; }
   .service-shell[data-platform="web"] .rental-quote-card__note { font-size: 11px; }
+}
+
+@media (max-width: 1023px) {
+  .section-heading--with-control { flex-wrap: wrap; }
+  .section-heading--with-control > div:not(.section-heading__control) { min-width: 0; flex: 1; }
+  .section-heading--with-control .section-heading__control { margin-left: auto; }
 }
