@@ -82,6 +82,7 @@ jobs:
 
       - name: Validate staging variables
         env:
+          APP_HOST: ${{ vars.APP_HOST }}
           CLEANER_TELEGRAM_IDS: ${{ vars.CLEANER_TELEGRAM_IDS }}
           ADMIN_TELEGRAM_IDS: ${{ vars.ADMIN_TELEGRAM_IDS }}
           GOOGLE_AUTH_ENABLED: ${{ vars.GOOGLE_AUTH_ENABLED || 'false' }}
@@ -100,6 +101,11 @@ jobs:
           DATA_CLEANUP_BATCH_SIZE: ${{ vars.DATA_CLEANUP_BATCH_SIZE || '100' }}
           DATA_CLEANUP_MAX_BATCHES_PER_RUN: ${{ vars.DATA_CLEANUP_MAX_BATCHES_PER_RUN || '10' }}
         run: |
+          : "${APP_HOST:?Missing APP_HOST staging variable}"
+          [[ "$APP_HOST" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]] || {
+            echo "APP_HOST must contain only a valid hostname, without protocol or path." >&2
+            exit 1
+          }
           : "${CLEANER_TELEGRAM_IDS:?Missing CLEANER_TELEGRAM_IDS staging variable}"
           : "${ADMIN_TELEGRAM_IDS:?Missing ADMIN_TELEGRAM_IDS staging variable}"
           [[ "$GOOGLE_AUTH_ENABLED" == "true" || "$GOOGLE_AUTH_ENABLED" == "false" ]] || {
@@ -155,6 +161,7 @@ jobs:
           SSH_HOST: ${{ vars.STAGING_SSH_HOST }}
           SSH_PORT: ${{ vars.STAGING_SSH_PORT }}
           SSH_USER: ${{ vars.STAGING_SSH_USER }}
+          APP_HOST: ${{ vars.APP_HOST }}
           CLEANER_TELEGRAM_IDS: ${{ vars.CLEANER_TELEGRAM_IDS }}
           ADMIN_TELEGRAM_IDS: ${{ vars.ADMIN_TELEGRAM_IDS }}
           GOOGLE_AUTH_ENABLED: ${{ vars.GOOGLE_AUTH_ENABLED || 'false' }}
@@ -189,6 +196,7 @@ jobs:
             -p "$SSH_PORT" \
             "$SSH_USER@$SSH_HOST" \
             "cd /opt/go-cleany && \
+            APP_HOST='$APP_HOST' \
             CLEANER_TELEGRAM_IDS='$CLEANER_TELEGRAM_IDS' \
             ADMIN_TELEGRAM_IDS='$ADMIN_TELEGRAM_IDS' \
             GOOGLE_AUTH_ENABLED='$GOOGLE_AUTH_ENABLED' \

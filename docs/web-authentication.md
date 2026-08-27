@@ -20,15 +20,15 @@ Mini App продолжает передавать явный `Authorization: tm
 
 ## Google OAuth Console
 
-В Google Cloud Console создайте OAuth 2.0 Client ID типа **Web application**. Для публичного хоста
-`https://example.com` укажите:
+В Google Cloud Console создайте OAuth 2.0 Client ID типа **Web application**. Для текущего
+канонического хоста `https://loco-place.com` укажите:
 
 ```text
 Authorized JavaScript origin:
-https://example.com
+https://loco-place.com
 
 Authorized redirect URI:
-https://example.com/login/oauth2/code/google
+https://loco-place.com/login/oauth2/code/google
 ```
 
 Для staging добавьте его HTTPS-host и такой же callback отдельно. Значения должны в точности
@@ -106,11 +106,12 @@ CustomerAccount` сохраняет такую возможность.
 После покупки домена выполните этот чек-лист:
 
 1. Создайте DNS A-запись домена на публичный IP VPS и дождитесь её разрешения.
-2. Замените `APP_HOST` в deployment/GitHub Environment на новый hostname без протокола и пути.
+2. Установите `APP_HOST=loco-place.com` в GitHub Environment `staging`; deployment workflow
+   безопасно синхронизирует это значение с защищённым `.env.production` на VPS.
 3. Выполните деплой и убедитесь, что Caddy получил корректный HTTPS-сертификат.
 4. В Google Cloud Console создайте OAuth 2.0 Client ID типа **Web application**.
-5. Добавьте authorized origin `https://<final-domain>`.
-6. Добавьте redirect URI `https://<final-domain>/login/oauth2/code/google`.
+5. Добавьте authorized origin `https://loco-place.com`.
+6. Добавьте redirect URI `https://loco-place.com/login/oauth2/code/google`.
 7. Запишите `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_GOOGLE_EMAILS` в GitHub Environment
    Secrets либо в защищённый `.env.production` на VPS.
 8. Установите `GOOGLE_AUTH_ENABLED=true` и выполните деплой. Скрипт остановится до сборки, если

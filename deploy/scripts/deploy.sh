@@ -11,6 +11,12 @@ require_command docker
 require_command curl
 require_command flock
 require_command git
+
+requested_app_host=${APP_HOST:-}
+if [[ -n ${requested_app_host} ]]; then
+  "${script_dir}/configure-app-host.sh" "${requested_app_host}"
+fi
+
 require_production_env "${env_file}"
 compose_command "${root}" "${env_file}"
 

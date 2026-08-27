@@ -29,8 +29,10 @@ go-cleany-203-0-113-10.nip.io
 публичный сертификат. Это подходит для staging, но production лучше перевести на собственный домен:
 сторонний wildcard DNS не находится под вашим контролем.
 
-После покупки домена создайте A-запись на IP VPS, замените `APP_HOST` в `.env.production`, выполните
-`./deploy/scripts/deploy.sh` и обновите URL в BotFather.
+Текущий канонический домен — `loco-place.com`. Его A-запись указывает на IP VPS. Для ручного
+деплоя замените `APP_HOST` в `.env.production`, выполните `./deploy/scripts/deploy.sh` и обновите URL
+в BotFather. Автоматический staging workflow получает `APP_HOST=loco-place.com` из GitHub
+Environment, предварительно сохраняет защищённую копию `.env.production` и синхронизирует hostname.
 
 ## 3. Получить код на сервере
 

@@ -152,6 +152,7 @@ Repository -> Settings -> Environments -> staging
 | `STAGING_SSH_HOST` | `203.0.113.10` или hostname VPS |
 | `STAGING_SSH_PORT` | `22` |
 | `STAGING_SSH_USER` | пользователь-владелец `/opt/go-cleany` |
+| `APP_HOST` | `loco-place.com` |
 | `CLEANER_TELEGRAM_IDS` | `123456789,987654321` |
 | `ADMIN_TELEGRAM_IDS` | `123456789,555555555` |
 | `GOOGLE_AUTH_ENABLED` | `true` |
@@ -170,12 +171,13 @@ Repository -> Settings -> Environments -> staging
 
 Google provider values и email allowlist хранятся именно в Environment **Secrets**, не Variables.
 При `GOOGLE_AUTH_ENABLED=true` workflow проверяет их наличие и передаёт только в runtime backend;
-frontend build их не получает. Для staging-host заранее добавьте callback
-`https://<STAGING_HOST>/login/oauth2/code/google` в Google OAuth Console.
+frontend build их не получает. Для текущего canonical host добавьте callback
+`https://loco-place.com/login/oauth2/code/google` в Google OAuth Console.
 
-Эти два значения передаются `release.sh` как process environment и имеют приоритет над одноимёнными
-fallback-значениями из `.env.production` при Docker Compose interpolation. Файл `.env.production` на
-VPS не переписывается.
+Google-настройки передаются `release.sh` как process environment и имеют приоритет над одноимёнными
+fallback-значениями из `.env.production` при Docker Compose interpolation. `APP_HOST` синхронизируется
+отдельным deployment-скриптом: перед атомарной заменой он создаёт копию `.env.production` с режимом
+`600`; остальные значения файла не меняются.
 
 Такой подход позволяет менять демо-роли непосредственно в GitHub и затем передеплоить staging.
 
@@ -200,7 +202,7 @@ Repository -> Settings -> Secrets and variables -> Actions -> Variables
 
 | Variable | Значение |
 | --- | --- |
-| `STAGING_URL` | публичный URL стенда |
+| `STAGING_URL` | `https://loco-place.com` |
 | `STAGING_DEPLOY_ENABLED` | `true` включает staging deploy job |
 
 `STAGING_DEPLOY_ENABLED` остаётся repository variable, поскольку условие job вычисляется до загрузки
@@ -214,9 +216,9 @@ staging environment.
 2. ждёт успешные `backend` и `frontend` jobs;
 3. загружает `staging` environment;
 4. валидирует SSH credentials;
-5. валидирует Telegram role lists, Google auth secrets при включённом OIDC, session timeout, rental
-   policy и экономику checkout-уборки;
-6. подключается к VPS через проверенный host key;
+5. валидирует `APP_HOST`, Telegram role lists, Google auth secrets при включённом OIDC, session
+   timeout, rental policy и экономику checkout-уборки;
+6. подключается к VPS через проверенный host key и безопасно синхронизирует `APP_HOST`;
 7. передаёт списки ID, Google OIDC secrets, session timeout и `RENTAL_*` в process environment
    remote command;
 8. вызывает `./deploy/scripts/release.sh "$GITHUB_SHA"`.
