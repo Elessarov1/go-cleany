@@ -72,7 +72,7 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
     @Test
     void enabledInTestAndDisabledFollowExactCustomerSemantics() {
         CurrentCustomer ordinary = customer(
-                ExternalIdentityProvider.WHATSAPP,
+                ExternalIdentityProvider.GOOGLE,
                 "905551111111"
         );
         CurrentCustomer admin = customer(
@@ -133,7 +133,7 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
         CurrentCustomer telegramAdmin = customer(ExternalIdentityProvider.TELEGRAM, "900001");
         customer(ExternalIdentityProvider.TELEGRAM, "900001");
         CurrentCustomer sameSubjectOtherProvider = customer(
-                ExternalIdentityProvider.WHATSAPP,
+                ExternalIdentityProvider.GOOGLE,
                 "900001"
         );
 

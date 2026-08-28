@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260903-01" author="loco-place">
+        <comment>Persist semantic customer notifications independently from delivery channels.</comment>
+        <createTable tableName="customer_notification">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_customer_notification" nullable="false"/>
+            </column>
+            <column name="customer_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="type" type="VARCHAR(64)"><constraints nullable="false"/></column>
+            <column name="target_path" type="VARCHAR(255)"/>
+            <column name="dedup_key" type="VARCHAR(255)"><constraints nullable="false"/></column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="read_at" type="TIMESTAMP WITH TIME ZONE"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="customer_notification"
+                                 baseColumnNames="customer_id"
+                                 constraintName="fk_customer_notification_customer"
+                                 referencedTableName="customer_account"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addUniqueConstraint tableName="customer_notification"
+                             columnNames="customer_id,dedup_key"
+                             constraintName="uk_customer_notification_dedup"/>
+        <createIndex tableName="customer_notification" indexName="idx_customer_notification_newest">
+            <column name="customer_id"/>
+            <column name="created_at" descending="true"/>
+            <column name="id" descending="true"/>
+        </createIndex>
+        <createIndex tableName="customer_notification" indexName="idx_customer_notification_unread">
+            <column name="customer_id"/>
+            <column name="read_at"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260903-02" author="loco-place">
+        <comment>Remove abandoned WhatsApp identity and media references, then restrict provider values.</comment>
+        <sql dbms="postgresql" splitStatements="false"><![CDATA[
+            do $$
+            begin
+                if exists (
+                    select 1
+                      from customer_external_identity identity
+                     where identity.provider = 'WHATSAPP'
+                       and (
+                           exists (select 1 from cleaning_order where communication_identity_id = identity.id)
+                           or exists (select 1 from rental_booking where communication_identity_id = identity.id)
+                       )
+                ) then
+                    raise exception 'Cannot remove a referenced abandoned WhatsApp identity';
+                end if;
+            end
+            $$;
+        ]]></sql>
+        <delete tableName="customer_external_identity">
+            <where>provider = 'WHATSAPP'</where>
+        </delete>
+        <delete tableName="media_provider_reference">
+            <where>provider = 'WHATSAPP'</where>
+        </delete>
+        <sql dbms="postgresql"><![CDATA[
+            alter table media_provider_reference
+                drop constraint ck_media_provider_reference_provider;
+            alter table media_provider_reference
+                add constraint ck_media_provider_reference_provider check (provider = 'TELEGRAM');
+        ]]></sql>
+    </changeSet>
+</databaseChangeLog>

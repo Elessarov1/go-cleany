@@ -56,6 +56,7 @@ import com.cleany.customer.AccountLinkTokenConsumedException;
 import com.cleany.customer.AccountLinkTokenExpiredException;
 import com.cleany.customer.AccountLinkTokenInvalidException;
 import com.cleany.customer.TelegramIdentityNotLinkedException;
+import com.cleany.notification.CustomerNotificationNotFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -375,6 +376,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(TelegramIdentityNotLinkedException.class)
     ResponseEntity<ApiError> handleTelegramIdentityNotLinked(TelegramIdentityNotLinkedException exception) {
         return response(HttpStatus.CONFLICT, "telegram_identity_not_linked", exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(CustomerNotificationNotFoundException.class)
+    ResponseEntity<ApiError> handleCustomerNotificationNotFound(
+            CustomerNotificationNotFoundException exception
+    ) {
+        return response(HttpStatus.NOT_FOUND, "customer_notification_not_found", exception.getMessage(), Map.of());
     }
 
     @ExceptionHandler(PlatformServiceNotAvailableException.class)

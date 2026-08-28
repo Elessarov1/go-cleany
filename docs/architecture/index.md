@@ -18,7 +18,7 @@ Read this for:
 
 - long-term product vision;
 - Loco Cleaning as the public cleaning vertical;
-- Telegram → WhatsApp → Flutter direction;
+- standalone web, Telegram and future native-client direction;
 - future multi-service platform;
 - current Loco Cleaning and Loco Rent vertical boundaries;
 - platform vs vertical boundaries;
@@ -102,7 +102,7 @@ Examples:
 
 ```text
 media migration
-WhatsApp integration
+notification channel integration
 API namespace migration
 mobile authentication
 specific feature implementation

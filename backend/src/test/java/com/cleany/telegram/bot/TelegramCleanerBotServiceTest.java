@@ -132,13 +132,13 @@ class TelegramCleanerBotServiceTest {
     }
 
     @Test
-    void acceptCallback_whatsappCustomer_phoneVisibleAndTelegramLinkOmitted() {
-        CustomerExternalIdentity whatsappIdentity = Mockito.mock(CustomerExternalIdentity.class);
-        Mockito.when(whatsappIdentity.getProvider()).thenReturn(ExternalIdentityProvider.WHATSAPP);
+    void acceptCallback_googleCustomer_phoneVisibleAndTelegramLinkOmitted() {
+        CustomerExternalIdentity googleIdentity = Mockito.mock(CustomerExternalIdentity.class);
+        Mockito.when(googleIdentity.getProvider()).thenReturn(ExternalIdentityProvider.GOOGLE);
         Mockito.when(customerIdentityRepository.findByIdAndCustomerId(
                 COMMUNICATION_ID,
                 CUSTOMER_ACCOUNT_ID
-        )).thenReturn(Optional.of(whatsappIdentity));
+        )).thenReturn(Optional.of(googleIdentity));
         CleaningOrder order = order(43L, CLEANER_ID);
         Mockito.when(order.getCustomerName()).thenReturn("Alex");
         Mockito.when(order.getPhone()).thenReturn("+905551234567");
@@ -533,6 +533,7 @@ class TelegramCleanerBotServiceTest {
                                 new PhotoSize("small-file", "small-unique", 90, 90, 1200L),
                                 new PhotoSize("large-file", "large-unique", 1280, 960, 250000L)
                         ),
+                        null,
                         null
                 )
         );
@@ -549,6 +550,7 @@ class TelegramCleanerBotServiceTest {
                         text,
                         null,
                         List.of(),
+                        null,
                         null
                 )
         );
@@ -571,7 +573,8 @@ class TelegramCleanerBotServiceTest {
                         null,
                         null,
                         List.of(),
-                        new Contact(phone, userId)
+                        new Contact(phone, userId),
+                        null
                 )
         );
     }

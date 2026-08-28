@@ -14,65 +14,80 @@ import com.cleany.customer.ExternalIdentityProvider;
 class CustomerNotificationDispatcherTest {
 
     @Test
-    void communicationIdentity_selectsExactlyOneMatchingProvider() {
-        CustomerExternalIdentityRepository identityRepository =
-                Mockito.mock(CustomerExternalIdentityRepository.class);
-        CustomerNotificationSender telegramSender = Mockito.mock(CustomerNotificationSender.class);
-        CustomerNotificationSender whatsappSender = Mockito.mock(CustomerNotificationSender.class);
-        CustomerExternalIdentity identity = Mockito.mock(CustomerExternalIdentity.class);
-        Mockito.when(telegramSender.provider()).thenReturn(ExternalIdentityProvider.TELEGRAM);
-        Mockito.when(whatsappSender.provider()).thenReturn(ExternalIdentityProvider.WHATSAPP);
-        Mockito.when(identityRepository.findByIdAndCustomerId(88L, 77L))
-                .thenReturn(Optional.of(identity));
-        Mockito.when(identity.getCustomerId()).thenReturn(77L);
-        Mockito.when(identity.getId()).thenReturn(88L);
-        Mockito.when(identity.getProvider()).thenReturn(ExternalIdentityProvider.WHATSAPP);
-        Mockito.when(identity.getExternalSubject()).thenReturn("905551234567");
-        Mockito.when(identity.getLanguageCode()).thenReturn("ru");
-        var dispatcher = new CustomerNotificationDispatcher(
-                identityRepository,
-                List.of(telegramSender, whatsappSender)
-        );
+    void telegramWriteAccessAllowed_recordsAndDeliversOnce() {
+        var repository = Mockito.mock(CustomerExternalIdentityRepository.class);
+        var recorder = Mockito.mock(CustomerNotificationRecorder.class);
+        var sender = Mockito.mock(CustomerNotificationSender.class);
+        var identity = telegramIdentity(true);
         var notification = new ReferralUnlockedCustomerNotification("ALEX7K2");
+        Mockito.when(recorder.record(77L, notification)).thenReturn(true);
+        Mockito.when(sender.provider()).thenReturn(ExternalIdentityProvider.TELEGRAM);
+        Mockito.when(repository.findByIdAndCustomerId(88L, 77L)).thenReturn(Optional.of(identity));
+        Mockito.when(repository.findAllByCustomerIdOrderByProvider(77L)).thenReturn(List.of(identity));
 
-        boolean delivered = dispatcher.send(77L, 88L, notification);
+        boolean delivered = new CustomerNotificationDispatcher(repository, recorder, List.of(sender))
+                .send(77L, 88L, notification);
 
-        Assertions.assertAll(
-                () -> Assertions.assertTrue(delivered),
-                () -> Mockito.verify(whatsappSender).send(
-                        new CommunicationTarget(
-                                77L,
-                                88L,
-                                ExternalIdentityProvider.WHATSAPP,
-                                "905551234567",
-                                "ru"
-                        ),
-                        notification
-                )
-        );
-        Mockito.verify(telegramSender, Mockito.never())
-                .send(Mockito.any(), Mockito.any());
+        Assertions.assertTrue(delivered);
+        Mockito.verify(sender).send(Mockito.any(CommunicationTarget.class), Mockito.eq(notification));
     }
 
     @Test
-    void providerWithoutSender_deliveryReportedAsUnavailable() {
-        CustomerExternalIdentityRepository identityRepository =
-                Mockito.mock(CustomerExternalIdentityRepository.class);
-        CustomerExternalIdentity identity = Mockito.mock(CustomerExternalIdentity.class);
-        Mockito.when(identityRepository.findByIdAndCustomerId(88L, 77L))
-                .thenReturn(Optional.of(identity));
-        Mockito.when(identity.getCustomerId()).thenReturn(77L);
-        Mockito.when(identity.getProvider()).thenReturn(ExternalIdentityProvider.WHATSAPP);
-        Mockito.when(identity.getExternalSubject()).thenReturn("905551234567");
-        var dispatcher = new CustomerNotificationDispatcher(identityRepository, List.of());
+    void googleOnlyAndTelegramWithoutWriteAccess_remainPersistedWithoutExternalDelivery() {
+        var repository = Mockito.mock(CustomerExternalIdentityRepository.class);
+        var recorder = Mockito.mock(CustomerNotificationRecorder.class);
+        var sender = Mockito.mock(CustomerNotificationSender.class);
+        var google = Mockito.mock(CustomerExternalIdentity.class);
+        var telegram = telegramIdentity(false);
+        var notification = new ReferralUnlockedCustomerNotification("ALEX7K2");
+        Mockito.when(recorder.record(77L, notification)).thenReturn(true);
+        Mockito.when(sender.provider()).thenReturn(ExternalIdentityProvider.TELEGRAM);
+        Mockito.when(repository.findByIdAndCustomerId(88L, 77L)).thenReturn(Optional.of(google));
+        Mockito.when(repository.findAllByCustomerIdOrderByProvider(77L)).thenReturn(List.of(google, telegram));
+        Mockito.when(google.getProvider()).thenReturn(ExternalIdentityProvider.GOOGLE);
 
-        boolean delivered = dispatcher.send(
-                77L,
-                88L,
-                new ReferralUnlockedCustomerNotification("ALEX7K2")
-        );
+        boolean delivered = new CustomerNotificationDispatcher(repository, recorder, List.of(sender))
+                .send(77L, 88L, notification);
 
         Assertions.assertFalse(delivered);
+        Mockito.verify(sender, Mockito.never()).send(Mockito.any(), Mockito.any());
+    }
+
+    @Test
+    void senderFailure_doesNotUndoPersistentNotification() {
+        var repository = Mockito.mock(CustomerExternalIdentityRepository.class);
+        var recorder = Mockito.mock(CustomerNotificationRecorder.class);
+        var sender = Mockito.mock(CustomerNotificationSender.class);
+        var identity = telegramIdentity(true);
+        var notification = new ReferralUnlockedCustomerNotification("ALEX7K2");
+        Mockito.when(recorder.record(77L, notification)).thenReturn(true);
+        Mockito.when(sender.provider()).thenReturn(ExternalIdentityProvider.TELEGRAM);
+        Mockito.when(repository.findAllByCustomerIdOrderByProvider(77L)).thenReturn(List.of(identity));
+        Mockito.doThrow(new IllegalStateException("Telegram unavailable"))
+                .when(sender).send(Mockito.any(), Mockito.eq(notification));
+
+        boolean delivered = new CustomerNotificationDispatcher(repository, recorder, List.of(sender))
+                .send(77L, 88L, notification);
+
+        Assertions.assertFalse(delivered);
+        Mockito.verify(recorder).record(77L, notification);
+    }
+
+    @Test
+    void duplicateNotification_isCompleteNoOp() {
+        var repository = Mockito.mock(CustomerExternalIdentityRepository.class);
+        var recorder = Mockito.mock(CustomerNotificationRecorder.class);
+        var sender = Mockito.mock(CustomerNotificationSender.class);
+        var notification = new ReferralUnlockedCustomerNotification("ALEX7K2");
+        Mockito.when(recorder.record(77L, notification)).thenReturn(false);
+        Mockito.when(sender.provider()).thenReturn(ExternalIdentityProvider.TELEGRAM);
+
+        boolean delivered = new CustomerNotificationDispatcher(repository, recorder, List.of(sender))
+                .send(77L, 88L, notification);
+
+        Assertions.assertFalse(delivered);
+        Mockito.verifyNoInteractions(repository);
+        Mockito.verify(sender, Mockito.never()).send(Mockito.any(), Mockito.any());
     }
 
     @Test
@@ -86,8 +101,20 @@ class CustomerNotificationDispatcherTest {
                 IllegalStateException.class,
                 () -> new CustomerNotificationDispatcher(
                         Mockito.mock(CustomerExternalIdentityRepository.class),
+                        Mockito.mock(CustomerNotificationRecorder.class),
                         List.of(first, second)
                 )
         );
+    }
+
+    private static CustomerExternalIdentity telegramIdentity(boolean writeAccessAllowed) {
+        var identity = Mockito.mock(CustomerExternalIdentity.class);
+        Mockito.when(identity.getCustomerId()).thenReturn(77L);
+        Mockito.when(identity.getId()).thenReturn(88L);
+        Mockito.when(identity.getProvider()).thenReturn(ExternalIdentityProvider.TELEGRAM);
+        Mockito.when(identity.getExternalSubject()).thenReturn("900001");
+        Mockito.when(identity.getLanguageCode()).thenReturn("ru");
+        Mockito.when(identity.isWriteAccessAllowed()).thenReturn(writeAccessAllowed);
+        return identity;
     }
 }

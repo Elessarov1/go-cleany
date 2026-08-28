@@ -51,8 +51,8 @@ class MediaAssetIntegrationTest extends BaseIntegrationTest {
         );
         referenceRepository.saveAndFlush(new MediaProviderReference(
                 asset,
-                MediaProvider.WHATSAPP,
-                "whatsapp-media-id",
+                MediaProvider.TELEGRAM,
+                "telegram-file-id-2",
                 null,
                 CREATED_AT.plusSeconds(1)
         ));
@@ -74,7 +74,7 @@ class MediaAssetIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertEquals(
                         asset.getId(),
                         referenceRepository
-                                .findByProviderAndExternalId(MediaProvider.WHATSAPP, "whatsapp-media-id")
+                                .findByProviderAndExternalId(MediaProvider.TELEGRAM, "telegram-file-id-2")
                                 .orElseThrow()
                                 .getMediaAssetId()
                 )

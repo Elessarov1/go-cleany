@@ -99,6 +99,7 @@ class TelegramCustomerNotificationMessageFactoryTest {
     @Test
     void rentalCleaningBenefitMessage_containsCodeAndCheckoutWindow() {
         var notification = new RentalCleaningBenefitCustomerNotification(
+                999L,
                 42L,
                 "RC23456789",
                 LocalDate.of(2026, 9, 12),

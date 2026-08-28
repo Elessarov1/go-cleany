@@ -320,6 +320,18 @@ Avoid unrelated refactoring.
 
 Use Lombok in new Java code when it removes mechanical boilerplate such as dependency constructors, getters, builders, or simple value objects. Keep domain validation and other meaningful logic explicit.
 
+For empty Java collections, use the explicit `Collections.empty*()` methods:
+
+```java
+Collections.emptyList()
+Collections.emptySet()
+Collections.emptyMap()
+```
+
+Do not use `List.of()`, `Set.of()`, `Map.of()` or similar zero-argument factories to declare empty
+collections. Whenever a Java file is changed, fix violations of this rule in the touched code as part
+of the same change. Do not perform unrelated repository-wide cleanup solely for this rule.
+
 ### Production constructors are not test compatibility APIs
 
 Production classes and records must not gain shortened, overloaded, defaulting, or compatibility constructors solely to keep old tests compiling after production dependencies or invariants change.

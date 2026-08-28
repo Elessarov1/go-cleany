@@ -46,17 +46,6 @@ public record TelegramUpdate(
             photo = photo == null ? List.of() : List.copyOf(photo);
         }
 
-        public Message(
-                long messageId,
-                TelegramUser from,
-                Chat chat,
-                String text,
-                String caption,
-                List<PhotoSize> photo,
-                Contact contact
-        ) {
-            this(messageId, from, chat, text, caption, photo, contact, null);
-        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

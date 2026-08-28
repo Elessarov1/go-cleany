@@ -28,6 +28,7 @@ public class RentalCleaningBenefitNotificationQueryService {
                         "Source rental booking not found: " + benefit.getRentalBookingId()
                 ));
         return new RentalCleaningBenefitCustomerNotification(
+                benefit.getId(),
                 booking.getId(),
                 benefit.getCode(),
                 booking.getCheckOutDate().minusDays(properties.checkoutWindowDays()),

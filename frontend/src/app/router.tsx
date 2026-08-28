@@ -23,6 +23,7 @@ import { AdminAccessGate } from "../components/AdminAccessGate/AdminAccessGate";
 import { CustomerAccessGate } from "../components/CustomerAccessGate/CustomerAccessGate";
 import { AccountPage } from "../pages/AccountPage/AccountPage";
 import { TelegramAccountLinkPage } from "../pages/TelegramAccountLinkPage/TelegramAccountLinkPage";
+import { NotificationsPage } from "../pages/NotificationsPage/NotificationsPage";
 
 function LegacyCleaningOrderRedirect({ created = false }: { created?: boolean }) {
   const { id } = useParams();
@@ -50,6 +51,7 @@ export const router = createBrowserRouter([
           { path: "/rent/bookings/:id", element: <RentalBookingDetailsPage /> },
           { path: "/account", element: <AccountPage /> },
           { path: "/account/link/telegram", element: <TelegramAccountLinkPage /> },
+          { path: "/notifications", element: <NotificationsPage /> },
           { path: "/orders", element: <Navigate replace to="/cleaning/orders" /> },
           { path: "/orders/:id", element: <LegacyCleaningOrderRedirect /> },
           { path: "/orders/:id/created", element: <LegacyCleaningOrderRedirect created /> },
