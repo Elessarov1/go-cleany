@@ -31,11 +31,11 @@ class TelegramRentalAdminNotificationSenderTest {
         sender.send(RentalBookingAdminEvent.Type.CREATED, notification());
 
         Mockito.verify(botClient).sendMessage(
-                Mockito.eq(1001L), Mockito.contains("loco-rent"),
+                Mockito.eq(1001L), Mockito.contains("loco-rental"),
                 Mockito.eq(TelegramBotClient.InlineKeyboard.empty())
         );
         Mockito.verify(botClient).sendMessage(
-                Mockito.eq(1003L), Mockito.contains("loco-rent"),
+                Mockito.eq(1003L), Mockito.contains("loco-rental"),
                 Mockito.eq(TelegramBotClient.InlineKeyboard.empty())
         );
         Mockito.verifyNoMoreInteractions(botClient);
