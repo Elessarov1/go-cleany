@@ -14,29 +14,29 @@
   flex: 0 0 auto;
 }
 
-/* Keep the full Loco Cleaning name visible in the narrow Telegram header. */
-.service-shell[data-platform="telegram"][data-service="cleaning"] .topbar {
-  min-height: 94px;
-  padding-block: 14px;
-}
-
-.service-shell[data-platform="telegram"][data-service="cleaning"] .brand__word {
-  min-width: 0;
-  overflow: visible;
-  text-overflow: clip;
-  white-space: normal;
-}
-
-.service-shell[data-platform="telegram"][data-service="cleaning"] .brand-name {
+/* All Loco service brands use the same two-line header lockup: loco / service. */
+.brand .brand-name--service {
   display: flex;
   flex-direction: column;
   line-height: 0.95;
 }
 
-.service-shell[data-platform="telegram"][data-service="cleaning"] .brand-name__prefix,
-.service-shell[data-platform="telegram"][data-service="cleaning"] .brand-name__suffix {
+.brand .brand-name--service .brand-name__prefix,
+.brand .brand-name--service .brand-name__suffix {
   display: block;
   white-space: nowrap;
+}
+
+.service-shell[data-platform="telegram"]:not([data-service="platform"]) .topbar {
+  min-height: 82px;
+  padding-block: 12px;
+}
+
+.service-shell[data-platform="telegram"]:not([data-service="platform"]) .brand__word {
+  min-width: 0;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .booking-form,
