@@ -1,4 +1,5 @@
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthentication } from "../../api/AuthApiProvider";
 import { usePlatform } from "../../platform/PlatformProvider";
@@ -28,11 +29,30 @@ function logoTarget(pathname: string): string {
 export function AppShell() {
   const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
   const platform = usePlatform();
   const authentication = useAuthentication();
   const hasAdminAccess = authentication.isAdmin;
   const standaloneWeb = platform.kind !== "TELEGRAM";
   const showAdminNavigation = !standaloneWeb && hasAdminAccess;
+
+  useEffect(() => {
+    if (platform.kind !== "TELEGRAM") {
+      return;
+    }
+
+    const startParameter = platform.getStartParameter();
+    if (!startParameter) {
+      return;
+    }
+
+    const accountLinkPath = `/account/link/telegram?token=${encodeURIComponent(startParameter)}`;
+    if (`${location.pathname}${location.search}` === accountLinkPath) {
+      return;
+    }
+
+    void navigate(accountLinkPath, { replace: true });
+  }, [location.pathname, location.search, navigate, platform]);
 
   const admin = location.pathname.startsWith("/admin");
   const rental = location.pathname.startsWith("/rent") || location.pathname.startsWith("/admin/rent");
