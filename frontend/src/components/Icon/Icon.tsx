@@ -13,6 +13,7 @@ export type IconName =
   | "home"
   | "info"
   | "location"
+  | "logout"
   | "moon"
   | "services"
   | "sparkles"
@@ -66,6 +67,12 @@ export function Icon({ name, size = 22, strokeWidth = 1.8 }: IconProps) {
         <>
           <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
           <circle cx="12" cy="10" r="2.5" />
+        </>
+      ) : null}
+      {name === "logout" ? (
+        <>
+          <path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5" />
+          <path d="m15 16 4-4-4-4M19 12H9" />
         </>
       ) : null}
       {name === "home" ? (

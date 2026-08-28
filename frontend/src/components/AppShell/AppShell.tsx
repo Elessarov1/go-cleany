@@ -105,7 +105,7 @@ export function AppShell() {
             ) : null}
             <div className="topbar__actions">
               {!admin && authentication.status === "READY" && authentication.current.authenticated ? <NotificationBell /> : null}
-              {!admin && !catalog && !customerServiceHome ? (
+              {!standaloneWeb && !admin ? (
                 <NavLink
                   className="topbar__global-link"
                   to="/"
@@ -134,7 +134,14 @@ export function AppShell() {
                       <Icon name="user" size={17} />
                       <span>{t("account.title")}</span>
                     </NavLink>
-                    <button className="topbar__auth-action" type="button" onClick={() => void authentication.logout()}>
+                    <button
+                      className="topbar__auth-action"
+                      type="button"
+                      title={t("auth.logout")}
+                      aria-label={t("auth.logout")}
+                      onClick={() => void authentication.logout()}
+                    >
+                      <Icon name="logout" size={17} />
                       <span>{t("auth.logout")}</span>
                     </button>
                   </>

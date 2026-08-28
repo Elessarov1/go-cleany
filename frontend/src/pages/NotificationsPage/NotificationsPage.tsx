@@ -66,7 +66,7 @@ export function NotificationsPage() {
   const notifications = page?.content ?? [];
   const hasUnread = notifications.some((notification) => !notification.readAt);
   return (
-    <div className="notifications-page">
+    <div className="page notifications-page">
       <header className="notifications-page__header">
         <div>
           <span className="eyebrow">Loco Place</span>

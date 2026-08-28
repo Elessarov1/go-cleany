@@ -984,6 +984,18 @@ h3 {
   .topbar { padding-inline: 14px; }
   .topbar__global-link { width: 38px; padding-inline: 9px; justify-content: center; }
   .topbar__global-link span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .service-shell[data-platform="web"][data-layout="customer"] .topbar__auth-action {
+    width: 38px;
+    padding-inline: 9px;
+    justify-content: center;
+  }
+  .service-shell[data-platform="web"][data-layout="customer"] .topbar__auth-action span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
   .brand__word { font-size: 19px; }
 }
 
@@ -3077,6 +3089,62 @@ h3 {
   display: none;
 }
 
+/* The standalone customer header keeps the same controls in the same order on every route. */
+.service-shell[data-platform="web"][data-layout="customer"] .topbar {
+  min-height: 0;
+}
+
+.service-shell[data-platform="web"][data-layout="customer"] .topbar__inner {
+  display: grid;
+  grid-template-areas:
+    "brand"
+    "actions"
+    "navigation";
+  grid-template-columns: minmax(0, 1fr);
+  gap: 9px;
+}
+
+.service-shell[data-platform="web"][data-layout="customer"] .brand {
+  min-width: 0;
+  grid-area: brand;
+}
+
+.service-shell[data-platform="web"][data-layout="customer"] .topbar__actions {
+  width: 100%;
+  grid-area: actions;
+}
+
+.service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav {
+  display: grid;
+  width: 100%;
+  margin: 0;
+  grid-area: navigation;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav a {
+  display: flex;
+  min-width: 0;
+  min-height: 38px;
+  padding: 9px 7px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: var(--color-muted);
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav a:hover,
+.service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav a.active {
+  color: var(--color-primary-dark);
+  background: var(--color-primary-soft);
+}
+
 .auth-required--compact {
   min-height: 0;
   padding: 18px 10px 4px;
@@ -3104,6 +3172,20 @@ h3 {
     margin-inline: auto;
   }
 
+  .service-shell[data-platform="web"][data-layout="customer"] .topbar {
+    min-height: 0;
+    padding-block: 10px;
+  }
+
+  .service-shell[data-platform="web"][data-layout="customer"] .topbar__inner {
+    min-height: 0;
+    grid-template-areas:
+      "brand actions"
+      "navigation navigation";
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 20px;
+  }
+
   .service-shell[data-platform="web"] .app-content {
     min-width: 0;
     min-height: calc(100vh - 72px);
@@ -3114,27 +3196,18 @@ h3 {
     display: none;
   }
 
-  .web-primary-nav {
-    display: flex;
-    margin-right: auto;
-    margin-left: clamp(22px, 4vw, 58px);
-    align-items: center;
+  .service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav {
+    width: auto;
+    justify-self: start;
+    grid-template-columns: repeat(3, auto);
     gap: 6px;
   }
 
-  .web-primary-nav a {
+  .service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav a {
     min-height: 42px;
     padding: 11px 13px;
-    color: var(--color-muted);
     border-radius: 11px;
     font-size: 14px;
-    font-weight: 750;
-  }
-
-  .web-primary-nav a:hover,
-  .web-primary-nav a.active {
-    color: var(--color-primary-dark);
-    background: var(--color-primary-soft);
   }
 
   .service-shell[data-platform="web"] .page--service-catalog {
@@ -3359,6 +3432,18 @@ h3 {
     max-width: 1240px;
     margin-inline: auto;
     padding-inline: clamp(24px, 4vw, 48px);
+  }
+}
+
+@media (min-width: 1100px) {
+  .service-shell[data-platform="web"][data-layout="customer"] .topbar__inner {
+    grid-template-areas: "brand navigation actions";
+    grid-template-columns: 200px minmax(0, 1fr) auto;
+    gap: 24px;
+  }
+
+  .service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav {
+    align-self: center;
   }
 }
 
