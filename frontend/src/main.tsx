@@ -4,6 +4,7 @@ import { App } from "./app/App";
 import { bootstrap } from "./app/bootstrap";
 import "./styles/variables.css";
 import "./styles/global.css";
+import "./styles/theme-stella.css";
 
 async function start() {
   const rootElement = document.getElementById("root");
@@ -20,4 +21,3 @@ async function start() {
 }
 
 void start();
-
