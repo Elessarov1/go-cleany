@@ -6,6 +6,18 @@ import { usePlatform } from "../../platform/PlatformProvider";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import { BrandName } from "../../components/BrandName/BrandName";
 
+const TELEGRAM_LINK_PENDING_UNTIL = "loco-place.telegram-link-pending-until";
+
+function hasPendingTelegramLink(): boolean {
+  const value = window.sessionStorage.getItem(TELEGRAM_LINK_PENDING_UNTIL);
+  const expiresAt = value ? Date.parse(value) : Number.NaN;
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+    window.sessionStorage.removeItem(TELEGRAM_LINK_PENDING_UNTIL);
+    return false;
+  }
+  return true;
+}
+
 export function AccountPage() {
   const { t } = useTranslation();
   const api = useCustomerApi();
@@ -15,7 +27,7 @@ export function AccountPage() {
   const [linking, setLinking] = useState(false);
   const [grantingAccess, setGrantingAccess] = useState(false);
   const [permissionRequested, setPermissionRequested] = useState(false);
-  const [pending, setPending] = useState(false);
+  const [pending, setPending] = useState(hasPendingTelegramLink);
 
   const load = useCallback(async () => {
     try {
@@ -29,13 +41,22 @@ export function AccountPage() {
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
     if (!pending) return;
-    const interval = window.setInterval(() => void load(), 3_000);
+    const interval = window.setInterval(() => {
+      if (!hasPendingTelegramLink()) {
+        setPending(false);
+        return;
+      }
+      void load();
+    }, 3_000);
     return () => window.clearInterval(interval);
   }, [load, pending]);
 
   const telegram = state?.identities.find((identity) => identity.provider === "TELEGRAM");
   useEffect(() => {
-    if (telegram?.linked) setPending(false);
+    if (telegram?.linked) {
+      window.sessionStorage.removeItem(TELEGRAM_LINK_PENDING_UNTIL);
+      setPending(false);
+    }
   }, [telegram?.linked]);
 
   const connect = async () => {
@@ -43,6 +64,7 @@ export function AccountPage() {
       setLinking(true);
       setError(false);
       const request = await api.initiateTelegramLink();
+      window.sessionStorage.setItem(TELEGRAM_LINK_PENDING_UNTIL, request.expiresAt);
       platform.openExternalLink(request.deepLink);
       setPending(true);
     } catch {
