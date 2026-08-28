@@ -18,6 +18,15 @@ if [[ -n ${requested_app_host} ]]; then
 fi
 
 require_production_env "${env_file}"
+
+requested_telegram_mini_app_link_base=${TELEGRAM_MINI_APP_LINK_BASE:-}
+if [[ -n ${requested_telegram_mini_app_link_base} ]]; then
+  upsert_env_value \
+    "${env_file}" \
+    TELEGRAM_MINI_APP_LINK_BASE \
+    "${requested_telegram_mini_app_link_base}"
+fi
+
 compose_command "${root}" "${env_file}"
 
 mkdir -p -- "${root}/.deploy-state"
