@@ -1,4 +1,4 @@
-# go-cleany — Codex Project Instructions
+# Loco Place — Codex Project Instructions
 
 ## Purpose
 
@@ -12,34 +12,41 @@ Task-specific Markdown files may be provided directly in a Codex session and do 
 
 ## Project direction
 
-This repository currently contains two working service verticals in one platform shell:
+This repository contains the Loco Place platform with two working service verticals:
 
 ```text
-go-cleany → apartment cleaning through a Telegram Mini App and cleaner bot
-go-renty  → apartment catalog, availability and rental bookings
+Loco Place
+├── Loco Cleaning → apartment cleaning
+└── Loco Rent     → apartment catalog, availability and rental bookings
 ```
 
-Long-term direction:
+The public canonical domain is:
 
 ```text
-Telegram
-→ WhatsApp
-→ standalone Flutter mobile apps
+https://loco-place.com
 ```
 
-The product is also expected to evolve into a broader service platform.
-
-`go-cleany` remains the cleaning vertical and `go-renty` remains the user-facing rental brand. Its
-technical namespaces remain `rent`, `rental` and `Rental*`. The platform may later contain more independent verticals such as:
+Technical names intentionally remain stable where they are internal implementation details:
 
 ```text
-Cleaning
+repository: go-cleany
+routes: /cleaning, /rent
+packages/namespaces: cleaning, rent, rental, Cleaning*, Rental*
+```
+
+Public branding changes must not force unnecessary API/package/database migrations.
+
+The product may later contain more independent verticals such as:
+
+```text
 Handyman / repair
 Residence / relocation assistance
 future services
 ```
 
-Do not turn `CleaningOrder` into a universal service order.
+Do not turn `CleaningOrder` or `RentalBooking` into a universal service order.
+
+WhatsApp integration is not planned. Do not reintroduce WhatsApp-specific architecture, provider placeholders, configuration, or roadmap work unless a new explicit product decision requires it.
 
 ---
 
@@ -92,7 +99,14 @@ Do not introduce new business dependencies on Telegram user IDs when `customerId
 External channels and authentication providers belong behind identity/adapters.
 
 `ADMIN` is a persisted platform role of `CustomerAccount`, not a Telegram-specific property.
-Telegram IDs and verified Google emails may be used only as idempotent bootstrap allowlists.
+
+The only deployment bootstrap for ADMIN is a verified Google email listed in:
+
+```text
+ADMIN_GOOGLE_EMAILS
+```
+
+Telegram IDs must not bootstrap ADMIN. After explicit Google ↔ Telegram account linking, Telegram resolves the same `CustomerAccount` and therefore the same persisted role.
 
 Service vertical customer availability is persisted platform state:
 
@@ -105,12 +119,11 @@ DISABLED
 `IN_TEST` allows new customer flows only for `ADMIN`; `DISABLED` blocks all new customer flows.
 Existing owned transactions and admin operational workflows remain available.
 
-Standalone web authentication uses direct Google OIDC through Spring Security OAuth2 Client and
-PostgreSQL-backed server sessions. The application is not an OIDC authorization server. Google
-provider values are backend deployment secrets and must never be exposed through Vite.
+Standalone web authentication uses direct Google OIDC through Spring Security OAuth2 Client and PostgreSQL-backed server sessions. The application is not an OIDC authorization server. Google provider values are backend deployment secrets and must never be exposed through Vite.
 
-Verified Telegram ↔ Google account linking is a planned later capability. Never automatically merge
-external identities by email, phone, display name, username or other correlation.
+Google ↔ Telegram account linking is implemented and must remain explicit and verified. Never automatically merge external identities by email, phone, display name, username or other correlation.
+
+Telegram remains optional. A Google-only customer must be able to use Loco Place without linking Telegram.
 
 ---
 
@@ -118,23 +131,18 @@ external identities by email, phone, display name, username or other correlation
 
 Business logic must not be duplicated for different customer channels.
 
-Do not create:
+Channel-specific concerns belong in adapters.
+
+Today the relevant entry points/channels are:
 
 ```text
-WhatsAppOrderService
-WhatsAppPricingService
-WhatsAppReferralService
+standalone WEB
+Telegram Mini App / bot
 ```
 
-when the existing cleaning application/domain logic can be reused.
+Future mobile or other channels may be added only when there is a concrete requirement.
 
-Channel-specific concerns belong in adapters:
-
-```text
-Telegram
-WhatsApp
-Push / mobile
-```
+Do not encode Telegram-specific assumptions into reusable customer/domain/application logic.
 
 ---
 
@@ -153,6 +161,8 @@ application/domain event
 
 over direct Telegram delivery from reusable business services.
 
+Telegram is an optional delivery channel, not the canonical location of customer business data.
+
 Existing Telegram cleaner-side interaction may remain Telegram-specific.
 
 ---
@@ -163,7 +173,7 @@ Important operational media must belong to the platform.
 
 Do not make external provider file IDs the only canonical representation of important media.
 
-Target direction:
+Current direction:
 
 ```text
 internal MediaAsset
@@ -226,26 +236,22 @@ Do not move all service-specific fields into one generic JSONB payload as the pr
 
 The application is a multi-vertical platform implemented as one modular monolith.
 
-`CustomerAccount` is the shared platform customer identity. Cleaning, rental and future car-rental,
-master/repair or other verticals must reference that same identity rather than introduce
-service-specific customer records.
+`CustomerAccount` is the shared platform customer identity. Cleaning, rental and future verticals must reference that same identity rather than introduce service-specific customer records.
 
 Every vertical owns its own business aggregates, for example:
 
 ```text
 CleaningOrder
 RentalBooking
-future CarBooking
-future MasterOrder
+future HandymanRequest
+future ResidenceCase
 ```
 
-Do not introduce `UniversalOrder`, `UniversalBooking`, or a generic JSON-based service aggregate to
-unify those verticals. Cross-service features should use an explicit bridge/application model that
-may reference aggregates from more than one vertical without merging their domain models.
+Do not introduce `UniversalOrder`, `UniversalBooking`, or a generic JSON-based service aggregate to unify those verticals.
 
-Frontend, Telegram, future web/mobile applications and future MCP/agent integrations are adapters
-or entry points. Business rules must stay in reusable backend application/domain services and must
-not be duplicated in channel adapters, frontend code, or MCP tools.
+Cross-service features should use an explicit bridge/application model that may reference aggregates from more than one vertical without merging their domain models.
+
+Frontend, Telegram, future mobile applications and future MCP/agent integrations are adapters or entry points. Business rules must stay in reusable backend application/domain services and must not be duplicated in channel adapters, frontend code, or MCP tools.
 
 Prefer explicit operations such as:
 
@@ -256,18 +262,12 @@ quoteRentalBooking
 createRentalBooking
 ```
 
-over a generic `createOrder(service, payload)` API. Keep read/quote operations separate from
-state-changing operations.
+over a generic `createOrder(service, payload)` API. Keep read/quote operations separate from state-changing operations.
 
-The backend remains authoritative for authenticated identity, prices, discounts, availability,
-ownership, eligibility and status transitions. Never trust a client- or agent-supplied customer ID,
-calculated price, discount, availability, or business status.
+The backend remains authoritative for authenticated identity, prices, discounts, availability, ownership, eligibility and status transitions. Never trust a client- or agent-supplied customer ID, calculated price, discount, availability, or business status.
 
 Design state-changing application operations so additional adapters can expose them safely later.
-Future MCP/agent writes should support idempotency against retries and uncertain responses. Future
-MCP/agent access must use delegated authorization with explicit scopes, never an arbitrary
-`customerId`. Do not implement MCP, delegated OAuth, agent grants, or payment-agent flows until a
-concrete requirement exists.
+Future MCP/agent writes should support idempotency against retries and uncertain responses. Future MCP/agent access must use delegated authorization with explicit scopes, never an arbitrary `customerId`. Do not implement MCP, delegated OAuth, agent grants, or payment-agent flows until a concrete requirement exists.
 
 ---
 
@@ -318,9 +318,36 @@ Before implementing a non-trivial change:
 
 Avoid unrelated refactoring.
 
-Use Lombok in new Java code when it removes mechanical boilerplate such as dependency
-constructors, getters, builders, or simple value objects. Keep domain validation and
-other meaningful logic explicit.
+Use Lombok in new Java code when it removes mechanical boilerplate such as dependency constructors, getters, builders, or simple value objects. Keep domain validation and other meaningful logic explicit.
+
+### Production constructors are not test compatibility APIs
+
+Production classes and records must not gain shortened, overloaded, defaulting, or compatibility constructors solely to keep old tests compiling after production dependencies or invariants change.
+
+When production construction changes, update tests instead:
+
+```text
+use the real production constructor
+provide/mock the new dependency
+extend a test fixture/builder when useful
+```
+
+Do not hide a newly required production dependency by inventing a default value in a shorter constructor only for tests.
+
+Bad pattern:
+
+```java
+Service(DepA a, DepB b, DepC c) { ... }
+
+// added only because old tests still call two args
+Service(DepA a, DepB b) {
+    this(a, b, new DefaultDepC(...));
+}
+```
+
+The same rule applies to records and value types.
+
+Do not create a new production abstraction solely to make tests easier.
 
 Do not create interfaces merely because abstraction is possible.
 
@@ -365,7 +392,7 @@ Do not use database stored procedures unless explicitly required.
 
 ## Retention
 
-Current pilot retention is configurable and defaults to approximately seven days for heavy operational payloads.
+Current pilot retention is configurable and defaults to approximately seven days for heavy operational payloads such as completion-report media.
 
 Existing scheduled cleanup and backup retention already exist.
 
@@ -381,10 +408,10 @@ The following are known and are not current blockers unless a task directly touc
 
 ```text
 phone-based referral anti-abuse across multiple identities
-durable notification delivery checkpoints / duplicate partial delivery
+durable external notification delivery checkpoints / partial-delivery retries
 frontend date timezone vs backend Europe/Istanbul timezone
 branch protection / required checks hardening
-verified Telegram ↔ Google account linking
+account unlinking policy
 ```
 
 Do not repeatedly rediscover these as new urgent tasks.
