@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthentication } from "../../api/AuthApiProvider";
@@ -32,26 +32,27 @@ export function AppShell() {
   const navigate = useNavigate();
   const platform = usePlatform();
   const authentication = useAuthentication();
+  const telegramStartHandled = useRef(false);
   const hasAdminAccess = authentication.isAdmin;
   const standaloneWeb = platform.kind !== "TELEGRAM";
   const showAdminNavigation = !standaloneWeb && hasAdminAccess;
 
   useEffect(() => {
-    if (platform.kind !== "TELEGRAM") {
+    if (telegramStartHandled.current || platform.kind !== "TELEGRAM") {
       return;
     }
 
     const startParameter = platform.getStartParameter();
     if (!startParameter) {
+      telegramStartHandled.current = true;
       return;
     }
 
+    telegramStartHandled.current = true;
     const accountLinkPath = `/account/link/telegram?token=${encodeURIComponent(startParameter)}`;
-    if (`${location.pathname}${location.search}` === accountLinkPath) {
-      return;
+    if (`${location.pathname}${location.search}` !== accountLinkPath) {
+      void navigate(accountLinkPath, { replace: true });
     }
-
-    void navigate(accountLinkPath, { replace: true });
   }, [location.pathname, location.search, navigate, platform]);
 
   const admin = location.pathname.startsWith("/admin");
