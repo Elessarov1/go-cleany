@@ -18,18 +18,19 @@ RU / EN i18n
 
 ## Product direction
 
-The current UI contains a shared service catalog and two real verticals:
+The current UI contains a shared Loco Place service catalog and two real verticals:
 
 ```text
 Loco Cleaning
 Loco Rent
 ```
 
-Further platform direction:
+Further platform direction may include:
 
 ```text
 service catalog
 ├── cleaning
+├── rent
 ├── handyman
 ├── residence / relocation
 └── future verticals
@@ -45,15 +46,30 @@ Preserve the existing platform abstraction.
 
 Channel-specific browser/Telegram behavior should not leak unnecessarily into ordinary UI/domain code.
 
-Future channels may include:
+Current customer entry points are:
 
 ```text
-Telegram
-WhatsApp-related web experiences
-standalone Flutter app
+standalone WEB
+Telegram Mini App
 ```
 
+Future mobile or other channels may be added only when there is a concrete product requirement.
+
+WhatsApp integration is not planned. Do not add WhatsApp-specific frontend abstractions, screens, copy or provider assumptions.
+
 Do not encode Telegram-specific assumptions into shared TypeScript domain models unless the API genuinely exposes Telegram-specific data.
+
+---
+
+## Authentication and account identity
+
+Standalone WEB uses Google login. Telegram uses verified Mini App authentication.
+
+Google ↔ Telegram account linking is already implemented and is explicit/verified.
+
+Telegram is optional; Google-only customers must retain full WEB functionality.
+
+Shared WEB navigation should expose a clear authentication action/status consistently rather than hiding login behind a service-specific flow.
 
 ---
 
@@ -86,7 +102,7 @@ When adding new statuses/reasons/messages, add both RU and EN translations.
 
 ## Responsive UI
 
-Primary UI is mobile-oriented.
+Primary UI is mobile-oriented, while standalone WEB must also remain intentional on desktop.
 
 When changing layout, verify narrow widths, especially:
 
@@ -98,15 +114,17 @@ When changing layout, verify narrow widths, especially:
 480px
 ```
 
+and at least one normal desktop viewport.
+
 Avoid absolute positioning that can overlap translated text unless there is a strong reason.
 
 Prefer robust grid/flex layouts.
 
 ---
 
-## Cleaning routes and future platform routes
+## Current routes
 
-Current vertical routing is:
+Current customer routing includes:
 
 ```text
 /
@@ -116,6 +134,7 @@ Current vertical routing is:
 /rent
 /rent/properties/:slug
 /rent/bookings
+/account
 ```
 
 The shared admin shell separates vertical routes:
@@ -145,16 +164,9 @@ Use authenticated binary/media endpoints or Blob/object URLs where appropriate.
 
 Avoid broad folder reorganizations unless required by the current architectural task.
 
-When a second vertical appears, feature-oriented organization may evolve toward:
+As vertical-specific UI grows, feature-oriented organization may evolve incrementally.
 
-```text
-features/
-├── cleaning/
-├── handyman/
-└── residence/
-```
-
-Until then, prefer incremental moves.
+Do not reorganize the whole frontend merely to prepare hypothetical future services.
 
 ---
 
@@ -166,4 +178,5 @@ After frontend changes:
 - run tests/lint if configured;
 - verify both RU and EN for user-facing changes;
 - verify narrow mobile layout for responsive changes;
-- verify Telegram Mini App behavior is not accidentally broken by browser-only assumptions.
+- verify Telegram Mini App behavior is not accidentally broken by browser-only assumptions;
+- verify standalone WEB auth/navigation behavior for browser-specific changes.
