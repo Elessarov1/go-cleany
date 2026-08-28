@@ -2,9 +2,11 @@ package com.cleany.telegram.bot;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import com.cleany.configuration.PublicApplicationProperties;
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitCustomerNotification;
 import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.media.MediaProvider;
@@ -16,13 +18,9 @@ import com.cleany.notification.CustomerNotificationSender;
 import com.cleany.notification.ReferralUnlockedCustomerNotification;
 import com.cleany.order.CleaningOrderCustomerNotification;
 import com.cleany.rental.RentalBookingCustomerNotification;
-import com.cleany.configuration.PublicApplicationProperties;
 
-import lombok.RequiredArgsConstructor;
-
-@ConditionalOnProperty(prefix = "telegram", name = "bot-enabled", havingValue = "true")
 @Component
-@RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "telegram", name = "bot-enabled", havingValue = "true")
 public class TelegramCustomerNotificationSender implements CustomerNotificationSender {
 
     private final TelegramCustomerNotificationMessageFactory messageFactory;
@@ -31,7 +29,22 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
     private final MediaProviderReferenceService mediaProviderReferenceService;
     private final PublicApplicationProperties publicApplicationProperties;
 
+    @Autowired
     public TelegramCustomerNotificationSender(
+            TelegramCustomerNotificationMessageFactory messageFactory,
+            CleaningOrderBotMessageFactory cleaningMessageFactory,
+            TelegramBotClient botClient,
+            MediaProviderReferenceService mediaProviderReferenceService,
+            PublicApplicationProperties publicApplicationProperties
+    ) {
+        this.messageFactory = messageFactory;
+        this.cleaningMessageFactory = cleaningMessageFactory;
+        this.botClient = botClient;
+        this.mediaProviderReferenceService = mediaProviderReferenceService;
+        this.publicApplicationProperties = publicApplicationProperties;
+    }
+
+    TelegramCustomerNotificationSender(
             TelegramCustomerNotificationMessageFactory messageFactory,
             CleaningOrderBotMessageFactory cleaningMessageFactory,
             TelegramBotClient botClient,
