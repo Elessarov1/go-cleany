@@ -44,21 +44,6 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
         this.publicApplicationProperties = publicApplicationProperties;
     }
 
-    TelegramCustomerNotificationSender(
-            TelegramCustomerNotificationMessageFactory messageFactory,
-            CleaningOrderBotMessageFactory cleaningMessageFactory,
-            TelegramBotClient botClient,
-            MediaProviderReferenceService mediaProviderReferenceService
-    ) {
-        this(
-                messageFactory,
-                cleaningMessageFactory,
-                botClient,
-                mediaProviderReferenceService,
-                new PublicApplicationProperties("https://loco-place.com")
-        );
-    }
-
     @Override
     public ExternalIdentityProvider provider() {
         return ExternalIdentityProvider.TELEGRAM;
