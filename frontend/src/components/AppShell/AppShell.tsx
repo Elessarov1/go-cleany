@@ -59,18 +59,19 @@ export function AppShell() {
   const admin = location.pathname.startsWith("/admin");
   const rental = location.pathname.startsWith("/rent") || location.pathname.startsWith("/admin/rent");
   const catalog = location.pathname === "/" || location.pathname === "/admin";
+  const neutralCustomer = location.pathname === "/notifications";
   const customerServiceHome = location.pathname === "/cleaning"
     || location.pathname === "/rent"
     || location.pathname === "/rent/properties";
-  const service = catalog ? "platform" : rental ? "rent" : "cleaning";
+  const service = catalog || neutralCustomer ? "platform" : rental ? "rent" : "cleaning";
   const parentRoute = logoTarget(location.pathname);
   const parentLabel = admin && !catalog
     ? t("app.navigation.adminServices")
-    : !admin && !catalog && !customerServiceHome
+    : !admin && !catalog && !neutralCustomer && !customerServiceHome
       ? t("app.navigation.serviceHome")
       : t("app.navigation.main");
-  const brandService: BrandService | undefined = catalog ? undefined : rental ? "rental" : "cleaning";
-  const showLocalNavigation = !catalog && (!admin || rental);
+  const brandService: BrandService | undefined = catalog || neutralCustomer ? undefined : rental ? "rental" : "cleaning";
+  const showLocalNavigation = !catalog && !neutralCustomer && (!admin || rental);
   const showWebAdminSidebar = standaloneWeb && admin && hasAdminAccess;
 
   return (

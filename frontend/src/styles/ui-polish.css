@@ -1,0 +1,74 @@
+/* Focused responsive fixes for customer-facing screens. */
+
+.notification-bell {
+  flex: 0 0 38px;
+  min-width: 38px;
+  max-width: 38px;
+}
+
+.service-shell[data-platform="telegram"] .brand {
+  min-width: 0;
+}
+
+.service-shell[data-platform="telegram"] .brand__word {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.service-shell[data-platform="telegram"] .topbar__actions {
+  flex: 0 0 auto;
+}
+
+.booking-form,
+.form-section,
+.form-grid--cleaning-details,
+.form-grid--cleaning-details .field {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.form-grid--cleaning-details .field :is(input, textarea, select) {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.service-shell[data-service="cleaning"] .details-card__price .details-card__price-value strong {
+  color: #fff;
+}
+
+@media (min-width: 768px) {
+  .service-shell[data-platform="web"] .page--rental-booking-details {
+    width: 100%;
+    max-width: 980px;
+    margin-inline: auto;
+    padding-inline: 32px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .service-shell[data-platform="web"] .page--rental-booking-details {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.8fr);
+    align-items: start;
+    gap: 16px;
+  }
+
+  .service-shell[data-platform="web"] .page--rental-booking-details > :is(
+    .back-link,
+    .rental-created-banner,
+    .page-header,
+    .rental-cleaning-cta,
+    .form-alert,
+    .button
+  ) {
+    grid-column: 1 / -1;
+  }
+
+  .service-shell[data-platform="web"] .page--rental-booking-details .rental-booking-summary,
+  .service-shell[data-platform="web"] .page--rental-booking-details .rental-price-snapshot {
+    margin-bottom: 0;
+  }
+}
