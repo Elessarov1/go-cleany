@@ -78,12 +78,24 @@ fi
 revision=$(git -C "${root}" rev-parse HEAD)
 
 echo "Starting revision ${revision}..."
-"${COMPOSE[@]}" up -d --remove-orphans --wait --wait-timeout 240
+if ! "${COMPOSE[@]}" up -d --remove-orphans --wait --wait-timeout 240; then
+  echo "Deployment failed while waiting for containers. Current compose state:" >&2
+  "${COMPOSE[@]}" ps >&2 || true
+  echo "Recent backend logs:" >&2
+  "${COMPOSE[@]}" logs --no-color --tail=250 backend >&2 || true
+  exit 1
+fi
 
 echo "Checking public HTTPS endpoint..."
-curl --fail --silent --show-error \
+if ! curl --fail --silent --show-error \
   --retry 20 --retry-delay 3 --retry-all-errors \
-  "https://${app_host}/healthz" >/dev/null
+  "https://${app_host}/healthz" >/dev/null; then
+  echo "Public health check failed. Current compose state:" >&2
+  "${COMPOSE[@]}" ps >&2 || true
+  echo "Recent backend logs:" >&2
+  "${COMPOSE[@]}" logs --no-color --tail=250 backend >&2 || true
+  exit 1
+fi
 
 state_dir="${root}/.deploy-state"
 if [[ -s ${state_dir}/current-revision ]]; then
