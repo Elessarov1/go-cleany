@@ -8,11 +8,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import com.cleany.configuration.PublicApplicationProperties;
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitCustomerNotification;
 import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.media.MediaProvider;
 import com.cleany.media.MediaProviderReferenceData;
-import com.cleany.media.MediaProviderReferenceNotFoundException;
 import com.cleany.media.MediaProviderReferenceService;
 import com.cleany.notification.CommunicationTarget;
 import com.cleany.notification.ReferralUnlockedCustomerNotification;
@@ -24,6 +24,9 @@ import com.cleany.rental.RentalBookingCustomerNotification;
 
 class TelegramCustomerNotificationSenderTest {
 
+    private static final PublicApplicationProperties PUBLIC_APPLICATION_PROPERTIES =
+            new PublicApplicationProperties("https://loco-place.com");
+
     @Test
     void telegramTarget_sentToExternalSubjectWithPreferredLanguage() {
         TelegramCustomerNotificationMessageFactory messageFactory =
@@ -33,7 +36,7 @@ class TelegramCustomerNotificationSenderTest {
         TelegramBotClient botClient = Mockito.mock(TelegramBotClient.class);
         Mockito.when(messageFactory.referralUnlocked("ALEX7K2", "en"))
                 .thenReturn("Referral unlocked");
-        var sender = new TelegramCustomerNotificationSender(
+        var sender = sender(
                 messageFactory,
                 cleaningMessageFactory,
                 botClient,
@@ -68,7 +71,7 @@ class TelegramCustomerNotificationSenderTest {
         CleaningOrderBotMessageFactory cleaningMessageFactory =
                 Mockito.mock(CleaningOrderBotMessageFactory.class);
         TelegramBotClient botClient = Mockito.mock(TelegramBotClient.class);
-        var sender = new TelegramCustomerNotificationSender(
+        var sender = sender(
                 messageFactory,
                 cleaningMessageFactory,
                 botClient,
@@ -81,8 +84,8 @@ class TelegramCustomerNotificationSenderTest {
                         new CommunicationTarget(
                                 77L,
                                 88L,
-                                ExternalIdentityProvider.WHATSAPP,
-                                "905551234567",
+                                ExternalIdentityProvider.GOOGLE,
+                                "google-subject",
                                 "ru"
                         ),
                         new ReferralUnlockedCustomerNotification("ALEX7K2")
@@ -101,7 +104,7 @@ class TelegramCustomerNotificationSenderTest {
         TelegramBotClient botClient = Mockito.mock(TelegramBotClient.class);
         Mockito.when(cleaningMessageFactory.customerOrderAccepted()).thenReturn("accepted");
         Mockito.when(cleaningMessageFactory.customerOrderCancelled()).thenReturn("cancelled");
-        var sender = new TelegramCustomerNotificationSender(
+        var sender = sender(
                 messageFactory,
                 cleaningMessageFactory,
                 botClient,
@@ -135,7 +138,7 @@ class TelegramCustomerNotificationSenderTest {
                 List.of(71L, 72L)
         );
         Mockito.when(cleaningMessageFactory.customerReportReady(notification)).thenReturn("report ready");
-        var sender = new TelegramCustomerNotificationSender(
+        var sender = sender(
                 messageFactory,
                 cleaningMessageFactory,
                 botClient,
@@ -173,7 +176,7 @@ class TelegramCustomerNotificationSenderTest {
                 List.of(71L)
         );
         Mockito.when(cleaningMessageFactory.customerReportReady(notification)).thenReturn("report ready");
-        var sender = new TelegramCustomerNotificationSender(
+        var sender = sender(
                 messageFactory,
                 cleaningMessageFactory,
                 botClient,
@@ -209,7 +212,7 @@ class TelegramCustomerNotificationSenderTest {
                 "Нет ключа"
         )).thenReturn("issue");
         Mockito.when(cleaningMessageFactory.customerOnsiteIssuePaused()).thenReturn("paused");
-        var sender = new TelegramCustomerNotificationSender(
+        var sender = sender(
                 messageFactory,
                 cleaningMessageFactory,
                 botClient,
@@ -242,7 +245,7 @@ class TelegramCustomerNotificationSenderTest {
         );
         Mockito.when(messageFactory.rentalConfirmed(notification, "ru"))
                 .thenReturn("rental confirmed");
-        var sender = new TelegramCustomerNotificationSender(
+        var sender = sender(
                 messageFactory,
                 cleaningMessageFactory,
                 botClient,
@@ -273,7 +276,7 @@ class TelegramCustomerNotificationSenderTest {
         );
         Mockito.when(messageFactory.rentalCleaningBenefit(notification, "ru"))
                 .thenReturn("benefit available");
-        var sender = new TelegramCustomerNotificationSender(
+        var sender = sender(
                 messageFactory,
                 cleaningMessageFactory,
                 botClient,
@@ -286,6 +289,21 @@ class TelegramCustomerNotificationSenderTest {
                 900001L,
                 "benefit available",
                 TelegramBotClient.InlineKeyboard.empty()
+        );
+    }
+
+    private static TelegramCustomerNotificationSender sender(
+            TelegramCustomerNotificationMessageFactory messageFactory,
+            CleaningOrderBotMessageFactory cleaningMessageFactory,
+            TelegramBotClient botClient,
+            MediaProviderReferenceService mediaProviderReferenceService
+    ) {
+        return new TelegramCustomerNotificationSender(
+                messageFactory,
+                cleaningMessageFactory,
+                botClient,
+                mediaProviderReferenceService,
+                PUBLIC_APPLICATION_PROPERTIES
         );
     }
 
