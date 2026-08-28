@@ -2,7 +2,7 @@ export const productBrand = {
   platform: "loco-place",
   services: {
     cleaning: "loco-cleaning",
-    rental: "loco-rent",
+    rental: "loco-rental",
   },
 } as const;
 
