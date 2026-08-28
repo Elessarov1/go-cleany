@@ -49,3 +49,39 @@ read_env_value() {
   fi
   printf '%s\n' "${line}"
 }
+
+upsert_env_value() {
+  local env_file=$1
+  local key=$2
+  local value=$3
+  local temporary_file
+
+  if [[ ! ${key} =~ ^[A-Z0-9_]+$ ]]; then
+    echo "Invalid environment key: ${key}" >&2
+    return 1
+  fi
+  if [[ ${value} == *$'\n'* || ${value} == *$'\r'* ]]; then
+    echo "Environment value for ${key} must be a single line." >&2
+    return 1
+  fi
+
+  temporary_file=$(mktemp "${env_file}.tmp.XXXXXX")
+  awk -v key="${key}" -v value="${value}" '
+    BEGIN { updated = 0 }
+    $0 ~ "^" key "=" {
+      if (!updated) {
+        print key "=" value
+        updated = 1
+      }
+      next
+    }
+    { print }
+    END {
+      if (!updated) {
+        print key "=" value
+      }
+    }
+  ' "${env_file}" > "${temporary_file}"
+  chmod 600 "${temporary_file}"
+  mv -- "${temporary_file}" "${env_file}"
+}
