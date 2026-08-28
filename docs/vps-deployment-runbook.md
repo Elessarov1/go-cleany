@@ -99,7 +99,11 @@ nano .env.production
 - `ACME_EMAIL` — email для уведомлений центра сертификации;
 - `TELEGRAM_BOT_TOKEN` — секрет от BotFather;
 - `CLEANER_TELEGRAM_IDS` — ID клинеров через запятую;
-- `TELEGRAM_MINI_APP_LINK_BASE` — deep link Mini App для явного Google ↔ Telegram linking;
+- `TELEGRAM_MINI_APP_LINK_BASE` — deep link именно Mini App для явного Google ↔ Telegram linking.
+  Для Main Mini App допустим `https://t.me/<bot_username>` только если Main Mini App отдельно
+  настроен в BotFather. Для Direct Mini App используйте `https://t.me/<bot_username>/<short_name>`.
+  Обычная ссылка на чат бота при наличии только Menu Button не передаёт `startapp` в Mini App и
+  поэтому не подходит для account linking;
 - `GOOGLE_AUTH_ENABLED` — включает standalone web-вход через Google;
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — backend-only OAuth credentials;
 - `ADMIN_GOOGLE_EMAILS` — verified Google emails для bootstrap роли `ADMIN`;
@@ -147,13 +151,25 @@ docker compose --env-file .env.production -f compose.prod.yaml logs -f caddy
 
 ## 7. Подключить Telegram Mini App
 
-После успешного HTTPS-деплоя откройте `@BotFather`:
+После успешного HTTPS-деплоя откройте `@BotFather` и настройте обычную кнопку приложения:
 
 1. выберите бота;
 2. откройте **Bot Settings → Menu Button**;
-3. задайте текст кнопки, например `Заказать уборку`;
-4. укажите `https://<APP_HOST>`;
-5. откройте бота, нажмите обновлённую кнопку и проверьте создание заказа.
+3. задайте текст кнопки, например `Открыть Loco Place`;
+4. укажите `https://<APP_HOST>`.
+
+Для Google ↔ Telegram account linking одного Menu Button недостаточно. `startapp` должен попасть в
+Telegram `initData` текущего запуска. Настройте один из вариантов:
+
+- **Main Mini App** для этого же бота с URL `https://<APP_HOST>`, после чего
+  `TELEGRAM_MINI_APP_LINK_BASE=https://t.me/<bot_username>`;
+- **Direct Mini App** с собственным `short_name` и URL `https://<APP_HOST>`, после чего
+  `TELEGRAM_MINI_APP_LINK_BASE=https://t.me/<bot_username>/<short_name>`.
+
+При проверке linking не открывайте Mini App вручную через Menu Button после перехода в чат: в таком
+запуске одноразовый `startapp`-токен уже потерян. Правильная ссылка должна открыть Mini App как часть
+того же deep-link запуска. В Mini App должна появиться отдельная страница подтверждения привязки.
+После подтверждения web-страница `/account` обнаружит связанную Telegram identity своим polling.
 
 Frontend подключает официальный `telegram-web-app.js`, отправляет raw `initData` в backend, а
 backend проверяет подпись токеном бота. Обычное открытие production URL вне Telegram не создаёт
