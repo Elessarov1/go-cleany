@@ -720,6 +720,26 @@
     "nudgeText": "Подключите Telegram, чтобы узнавать об изменениях заказов, бронирований и готовности отчётов.",
     "notNow": "Не сейчас"
   },
+  "notifications": {
+    "title": "Уведомления",
+    "subtitle": "Важные изменения по вашим заказам, бронированиям и бонусам.",
+    "readAll": "Прочитать все",
+    "unread": "Непрочитанное уведомление",
+    "emptyTitle": "Пока нет уведомлений",
+    "emptyText": "Здесь появятся изменения статусов и доступные бонусы.",
+    "pagination": "Страницы уведомлений",
+    "next": "Далее",
+    "types": {
+      "CLEANING_ORDER_ACCEPTED": "Клинер принял ваш заказ",
+      "CLEANING_ORDER_CANCELLED": "Заказ на уборку отменён",
+      "CLEANING_ORDER_COMPLETED": "Уборка завершена, фотоотчёт готов",
+      "CLEANING_ONSITE_ISSUE_REPORTED": "Заказ приостановлен для проверки ситуации",
+      "RENTAL_BOOKING_CONFIRMED": "Бронирование подтверждено",
+      "RENTAL_BOOKING_CANCELLED": "Бронирование отменено",
+      "REFERRAL_UNLOCKED": "Вам доступен реферальный код",
+      "RENTAL_CLEANING_BENEFIT_AVAILABLE": "Доступна скидка на уборку перед выездом"
+    }
+  },
   "titles": {
     "fallback": "Loco Place",
     "description": "Loco Place — аренда квартир и услуги уборки в Аланье.",
@@ -729,6 +749,7 @@
     "cleaning": "Loco Cleaning — уборка квартир в Аланье | Loco Place",
     "cleaningPage": "Заказы и уборка | Loco Cleaning",
     "account": "Аккаунт | Loco Place",
+    "notifications": "Уведомления | Loco Place",
     "admin": "Админка | Loco Place",
     "adminPage": "Раздел админки | Loco Place"
   },

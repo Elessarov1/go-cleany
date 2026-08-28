@@ -46,6 +46,7 @@ class RentalCleaningBenefitNotificationListenerTest {
     void issuedBenefitDispatchedThroughRecordedCommunicationIdentity() {
         var event = new RentalCleaningBenefitIssuedEvent(11L, 42L, 77L, 88L);
         var notification = new RentalCleaningBenefitCustomerNotification(
+                999L,
                 42L,
                 "RC23456789",
                 LocalDate.of(2026, 9, 12),
@@ -66,6 +67,7 @@ class RentalCleaningBenefitNotificationListenerTest {
     void deliveryFailureDoesNotEscapeAfterCommitListener() {
         var event = new RentalCleaningBenefitIssuedEvent(11L, 42L, 77L, 88L);
         var notification = new RentalCleaningBenefitCustomerNotification(
+                999L,
                 42L,
                 "RC23456789",
                 LocalDate.of(2026, 9, 12),

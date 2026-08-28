@@ -135,7 +135,8 @@ class TelegramCustomerNotificationSenderTest {
                 ServiceArea.MAHMUTLAR,
                 LocalDate.of(2026, 8, 18),
                 "Готово",
-                List.of(71L, 72L)
+                List.of(71L, 72L),
+                7
         );
         Mockito.when(cleaningMessageFactory.customerReportReady(notification)).thenReturn("report ready");
         var sender = sender(
@@ -173,7 +174,8 @@ class TelegramCustomerNotificationSenderTest {
                 ServiceArea.MAHMUTLAR,
                 LocalDate.of(2026, 8, 18),
                 null,
-                List.of(71L)
+                List.of(71L),
+                7
         );
         Mockito.when(cleaningMessageFactory.customerReportReady(notification)).thenReturn("report ready");
         var sender = sender(
@@ -269,6 +271,7 @@ class TelegramCustomerNotificationSenderTest {
                 Mockito.mock(CleaningOrderBotMessageFactory.class);
         TelegramBotClient botClient = Mockito.mock(TelegramBotClient.class);
         var notification = new RentalCleaningBenefitCustomerNotification(
+                999L,
                 43L,
                 "RC23456789",
                 LocalDate.of(2026, 9, 5),

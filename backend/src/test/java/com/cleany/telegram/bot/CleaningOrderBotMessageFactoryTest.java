@@ -93,7 +93,8 @@ class CleaningOrderBotMessageFactoryTest {
                 ServiceArea.MAHMUTLAR,
                 LocalDate.of(2026, 8, 18),
                 "Everything is ready",
-                List.of()
+                List.of(),
+                7
         );
         var progress = new CleaningOrderReportProgress(43L, 2L, true);
 

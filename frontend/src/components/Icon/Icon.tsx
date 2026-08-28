@@ -3,6 +3,7 @@ export type IconName =
   | "arrow-left"
   | "arrow-right"
   | "bed"
+  | "bell"
   | "building"
   | "calendar-plus"
   | "camera"
@@ -91,6 +92,12 @@ export function Icon({ name, size = 22, strokeWidth = 1.8 }: IconProps) {
         <>
           <path d="M3 19v-8M21 19v-6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v3M3 16h18" />
           <path d="M6 11V8a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3" />
+        </>
+      ) : null}
+      {name === "bell" ? (
+        <>
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z" />
+          <path d="M10 21h4" />
         </>
       ) : null}
       {name === "moon" ? <path d="M20 15.5A8.5 8.5 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5Z" /> : null}

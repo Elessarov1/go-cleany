@@ -1,4 +1,4 @@
-import type { AccountIdentities, AccountLinkInitiated, CustomerProfile } from "../domain/customer";
+import type { AccountIdentities, AccountLinkInitiated, CustomerNotificationPage, CustomerProfile } from "../domain/customer";
 import type { CustomerApi } from "./CustomerApi";
 import { HttpApiClient } from "./HttpApiClient";
 
@@ -22,5 +22,22 @@ export class HttpCustomerApi implements CustomerApi {
       method: "POST",
       body: JSON.stringify({ token }),
     });
+  }
+
+  getNotifications(page = 0, size = 20): Promise<CustomerNotificationPage> {
+    return this.client.request(`/api/v1/account/notifications?page=${page}&size=${size}`);
+  }
+
+  async getNotificationUnreadCount(): Promise<number> {
+    const response = await this.client.request<{ unreadCount: number }>("/api/v1/account/notifications/unread-count");
+    return response.unreadCount;
+  }
+
+  markNotificationRead(notificationId: number): Promise<void> {
+    return this.client.request(`/api/v1/account/notifications/${notificationId}/read`, { method: "POST" });
+  }
+
+  markAllNotificationsRead(): Promise<void> {
+    return this.client.request("/api/v1/account/notifications/read-all", { method: "POST" });
   }
 }

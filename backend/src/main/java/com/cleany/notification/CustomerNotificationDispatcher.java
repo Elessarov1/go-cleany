@@ -19,13 +19,16 @@ public class CustomerNotificationDispatcher {
     private static final Logger log = LoggerFactory.getLogger(CustomerNotificationDispatcher.class);
 
     private final CustomerExternalIdentityRepository identityRepository;
+    private final CustomerNotificationRecorder recorder;
     private final Map<ExternalIdentityProvider, CustomerNotificationSender> senders;
 
     public CustomerNotificationDispatcher(
             CustomerExternalIdentityRepository identityRepository,
+            CustomerNotificationRecorder recorder,
             List<CustomerNotificationSender> senders
     ) {
         this.identityRepository = identityRepository;
+        this.recorder = recorder;
         var sendersByProvider = new EnumMap<ExternalIdentityProvider, CustomerNotificationSender>(
                 ExternalIdentityProvider.class
         );
@@ -49,14 +52,15 @@ public class CustomerNotificationDispatcher {
             CustomerNotification notification
     ) {
         Objects.requireNonNull(notification, "notification");
+        if (!recorder.record(customerId, notification)) {
+            log.debug("Skipping duplicate notification {} for customer {}", notification.deduplicationKey(), customerId);
+            return false;
+        }
         var identity = identityRepository.findByIdAndCustomerId(communicationIdentityId, customerId)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Communication identity " + communicationIdentityId
-                                + " is unavailable for customer " + customerId
-                ));
+                .orElse(null);
         var identities = identityRepository.findAllByCustomerIdOrderByProvider(customerId);
         if (identities == null || identities.isEmpty()) {
-            identities = List.of(identity);
+            identities = identity == null ? List.of() : List.of(identity);
         }
         boolean delivered = false;
         var deliveredProviders = new HashSet<ExternalIdentityProvider>();
@@ -69,14 +73,21 @@ public class CustomerNotificationDispatcher {
                     && !candidate.isWriteAccessAllowed()) {
                 continue;
             }
-            sender.send(new CommunicationTarget(
-                    candidate.getCustomerId(),
-                    candidate.getId(),
-                    candidate.getProvider(),
-                    candidate.getExternalSubject(),
-                    candidate.getLanguageCode()
-            ), notification);
-            delivered = true;
+            try {
+                sender.send(new CommunicationTarget(
+                        candidate.getCustomerId(),
+                        candidate.getId(),
+                        candidate.getProvider(),
+                        candidate.getExternalSubject(),
+                        candidate.getLanguageCode()
+                ), notification);
+                delivered = true;
+            } catch (RuntimeException exception) {
+                log.warn(
+                        "Customer notification {} was recorded but {} delivery failed for customer {}",
+                        notification.type(), candidate.getProvider(), customerId, exception
+                );
+            }
         }
         if (!delivered) {
             log.debug("No enabled notification channel for customer {}", customerId);

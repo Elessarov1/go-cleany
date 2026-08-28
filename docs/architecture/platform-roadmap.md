@@ -12,7 +12,7 @@ It describes:
 - long-term product direction;
 - stable architecture principles;
 - channel-neutral and service-neutral boundaries;
-- intended evolution from Telegram to WhatsApp and Flutter;
+- current standalone web and Telegram channels plus future native clients;
 - intended evolution from a cleaning product to a broader service platform.
 
 This document is NOT:
@@ -122,8 +122,8 @@ The architecture should remain neutral in two separate dimensions.
 Customer channels may include:
 
 ```text
+Standalone web
 Telegram
-WhatsApp
 Flutter mobile application
 future channels
 ```
@@ -155,7 +155,7 @@ Shared platform infrastructure should not depend on cleaning-specific business r
                                  │
              ┌───────────────────┼───────────────────┐
              │                   │                   │
-         Telegram            WhatsApp            Flutter
+       Standalone web        Telegram       future native app
              │                   │                   │
              └────────────── adapters ──────────────┘
                                  │
@@ -331,11 +331,8 @@ External identities may include:
 
 ```text
 TELEGRAM
-WHATSAPP
-MOBILE_APP
 GOOGLE
-APPLE
-PHONE
+MOBILE_APP (future)
 ```
 
 Concept:
@@ -346,7 +343,7 @@ CustomerAccount
 CustomerExternalIdentity
 ```
 
-Do not make Telegram ID, WhatsApp ID, phone number, Google ID or Apple ID the primary domain identity.
+Do not make Telegram ID, phone number, Google subject or a future mobile-provider ID the primary domain identity.
 
 ---
 
@@ -419,8 +416,8 @@ A customer may eventually have multiple channels:
 
 ```text
 Customer #42
+├── Standalone web inbox
 ├── Telegram
-├── WhatsApp
 └── Mobile app
 ```
 
@@ -437,11 +434,12 @@ Service workflow
 This allows:
 
 ```text
-WhatsApp-created order
-→ operational updates go back to WhatsApp
+browser-created order
+→ durable update appears in the in-app inbox
+→ Telegram delivery is attempted only when the linked identity permits it
 ```
 
-without making WhatsApp part of the order domain logic.
+without making an external delivery provider part of the order domain logic.
 
 ---
 
@@ -481,7 +479,6 @@ Adapters may include:
 
 ```text
 Telegram
-WhatsApp
 Push
 ```
 
@@ -547,7 +544,6 @@ Provider references may include:
 
 ```text
 Telegram file_id
-WhatsApp media_id
 ```
 
 One internal media asset may eventually have multiple provider references.
@@ -761,50 +757,28 @@ assets before being attached to the rental property.
 
 ---
 
-# 22. WhatsApp direction
+# 22. In-app customer notifications
 
-WhatsApp is the next customer channel after Telegram.
-
-Desired shape:
-
-```text
-WhatsApp customer
-        ↓
-channel adapter
-        ↓
-existing platform/cleaning backend
-        ↓
-Cleaner may remain Telegram
-Admin may remain current web UI
-```
-
-WhatsApp-specific code should handle:
+The durable Loco Place inbox is the primary customer notification history. It stores semantic
+notification types and safe local targets, never provider-rendered message text. External delivery
+such as Telegram is optional and must not control whether the notification exists.
 
 ```text
-webhooks
-provider authentication
-identity mapping
-message/media API
-channel UI/Flows
-delivery adapter
+domain/application event
+        ↓
+persistent customer inbox
+        ↓
+optional external channel delivery
 ```
 
-Do not duplicate:
-
-```text
-cleaning pricing
-order lifecycle
-referral logic
-onsite issue rules
-```
-
-for WhatsApp.
+WhatsApp integration has been abandoned and is not a planned platform channel. Do not retain
+provider enums, environment values, migrations or placeholder adapters for it.
 
 ---
 
 # 23. Flutter direction
 
-After multi-channel boundaries are proven with WhatsApp, standalone applications should use:
+After the current web and Telegram boundaries are proven, standalone applications should use:
 
 ```text
 Flutter / Dart
@@ -1048,7 +1022,7 @@ introduce Kafka merely for abstraction
 create interfaces around every service
 create UniversalOrder
 generalize referral economics before a real second vertical
-create WhatsApp-specific copies of cleaning business services
+create channel-specific copies of cleaning business services
 make Telegram ID the core customer identity
 use external provider media IDs as the only durable media source
 build separate Kotlin and Swift applications
@@ -1080,13 +1054,13 @@ Do not add temporary task plans or completed-work logs here.
 The architecture is moving in the correct direction if:
 
 ```text
-Adding WhatsApp
-does not require rewriting cleaning business rules.
+Adding a future customer channel
+does not require rewriting cleaning business rules or the persistent inbox.
 ```
 
 ```text
 Adding Flutter
-does not require rewriting Telegram/WhatsApp business logic.
+does not require rewriting Telegram-specific or web-specific business logic.
 ```
 
 ```text

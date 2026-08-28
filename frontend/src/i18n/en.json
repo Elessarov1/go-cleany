@@ -712,6 +712,26 @@
     "nudgeText": "Connect Telegram to receive order, booking and report-ready updates.",
     "notNow": "Not now"
   },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Important updates about your orders, bookings and benefits.",
+    "readAll": "Mark all as read",
+    "unread": "Unread notification",
+    "emptyTitle": "No notifications yet",
+    "emptyText": "Status changes and available benefits will appear here.",
+    "pagination": "Notification pages",
+    "next": "Next",
+    "types": {
+      "CLEANING_ORDER_ACCEPTED": "A cleaner accepted your order",
+      "CLEANING_ORDER_CANCELLED": "Your cleaning order was cancelled",
+      "CLEANING_ORDER_COMPLETED": "Cleaning completed and the photo report is ready",
+      "CLEANING_ONSITE_ISSUE_REPORTED": "Your order is paused while the issue is reviewed",
+      "RENTAL_BOOKING_CONFIRMED": "Your booking was confirmed",
+      "RENTAL_BOOKING_CANCELLED": "Your booking was cancelled",
+      "REFERRAL_UNLOCKED": "Your referral code is available",
+      "RENTAL_CLEANING_BENEFIT_AVAILABLE": "Your pre-checkout cleaning discount is available"
+    }
+  },
   "titles": {
     "fallback": "Loco Place",
     "description": "Loco Place — apartment rentals and cleaning services in Alanya.",
@@ -721,6 +741,7 @@
     "cleaning": "Loco Cleaning — apartment cleaning in Alanya | Loco Place",
     "cleaningPage": "Orders and cleaning | Loco Cleaning",
     "account": "Account | Loco Place",
+    "notifications": "Notifications | Loco Place",
     "admin": "Admin | Loco Place",
     "adminPage": "Admin section | Loco Place"
   },

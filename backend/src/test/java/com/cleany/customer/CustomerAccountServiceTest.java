@@ -54,11 +54,11 @@ class CustomerAccountServiceTest {
     }
 
     @Test
-    void explicitWhatsappIdentity_customerAndExternalIdentityCreated() {
+    void explicitGoogleIdentity_customerAndExternalIdentityCreated() {
         CustomerAccount account = Mockito.mock(CustomerAccount.class);
         CustomerExternalIdentity persistedIdentity = Mockito.mock(CustomerExternalIdentity.class);
         var authenticatedIdentity = new AuthenticatedCustomerIdentity(
-                ExternalIdentityProvider.WHATSAPP,
+                ExternalIdentityProvider.GOOGLE,
                 "905551234567",
                 null,
                 "Alex",
@@ -72,7 +72,7 @@ class CustomerAccountServiceTest {
                 persistedIdentity,
                 77L,
                 88L,
-                ExternalIdentityProvider.WHATSAPP,
+                ExternalIdentityProvider.GOOGLE,
                 "905551234567",
                 null,
                 "Alex",
@@ -86,7 +86,7 @@ class CustomerAccountServiceTest {
         Mockito.verifyNoInteractions(identityProvider);
         Assertions.assertAll(
                 () -> Assertions.assertEquals(
-                        ExternalIdentityProvider.WHATSAPP,
+                        ExternalIdentityProvider.GOOGLE,
                         identityCaptor.getValue().getProvider()
                 ),
                 () -> Assertions.assertEquals(
@@ -96,31 +96,31 @@ class CustomerAccountServiceTest {
                 () -> Assertions.assertEquals("ru-tr", identityCaptor.getValue().getLanguageCode()),
                 () -> Assertions.assertEquals(77L, customer.customerId()),
                 () -> Assertions.assertEquals(88L, customer.externalIdentityId()),
-                () -> Assertions.assertEquals(ExternalIdentityProvider.WHATSAPP, customer.provider()),
+                () -> Assertions.assertEquals(ExternalIdentityProvider.GOOGLE, customer.provider()),
                 () -> Assertions.assertEquals("905551234567", customer.externalSubject())
         );
     }
 
     @Test
-    void sameWhatsappIdentity_resolvedAgain_sameCustomerReturnedAndMetadataRefreshed() {
+    void sameGoogleIdentity_resolvedAgain_sameCustomerReturnedAndMetadataRefreshed() {
         CustomerAccount account = Mockito.mock(CustomerAccount.class);
         CustomerExternalIdentity persistedIdentity = Mockito.mock(CustomerExternalIdentity.class);
         var firstIdentity = new AuthenticatedCustomerIdentity(
-                ExternalIdentityProvider.WHATSAPP,
+                ExternalIdentityProvider.GOOGLE,
                 "905551234567",
                 "old-name",
                 "Alex",
                 "ru"
         );
         var refreshedIdentity = new AuthenticatedCustomerIdentity(
-                ExternalIdentityProvider.WHATSAPP,
+                ExternalIdentityProvider.GOOGLE,
                 "905551234567",
                 "new-name",
                 "Alex Updated",
                 "en_US"
         );
         Mockito.when(identityRepository.findByProviderAndExternalSubject(
-                ExternalIdentityProvider.WHATSAPP,
+                ExternalIdentityProvider.GOOGLE,
                 "905551234567"
         )).thenReturn(Optional.empty(), Optional.of(persistedIdentity));
         Mockito.when(account.getId()).thenReturn(77L);
@@ -132,7 +132,7 @@ class CustomerAccountServiceTest {
                 persistedIdentity,
                 77L,
                 88L,
-                ExternalIdentityProvider.WHATSAPP,
+                ExternalIdentityProvider.GOOGLE,
                 "905551234567",
                 "new-name",
                 "Alex Updated",

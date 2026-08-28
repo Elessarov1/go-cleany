@@ -76,7 +76,7 @@ class CleaningOrderServiceTest {
                 new CurrentCustomer(
                         77L,
                         88L,
-                        ExternalIdentityProvider.WHATSAPP,
+                        ExternalIdentityProvider.GOOGLE,
                         "905551234567",
                         null,
                         "Alex",
@@ -120,10 +120,10 @@ class CleaningOrderServiceTest {
         var customer = new CurrentCustomer(
                 91L,
                 92L,
-                ExternalIdentityProvider.WHATSAPP,
+                ExternalIdentityProvider.GOOGLE,
                 "905559876543",
                 null,
-                "WhatsApp Alex",
+                "Web Alex",
                 "ru"
         );
         var command = new CreateCleaningOrderCommand(
@@ -168,10 +168,10 @@ class CleaningOrderServiceTest {
         var customer = new CurrentCustomer(
                 91L,
                 92L,
-                ExternalIdentityProvider.WHATSAPP,
+                ExternalIdentityProvider.GOOGLE,
                 "905559876543",
                 null,
-                "WhatsApp Alex",
+                "Web Alex",
                 "ru"
         );
         var request = new CleaningOrderQuoteRequest(
@@ -213,10 +213,10 @@ class CleaningOrderServiceTest {
         CurrentCustomer customer = new CurrentCustomer(
                 91L,
                 92L,
-                ExternalIdentityProvider.WHATSAPP,
+                ExternalIdentityProvider.GOOGLE,
                 "905559876543",
                 null,
-                "WhatsApp Alex",
+                "Web Alex",
                 "ru"
         );
         var command = new CreateCleaningOrderCommand(

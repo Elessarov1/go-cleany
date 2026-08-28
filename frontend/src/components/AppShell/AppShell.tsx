@@ -10,6 +10,7 @@ import { BrandName } from "../BrandName/BrandName";
 import type { BrandService } from "../../brand/productBrand";
 import { TelegramLinkNudge } from "../TelegramLinkNudge/TelegramLinkNudge";
 import { RouteMetadata } from "../RouteMetadata/RouteMetadata";
+import { NotificationBell } from "../NotificationBell/NotificationBell";
 
 function navClassName({ isActive }: { isActive: boolean }): string {
   return `bottom-nav__link${isActive ? " is-active" : ""}`;
@@ -103,6 +104,7 @@ export function AppShell() {
               </nav>
             ) : null}
             <div className="topbar__actions">
+              {!admin && authentication.status === "READY" && authentication.current.authenticated ? <NotificationBell /> : null}
               {!admin && !catalog && !customerServiceHome ? (
                 <NavLink
                   className="topbar__global-link"

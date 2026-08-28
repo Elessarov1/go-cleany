@@ -114,6 +114,20 @@ public class CustomerAccountMergeService {
     }
 
     private void reassignCustomerOwnership(long targetId, long sourceId) {
+        jdbcTemplate.update("""
+                delete from customer_notification source
+                 where source.customer_id = ?
+                   and exists (
+                       select 1 from customer_notification target
+                        where target.customer_id = ?
+                          and target.dedup_key = source.dedup_key
+                   )
+                """, sourceId, targetId);
+        jdbcTemplate.update(
+                "update customer_notification set customer_id = ? where customer_id = ?",
+                targetId,
+                sourceId
+        );
         jdbcTemplate.update("update cleaning_order set customer_id = ? where customer_id = ?", targetId, sourceId);
         jdbcTemplate.update(
                 "update cleaning_order set referrer_customer_id = ? where referrer_customer_id = ?",
