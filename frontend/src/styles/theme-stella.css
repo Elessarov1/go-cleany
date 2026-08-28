@@ -1,0 +1,364 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap");
+
+:root {
+  --font-sans: Montserrat, ui-sans-serif, sans-serif, system-ui;
+  --font-serif: "Cormorant Garamond", ui-serif, serif;
+  --font-mono: "Geist Mono", "Fira Code", monospace;
+  --tracking-normal: -0.01em;
+  --tracking-tight: calc(var(--tracking-normal) - 0.025em);
+  --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
+  --tracking-wide: calc(var(--tracking-normal) + 0.025em);
+  --tracking-wider: calc(var(--tracking-normal) + 0.05em);
+  --tracking-widest: calc(var(--tracking-normal) + 0.1em);
+  --stella-radius: 0.85rem;
+  --radius-small: calc(var(--stella-radius) - 0.2rem);
+  --radius-medium: var(--stella-radius);
+  --radius-large: calc(var(--stella-radius) + 0.25rem);
+  --shadow-small: 0 2px 10px 0 hsl(35 50% 20% / 0.05), 0 1px 2px -1px hsl(35 50% 20% / 0.05);
+  --shadow-medium: 0 2px 10px 0 hsl(35 50% 20% / 0.05), 0 4px 6px -1px hsl(35 50% 20% / 0.05);
+}
+
+html,
+body {
+  font-family: var(--font-sans);
+  letter-spacing: var(--tracking-normal);
+}
+
+body {
+  background: #fff;
+}
+
+button,
+input,
+textarea,
+select {
+  letter-spacing: inherit;
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--font-mono);
+}
+
+/* Stella is the shared visual language for Loco Place and Loco Rent. */
+.service-shell[data-service="platform"],
+.service-shell[data-service="rent"] {
+  --color-canvas: oklch(1 0 0);
+  --color-surface: oklch(1 0 0);
+  --color-surface-strong: oklch(1 0 0);
+  --color-ink: oklch(0 0 0);
+  --color-muted: oklch(0.5319 0.0413 75.9565);
+  --color-line: oklch(0.8978 0.0278 76.4745);
+  --color-primary: oklch(0.8512 0.1254 73.9788);
+  --color-primary-dark: oklch(0.6894 0.1278 71.2857);
+  --color-primary-soft: oklch(0.9458 0.0454 76.3285);
+  --color-accent: oklch(0.9197 0.0677 76.0180);
+  --color-accent-soft: oklch(0.9593 0.011 76.5971);
+  --color-danger: oklch(0.6356 0.2082 25.3782);
+  --color-danger-soft: color-mix(in oklch, oklch(0.6356 0.2082 25.3782) 10%, white);
+  --color-warning: oklch(0.6894 0.1278 71.2857);
+  --color-warning-soft: oklch(0.9564 0.0363 76.4189);
+  --color-info: oklch(0.6894 0.1278 71.2857);
+  --color-info-soft: oklch(0.9593 0.011 76.5971);
+  --shadow-small: 0 2px 10px 0 hsl(35 50% 20% / 0.05), 0 1px 2px -1px hsl(35 50% 20% / 0.05);
+  --shadow-medium: 0 2px 10px 0 hsl(35 50% 20% / 0.05), 0 4px 6px -1px hsl(35 50% 20% / 0.05);
+}
+
+/* Cleaning keeps its own light-blue identity while sharing the same forms, type and geometry. */
+.service-shell[data-service="cleaning"] {
+  --color-canvas: #f3fafe;
+  --color-surface: #fbfdff;
+  --color-surface-strong: #ffffff;
+  --color-ink: #173647;
+  --color-muted: #647f8d;
+  --color-line: #cfe2ea;
+  --color-primary: #1685b3;
+  --color-primary-dark: #0b648b;
+  --color-primary-soft: #dceff7;
+  --color-accent: #36a9c4;
+  --color-accent-soft: #dcf2f7;
+  --shadow-small: 0 2px 10px 0 hsl(198 36% 24% / 0.05), 0 1px 2px -1px hsl(198 36% 24% / 0.05);
+  --shadow-medium: 0 2px 10px 0 hsl(198 36% 24% / 0.06), 0 4px 6px -1px hsl(198 36% 24% / 0.06);
+}
+
+.service-shell {
+  font-family: var(--font-sans);
+  letter-spacing: var(--tracking-normal);
+  background: var(--color-canvas);
+}
+
+.service-shell .app-container {
+  background: var(--color-canvas);
+  border-color: color-mix(in srgb, var(--color-line) 72%, transparent);
+  box-shadow: none;
+}
+
+.service-shell .topbar,
+.service-shell .bottom-nav {
+  background: color-mix(in srgb, var(--color-surface-strong) 96%, transparent);
+  border-color: var(--color-line);
+  box-shadow: var(--shadow-small);
+}
+
+.service-shell .topbar__global-link,
+.service-shell .topbar__auth-action,
+.service-shell .language-switcher,
+.service-shell .bottom-nav__link,
+.service-shell .button,
+.service-shell .choice-card,
+.service-shell .cleaning-card,
+.service-shell .rental-term-selector button,
+.service-shell .rental-calendar__toolbar button,
+.service-shell .rental-months-control button {
+  border-radius: var(--radius-medium);
+}
+
+.service-shell .brand {
+  letter-spacing: var(--tracking-tighter);
+}
+
+.service-shell .brand__mark {
+  border-radius: var(--radius-small);
+  box-shadow: var(--shadow-small);
+}
+
+.service-shell[data-service="platform"] .brand__mark,
+.service-shell[data-service="rent"] .brand__mark {
+  color: #000;
+}
+
+.service-shell .brand__word,
+.service-shell h1,
+.service-shell h2,
+.service-shell h3,
+.service-shell strong {
+  letter-spacing: var(--tracking-tight);
+}
+
+.service-shell .eyebrow {
+  letter-spacing: var(--tracking-wider);
+}
+
+.service-shell .field input,
+.service-shell .field textarea,
+.service-shell .field select,
+.service-shell .preview-panel select,
+.service-shell .admin-issue-resolution textarea {
+  color: var(--color-ink);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-medium);
+  box-shadow: none;
+}
+
+.service-shell .field input:focus,
+.service-shell .field textarea:focus,
+.service-shell .field select:focus,
+.service-shell .preview-panel select:focus,
+.service-shell .admin-issue-resolution textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.service-shell .field input::placeholder,
+.service-shell .field textarea::placeholder {
+  color: color-mix(in srgb, var(--color-muted) 72%, white);
+}
+
+.service-shell .button {
+  min-height: 46px;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+.service-shell .button--primary {
+  background: var(--color-primary);
+}
+
+.service-shell[data-service="platform"] .button--primary,
+.service-shell[data-service="rent"] .button--primary {
+  color: #000;
+}
+
+.service-shell[data-service="platform"] .button--primary:hover:not(:disabled),
+.service-shell[data-service="rent"] .button--primary:hover:not(:disabled) {
+  color: #000;
+  background: oklch(0.7754 0.1355 72.2638);
+}
+
+.service-shell .button--secondary {
+  background: var(--color-surface-strong);
+  border-color: var(--color-line);
+  box-shadow: var(--shadow-small);
+}
+
+.service-shell :is(
+  .form-section,
+  .price-summary,
+  .details-card,
+  .detail-status-card,
+  .success-card,
+  .service-card,
+  .rental-property-card,
+  .rental-section,
+  .rental-quote-card,
+  .rental-booking-summary,
+  .rental-price-snapshot,
+  .rental-booking-card,
+  .admin-stat,
+  .admin-orders,
+  .admin-history,
+  .referral-card,
+  .account-provider-card,
+  .account-link-pending
+) {
+  background: var(--color-surface-strong);
+  border-color: var(--color-line);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-small);
+}
+
+.service-shell .choice-card,
+.service-shell .cleaning-card,
+.service-shell .rental-detail-grid > div,
+.service-shell .rental-term-selector button,
+.service-shell .rental-calendar,
+.service-shell .rental-months-control,
+.service-shell .rental-monthly-end,
+.service-shell .rental-date-guidance,
+.service-shell .payment-note,
+.service-shell .rental-policy-strip {
+  border-radius: var(--radius-medium);
+}
+
+.service-shell .choice-card.is-selected,
+.service-shell .rental-term-selector button.is-selected {
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
+.service-shell[data-service="platform"] .app-frame,
+.service-shell[data-service="rent"] .app-frame {
+  background: var(--color-canvas);
+}
+
+.service-shell[data-service="platform"] .service-card--rent {
+  background: linear-gradient(145deg, oklch(1 0 0), oklch(0.9593 0.011 76.5971));
+  border-color: oklch(0.8978 0.0278 76.4745);
+}
+
+.service-shell[data-service="platform"] .service-card--rent .service-card__icon {
+  color: #000;
+  background: oklch(0.8512 0.1254 73.9788);
+}
+
+.service-shell[data-service="platform"] .service-card--cleaning {
+  background: linear-gradient(145deg, #ffffff, #eef8fc);
+  border-color: #cfe2ea;
+}
+
+.service-shell[data-service="platform"] .service-card--cleaning .service-card__icon {
+  background: #1685b3;
+}
+
+.service-shell .service-card,
+.service-shell .rental-property-card,
+.service-shell .rental-gallery__viewport figure {
+  border-radius: var(--radius-large);
+}
+
+.service-shell[data-service="rent"] .rental-hero {
+  color: #000;
+  background: linear-gradient(135deg, oklch(0.9458 0.0454 76.3285) 0%, oklch(0.8512 0.1254 73.9788) 64%, oklch(0.9197 0.0677 76.0180) 100%);
+  border-radius: 0 0 var(--radius-large) var(--radius-large);
+}
+
+.service-shell[data-service="rent"] .rental-hero .eyebrow,
+.service-shell[data-service="rent"] .rental-hero p {
+  color: color-mix(in srgb, #000 66%, transparent);
+}
+
+.service-shell[data-service="rent"] .rental-hero__mark {
+  color: #000;
+  background: rgb(255 255 255 / 38%);
+  border-color: rgb(255 255 255 / 58%);
+  border-radius: var(--radius-large);
+}
+
+.service-shell[data-service="rent"] .rental-hero::before {
+  border-color: rgb(255 255 255 / 44%);
+  box-shadow: 0 0 0 36px rgb(255 255 255 / 12%), 0 0 0 72px rgb(255 255 255 / 8%);
+}
+
+.service-shell[data-service="rent"] .rental-property-card__image > span,
+.service-shell[data-service="rent"] .rental-gallery__viewport figure span {
+  color: #000;
+  background: rgb(255 255 255 / 82%);
+  border: 1px solid rgb(255 255 255 / 72%);
+}
+
+.service-shell[data-service="rent"] .rental-calendar__grid button.is-unavailable {
+  color: oklch(0.5319 0.0413 75.9565);
+  background: repeating-linear-gradient(135deg, oklch(0.9593 0.011 76.5971), oklch(0.9593 0.011 76.5971) 3px, #fff 3px, #fff 6px);
+}
+
+.service-shell[data-service="rent"] .rental-calendar__grid button.is-check-in,
+.service-shell[data-service="rent"] .rental-calendar__grid button.is-check-out,
+.service-shell[data-service="rent"] .rental-date-guidance > span,
+.service-shell[data-service="rent"] .rental-date-guidance > .icon {
+  color: #000;
+}
+
+.service-shell[data-service="cleaning"] .hero {
+  background: linear-gradient(135deg, #0b648b 0%, #1685b3 62%, #36a9c4 100%);
+  border-radius: 0 0 var(--radius-large) var(--radius-large);
+}
+
+.service-shell[data-service="cleaning"] .cleaning-card.is-selected {
+  background: color-mix(in srgb, var(--color-primary-soft) 54%, white);
+}
+
+.service-shell[data-service="cleaning"] .cleaning-card.is-selected .cleaning-card__radio {
+  box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--color-primary-soft) 54%, white);
+}
+
+.service-shell .language-switcher {
+  padding: 3px;
+  background: var(--color-surface-strong);
+  border-color: var(--color-line);
+  box-shadow: var(--shadow-small);
+}
+
+.service-shell[data-service="platform"] .language-switcher button.is-active,
+.service-shell[data-service="rent"] .language-switcher button.is-active {
+  color: #000;
+  background: var(--color-primary);
+}
+
+.service-shell .bottom-nav__link.is-active {
+  color: var(--color-primary-dark);
+  background: var(--color-primary-soft);
+}
+
+.service-shell .modal-backdrop {
+  background: rgb(20 16 10 / 48%);
+}
+
+.service-shell .service-dialog,
+.service-shell .confirmation-dialog {
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-line);
+  border-radius: calc(var(--radius-large) + 0.25rem);
+  box-shadow: var(--shadow-medium);
+}
+
+@media (min-width: 1024px) {
+  .service-shell[data-platform="web"] .app-container {
+    border-color: transparent;
+  }
+
+  .service-shell[data-platform="web"] .topbar {
+    box-shadow: 0 1px 0 var(--color-line);
+  }
+}
