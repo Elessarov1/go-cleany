@@ -8,6 +8,7 @@ import { OrderStatus } from "../../components/OrderStatus/OrderStatus";
 import type { CleaningOrder } from "../../domain/order";
 import { formatPrice } from "../../domain/pricing";
 import { formatDate } from "../../utils/format";
+import { BrandName } from "../../components/BrandName/BrandName";
 
 export function OrderDetailsPage() {
   const { id } = useParams();
@@ -20,6 +21,8 @@ export function OrderDetailsPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState(false);
+  const [reportPhotos, setReportPhotos] = useState<Array<{ id: number; url: string }>>([]);
+  const [activePhoto, setActivePhoto] = useState<string | null>(null);
   const locale = i18n.resolvedLanguage === "ru" ? "ru-RU" : "en-GB";
 
   useEffect(() => {
@@ -37,6 +40,27 @@ export function OrderDetailsPage() {
       active = false;
     };
   }, [api, orderId, reloadKey, location.search]);
+
+  useEffect(() => {
+    if (order?.report?.status !== "AVAILABLE") {
+      setReportPhotos([]);
+      return;
+    }
+    let active = true;
+    const urls: string[] = [];
+    Promise.all(order.report.photos.map(async (photo) => {
+      const blob = await api.getReportPhoto(orderId, photo.id);
+      const url = URL.createObjectURL(blob);
+      urls.push(url);
+      return { id: photo.id, url };
+    })).then((photos) => {
+      if (active) setReportPhotos(photos);
+    }).catch(() => undefined);
+    return () => {
+      active = false;
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [api, order, orderId]);
 
   const cancelOrder = async () => {
     if (!window.confirm(t("details.cancelConfirm"))) return;
@@ -117,6 +141,46 @@ export function OrderDetailsPage() {
           ) : null}
         </dl>
       </section>
+
+      <section className="cleaning-report-card">
+        <div className="cleaning-report-card__header">
+          <div><span className="eyebrow"><BrandName /></span><h2>{t("details.reportTitle")}</h2></div>
+          {order.report?.expiresAt && order.report.status === "AVAILABLE" ? (
+            <time dateTime={order.report.expiresAt}>
+              {t("details.reportAvailableUntil", {
+                date: new Intl.DateTimeFormat(locale, { day: "numeric", month: "long" }).format(new Date(order.report.expiresAt)),
+              })}
+            </time>
+          ) : null}
+        </div>
+        {order.report?.status === "AVAILABLE" ? (
+          <>
+            {order.report.cleanerComment ? <p>{order.report.cleanerComment}</p> : null}
+            <div className="cleaning-report-gallery">
+              {reportPhotos.map((photo, index) => (
+                <button type="button" key={photo.id} onClick={() => setActivePhoto(photo.url)}>
+                  <img src={photo.url} alt={t("details.reportPhotoAlt", { index: index + 1 })} />
+                </button>
+              ))}
+            </div>
+          </>
+        ) : order.report?.status === "EXPIRED" ? (
+          <div className="cleaning-report-card__expired">
+            <strong>{t("details.reportExpired")}</strong>
+            <p>{t("details.reportRetention", { count: order.report.retentionDays })}</p>
+            {order.report.cleanerComment ? <p>{order.report.cleanerComment}</p> : null}
+          </div>
+        ) : (
+          <p>{t("details.reportNotReady")}</p>
+        )}
+      </section>
+
+      {activePhoto ? (
+        <div className="cleaning-report-lightbox" role="dialog" aria-modal="true" onClick={() => setActivePhoto(null)}>
+          <button type="button" aria-label={t("details.reportClose")} onClick={() => setActivePhoto(null)}>×</button>
+          <img src={activePhoto} alt="" onClick={(event) => event.stopPropagation()} />
+        </div>
+      ) : null}
 
       <div className="payment-note payment-note--standalone">
         <span><Icon name="wallet" size={17} /></span>

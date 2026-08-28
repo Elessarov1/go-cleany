@@ -8,7 +8,7 @@ public interface ReferralCodeRepository extends JpaRepository<ReferralCode, Long
 
     Optional<ReferralCode> findByCodeIgnoreCaseAndActiveTrue(String code);
 
-    Optional<ReferralCode> findByCustomerIdAndActiveTrue(long customerId);
+    Optional<ReferralCode> findFirstByCustomerIdAndActiveTrueOrderByCreatedAtAsc(long customerId);
 
     Optional<ReferralCode> findByPartnerIdAndActiveTrue(long partnerId);
 

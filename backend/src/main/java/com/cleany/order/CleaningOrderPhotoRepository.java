@@ -11,6 +11,8 @@ public interface CleaningOrderPhotoRepository extends JpaRepository<CleaningOrde
 
     List<CleaningOrderPhoto> findAllByOrderIdOrderByCreatedAt(long orderId);
 
+    List<CleaningOrderPhoto> findAllByOrderIdOrderByCreatedAtAscIdAsc(long orderId);
+
     boolean existsByOrderIdAndMediaAssetId(long orderId, long mediaAssetId);
 
     long countByOrderId(long orderId);

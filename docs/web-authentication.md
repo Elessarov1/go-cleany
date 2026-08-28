@@ -60,13 +60,13 @@ Secrets либо в защищённом `chmod 600` файле `.env.production
 ## ADMIN bootstrap и отзыв доступа
 
 `ADMIN` хранится в `customer_role` и принадлежит `CustomerAccount`, а не Telegram или Google.
-`ADMIN_TELEGRAM_IDS` и `ADMIN_GOOGLE_EMAILS` — только bootstrap allowlists: после успешной
-аутентификации совпавшему аккаунту идемпотентно добавляется роль. Для Google email должен быть
+`ADMIN_GOOGLE_EMAILS` — единственный external bootstrap allowlist: после успешной Google-
+аутентификации совпавшему `CustomerAccount` идемпотентно добавляется роль. Email должен быть
 присутствующим и `email_verified=true`.
 
 Чтобы отозвать роль в pilot:
 
-1. удалите Telegram ID или Google email из соответствующего deployment secret/configuration;
+1. удалите Google email из `ADMIN_GOOGLE_EMAILS`;
 2. передеплойте backend;
 3. найдите нужный `customer_id` через `customer_external_identity`;
 4. удалите только его роль:
@@ -89,12 +89,16 @@ where customer_id = <CUSTOMER_ID>
 cookies. Текущая сессия доступна через `GET /api/v1/auth/me`; DTO содержит только внутренний customer,
 display name, provider, platform roles и признак доступности login provider без его credentials.
 
-## Отложенное связывание аккаунтов
+## Явное связывание Google и Telegram
 
 Автоматического слияния Telegram и Google нет. Совпадение email, телефона, имени или username не
-считается доказательством владения. Проверенное связывание нескольких external identities с одним
-`CustomerAccount` — отдельный следующий этап; текущая модель `CustomerExternalIdentity →
-CustomerAccount` сохраняет такую возможность.
+считается доказательством владения. Authenticated Google-пользователь создаёт в `/account` одноразовую ссылку,
+затем владение Telegram подтверждается подписанным TMA init data и явным действием. Raw token содержит 256 бит
+случайности, живёт 10 минут, одноразовый, а в PostgreSQL хранится только SHA-256 hash.
+
+Каноническая цель — инициировавший Google `CustomerAccount`. При слиянии переносятся владение бизнес-данными,
+объединяются роли, сохраняется более ранний `createdAt`, а телефон копируется только в пустой profile. Два разных
+непустых телефона или две разные identity одного provider дают явный conflict. Unlinking в этом этапе не реализован.
 
 ## Активация постоянного домена и Google Login
 

@@ -4,6 +4,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.HashSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,23 +54,33 @@ public class CustomerNotificationDispatcher {
                         "Communication identity " + communicationIdentityId
                                 + " is unavailable for customer " + customerId
                 ));
-        var target = new CommunicationTarget(
-                identity.getCustomerId(),
-                communicationIdentityId,
-                identity.getProvider(),
-                identity.getExternalSubject(),
-                identity.getLanguageCode()
-        );
-        CustomerNotificationSender sender = senders.get(target.provider());
-        if (sender == null) {
-            log.warn(
-                    "Customer notification sender is unavailable for provider {} and identity {}",
-                    target.provider(),
-                    target.externalIdentityId()
-            );
-            return false;
+        var identities = identityRepository.findAllByCustomerIdOrderByProvider(customerId);
+        if (identities == null || identities.isEmpty()) {
+            identities = List.of(identity);
         }
-        sender.send(target, notification);
-        return true;
+        boolean delivered = false;
+        var deliveredProviders = new HashSet<ExternalIdentityProvider>();
+        for (var candidate : identities) {
+            CustomerNotificationSender sender = senders.get(candidate.getProvider());
+            if (sender == null || !deliveredProviders.add(candidate.getProvider())) {
+                continue;
+            }
+            if (candidate.getProvider() == ExternalIdentityProvider.TELEGRAM
+                    && !candidate.isWriteAccessAllowed()) {
+                continue;
+            }
+            sender.send(new CommunicationTarget(
+                    candidate.getCustomerId(),
+                    candidate.getId(),
+                    candidate.getProvider(),
+                    candidate.getExternalSubject(),
+                    candidate.getLanguageCode()
+            ), notification);
+            delivered = true;
+        }
+        if (!delivered) {
+            log.debug("No enabled notification channel for customer {}", customerId);
+        }
+        return delivered;
     }
 }

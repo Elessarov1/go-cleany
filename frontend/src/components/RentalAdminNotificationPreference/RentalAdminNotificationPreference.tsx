@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useRentalApi } from "../../api/RentalApiProvider";
 import type { RentalAdminNotificationPreference as Preference } from "../../domain/rental";
+import { Link } from "react-router-dom";
 
 export function RentalAdminNotificationPreference() {
   const { t } = useTranslation();
@@ -42,10 +43,16 @@ export function RentalAdminNotificationPreference() {
     <section className="admin-rental-notification-setting" aria-busy={!preference || saving}>
       <div>
         <strong>{t("adminRental.notifications.title")}</strong>
-        <p>{t("adminRental.notifications.description")}</p>
+        <p>{preference?.telegramLinked
+          ? t("adminRental.notifications.description")
+          : t("adminRental.notifications.notLinked")}</p>
+        {preference?.telegramLinked && preference.telegramUsername ? <small>@{preference.telegramUsername}</small> : null}
+        {preference?.telegramLinked && !preference.writeAccessAllowed ? <small>{t("adminRental.notifications.writeAccessMissing")}</small> : null}
         {error ? <small role="alert">{t("adminRental.notifications.error")}</small> : null}
       </div>
-      <div className="admin-rental-notification-setting__control">
+      {!preference?.telegramLinked && preference ? (
+        <Link className="button button--secondary" to="/account">{t("account.connectTelegram")}</Link>
+      ) : <div className="admin-rental-notification-setting__control">
         <span>{preference
           ? t(`adminRental.notifications.${preference.telegramEnabled ? "on" : "off"}`)
           : "…"}</span>
@@ -60,7 +67,7 @@ export function RentalAdminNotificationPreference() {
         >
           <span />
         </button>
-      </div>
+      </div>}
     </section>
   );
 }

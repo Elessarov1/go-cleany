@@ -13,6 +13,7 @@ interface TelegramWebApp {
   initData: string;
   initDataUnsafe?: {
     user?: TelegramUser;
+    start_param?: string;
   };
   requestWriteAccess(callback?: (allowed: boolean) => void): void;
   requestContact?(callback?: (shared: boolean) => void): void;
@@ -63,6 +64,10 @@ export class TelegramPlatform implements Platform {
 
   getLanguage(): string | null {
     return getWebApp().initDataUnsafe?.user?.language_code ?? null;
+  }
+
+  getStartParameter(): string | null {
+    return getWebApp().initDataUnsafe?.start_param ?? null;
   }
 
   ensureNotificationAccess(): Promise<boolean> {

@@ -45,6 +45,12 @@ public class CustomerExternalIdentity {
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified;
 
+    @Column(name = "write_access_allowed", nullable = false)
+    private boolean writeAccessAllowed;
+
+    @Column(name = "write_access_updated_at")
+    private Instant writeAccessUpdatedAt;
+
     @Column(name = "last_seen_at", nullable = false)
     private Instant lastSeenAt;
 
@@ -115,6 +121,14 @@ public class CustomerExternalIdentity {
         this.lastSeenAt = Objects.requireNonNull(seenAt);
     }
 
+    void allowWriteAccess(Instant updatedAt) {
+        if (provider != ExternalIdentityProvider.TELEGRAM) {
+            throw new IllegalStateException("Write access is only supported for Telegram identities");
+        }
+        writeAccessAllowed = true;
+        writeAccessUpdatedAt = Objects.requireNonNull(updatedAt, "updatedAt");
+    }
+
     public long getCustomerId() {
         return customerId;
     }
@@ -149,5 +163,9 @@ public class CustomerExternalIdentity {
 
     public boolean isEmailVerified() {
         return emailVerified;
+    }
+
+    public boolean isWriteAccessAllowed() {
+        return writeAccessAllowed;
     }
 }

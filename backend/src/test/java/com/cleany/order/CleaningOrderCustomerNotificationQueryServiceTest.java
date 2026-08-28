@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import com.cleany.retention.DataRetentionProperties;
+
 class CleaningOrderCustomerNotificationQueryServiceTest {
 
     private final CleaningOrderRepository orderRepository = Mockito.mock(CleaningOrderRepository.class);
@@ -22,7 +24,8 @@ class CleaningOrderCustomerNotificationQueryServiceTest {
                     orderRepository,
                     completionPhotoRepository,
                     issueReportRepository,
-                    issuePhotoRepository
+                    issuePhotoRepository,
+                    new DataRetentionProperties(true, 9, "0 0 0 * * *", 10, 10)
             );
 
     @Test
@@ -48,7 +51,8 @@ class CleaningOrderCustomerNotificationQueryServiceTest {
                 () -> Assertions.assertEquals(ApartmentType.TWO_PLUS_ONE, notification.apartmentType()),
                 () -> Assertions.assertEquals(ServiceArea.MAHMUTLAR, notification.area()),
                 () -> Assertions.assertEquals("Готово", notification.cleanerComment()),
-                () -> Assertions.assertEquals(List.of(71L, 72L), notification.mediaIds())
+                () -> Assertions.assertEquals(List.of(71L, 72L), notification.mediaIds()),
+                () -> Assertions.assertEquals(9, notification.reportRetentionDays())
         );
     }
 

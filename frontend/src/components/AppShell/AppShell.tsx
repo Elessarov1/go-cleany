@@ -7,6 +7,8 @@ import { LanguageSwitcher } from "../LanguageSwitcher/LanguageSwitcher";
 import { PreviewPanel } from "../PreviewPanel/PreviewPanel";
 import { BrandName } from "../BrandName/BrandName";
 import type { BrandService } from "../../brand/productBrand";
+import { TelegramLinkNudge } from "../TelegramLinkNudge/TelegramLinkNudge";
+import { RouteMetadata } from "../RouteMetadata/RouteMetadata";
 
 function navClassName({ isActive }: { isActive: boolean }): string {
   return `bottom-nav__link${isActive ? " is-active" : ""}`;
@@ -50,6 +52,8 @@ export function AppShell() {
   const showWebAdminSidebar = standaloneWeb && admin && hasAdminAccess;
 
   return (
+    <>
+    <RouteMetadata />
     <div
       className="app-frame service-shell"
       data-service={service}
@@ -102,14 +106,15 @@ export function AppShell() {
               ) : null}
               {standaloneWeb && authentication.status === "READY" ? (
                 authentication.current.authenticated ? (
-                  <button
-                    className="topbar__auth-action"
-                    type="button"
-                    onClick={() => void authentication.logout()}
-                  >
-                    <Icon name="user" size={17} />
-                    <span>{t("auth.logout")}</span>
-                  </button>
+                  <>
+                    <NavLink className="topbar__auth-action" to="/account">
+                      <Icon name="user" size={17} />
+                      <span>{t("account.title")}</span>
+                    </NavLink>
+                    <button className="topbar__auth-action" type="button" onClick={() => void authentication.logout()}>
+                      <span>{t("auth.logout")}</span>
+                    </button>
+                  </>
                 ) : authentication.googleAvailable ? (
                   <a
                     className="topbar__auth-action"
@@ -175,7 +180,9 @@ export function AppShell() {
           </nav>
         ) : null}
       </div>
+      <TelegramLinkNudge />
       <PreviewPanel />
     </div>
+    </>
   );
 }

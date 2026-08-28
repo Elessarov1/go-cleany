@@ -12,7 +12,6 @@ import com.cleany.admin.AdminAccessService;
 import com.cleany.admin.AdminDashboardResponse;
 import com.cleany.admin.AdminQueryService;
 import com.cleany.admin.AdminStatsResponse;
-import com.cleany.configuration.AdminProperties;
 import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountService;
 import com.cleany.customer.ExternalIdentityProvider;
@@ -29,6 +28,7 @@ class TelegramAdminBotServiceTest {
     private CustomerAccountService customerAccountService;
     private AdminBotMessageFactory messageFactory;
     private TelegramBotClient botClient;
+    private AdminTelegramRecipientService recipientService;
     private TelegramAdminBotService service;
 
     @BeforeEach
@@ -38,9 +38,10 @@ class TelegramAdminBotServiceTest {
         customerAccountService = Mockito.mock(CustomerAccountService.class);
         messageFactory = Mockito.mock(AdminBotMessageFactory.class);
         botClient = Mockito.mock(TelegramBotClient.class);
+        recipientService = Mockito.mock(AdminTelegramRecipientService.class);
         service = new TelegramAdminBotService(
                 accessService,
-                new AdminProperties(List.of(ADMIN_ID, 900002L), List.of()),
+                recipientService,
                 customerAccountService,
                 queryService,
                 messageFactory,
@@ -99,9 +100,10 @@ class TelegramAdminBotServiceTest {
     }
 
     @Test
-    void onsiteIssue_allConfiguredAdminsReceiveAlert() {
+    void onsiteIssue_allEligiblePersistedAdminsReceiveAlert() {
         Mockito.when(messageFactory.onsiteIssueAlert(43L, OnsiteIssueReason.ACCESS_PROBLEM))
                 .thenReturn("onsite-issue-alert");
+        Mockito.when(recipientService.recipients()).thenReturn(List.of(ADMIN_ID, 900002L));
 
         service.notifyOnsiteIssue(43L, OnsiteIssueReason.ACCESS_PROBLEM);
 

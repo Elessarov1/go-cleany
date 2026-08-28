@@ -4,6 +4,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cleany.retention.DataRetentionProperties;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -14,6 +16,7 @@ public class CleaningOrderCustomerNotificationQueryService {
     private final CleaningOrderPhotoRepository completionPhotoRepository;
     private final CleaningOrderIssueReportRepository issueReportRepository;
     private final CleaningOrderIssuePhotoRepository issuePhotoRepository;
+    private final DataRetentionProperties dataRetentionProperties;
 
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public CleaningOrderCustomerNotification.Completed completed(long orderId) {
@@ -31,7 +34,8 @@ public class CleaningOrderCustomerNotificationQueryService {
                 order.getArea(),
                 order.getRequestedDate(),
                 order.getCleanerComment(),
-                mediaIds
+                mediaIds,
+                dataRetentionProperties.days()
         );
     }
 

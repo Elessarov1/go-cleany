@@ -76,8 +76,15 @@ cleaner:
   telegram-ids: ${CLEANER_TELEGRAM_IDS:123456789,987654321}
 
 admin:
-  telegram-ids: ${ADMIN_TELEGRAM_IDS:${LOCAL_TELEGRAM_USER_ID:900001}}
   google-emails: ${ADMIN_GOOGLE_EMAILS:}
+
+account-linking:
+  telegram:
+    mini-app-link-base: ${TELEGRAM_MINI_APP_LINK_BASE:}
+    request-ttl: ${ACCOUNT_LINK_REQUEST_TTL:10m}
+
+public-application:
+  base-url: ${PUBLIC_APP_BASE_URL:http://localhost:5173}
 
 web-auth:
   google:

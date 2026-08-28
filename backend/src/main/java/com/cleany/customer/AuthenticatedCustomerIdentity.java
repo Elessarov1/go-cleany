@@ -12,7 +12,8 @@ public record AuthenticatedCustomerIdentity(
         String displayName,
         String languageCode,
         String email,
-        boolean emailVerified
+        boolean emailVerified,
+        boolean allowsWriteToPm
 ) implements Serializable {
 
     public AuthenticatedCustomerIdentity(
@@ -22,7 +23,19 @@ public record AuthenticatedCustomerIdentity(
             String displayName,
             String languageCode
     ) {
-        this(provider, externalSubject, username, displayName, languageCode, null, false);
+        this(provider, externalSubject, username, displayName, languageCode, null, false, false);
+    }
+
+    public AuthenticatedCustomerIdentity(
+            ExternalIdentityProvider provider,
+            String externalSubject,
+            String username,
+            String displayName,
+            String languageCode,
+            String email,
+            boolean emailVerified
+    ) {
+        this(provider, externalSubject, username, displayName, languageCode, email, emailVerified, false);
     }
 
     public AuthenticatedCustomerIdentity {

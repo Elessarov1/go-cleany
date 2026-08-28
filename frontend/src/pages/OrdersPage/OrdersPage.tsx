@@ -123,6 +123,17 @@ export function OrdersPage() {
                     {t(`apartments.${order.apartmentType}`)} · {t(`cleaning.${order.cleaningType}.title`)}
                   </h2>
                   <p>{t(`areas.${order.area}`)} · #{order.id}</p>
+                  {order.status === "COMPLETED" && order.report ? (
+                    <small className="order-card__report-cue">
+                      {order.report.status === "AVAILABLE" && order.report.expiresAt
+                        ? t("details.reportAvailableUntil", {
+                            date: formatDate(order.report.expiresAt.slice(0, 10), locale),
+                          })
+                        : order.report.status === "EXPIRED"
+                          ? t("details.reportExpired")
+                          : t("details.reportNotReady")}
+                    </small>
+                  ) : null}
                 </div>
                 <strong>{formatPrice(order.price, order.currency, locale)}</strong>
               </div>

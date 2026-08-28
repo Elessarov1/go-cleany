@@ -237,10 +237,6 @@ export function RentalPropertyPage() {
     }
     try {
       setSubmitting(true);
-      if (!await platform.ensureNotificationAccess()) {
-        setSubmitError(t("rental.booking.errors.notificationAccess"));
-        return;
-      }
       const contactDetails = {
         guests,
         phone: phone.trim(),

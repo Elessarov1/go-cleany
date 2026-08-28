@@ -38,12 +38,29 @@ public record TelegramUpdate(
             String text,
             String caption,
             List<PhotoSize> photo,
-            Contact contact
+            Contact contact,
+            @JsonProperty("write_access_allowed") WriteAccessAllowed writeAccessAllowed
     ) {
 
         public Message {
             photo = photo == null ? List.of() : List.copyOf(photo);
         }
+
+        public Message(
+                long messageId,
+                TelegramUser from,
+                Chat chat,
+                String text,
+                String caption,
+                List<PhotoSize> photo,
+                Contact contact
+        ) {
+            this(messageId, from, chat, text, caption, photo, contact, null);
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record WriteAccessAllowed(@JsonProperty("from_request") boolean fromRequest) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

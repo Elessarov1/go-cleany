@@ -154,7 +154,7 @@ Repository -> Settings -> Environments -> staging
 | `STAGING_SSH_USER` | пользователь-владелец `/opt/go-cleany` |
 | `APP_HOST` | `loco-place.com` |
 | `CLEANER_TELEGRAM_IDS` | `123456789,987654321` |
-| `ADMIN_TELEGRAM_IDS` | `123456789,555555555` |
+| `TELEGRAM_MINI_APP_LINK_BASE` | `https://t.me/<bot>/<mini-app>` |
 | `GOOGLE_AUTH_ENABLED` | `true` |
 | `WEB_SESSION_TIMEOUT` | `12h` |
 | `RENTAL_MIN_STAY_DAYS` | `7` |
@@ -166,8 +166,8 @@ Repository -> Settings -> Environments -> staging
 | `RENTAL_CLEANING_DISCOUNT_RATE` | `0.10` |
 | `RENTAL_CLEANING_MAX_DISCOUNT` | `2000` |
 
-`CLEANER_TELEGRAM_IDS` и `ADMIN_TELEGRAM_IDS` должны содержать только numeric Telegram IDs через
-запятую, без пробелов. Workflow валидирует этот формат до SSH/deploy.
+`CLEANER_TELEGRAM_IDS` должен содержать только numeric Telegram IDs через
+запятую, без пробелов. Workflow валидирует этот формат до SSH/deploy. `TELEGRAM_MINI_APP_LINK_BASE` задаёт deep link без bot token.
 
 Google provider values и email allowlist хранятся именно в Environment **Secrets**, не Variables.
 При `GOOGLE_AUTH_ENABLED=true` workflow проверяет их наличие и передаёт только в runtime backend;
@@ -188,7 +188,7 @@ fallback-значениями из `.env.production` при Docker Compose inter
 в PostgreSQL.
 
 `RENTAL_CLEANING_DISCOUNT_RATE` и `RENTAL_CLEANING_MAX_DISCOUNT` управляют персональной выгодой
-go-renty на уборку перед выездом. Значения берутся из GitHub Environment при каждой выкладке и имеют
+Loco Rent на уборку перед выездом. Значения берутся из GitHub Environment при каждой выкладке и имеют
 приоритет над `.env.production`. Backend дополнительно не позволит запуститься, если ставка выгоды
 превышает доступную комиссионную ставку: это защищает заказ от отрицательной экономики.
 
@@ -240,7 +240,7 @@ Repository -> Settings -> Environments -> staging
 
 ```text
 CLEANER_TELEGRAM_IDS=111111111,222222222
-ADMIN_TELEGRAM_IDS=111111111,333333333
+ADMIN_GOOGLE_EMAILS=admin@example.com
 ```
 
 Затем откройте:
@@ -309,7 +309,7 @@ cd /opt/go-cleany
 | Ошибка | Что проверить |
 | --- | --- |
 | `Missing CLEANER_TELEGRAM_IDS staging variable` | variable в environment `staging` |
-| `Missing ADMIN_TELEGRAM_IDS staging variable` | variable в environment `staging` |
+| `Missing ADMIN_GOOGLE_EMAILS staging secret` | secret в environment `staging` при включённом Google login |
 | `must be comma-separated numeric Telegram IDs` | убрать пробелы и посторонние символы |
 | `Host key verification failed` | `STAGING_SSH_KNOWN_HOSTS`, host и SSH port |
 | `Permission denied (publickey)` | Actions private key, authorized_keys, SSH user |

@@ -1,8 +1,9 @@
-# go-cleany / Service Platform — Product & Architecture Roadmap
+# Loco Place — Product & Architecture Roadmap
 
 ## Purpose
 
-This document is the long-lived architectural and product context for go-cleany.
+This document is the long-lived architectural and product context for the `go-cleany` repository
+and its public Loco Place product.
 
 It is intended to be read by developers and Codex sessions when working on architectural or cross-cutting changes.
 
@@ -31,30 +32,30 @@ Always verify current code and recent git history before assuming an architectur
 
 # 1. Product vision
 
-`go-cleany` was the first vertical of the service platform. `go-renty` is now the second real vertical.
-The rental brand is user-facing; technical routes and code namespaces remain `rent`, `rental` and
-`Rental*` so a brand change does not force an API migration.
+Loco Cleaning was the first vertical of Loco Place. Loco Rent is now the second real vertical.
+The public names are independent from technical routes and code namespaces, which remain `cleaning`,
+`rent`, `rental`, `Cleaning*` and `Rental*` so rebranding does not force an API migration.
 
 Today:
 
 ```text
-Service Platform
+Loco Place
 
-├── go-cleany
+├── Loco Cleaning
 │   └── apartment cleaning
-└── go-renty
+└── Loco Rent
     └── apartment rental
 ```
 
 Future:
 
 ```text
-Service Platform
+Loco Place
 
-├── go-cleany
+├── Loco Cleaning
 │   └── cleaning
 │
-├── go-renty
+├── Loco Rent
 │   └── apartment rental
 │
 ├── handyman / repair
@@ -70,9 +71,7 @@ Service Platform
 └── future verticals
 ```
 
-`go-cleany` remains the cleaning brand/vertical.
-
-The parent platform may receive a separate brand later.
+Loco Cleaning remains the public cleaning brand/vertical. Loco Place is the parent platform brand.
 
 ---
 
@@ -93,10 +92,10 @@ After selection:
 
 ```text
 Cleaning
-→ go-cleany flow
+→ Loco Cleaning flow
 
 Apartment rental
-→ go-renty flow
+→ Loco Rent flow
 
 Handyman
 → handyman-specific flow
@@ -150,7 +149,7 @@ Shared platform infrastructure should not depend on cleaning-specific business r
 # 4. Target high-level architecture
 
 ```text
-                         SERVICE PLATFORM
+                            LOCO PLACE
 
                               Customer
                                  │
@@ -171,7 +170,7 @@ Shared platform infrastructure should not depend on cleaning-specific business r
             ┌────────────────────┼────────────────────┐
             │                    │                    │
         Cleaning              Handyman             Residence
-        go-cleany
+     Loco Cleaning
 ```
 
 ---
@@ -619,7 +618,7 @@ Do not duplicate cleanup mechanisms when one already exists.
 
 # 17. Cleaning vertical
 
-`go-cleany` remains the cleaning vertical.
+Loco Cleaning remains the public cleaning vertical; its technical aggregate is still `CleaningOrder`.
 
 Cleaning-specific concepts may include:
 
@@ -652,7 +651,7 @@ partner customer discount
 partner payout
 ```
 
-The addition of go-renty does not generalize those financial rules: rental bookings currently have no cleaning referral discounts, rewards or partner payouts.
+The addition of Loco Rent does not generalize those financial rules: rental bookings currently have no cleaning referral discounts, rewards or partner payouts.
 
 Future shared concepts might eventually include:
 
@@ -841,15 +840,32 @@ OAuth2 Client. Google is an external identity provider only. The application own
 platform roles, authorization and PostgreSQL-backed server sessions; it is not an authorization
 server and does not depend on Keycloak, Firebase Auth or Google Identity Platform.
 
-`ADMIN` is a persisted role of `CustomerAccount`. Telegram IDs and verified Google emails may grant
-it through deployment bootstrap allowlists, but reusable authorization always checks the role.
+`ADMIN` is a persisted role of `CustomerAccount`. A verified Google email from `ADMIN_GOOGLE_EMAILS`
+is the only deployment bootstrap; reusable authorization always checks the persisted role.
 
 Telegram TMA headers and Google web sessions resolve through one generic authenticated customer
 boundary. Cookie-authenticated writes require CSRF; explicit TMA credentials remain stateless.
 
-Cross-provider account linking is intentionally deferred. Telegram and Google identities may belong
-to separate accounts until a later explicit verified linking flow. Never merge identities
-automatically by email, phone, display name or username.
+Google ↔ Telegram account linking is explicit and verified. An authenticated Google account creates
+a short-lived, one-time request whose raw 256-bit token is never stored. Signed Telegram Mini App
+authentication proves control of the Telegram identity, and the user must confirm the link explicitly.
+The initiating Google `CustomerAccount` remains canonical; business ownership is moved transactionally,
+roles are united, the earliest creation time is retained, and conflicting non-empty phones or provider
+identities stop the merge. Never merge identities automatically by email, phone, display name or username.
+Account unlinking is intentionally not implemented yet.
+
+Public brand mapping is:
+
+```text
+Loco Place
+├── Loco Rent
+└── Loco Cleaning
+
+domain: loco-place.com
+technical vertical IDs: RENTAL / CLEANING
+```
+
+The public rebrand does not rename technical routes, Java packages, database objects or deployment paths.
 
 Do not solve mobile authentication prematurely.
 
@@ -895,7 +911,7 @@ media
 
 # 26. Multiple verticals
 
-go-renty is the second real vertical and validates that shared identity, communication, media, retention and UI infrastructure do not require a generic order aggregate.
+Loco Rent is the second real vertical and validates that shared identity, communication, media, retention and UI infrastructure do not require a generic order aggregate.
 
 A future Handyman/repair vertical will further test the boundaries because its lifecycle should differ substantially from both cleaning and rental.
 

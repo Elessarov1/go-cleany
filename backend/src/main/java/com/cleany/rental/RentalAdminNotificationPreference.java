@@ -19,8 +19,8 @@ import lombok.NoArgsConstructor;
 public class RentalAdminNotificationPreference {
 
     @Id
-    @Column(name = "admin_id", nullable = false)
-    private Long adminId;
+    @Column(name = "customer_id", nullable = false)
+    private Long customerId;
 
     @Column(name = "telegram_enabled", nullable = false)
     private boolean telegramEnabled;
@@ -29,14 +29,14 @@ public class RentalAdminNotificationPreference {
     private Instant updatedAt;
 
     public RentalAdminNotificationPreference(
-            long adminId,
+            long customerId,
             boolean telegramEnabled,
             Instant updatedAt
     ) {
-        if (adminId <= 0) {
-            throw new IllegalArgumentException("adminId must be positive");
+        if (customerId <= 0) {
+            throw new IllegalArgumentException("customerId must be positive");
         }
-        this.adminId = adminId;
+        this.customerId = customerId;
         update(telegramEnabled, updatedAt);
     }
 

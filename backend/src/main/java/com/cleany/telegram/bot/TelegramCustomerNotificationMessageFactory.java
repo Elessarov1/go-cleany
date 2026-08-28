@@ -104,11 +104,11 @@ public class TelegramCustomerNotificationMessageFactory {
                 ? """
                 🧹 Your rental #%d has started
 
-                You now have a personal go-cleany benefit for checkout cleaning.
+                You now have a personal loco-cleaning benefit for checkout cleaning.
                 Promo code: %s
 
                 Use it for a cleaning scheduled between %s and %s.
-                Open go-cleany in the application to book your cleaning.
+                Open loco-cleaning in Loco Place to book your cleaning.
                 """.formatted(
                         notification.rentalBookingId(),
                         notification.code(),
@@ -118,11 +118,11 @@ public class TelegramCustomerNotificationMessageFactory {
                 : """
                 🧹 Ваша аренда №%d началась
 
-                Вам доступна персональная выгода go-cleany для уборки перед выездом.
+                Вам доступна персональная выгода loco-cleaning для уборки перед выездом.
                 Промокод: %s
 
                 Используйте его для уборки с %s по %s.
-                Откройте go-cleany в приложении, чтобы оформить заказ.
+                Откройте loco-cleaning в Loco Place, чтобы оформить заказ.
                 """.formatted(
                         notification.rentalBookingId(),
                         notification.code(),

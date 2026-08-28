@@ -3,12 +3,7 @@ package com.cleany.rental;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.lang.reflect.RecordComponent;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,107 +11,82 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.cleany.admin.AdminAccessService;
-import com.cleany.admin.AdminNotAuthorizedException;
 import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountService;
+import com.cleany.customer.CustomerExternalIdentity;
+import com.cleany.customer.CustomerExternalIdentityRepository;
 import com.cleany.customer.ExternalIdentityProvider;
+import com.cleany.customer.TelegramIdentityNotLinkedException;
 
 class RentalAdminNotificationPreferenceServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-08-23T10:15:30Z");
+    private static final long CUSTOMER_ID = 77L;
 
     private final AdminAccessService accessService = Mockito.mock(AdminAccessService.class);
     private final CustomerAccountService customerAccountService = Mockito.mock(CustomerAccountService.class);
+    private final CustomerExternalIdentityRepository identityRepository =
+            Mockito.mock(CustomerExternalIdentityRepository.class);
     private final RentalAdminNotificationPreferenceRepository repository =
             Mockito.mock(RentalAdminNotificationPreferenceRepository.class);
-    private final AtomicLong currentAdmin = new AtomicLong(1001L);
-    private final Map<Long, RentalAdminNotificationPreference> preferences =
-            new ConcurrentHashMap<>();
     private final RentalAdminNotificationPreferenceService service =
             new RentalAdminNotificationPreferenceService(
                     accessService,
                     customerAccountService,
+                    identityRepository,
                     repository,
                     Clock.fixed(NOW, ZoneOffset.UTC)
             );
 
     @BeforeEach
-    void configureRepository() {
-        Mockito.when(customerAccountService.currentCustomer()).thenAnswer(ignored -> new CurrentCustomer(
-                77L,
-                88L,
-                ExternalIdentityProvider.TELEGRAM,
-                Long.toString(currentAdmin.get()),
-                "alex",
-                "Alex",
-                "ru"
-        ));
-        Mockito.when(repository.findById(Mockito.anyLong())).thenAnswer(invocation ->
-                Optional.ofNullable(preferences.get(invocation.getArgument(0)))
-        );
-        Mockito.when(repository.save(Mockito.any())).thenAnswer(invocation -> {
-            RentalAdminNotificationPreference preference = invocation.getArgument(0);
-            preferences.put(preference.getAdminId(), preference);
-            return preference;
-        });
-        Mockito.when(repository.findAllByAdminIdIn(Mockito.anyCollection())).thenAnswer(invocation -> {
-            List<Long> ids = List.copyOf(invocation.getArgument(0));
-            return ids.stream().map(preferences::get).filter(java.util.Objects::nonNull).toList();
-        });
-    }
-
-    @Test
-    void missingPreference_defaultsToEnabled() {
-        Assertions.assertTrue(service.current().telegramEnabled());
-        Assertions.assertEquals(List.of(1001L, 1002L), service.enabledAdminIds(
-                List.of(1001L, 1002L)
+    void setUp() {
+        Mockito.when(customerAccountService.currentCustomer()).thenReturn(new CurrentCustomer(
+                CUSTOMER_ID, 88L, ExternalIdentityProvider.GOOGLE, "google-sub", null, "Alex", "ru"
         ));
     }
 
     @Test
-    void eachAdmin_updatesOnlyOwnPreference() {
-        service.update(new UpdateRentalAdminNotificationPreferenceRequest(false));
-        currentAdmin.set(1002L);
-        service.update(new UpdateRentalAdminNotificationPreferenceRequest(true));
+    void unlinkedGoogleAdmin_readsNormalDisabledState() {
+        Mockito.when(identityRepository.findByCustomerIdAndProvider(
+                CUSTOMER_ID,
+                ExternalIdentityProvider.TELEGRAM
+        )).thenReturn(Optional.empty());
+
+        RentalAdminNotificationPreferenceResponse response = service.current();
 
         Assertions.assertAll(
-                () -> Assertions.assertFalse(preferences.get(1001L).isTelegramEnabled()),
-                () -> Assertions.assertTrue(preferences.get(1002L).isTelegramEnabled()),
-                () -> Assertions.assertEquals(
-                        List.of(1002L, 1003L),
-                        service.enabledAdminIds(List.of(1001L, 1002L, 1003L))
+                () -> Assertions.assertFalse(response.telegramLinked()),
+                () -> Assertions.assertFalse(response.telegramEnabled()),
+                () -> Assertions.assertThrows(
+                        TelegramIdentityNotLinkedException.class,
+                        () -> service.update(new UpdateRentalAdminNotificationPreferenceRequest(true))
                 )
         );
     }
 
     @Test
-    void unauthorizedActor_cannotReadOrUpdatePreference() {
-        Mockito.doThrow(new AdminNotAuthorizedException()).when(accessService)
-                .requireAdmin(77L);
+    void linkedGoogleAdmin_updatesPreferenceByCustomerId() {
+        CustomerExternalIdentity telegram = Mockito.mock(CustomerExternalIdentity.class);
+        Mockito.when(telegram.getUsername()).thenReturn("alex");
+        Mockito.when(telegram.isWriteAccessAllowed()).thenReturn(true);
+        Mockito.when(identityRepository.findByCustomerIdAndProvider(
+                CUSTOMER_ID,
+                ExternalIdentityProvider.TELEGRAM
+        )).thenReturn(Optional.of(telegram));
+        Mockito.when(repository.findById(CUSTOMER_ID)).thenReturn(Optional.empty());
+        Mockito.when(repository.save(Mockito.any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        RentalAdminNotificationPreferenceResponse response = service.update(
+                new UpdateRentalAdminNotificationPreferenceRequest(false)
+        );
 
         Assertions.assertAll(
-                () -> Assertions.assertThrows(
-                        AdminNotAuthorizedException.class,
-                        service::current
-                ),
-                () -> Assertions.assertThrows(
-                        AdminNotAuthorizedException.class,
-                        () -> service.update(
-                                new UpdateRentalAdminNotificationPreferenceRequest(false)
-                        )
-                )
+                () -> Assertions.assertTrue(response.telegramLinked()),
+                () -> Assertions.assertFalse(response.telegramEnabled()),
+                () -> Assertions.assertEquals("alex", response.telegramUsername())
         );
-        Mockito.verifyNoInteractions(repository);
-    }
-
-    @Test
-    void selfServiceRequest_doesNotAcceptAnAdminIdentifier() {
-        String[] components = java.util.Arrays.stream(
-                        UpdateRentalAdminNotificationPreferenceRequest.class.getRecordComponents()
-                )
-                .map(RecordComponent::getName)
-                .toArray(String[]::new);
-
-        Assertions.assertArrayEquals(new String[]{"telegramEnabled"}, components);
+        Mockito.verify(repository).save(Mockito.argThat(preference ->
+                preference.getCustomerId() == CUSTOMER_ID && !preference.isTelegramEnabled()
+        ));
     }
 }

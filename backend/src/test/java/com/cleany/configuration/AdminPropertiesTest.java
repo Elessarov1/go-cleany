@@ -8,21 +8,20 @@ import org.junit.jupiter.api.Test;
 class AdminPropertiesTest {
 
     @Test
-    void telegramIds_duplicatesRemovedAndMembershipChecked() {
-        AdminProperties properties = new AdminProperties(List.of(10L, 10L, 20L), List.of());
+    void googleEmails_areNormalizedAndDeduplicated() {
+        AdminProperties properties = new AdminProperties(List.of(
+                " Admin@Example.com ",
+                "admin@example.com",
+                "second@example.com"
+        ));
 
         Assertions.assertAll(
-                () -> Assertions.assertEquals(List.of(10L, 20L), properties.telegramIds()),
-                () -> Assertions.assertTrue(properties.contains(10L)),
-                () -> Assertions.assertFalse(properties.contains(30L))
-        );
-    }
-
-    @Test
-    void telegramIds_nonPositiveValue_rejected() {
-        Assertions.assertThrows(
-                IllegalArgumentException.class,
-                () -> new AdminProperties(List.of(0L), List.of())
+                () -> Assertions.assertEquals(
+                        List.of("admin@example.com", "second@example.com"),
+                        properties.googleEmails()
+                ),
+                () -> Assertions.assertTrue(properties.containsGoogleEmail("ADMIN@example.com")),
+                () -> Assertions.assertFalse(properties.containsGoogleEmail("other@example.com"))
         );
     }
 }

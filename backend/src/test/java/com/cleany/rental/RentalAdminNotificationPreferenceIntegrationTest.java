@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.cleany.base.BaseIntegrationTest;
+import com.cleany.customer.CustomerAccount;
+import com.cleany.customer.CustomerAccountRepository;
 
 class RentalAdminNotificationPreferenceIntegrationTest extends BaseIntegrationTest {
 
@@ -17,7 +19,7 @@ class RentalAdminNotificationPreferenceIntegrationTest extends BaseIntegrationTe
     private RentalAdminNotificationPreferenceRepository repository;
 
     @Autowired
-    private RentalAdminNotificationPreferenceService service;
+    private CustomerAccountRepository accountRepository;
 
     @BeforeEach
     @AfterEach
@@ -27,14 +29,16 @@ class RentalAdminNotificationPreferenceIntegrationTest extends BaseIntegrationTe
 
     @Test
     void liquibaseSchema_persistsIndependentPreferencesAndMissingAdminDefaultsToEnabled() {
+        CustomerAccount first = accountRepository.save(new CustomerAccount(Instant.parse("2026-08-23T09:00:00Z")));
+        CustomerAccount second = accountRepository.save(new CustomerAccount(Instant.parse("2026-08-23T09:01:00Z")));
         repository.saveAllAndFlush(List.of(
                 new RentalAdminNotificationPreference(
-                        1001L,
+                        first.getId(),
                         false,
                         Instant.parse("2026-08-23T10:00:00Z")
                 ),
                 new RentalAdminNotificationPreference(
-                        1002L,
+                        second.getId(),
                         true,
                         Instant.parse("2026-08-23T10:01:00Z")
                 )
@@ -42,14 +46,10 @@ class RentalAdminNotificationPreferenceIntegrationTest extends BaseIntegrationTe
 
         Assertions.assertAll(
                 () -> Assertions.assertFalse(
-                        repository.findById(1001L).orElseThrow().isTelegramEnabled()
+                        repository.findById(first.getId()).orElseThrow().isTelegramEnabled()
                 ),
                 () -> Assertions.assertTrue(
-                        repository.findById(1002L).orElseThrow().isTelegramEnabled()
-                ),
-                () -> Assertions.assertEquals(
-                        List.of(1002L, 1003L),
-                        service.enabledAdminIds(List.of(1001L, 1002L, 1003L))
+                        repository.findById(second.getId()).orElseThrow().isTelegramEnabled()
                 )
         );
     }

@@ -117,7 +117,7 @@ class TelegramCustomerNotificationSenderTest {
     }
 
     @Test
-    void completedCleaningReport_messagesAndPhotosSentInOrder() {
+    void completedCleaningReport_sendsPlatformLinkWithoutDuplicatingPhotos() {
         TelegramCustomerNotificationMessageFactory messageFactory =
                 Mockito.mock(TelegramCustomerNotificationMessageFactory.class);
         CleaningOrderBotMessageFactory cleaningMessageFactory =
@@ -134,12 +134,7 @@ class TelegramCustomerNotificationSenderTest {
                 "Готово",
                 List.of(71L, 72L)
         );
-        Mockito.when(mediaProviderReferenceService.require(71L, MediaProvider.TELEGRAM))
-                .thenReturn(providerReference(71L, "photo-1", "unique-1"));
-        Mockito.when(mediaProviderReferenceService.require(72L, MediaProvider.TELEGRAM))
-                .thenReturn(providerReference(72L, "photo-2", "unique-2"));
-        Mockito.when(cleaningMessageFactory.customerReportHeader(notification)).thenReturn("header");
-        Mockito.when(cleaningMessageFactory.customerReportComment(notification)).thenReturn("comment");
+        Mockito.when(cleaningMessageFactory.customerReportReady(notification)).thenReturn("report ready");
         var sender = new TelegramCustomerNotificationSender(
                 messageFactory,
                 cleaningMessageFactory,
@@ -149,15 +144,18 @@ class TelegramCustomerNotificationSenderTest {
 
         sender.send(telegramTarget(), notification);
 
-        var order = Mockito.inOrder(botClient);
-        order.verify(botClient).sendMessage(900001L, "header", TelegramBotClient.InlineKeyboard.empty());
-        order.verify(botClient).sendPhoto(900001L, "photo-1");
-        order.verify(botClient).sendPhoto(900001L, "photo-2");
-        order.verify(botClient).sendMessage(900001L, "comment", TelegramBotClient.InlineKeyboard.empty());
+        Mockito.verify(botClient).sendMessage(
+                Mockito.eq(900001L),
+                Mockito.eq("report ready"),
+                Mockito.argThat(keyboard -> keyboard.rows().stream().flatMap(List::stream)
+                        .anyMatch(button -> "https://loco-place.com/cleaning/orders/43".equals(button.url())))
+        );
+        Mockito.verify(botClient, Mockito.never()).sendPhoto(Mockito.anyLong(), Mockito.anyString());
+        Mockito.verifyNoInteractions(mediaProviderReferenceService);
     }
 
     @Test
-    void completedCleaningReport_missingTelegramReferenceRejectedBeforePartialDelivery() {
+    void completedCleaningReport_doesNotDependOnTelegramMediaReference() {
         TelegramCustomerNotificationMessageFactory messageFactory =
                 Mockito.mock(TelegramCustomerNotificationMessageFactory.class);
         CleaningOrderBotMessageFactory cleaningMessageFactory =
@@ -174,8 +172,7 @@ class TelegramCustomerNotificationSenderTest {
                 null,
                 List.of(71L)
         );
-        Mockito.when(mediaProviderReferenceService.require(71L, MediaProvider.TELEGRAM))
-                .thenThrow(new MediaProviderReferenceNotFoundException(71L, MediaProvider.TELEGRAM));
+        Mockito.when(cleaningMessageFactory.customerReportReady(notification)).thenReturn("report ready");
         var sender = new TelegramCustomerNotificationSender(
                 messageFactory,
                 cleaningMessageFactory,
@@ -183,12 +180,11 @@ class TelegramCustomerNotificationSenderTest {
                 mediaProviderReferenceService
         );
 
-        Assertions.assertThrows(
-                MediaProviderReferenceNotFoundException.class,
-                () -> sender.send(telegramTarget(), notification)
+        Assertions.assertDoesNotThrow(() -> sender.send(telegramTarget(), notification));
+        Mockito.verify(botClient).sendMessage(
+                Mockito.eq(900001L), Mockito.eq("report ready"), Mockito.any()
         );
-
-        Mockito.verifyNoInteractions(messageFactory, cleaningMessageFactory, botClient);
+        Mockito.verifyNoInteractions(mediaProviderReferenceService);
     }
 
     @Test

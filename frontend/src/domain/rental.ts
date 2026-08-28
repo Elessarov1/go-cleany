@@ -229,5 +229,8 @@ export interface AdminCancelRentalBookingRequest {
 }
 
 export interface RentalAdminNotificationPreference {
+  telegramLinked: boolean;
   telegramEnabled: boolean;
+  writeAccessAllowed: boolean;
+  telegramUsername: string | null;
 }

@@ -394,6 +394,10 @@ export class MockCleaningApi implements CleaningApi {
     return simulateNetwork(order);
   }
 
+  async getReportPhoto(): Promise<Blob> {
+    return simulateNetwork(new Blob());
+  }
+
   async cancelOrder(id: number): Promise<CleaningOrder> {
     const scenario = getPreviewScenario();
     if (scenario && scenario !== "empty") {

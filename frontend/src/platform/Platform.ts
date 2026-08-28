@@ -12,6 +12,7 @@ export interface Platform {
   getUser(): PlatformUser | null;
   getAuthData(): string | null;
   getLanguage(): string | null;
+  getStartParameter(): string | null;
   ensureNotificationAccess(): Promise<boolean>;
   requestPhoneNumber(): Promise<boolean>;
   ready(): void;

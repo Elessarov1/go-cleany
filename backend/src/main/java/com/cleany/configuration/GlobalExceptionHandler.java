@@ -27,6 +27,7 @@ import com.cleany.order.InvalidOrderStateException;
 import com.cleany.order.InvalidOnsiteIssueException;
 import com.cleany.order.OrderClaimConflictException;
 import com.cleany.order.OrderNotFoundException;
+import com.cleany.order.CleaningReportExpiredException;
 import com.cleany.referral.ReferralNotApplicableException;
 import com.cleany.rental.InvalidRentalBookingException;
 import com.cleany.rental.InvalidRentalDateRangeException;
@@ -49,6 +50,12 @@ import com.cleany.rental.RentalPropertyNotFoundException;
 import com.cleany.rental.RentalPropertyNotAvailableException;
 import com.cleany.authentication.CustomerAuthenticationRequiredException;
 import com.cleany.telegram.bot.TelegramWebhookAuthenticationException;
+import com.cleany.customer.AccountLinkConflictException;
+import com.cleany.customer.AccountLinkProviderException;
+import com.cleany.customer.AccountLinkTokenConsumedException;
+import com.cleany.customer.AccountLinkTokenExpiredException;
+import com.cleany.customer.AccountLinkTokenInvalidException;
+import com.cleany.customer.TelegramIdentityNotLinkedException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -333,6 +340,41 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({InvalidOrderStateException.class, OrderClaimConflictException.class})
     ResponseEntity<ApiError> handleConflict(RuntimeException exception) {
         return response(HttpStatus.CONFLICT, "order_state_conflict", exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(CleaningReportExpiredException.class)
+    ResponseEntity<ApiError> handleCleaningReportExpired(CleaningReportExpiredException exception) {
+        return response(HttpStatus.GONE, "cleaning_report_expired", exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(AccountLinkProviderException.class)
+    ResponseEntity<ApiError> handleAccountLinkProvider(AccountLinkProviderException exception) {
+        return response(HttpStatus.FORBIDDEN, "account_link_provider_required", exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(AccountLinkConflictException.class)
+    ResponseEntity<ApiError> handleAccountLinkConflict(AccountLinkConflictException exception) {
+        return response(HttpStatus.CONFLICT, "account_link_conflict", exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(AccountLinkTokenExpiredException.class)
+    ResponseEntity<ApiError> handleAccountLinkExpired(AccountLinkTokenExpiredException exception) {
+        return response(HttpStatus.GONE, "account_link_expired", exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(AccountLinkTokenConsumedException.class)
+    ResponseEntity<ApiError> handleAccountLinkConsumed(AccountLinkTokenConsumedException exception) {
+        return response(HttpStatus.CONFLICT, "account_link_consumed", exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(AccountLinkTokenInvalidException.class)
+    ResponseEntity<ApiError> handleAccountLinkInvalid(AccountLinkTokenInvalidException exception) {
+        return response(HttpStatus.NOT_FOUND, "account_link_invalid", exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(TelegramIdentityNotLinkedException.class)
+    ResponseEntity<ApiError> handleTelegramIdentityNotLinked(TelegramIdentityNotLinkedException exception) {
+        return response(HttpStatus.CONFLICT, "telegram_identity_not_linked", exception.getMessage(), Map.of());
     }
 
     @ExceptionHandler(PlatformServiceNotAvailableException.class)

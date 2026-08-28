@@ -102,10 +102,16 @@ cleaner:
     - 987654321
 
 admin:
-  telegram-ids:
-    - 900001
   google-emails:
     - admin@example.test
+
+account-linking:
+  telegram:
+    mini-app-link-base: https://t.me/test_bot/test_app
+    request-ttl: 10m
+
+public-application:
+  base-url: https://loco-place.com
 
 web-auth:
   google:

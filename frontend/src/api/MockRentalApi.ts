@@ -195,7 +195,10 @@ function overlaps(range: RentalAvailabilityRange, start: string, end: string): b
 
 export class MockRentalApi implements RentalApi {
   private adminNotificationPreference: RentalAdminNotificationPreference = {
+    telegramLinked: true,
     telegramEnabled: true,
+    writeAccessAllowed: true,
+    telegramUsername: "browser_preview",
   };
 
   constructor(private readonly platform: Platform) {}
@@ -592,7 +595,7 @@ export class MockRentalApi implements RentalApi {
   async updateAdminRentalNotificationPreference(
     telegramEnabled: boolean,
   ): Promise<RentalAdminNotificationPreference> {
-    this.adminNotificationPreference = { telegramEnabled };
+    this.adminNotificationPreference = { ...this.adminNotificationPreference, telegramEnabled };
     return simulateNetwork({ ...this.adminNotificationPreference });
   }
 

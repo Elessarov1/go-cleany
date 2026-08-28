@@ -22,11 +22,27 @@ public sealed interface CleaningOrderCustomerNotification extends CustomerNotifi
             ServiceArea area,
             LocalDate requestedDate,
             String cleanerComment,
-            List<Long> mediaIds
+            List<Long> mediaIds,
+            int reportRetentionDays
     ) implements CleaningOrderCustomerNotification {
 
         public Completed {
             mediaIds = List.copyOf(mediaIds);
+            if (reportRetentionDays < 1) {
+                throw new IllegalArgumentException("reportRetentionDays must be positive");
+            }
+        }
+
+        public Completed(
+                long orderId,
+                ApartmentType apartmentType,
+                boolean duplex,
+                ServiceArea area,
+                LocalDate requestedDate,
+                String cleanerComment,
+                List<Long> mediaIds
+        ) {
+            this(orderId, apartmentType, duplex, area, requestedDate, cleanerComment, mediaIds, 7);
         }
     }
 

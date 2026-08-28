@@ -21,8 +21,8 @@ RU / EN i18n
 The current UI contains a shared service catalog and two real verticals:
 
 ```text
-go-cleany
-go-renty
+Loco Cleaning
+Loco Rent
 ```
 
 Further platform direction:

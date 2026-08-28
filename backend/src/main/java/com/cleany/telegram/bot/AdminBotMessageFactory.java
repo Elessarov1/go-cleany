@@ -36,7 +36,7 @@ public class AdminBotMessageFactory {
 
     public String help() {
         return """
-                🛠 go-cleany · администратор
+                🛠 loco-cleaning · администратор
 
                 /stats — общая статистика
                 /orders — последние 10 заказов
@@ -46,7 +46,7 @@ public class AdminBotMessageFactory {
 
     public String stats(AdminStatsResponse stats) {
         return """
-                📊 go-cleany · статистика
+                📊 loco-cleaning · статистика
 
                 Всего заказов: %d
                 Создано сегодня: %d

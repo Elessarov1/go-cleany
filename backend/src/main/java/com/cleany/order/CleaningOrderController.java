@@ -6,6 +6,7 @@ import java.util.List;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,9 +21,14 @@ public class CleaningOrderController {
     static final String BASE_PATH = "/api/v1/cleaning/orders";
 
     private final CleaningOrderService orderService;
+    private final CustomerCleaningReportService reportService;
 
-    public CleaningOrderController(CleaningOrderService orderService) {
+    public CleaningOrderController(
+            CleaningOrderService orderService,
+            CustomerCleaningReportService reportService
+    ) {
         this.orderService = orderService;
+        this.reportService = reportService;
     }
 
     @PostMapping
@@ -30,7 +36,7 @@ public class CleaningOrderController {
             @Valid @RequestBody CreateCleaningOrderRequest request
     ) {
         var order = orderService.createOrder(request.toCommand());
-        var response = CleaningOrderResponse.from(order);
+        var response = CleaningOrderResponse.from(order, reportService.summary(order));
         return ResponseEntity
                 .created(URI.create(BASE_PATH + "/" + order.getId()))
                 .body(response);
@@ -46,17 +52,35 @@ public class CleaningOrderController {
     @GetMapping
     public List<CleaningOrderResponse> getOrders() {
         return orderService.getCurrentCustomerOrders().stream()
-                .map(CleaningOrderResponse::from)
+                .map(order -> CleaningOrderResponse.from(order, reportService.summary(order)))
                 .toList();
     }
 
     @GetMapping("/{id}")
     public CleaningOrderResponse getOrder(@PathVariable long id) {
-        return CleaningOrderResponse.from(orderService.getCurrentCustomerOrder(id));
+        CleaningOrder order = orderService.getCurrentCustomerOrder(id);
+        return CleaningOrderResponse.from(order, reportService.summary(order));
     }
 
     @PostMapping("/{id}/cancel")
     public CleaningOrderResponse cancelOrder(@PathVariable long id) {
-        return CleaningOrderResponse.from(orderService.cancelCurrentCustomerOrder(id));
+        CleaningOrder order = orderService.cancelCurrentCustomerOrder(id);
+        return CleaningOrderResponse.from(order, reportService.summary(order));
+    }
+
+    @GetMapping("/{id}/report")
+    public CustomerCleaningReportResponse getReport(@PathVariable long id) {
+        return reportService.currentCustomerReport(id);
+    }
+
+    @GetMapping("/{id}/report/photos/{mediaId}")
+    public ResponseEntity<byte[]> getReportPhoto(
+            @PathVariable long id,
+            @PathVariable long mediaId
+    ) {
+        CustomerCleaningReportPhotoContent photo = reportService.currentCustomerPhoto(id, mediaId);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(photo.contentType()))
+                .body(photo.content());
     }
 }

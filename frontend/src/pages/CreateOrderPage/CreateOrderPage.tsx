@@ -346,12 +346,6 @@ export function CreateOrderPage() {
 
     try {
       setIsSubmitting(true);
-      const allowed = await platform.ensureNotificationAccess();
-      if (!allowed) {
-        setSubmitError("notificationAccess");
-        return;
-      }
-
       const order = await api.createOrder(request);
       navigate(`/cleaning/orders/${order.id}/created`);
     } catch (error) {

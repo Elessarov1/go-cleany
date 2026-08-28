@@ -16,6 +16,7 @@ import com.cleany.notification.CustomerNotificationSender;
 import com.cleany.notification.ReferralUnlockedCustomerNotification;
 import com.cleany.order.CleaningOrderCustomerNotification;
 import com.cleany.rental.RentalBookingCustomerNotification;
+import com.cleany.configuration.PublicApplicationProperties;
 
 import lombok.RequiredArgsConstructor;
 
@@ -28,6 +29,22 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
     private final CleaningOrderBotMessageFactory cleaningMessageFactory;
     private final TelegramBotClient botClient;
     private final MediaProviderReferenceService mediaProviderReferenceService;
+    private final PublicApplicationProperties publicApplicationProperties;
+
+    public TelegramCustomerNotificationSender(
+            TelegramCustomerNotificationMessageFactory messageFactory,
+            CleaningOrderBotMessageFactory cleaningMessageFactory,
+            TelegramBotClient botClient,
+            MediaProviderReferenceService mediaProviderReferenceService
+    ) {
+        this(
+                messageFactory,
+                cleaningMessageFactory,
+                botClient,
+                mediaProviderReferenceService,
+                new PublicApplicationProperties("https://loco-place.com")
+        );
+    }
 
     @Override
     public ExternalIdentityProvider provider() {
@@ -76,10 +93,17 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
             return;
         }
         if (notification instanceof CleaningOrderCustomerNotification.Completed completed) {
-            var photos = telegramPhotos(completed.mediaIds());
-            sendMessage(telegramUserId, cleaningMessageFactory.customerReportHeader(completed));
-            photos.forEach(photo -> botClient.sendPhoto(telegramUserId, photo.externalId()));
-            sendMessage(telegramUserId, cleaningMessageFactory.customerReportComment(completed));
+            botClient.sendMessage(
+                    telegramUserId,
+                    cleaningMessageFactory.customerReportReady(completed),
+                    TelegramBotClient.InlineKeyboard.ofRows(List.of(
+                            TelegramBotClient.InlineButton.url(
+                                    "Открыть отчёт",
+                                    publicApplicationProperties.baseUrl()
+                                            + "/cleaning/orders/" + completed.orderId()
+                            )
+                    ))
+            );
             return;
         }
         if (notification instanceof CleaningOrderCustomerNotification.OnsiteIssueReported issue) {

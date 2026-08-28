@@ -3,8 +3,6 @@ package com.cleany.telegram.bot;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-import com.cleany.configuration.AdminProperties;
-import com.cleany.rental.RentalAdminNotificationPreferenceService;
 import com.cleany.rental.RentalAdminNotificationSender;
 import com.cleany.rental.RentalBookingAdminEvent;
 import com.cleany.rental.RentalBookingAdminNotification;
@@ -18,8 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TelegramRentalAdminNotificationSender implements RentalAdminNotificationSender {
 
-    private final AdminProperties adminProperties;
-    private final RentalAdminNotificationPreferenceService preferenceService;
+    private final AdminTelegramRecipientService recipientService;
     private final TelegramRentalAdminMessageFactory messageFactory;
     private final TelegramBotClient botClient;
 
@@ -29,7 +26,7 @@ public class TelegramRentalAdminNotificationSender implements RentalAdminNotific
             RentalBookingAdminNotification notification
     ) {
         String message = messageFactory.format(type, notification);
-        preferenceService.enabledAdminIds(adminProperties.telegramIds())
+        recipientService.recipients()
                 .forEach(adminId -> safeSend(adminId, message, notification.bookingId()));
     }
 

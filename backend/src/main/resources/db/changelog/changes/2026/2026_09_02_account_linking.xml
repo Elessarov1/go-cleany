@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260902-01" author="loco-place">
+        <comment>Persist short-lived, hashed, one-time external identity link requests.</comment>
+        <createTable tableName="customer_identity_link_request">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_customer_identity_link_request" nullable="false"/>
+            </column>
+            <column name="token_hash" type="VARCHAR(64)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_customer_identity_link_request_token"/>
+            </column>
+            <column name="target_customer_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="provider" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="expires_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="consumed_at" type="TIMESTAMP WITH TIME ZONE"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="customer_identity_link_request"
+                                 baseColumnNames="target_customer_id"
+                                 constraintName="fk_customer_identity_link_request_target"
+                                 referencedTableName="customer_account"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="customer_identity_link_request" indexName="idx_identity_link_request_target">
+            <column name="target_customer_id"/>
+            <column name="provider"/>
+            <column name="consumed_at"/>
+        </createIndex>
+        <sql dbms="postgresql"><![CDATA[
+            alter table customer_identity_link_request
+                add constraint ck_identity_link_request_provider check (provider = 'TELEGRAM'),
+                add constraint ck_identity_link_request_expiry check (expires_at > created_at);
+        ]]></sql>
+    </changeSet>
+
+    <changeSet id="20260902-02" author="loco-place">
+        <preConditions onFail="HALT" onError="HALT">
+            <sqlCheck expectedResult="0"><![CDATA[
+                select count(*)
+                  from (
+                        select customer_id, provider
+                          from customer_external_identity
+                         group by customer_id, provider
+                        having count(*) > 1
+                  ) duplicates
+            ]]></sqlCheck>
+        </preConditions>
+        <comment>Track Telegram private-message capability independently from identity ownership.</comment>
+        <addColumn tableName="customer_external_identity">
+            <column name="write_access_allowed" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="write_access_updated_at" type="TIMESTAMP WITH TIME ZONE"/>
+        </addColumn>
+        <addUniqueConstraint tableName="customer_external_identity"
+                             columnNames="customer_id, provider"
+                             constraintName="uk_customer_external_identity_customer_provider"/>
+    </changeSet>
+
+    <changeSet id="20260902-03" author="loco-place">
+        <comment>Make account ownership changes atomic with communication identity reassignment.</comment>
+        <sql dbms="postgresql"><![CDATA[
+            alter table cleaning_order drop constraint fk_cleaning_order_communication_identity;
+            alter table cleaning_order
+                add constraint fk_cleaning_order_communication_identity
+                foreign key (communication_identity_id, customer_id)
+                references customer_external_identity (id, customer_id)
+                deferrable initially deferred;
+
+            alter table rental_booking drop constraint fk_rental_booking_communication_identity;
+            alter table rental_booking
+                add constraint fk_rental_booking_communication_identity
+                foreign key (communication_identity_id, customer_id)
+                references customer_external_identity (id, customer_id)
+                deferrable initially deferred;
+        ]]></sql>
+    </changeSet>
+
+    <changeSet id="20260902-04" author="loco-place">
+        <comment>Preferences belong to a platform administrator account, not a Telegram numeric ID.</comment>
+        <dropTable tableName="rental_admin_notification_preference"/>
+        <createTable tableName="rental_admin_notification_preference">
+            <column name="customer_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true"
+                             primaryKeyName="pk_rental_admin_notification_preference"/>
+            </column>
+            <column name="telegram_enabled" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="rental_admin_notification_preference"
+                                 baseColumnNames="customer_id"
+                                 constraintName="fk_rental_admin_notification_preference_customer"
+                                 referencedTableName="customer_account"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="20260902-05" author="loco-place">
+        <comment>Keep referral codes valid when two explicitly verified accounts are merged.</comment>
+        <dropUniqueConstraint tableName="referral_code" constraintName="uk_referral_code_customer"/>
+        <createIndex tableName="referral_code" indexName="idx_referral_code_customer_active">
+            <column name="customer_id"/>
+            <column name="active"/>
+            <column name="created_at"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

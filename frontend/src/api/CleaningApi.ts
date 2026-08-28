@@ -29,6 +29,7 @@ export interface CleaningApi {
   getReferralSummary(): Promise<ReferralSummary>;
   getOrders(): Promise<CleaningOrder[]>;
   getOrder(id: number): Promise<CleaningOrder>;
+  getReportPhoto(orderId: number, mediaId: number): Promise<Blob>;
   cancelOrder(id: number): Promise<CleaningOrder>;
 }
 

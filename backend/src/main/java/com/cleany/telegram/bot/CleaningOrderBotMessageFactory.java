@@ -245,6 +245,14 @@ public class CleaningOrderBotMessageFactory {
         return "Комментарий клинера:\n" + valueOrDash(notification.cleanerComment());
     }
 
+    public String customerReportReady(CleaningOrderCustomerNotification.Completed notification) {
+        return """
+                Уборка завершена ✅
+
+                Фотоотчёт готов и доступен в Loco Place в течение %d дней.
+                """.formatted(notification.reportRetentionDays()).strip();
+    }
+
     private static String callback(String action, long orderId) {
         return "order:" + action + ":" + orderId;
     }

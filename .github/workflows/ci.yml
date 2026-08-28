@@ -84,7 +84,7 @@ jobs:
         env:
           APP_HOST: ${{ vars.APP_HOST }}
           CLEANER_TELEGRAM_IDS: ${{ vars.CLEANER_TELEGRAM_IDS }}
-          ADMIN_TELEGRAM_IDS: ${{ vars.ADMIN_TELEGRAM_IDS }}
+          TELEGRAM_MINI_APP_LINK_BASE: ${{ vars.TELEGRAM_MINI_APP_LINK_BASE }}
           GOOGLE_AUTH_ENABLED: ${{ vars.GOOGLE_AUTH_ENABLED || 'false' }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
@@ -107,7 +107,7 @@ jobs:
             exit 1
           }
           : "${CLEANER_TELEGRAM_IDS:?Missing CLEANER_TELEGRAM_IDS staging variable}"
-          : "${ADMIN_TELEGRAM_IDS:?Missing ADMIN_TELEGRAM_IDS staging variable}"
+          : "${TELEGRAM_MINI_APP_LINK_BASE:?Missing TELEGRAM_MINI_APP_LINK_BASE staging variable}"
           [[ "$GOOGLE_AUTH_ENABLED" == "true" || "$GOOGLE_AUTH_ENABLED" == "false" ]] || {
             echo "GOOGLE_AUTH_ENABLED must be true or false." >&2
             exit 1
@@ -125,8 +125,8 @@ jobs:
             echo "CLEANER_TELEGRAM_IDS must be comma-separated numeric Telegram IDs without spaces." >&2
             exit 1
           }
-          [[ "$ADMIN_TELEGRAM_IDS" =~ ^[0-9]+(,[0-9]+)*$ ]] || {
-            echo "ADMIN_TELEGRAM_IDS must be comma-separated numeric Telegram IDs without spaces." >&2
+          [[ "$TELEGRAM_MINI_APP_LINK_BASE" == https://t.me/* ]] || {
+            echo "TELEGRAM_MINI_APP_LINK_BASE must be an https://t.me/ Mini App link." >&2
             exit 1
           }
           for variable in \
@@ -163,7 +163,7 @@ jobs:
           SSH_USER: ${{ vars.STAGING_SSH_USER }}
           APP_HOST: ${{ vars.APP_HOST }}
           CLEANER_TELEGRAM_IDS: ${{ vars.CLEANER_TELEGRAM_IDS }}
-          ADMIN_TELEGRAM_IDS: ${{ vars.ADMIN_TELEGRAM_IDS }}
+          TELEGRAM_MINI_APP_LINK_BASE: ${{ vars.TELEGRAM_MINI_APP_LINK_BASE }}
           GOOGLE_AUTH_ENABLED: ${{ vars.GOOGLE_AUTH_ENABLED || 'false' }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
@@ -198,7 +198,8 @@ jobs:
             "cd /opt/go-cleany && \
             APP_HOST='$APP_HOST' \
             CLEANER_TELEGRAM_IDS='$CLEANER_TELEGRAM_IDS' \
-            ADMIN_TELEGRAM_IDS='$ADMIN_TELEGRAM_IDS' \
+            TELEGRAM_MINI_APP_LINK_BASE='$TELEGRAM_MINI_APP_LINK_BASE' \
+            PUBLIC_APP_BASE_URL='https://$APP_HOST' \
             GOOGLE_AUTH_ENABLED='$GOOGLE_AUTH_ENABLED' \
             GOOGLE_CLIENT_ID=\$(printf '%s' '$google_client_id_b64' | base64 --decode) \
             GOOGLE_CLIENT_SECRET=\$(printf '%s' '$google_client_secret_b64' | base64 --decode) \

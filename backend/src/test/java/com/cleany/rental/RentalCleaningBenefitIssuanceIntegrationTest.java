@@ -16,6 +16,8 @@ import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
 import com.cleany.base.BaseIntegrationTest;
+import com.cleany.authorization.PlatformRole;
+import com.cleany.authorization.PlatformRoleService;
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefit;
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitIssuanceResult;
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitIssuanceService;
@@ -74,6 +76,9 @@ class RentalCleaningBenefitIssuanceIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private CustomerAccountRepository accountRepository;
+
+    @Autowired
+    private PlatformRoleService roleService;
 
     @Autowired
     private MediaProviderReferenceRepository providerReferenceRepository;
@@ -169,6 +174,7 @@ class RentalCleaningBenefitIssuanceIntegrationTest extends BaseIntegrationTest {
                 customerAccountService,
                 Long.toString(ADMIN_ACTOR_ID)
         );
+        roleService.ensureRole(admin.customerId(), PlatformRole.ADMIN);
         RentalBookingResponse ordinaryBooking = futureBooking(ordinary, "benefit-in-test-customer");
         RentalBookingResponse adminBooking = futureBooking(admin, "benefit-in-test-admin");
         moveBookingDates(ordinaryBooking.id(), today.minusDays(5), today.plusDays(2));
@@ -222,6 +228,7 @@ class RentalCleaningBenefitIssuanceIntegrationTest extends BaseIntegrationTest {
                 customerAccountService,
                 Long.toString(ADMIN_ACTOR_ID)
         );
+        roleService.ensureRole(admin.customerId(), PlatformRole.ADMIN);
         RentalBookingResponse booking = futureBooking(customer, "benefit-cancelled-before-start");
         adminBookingService.cancel(
                 admin.customerId(),
@@ -250,6 +257,7 @@ class RentalCleaningBenefitIssuanceIntegrationTest extends BaseIntegrationTest {
                 customerAccountService,
                 Long.toString(ADMIN_ACTOR_ID)
         );
+        roleService.ensureRole(admin.customerId(), PlatformRole.ADMIN);
         RentalBookingResponse booking = futureBooking(customer, "benefit-revocation");
         moveBookingDates(booking.id(), today.minusDays(7), today.plusDays(3));
         issuanceService.issueEligible(today, 100);

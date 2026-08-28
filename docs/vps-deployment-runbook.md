@@ -99,7 +99,7 @@ nano .env.production
 - `ACME_EMAIL` — email для уведомлений центра сертификации;
 - `TELEGRAM_BOT_TOKEN` — секрет от BotFather;
 - `CLEANER_TELEGRAM_IDS` — ID клинеров через запятую;
-- `ADMIN_TELEGRAM_IDS` — ID администраторов через запятую;
+- `TELEGRAM_MINI_APP_LINK_BASE` — deep link Mini App для явного Google ↔ Telegram linking;
 - `GOOGLE_AUTH_ENABLED` — включает standalone web-вход через Google;
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — backend-only OAuth credentials;
 - `ADMIN_GOOGLE_EMAILS` — verified Google emails для bootstrap роли `ADMIN`;
@@ -195,7 +195,7 @@ ls -lh backups
 
 Backend раз в сутки в `03:30` по `cleaning.zone-id` очищает ограниченными транзакционными пакетами
 audit events, completion photos и binary evidence разрешённых старых терминальных onsite-инцидентов.
-Сам заказ, финансовый snapshot и metadata инцидента сохраняются. Каталожные фотографии go-renty,
+Сам заказ, финансовый snapshot и metadata инцидента сохраняются. Каталожные фотографии Loco Rent,
 включая фотографии архивных квартир, не являются operational payload и сохраняются, пока явно не
 удалены администратором. Проверить результат и длительность job можно в логах:
 

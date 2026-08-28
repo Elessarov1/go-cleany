@@ -43,6 +43,10 @@ public class CustomerAccountService {
                 authenticatedIdentity.emailVerified()
         );
         CustomerExternalIdentity externalIdentity = resolved.externalIdentity();
+        if (authenticatedIdentity.provider() == ExternalIdentityProvider.TELEGRAM
+                && authenticatedIdentity.allowsWriteToPm()) {
+            externalIdentity.allowWriteAccess(clock.instant());
+        }
         roleBootstrapService.bootstrap(authenticatedIdentity, resolved.account().getId());
 
         return new CurrentCustomer(
@@ -95,6 +99,25 @@ public class CustomerAccountService {
                 false
         ).account();
         account.updatePhone(phoneNumberNormalizer.normalize(rawPhone));
+    }
+
+    @Transactional
+    public void recordTelegramWriteAccess(
+            String externalSubject,
+            String username,
+            String displayName,
+            String languageCode
+    ) {
+        ResolvedCustomer resolved = resolveAccount(
+                ExternalIdentityProvider.TELEGRAM,
+                requireExternalSubject(externalSubject),
+                username,
+                displayName,
+                languageCode,
+                null,
+                false
+        );
+        resolved.externalIdentity().allowWriteAccess(clock.instant());
     }
 
     @Transactional

@@ -1,6 +1,6 @@
 # Architecture Documentation Index
 
-This directory contains stable architecture context for go-cleany and the future service platform.
+This directory contains stable architecture context for Loco Place and its service verticals.
 
 Task-specific implementation specs are intentionally not stored here by default.
 
@@ -17,10 +17,10 @@ platform-roadmap.md
 Read this for:
 
 - long-term product vision;
-- go-cleany as the cleaning vertical;
+- Loco Cleaning as the public cleaning vertical;
 - Telegram → WhatsApp → Flutter direction;
 - future multi-service platform;
-- current go-cleany and go-renty vertical boundaries;
+- current Loco Cleaning and Loco Rent vertical boundaries;
 - platform vs vertical boundaries;
 - customer identity direction;
 - media and notification architecture direction;
@@ -65,7 +65,7 @@ Do not generalize them to all future service verticals without a concrete second
 ../rental-cleaning-benefit.md
 ```
 
-Read this for changes involving the explicit go-renty → go-cleany benefit, including issuance,
+Read this for changes involving the explicit Loco Rent → Loco Cleaning benefit, including issuance,
 ownership, checkout date eligibility, reservation lifecycle and financial configuration.
 
 This bridge does not merge rental and cleaning aggregates and is not a referral program.

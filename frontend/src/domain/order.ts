@@ -82,6 +82,22 @@ export interface CleaningOrder {
   acceptedAt?: string;
   completedAt?: string;
   photoCount?: number;
+  report?: CleaningReport | null;
+}
+
+export type CleaningReportStatus = "NOT_READY" | "AVAILABLE" | "EXPIRED";
+
+export interface CleaningReportPhoto {
+  id: number;
+  url: string;
+}
+
+export interface CleaningReport {
+  status: CleaningReportStatus;
+  expiresAt: string | null;
+  retentionDays: number;
+  cleanerComment?: string;
+  photos: CleaningReportPhoto[];
 }
 
 export interface ReferralSummary {

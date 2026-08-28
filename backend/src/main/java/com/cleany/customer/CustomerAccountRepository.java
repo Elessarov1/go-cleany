@@ -1,6 +1,7 @@
 package com.cleany.customer;
 
 import java.util.Optional;
+import java.util.List;
 
 import jakarta.persistence.LockModeType;
 
@@ -14,4 +15,8 @@ public interface CustomerAccountRepository extends JpaRepository<CustomerAccount
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select customer from CustomerAccount customer where customer.id = :id")
     Optional<CustomerAccount> findByIdForUpdate(@Param("id") long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select customer from CustomerAccount customer where customer.id in :ids order by customer.id")
+    List<CustomerAccount> findAllByIdForUpdate(@Param("ids") List<Long> ids);
 }

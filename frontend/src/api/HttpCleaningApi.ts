@@ -100,6 +100,10 @@ export class HttpCleaningApi implements CleaningApi {
     return this.request(`/api/v1/cleaning/orders/${id}`);
   }
 
+  getReportPhoto(orderId: number, mediaId: number): Promise<Blob> {
+    return this.requestBlob(`/api/v1/cleaning/orders/${orderId}/report/photos/${mediaId}`);
+  }
+
   cancelOrder(id: number): Promise<CleaningOrder> {
     return this.request(`/api/v1/cleaning/orders/${id}/cancel`, { method: "POST" });
   }

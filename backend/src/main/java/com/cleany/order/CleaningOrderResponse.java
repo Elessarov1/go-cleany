@@ -29,7 +29,8 @@ public record CleaningOrderResponse(
         CleaningOrderStatus status,
         Instant createdAt,
         Instant acceptedAt,
-        Instant completedAt
+        Instant completedAt,
+        CustomerCleaningReportResponse report
 ) {
 
     public static CleaningOrderResponse from(CleaningOrder order) {
@@ -56,7 +57,23 @@ public record CleaningOrderResponse(
                 order.getStatus(),
                 order.getCreatedAt(),
                 order.getAcceptedAt(),
-                order.getCompletedAt()
+                order.getCompletedAt(),
+                null
+        );
+    }
+
+    public static CleaningOrderResponse from(
+            CleaningOrder order,
+            CustomerCleaningReportResponse report
+    ) {
+        CleaningOrderResponse base = from(order);
+        return new CleaningOrderResponse(
+                base.id(), base.communicationIdentityId(), base.customerName(), base.phone(),
+                base.area(), base.address(), base.apartmentType(), base.duplex(), base.cleaningType(),
+                base.price(), base.basePrice(), base.customerDiscount(), base.finalCustomerPrice(),
+                base.customerDiscountType(), base.currency(), base.requestedDate(), base.customerComment(),
+                base.cleanerComment(), base.cleanerTelegramUserId(), base.status(), base.createdAt(),
+                base.acceptedAt(), base.completedAt(), report
         );
     }
 }

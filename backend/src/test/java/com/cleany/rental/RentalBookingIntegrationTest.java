@@ -14,6 +14,8 @@ import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
 import com.cleany.base.BaseIntegrationTest;
+import com.cleany.authorization.PlatformRole;
+import com.cleany.authorization.PlatformRoleService;
 import com.cleany.catalog.PlatformServiceNotAvailableException;
 import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountRepository;
@@ -62,6 +64,9 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private CustomerAccountRepository accountRepository;
+
+    @Autowired
+    private PlatformRoleService roleService;
 
     @Autowired
     private MediaProviderReferenceRepository providerReferenceRepository;
@@ -142,6 +147,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
                 customerAccountService,
                 Long.toString(ADMIN_ACTOR_ID)
         );
+        roleService.ensureRole(admin.customerId(), PlatformRole.ADMIN);
         RentalPropertyResponse property = publishedProperty("disabled-existing", "100.00");
         LocalDate checkIn = stayPolicy.today().plusDays(10);
         LocalDate checkOut = checkIn.plusDays(7);
@@ -382,6 +388,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
                 customerAccountService,
                 Long.toString(ADMIN_ACTOR_ID)
         );
+        roleService.ensureRole(admin.customerId(), PlatformRole.ADMIN);
         RentalPropertyResponse property = publishedProperty("admin-cancel", "100.00");
         LocalDate firstStart = stayPolicy.today().plusDays(10);
         LocalDate firstEnd = firstStart.plusDays(7);

@@ -19,8 +19,8 @@ public class TelegramRentalAdminMessageFactory {
             RentalBookingAdminNotification booking
     ) {
         String title = type == RentalBookingAdminEvent.Type.CREATED
-                ? "🏠 Новое бронирование go-renty"
-                : "❌ Бронирование go-renty отменено клиентом";
+                ? "🏠 Новое бронирование loco-rent"
+                : "❌ Бронирование loco-rent отменено клиентом";
         return booking.termType() == RentalTermType.MONTHLY
                 ? monthly(title, booking)
                 : dateRange(title, booking);

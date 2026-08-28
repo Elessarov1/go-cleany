@@ -2,7 +2,7 @@
 
 ## Purpose and boundary
 
-A confirmed go-renty booking can grant its customer one personal go-cleany benefit for cleaning near
+A confirmed Loco Rent booking can grant its customer one personal Loco Cleaning benefit for cleaning near
 checkout. `RentalCleaningBenefit` is an explicit cross-service bridge between `RentalBooking` and
 `CleaningOrder`; it does not merge those aggregates and does not reuse referral semantics.
 

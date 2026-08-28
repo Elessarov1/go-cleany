@@ -17,6 +17,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.cleany.base.BaseIntegrationTest;
+import com.cleany.authorization.PlatformRole;
+import com.cleany.authorization.PlatformRoleService;
+import com.cleany.customer.AuthenticatedCustomerIdentity;
+import com.cleany.customer.CustomerAccountService;
 import com.cleany.customer.CustomerAccountRepository;
 import com.cleany.customer.CustomerExternalIdentityRepository;
 import com.cleany.customer.ExternalIdentityProvider;
@@ -67,6 +71,12 @@ class OnsiteIssueIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private CustomerExternalIdentityRepository customerIdentityRepository;
+
+    @Autowired
+    private PlatformRoleService platformRoleService;
+
+    @Autowired
+    private CustomerAccountService customerAccountService;
 
     @Autowired
     private MediaAssetRepository mediaAssetRepository;
@@ -253,6 +263,7 @@ class OnsiteIssueIntegrationTest extends BaseIntegrationTest {
                 .findAllByIssueReport_IdOrderByCreatedAtAscIdAsc(report.getId())
                 .getFirst()
                 .getId();
+        ensureTelegramAdmin();
         String adminAuth = authorization(ADMIN_ID, "Admin");
         String userAuth = authorization(900002L, "Customer");
         String photoUrl = "/api/v1/admin/orders/" + order.getId() + "/issues/photos/" + photoId;
@@ -304,6 +315,17 @@ class OnsiteIssueIntegrationTest extends BaseIntegrationTest {
         mvc.perform(get(photoUrl).header("Authorization", adminAuth))
                 .andExpect(status().isOk())
                 .andExpect(content().bytes(JPEG));
+    }
+
+    private void ensureTelegramAdmin() {
+        var admin = customerAccountService.resolveCustomer(new AuthenticatedCustomerIdentity(
+                ExternalIdentityProvider.TELEGRAM,
+                Long.toString(ADMIN_ID),
+                "admin",
+                "Admin",
+                "ru"
+        ));
+        platformRoleService.ensureRole(admin.customerId(), PlatformRole.ADMIN);
     }
 
     private CleaningOrder submittedIssue() {

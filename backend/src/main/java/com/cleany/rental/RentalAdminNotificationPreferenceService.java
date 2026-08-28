@@ -1,21 +1,16 @@
 package com.cleany.rental;
 
 import java.time.Clock;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.admin.AdminAccessService;
-import com.cleany.admin.AdminNotAuthorizedException;
 import com.cleany.customer.CustomerAccountService;
-import com.cleany.customer.CurrentCustomer;
+import com.cleany.customer.CustomerExternalIdentity;
+import com.cleany.customer.CustomerExternalIdentityRepository;
 import com.cleany.customer.ExternalIdentityProvider;
+import com.cleany.customer.TelegramIdentityNotLinkedException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,68 +20,62 @@ public class RentalAdminNotificationPreferenceService {
 
     private final AdminAccessService accessService;
     private final CustomerAccountService customerAccountService;
+    private final CustomerExternalIdentityRepository identityRepository;
     private final RentalAdminNotificationPreferenceRepository repository;
     private final Clock clock;
 
     @Transactional(readOnly = true)
     public RentalAdminNotificationPreferenceResponse current() {
-        return new RentalAdminNotificationPreferenceResponse(isEnabled(currentTelegramAdminId()));
+        long customerId = currentAdminCustomerId();
+        CustomerExternalIdentity telegram = telegramIdentity(customerId);
+        boolean enabled = telegram != null && repository.findById(customerId)
+                .map(RentalAdminNotificationPreference::isTelegramEnabled)
+                .orElse(true);
+        return response(telegram, enabled);
     }
 
     @Transactional
     public RentalAdminNotificationPreferenceResponse update(
             UpdateRentalAdminNotificationPreferenceRequest request
     ) {
-        long adminId = currentTelegramAdminId();
-        boolean enabled = request.telegramEnabled();
-        RentalAdminNotificationPreference preference = repository.findById(adminId)
+        long customerId = currentAdminCustomerId();
+        CustomerExternalIdentity telegram = telegramIdentity(customerId);
+        if (telegram == null) {
+            throw new TelegramIdentityNotLinkedException();
+        }
+        RentalAdminNotificationPreference preference = repository.findById(customerId)
                 .orElseGet(() -> new RentalAdminNotificationPreference(
-                        adminId,
-                        enabled,
+                        customerId,
+                        request.telegramEnabled(),
                         clock.instant()
                 ));
-        preference.update(enabled, clock.instant());
+        preference.update(request.telegramEnabled(), clock.instant());
         repository.save(preference);
-        return new RentalAdminNotificationPreferenceResponse(enabled);
+        return response(telegram, request.telegramEnabled());
     }
 
-    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
-    public List<Long> enabledAdminIds(Collection<Long> configuredAdminIds) {
-        if (configuredAdminIds.isEmpty()) {
-            return List.of();
-        }
-        Map<Long, RentalAdminNotificationPreference> preferences = repository
-                .findAllByAdminIdIn(configuredAdminIds)
-                .stream()
-                .collect(Collectors.toMap(
-                        RentalAdminNotificationPreference::getAdminId,
-                        Function.identity()
-                ));
-        return configuredAdminIds.stream()
-                .distinct()
-                .filter(adminId -> {
-                    RentalAdminNotificationPreference preference = preferences.get(adminId);
-                    return preference == null || preference.isTelegramEnabled();
-                })
-                .toList();
+    private long currentAdminCustomerId() {
+        long customerId = customerAccountService.currentCustomer().customerId();
+        accessService.requireAdmin(customerId);
+        return customerId;
     }
 
-    private boolean isEnabled(long adminId) {
-        return repository.findById(adminId)
-                .map(RentalAdminNotificationPreference::isTelegramEnabled)
-                .orElse(true);
+    private CustomerExternalIdentity telegramIdentity(long customerId) {
+        return identityRepository.findByCustomerIdAndProvider(
+                customerId,
+                ExternalIdentityProvider.TELEGRAM
+        ).orElse(null);
     }
 
-    private long currentTelegramAdminId() {
-        CurrentCustomer customer = customerAccountService.currentCustomer();
-        accessService.requireAdmin(customer.customerId());
-        if (customer.provider() != ExternalIdentityProvider.TELEGRAM) {
-            throw new AdminNotAuthorizedException();
-        }
-        try {
-            return Long.parseLong(customer.externalSubject());
-        } catch (NumberFormatException exception) {
-            throw new AdminNotAuthorizedException();
-        }
+    private static RentalAdminNotificationPreferenceResponse response(
+            CustomerExternalIdentity telegram,
+            boolean enabled
+    ) {
+        return new RentalAdminNotificationPreferenceResponse(
+                telegram != null,
+                telegram != null && enabled,
+                telegram != null && telegram.isWriteAccessAllowed(),
+                telegram == null ? null : telegram.getUsername()
+        );
     }
 }

@@ -25,6 +25,7 @@ class CustomerNotificationDispatcherTest {
         Mockito.when(identityRepository.findByIdAndCustomerId(88L, 77L))
                 .thenReturn(Optional.of(identity));
         Mockito.when(identity.getCustomerId()).thenReturn(77L);
+        Mockito.when(identity.getId()).thenReturn(88L);
         Mockito.when(identity.getProvider()).thenReturn(ExternalIdentityProvider.WHATSAPP);
         Mockito.when(identity.getExternalSubject()).thenReturn("905551234567");
         Mockito.when(identity.getLanguageCode()).thenReturn("ru");

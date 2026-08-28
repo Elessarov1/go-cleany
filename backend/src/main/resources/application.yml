@@ -119,8 +119,15 @@ cleaner:
   telegram-ids: ${CLEANER_TELEGRAM_IDS:}
 
 admin:
-  telegram-ids: ${ADMIN_TELEGRAM_IDS:}
   google-emails: ${ADMIN_GOOGLE_EMAILS:}
+
+account-linking:
+  telegram:
+    mini-app-link-base: ${TELEGRAM_MINI_APP_LINK_BASE:}
+    request-ttl: ${ACCOUNT_LINK_REQUEST_TTL:10m}
+
+public-application:
+  base-url: ${PUBLIC_APP_BASE_URL:https://loco-place.com}
 
 web-auth:
   google:

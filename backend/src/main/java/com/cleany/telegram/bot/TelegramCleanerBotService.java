@@ -152,12 +152,21 @@ public class TelegramCleanerBotService {
         }
 
         long cleanerId = message.from().id();
+        if (message.writeAccessAllowed() != null) {
+            customerAccountService.recordTelegramWriteAccess(
+                    Long.toString(message.from().id()),
+                    message.from().username(),
+                    displayName(message.from()),
+                    message.from().languageCode()
+            );
+            return;
+        }
         if (message.contact() != null) {
             saveCustomerContact(message);
             return;
         }
         if (isCommand(message.text(), "/start")) {
-            safeSend(cleanerId, "Бот go-cleany запущен. Отправьте /whoami, чтобы узнать свой Telegram ID.");
+            safeSend(cleanerId, "Бот loco-cleaning запущен. Отправьте /whoami, чтобы узнать свой Telegram ID.");
             return;
         }
         if (isCommand(message.text(), "/whoami")) {

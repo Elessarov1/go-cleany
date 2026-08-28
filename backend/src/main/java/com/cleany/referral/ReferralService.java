@@ -254,7 +254,7 @@ public class ReferralService {
     }
 
     private ReferralCode ensureCustomerReferralCode(long customerId) {
-        return codeRepository.findByCustomerIdAndActiveTrue(customerId)
+        return codeRepository.findFirstByCustomerIdAndActiveTrueOrderByCreatedAtAsc(customerId)
                 .orElseGet(() -> createUniqueCode(
                         value -> ReferralCode.customer(value, customerId, clock.instant())
                 ));

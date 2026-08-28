@@ -89,7 +89,7 @@
     "notificationAccessRequired": "Allow bot messages so we can confirm your order and send the photo report.",
     "rentalContext": {
       "title": "Cleaning for booking #{{id}}",
-      "prefilled": "The address and phone were filled from your go-renty booking.",
+      "prefilled": "The address and phone were filled from your loco-rent booking.",
       "benefit": "Your personal code {{code}} applies to cleaning from {{from}} to {{to}} and replaces other discounts.",
       "notApplicable": "This benefit is unavailable or the selected date is outside the checkout-cleaning window. Check the eligible dates."
     },
@@ -194,7 +194,14 @@
     "cancelConfirm": "Cancel this order?",
     "cancelling": "Cancelling…",
     "cancelError": "The order could not be cancelled.",
-    "loadError": "We could not find this order."
+    "loadError": "We could not find this order.",
+    "reportTitle": "Cleaning report",
+    "reportAvailableUntil": "Available until {{date}}",
+    "reportNotReady": "The photo report will appear here after the cleaning is completed.",
+    "reportExpired": "The photo report is no longer retained.",
+    "reportRetention": "Photos are stored in Loco Place for {{count}} days after cleaning completion.",
+    "reportPhotoAlt": "Completed cleaning photo {{index}}",
+    "reportClose": "Close photo"
   },
   "created": {
     "eyebrow": "Order sent",
@@ -354,7 +361,9 @@
     },
     "notifications": {
       "title": "Telegram notifications about bookings",
-      "description": "Receive new booking and customer cancellation alerts for go-renty.",
+      "description": "Receive new booking and customer cancellation alerts for loco-rent.",
+      "notLinked": "Connect Telegram to your Loco Place account to receive notifications.",
+      "writeAccessMissing": "Allow bot messages in the Telegram Mini App.",
       "error": "Could not load or save your notification setting.",
       "on": "On",
       "off": "Off"
@@ -657,7 +666,7 @@
       "cancelError": "The booking could not be cancelled.",
       "loadError": "We could not find this booking.",
       "cleaningTitle": "Need cleaning?",
-      "cleaningText": "Book the apartment cleaning through go-cleany. We will prefill the address and phone from your booking.",
+      "cleaningText": "Book the apartment cleaning through loco-cleaning. We will prefill the address and phone from your booking.",
       "cleaningBenefit": "Checkout cleaning benefit",
       "cleaningWindow": "For cleaning from {{from}} to {{to}}",
       "cleaningFutureBenefit": "A personal cleaning benefit will appear shortly before checkout.",
@@ -675,6 +684,45 @@
       "CANCELLED_BY_ADMIN": "Cancelled by service",
       "COMPLETED": "Completed"
     }
+  },
+  "account": {
+    "title": "Account",
+    "subtitle": "Manage sign-in methods and optional notification channels.",
+    "connected": "Connected",
+    "notConnected": "Not connected",
+    "telegramBenefit": "Receive Telegram notifications and use the same account in the Mini App.",
+    "notificationsAllowed": "Notifications allowed",
+      "notificationsNotAllowed": "Telegram is connected, but notifications are not allowed",
+      "allowNotifications": "Allow notifications",
+      "permissionUpdatePending": "Permission received. The status will update after Telegram processes it.",
+    "connectTelegram": "Connect Telegram",
+    "connecting": "Connecting…",
+    "pending": "Open Telegram and confirm account linking. This page will refresh automatically.",
+    "checkConnection": "Check connection",
+    "loadError": "Sign-in methods could not be loaded.",
+    "linkError": "Telegram linking could not be started. Please try again.",
+    "confirmTitle": "Link this Telegram account to your Loco Place account?",
+    "confirmText": "After confirmation, history, orders and bookings will be available in one account.",
+    "confirm": "Link accounts",
+    "linkSuccessTitle": "Telegram connected",
+    "linkSuccessAllowed": "Accounts are linked and Telegram notifications are allowed.",
+    "linkSuccessNoAccess": "Accounts are linked, but Telegram notifications are not allowed.",
+    "linkInvalid": "This link is invalid, already used or expired. Create a new link in your web account.",
+    "nudgeTitle": "Receive important Telegram notifications",
+    "nudgeText": "Connect Telegram to receive order, booking and report-ready updates.",
+    "notNow": "Not now"
+  },
+  "titles": {
+    "fallback": "Loco Place",
+    "description": "Loco Place — apartment rentals and cleaning services in Alanya.",
+    "home": "Loco Place — apartment rentals and cleaning in Alanya",
+    "rent": "Loco Rent — apartment rentals in Alanya | Loco Place",
+    "rentPage": "Apartment rentals | Loco Rent",
+    "cleaning": "Loco Cleaning — apartment cleaning in Alanya | Loco Place",
+    "cleaningPage": "Orders and cleaning | Loco Cleaning",
+    "account": "Account | Loco Place",
+    "admin": "Admin | Loco Place",
+    "adminPage": "Admin section | Loco Place"
   },
   "notFound": {
     "title": "Page not found",

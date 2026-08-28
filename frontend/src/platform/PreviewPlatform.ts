@@ -21,6 +21,10 @@ export class PreviewPlatform implements Platform {
     return navigator.language;
   }
 
+  getStartParameter(): null {
+    return null;
+  }
+
   async ensureNotificationAccess(): Promise<boolean> {
     return true;
   }

@@ -11,6 +11,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.cleany.authorization.CustomerRoleRepository;
 import com.cleany.authorization.PlatformRole;
+import com.cleany.authorization.PlatformRoleService;
 import com.cleany.base.BaseIntegrationTest;
 import com.cleany.customer.AuthenticatedCustomerIdentity;
 import com.cleany.customer.CurrentCustomer;
@@ -30,6 +31,9 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private CustomerRoleRepository roleRepository;
+
+    @Autowired
+    private PlatformRoleService roleService;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -75,6 +79,7 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
                 ExternalIdentityProvider.TELEGRAM,
                 "900001"
         );
+        roleService.ensureRole(admin.customerId(), PlatformRole.ADMIN);
         PlatformServiceState cleaning = stateRepository.findById(PlatformService.CLEANING)
                 .orElseThrow();
 
@@ -124,7 +129,7 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void telegramAdminBootstrapIsIdempotentAndProviderSpecific() {
+    void telegramIdentityNeverBootstrapsAdminFromConfiguration() {
         CurrentCustomer telegramAdmin = customer(ExternalIdentityProvider.TELEGRAM, "900001");
         customer(ExternalIdentityProvider.TELEGRAM, "900001");
         CurrentCustomer sameSubjectOtherProvider = customer(
@@ -133,7 +138,7 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
         );
 
         Assertions.assertAll(
-                () -> Assertions.assertTrue(roleRepository.existsByCustomerIdAndRole(
+                () -> Assertions.assertFalse(roleRepository.existsByCustomerIdAndRole(
                         telegramAdmin.customerId(),
                         PlatformRole.ADMIN
                 )),
@@ -141,7 +146,7 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
                         sameSubjectOtherProvider.customerId(),
                         PlatformRole.ADMIN
                 )),
-                () -> Assertions.assertEquals(1L, roleRepository.count())
+                () -> Assertions.assertEquals(0L, roleRepository.count())
         );
     }
 

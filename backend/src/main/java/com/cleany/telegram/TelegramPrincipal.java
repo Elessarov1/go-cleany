@@ -11,8 +11,19 @@ public record TelegramPrincipal(
         String username,
         String firstName,
         String lastName,
-        String languageCode
+        String languageCode,
+        boolean allowsWriteToPm
 ) {
+
+    public TelegramPrincipal(
+            long id,
+            String username,
+            String firstName,
+            String lastName,
+            String languageCode
+    ) {
+        this(id, username, firstName, lastName, languageCode, false);
+    }
 
     public String displayName() {
         var name = Stream.of(firstName, lastName)
@@ -27,7 +38,10 @@ public record TelegramPrincipal(
                 Long.toString(id),
                 username,
                 displayName(),
-                languageCode
+                languageCode,
+                null,
+                false,
+                allowsWriteToPm
         );
     }
 }

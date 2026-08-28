@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 
 import com.cleany.admin.AdminAccessService;
 import com.cleany.admin.AdminQueryService;
-import com.cleany.configuration.AdminProperties;
 import com.cleany.customer.AuthenticatedCustomerIdentity;
 import com.cleany.customer.CustomerAccountService;
 import com.cleany.customer.CurrentCustomer;
@@ -22,7 +21,7 @@ public class TelegramAdminBotService {
     private static final Logger log = LoggerFactory.getLogger(TelegramAdminBotService.class);
 
     private final AdminAccessService accessService;
-    private final AdminProperties adminProperties;
+    private final AdminTelegramRecipientService recipientService;
     private final CustomerAccountService customerAccountService;
     private final AdminQueryService queryService;
     private final AdminBotMessageFactory messageFactory;
@@ -30,14 +29,14 @@ public class TelegramAdminBotService {
 
     public TelegramAdminBotService(
             AdminAccessService accessService,
-            AdminProperties adminProperties,
+            AdminTelegramRecipientService recipientService,
             CustomerAccountService customerAccountService,
             AdminQueryService queryService,
             AdminBotMessageFactory messageFactory,
             TelegramBotClient botClient
     ) {
         this.accessService = accessService;
-        this.adminProperties = adminProperties;
+        this.recipientService = recipientService;
         this.customerAccountService = customerAccountService;
         this.queryService = queryService;
         this.messageFactory = messageFactory;
@@ -46,7 +45,7 @@ public class TelegramAdminBotService {
 
     public void notifyOnsiteIssue(long orderId, OnsiteIssueReason reason) {
         String message = messageFactory.onsiteIssueAlert(orderId, reason);
-        adminProperties.telegramIds().forEach(adminId -> safeSend(adminId, message));
+        recipientService.recipients().forEach(adminId -> safeSend(adminId, message));
     }
 
     public boolean handleIfSupported(TelegramUpdate.TelegramUser telegramUser, String text) {

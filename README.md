@@ -1,14 +1,14 @@
-# go services: go-cleany + go-renty
+# Loco Place
 
-This repository contains a mobile-first service platform for customers in Alanya with two independent verticals:
+This repository contains the mobile-first Loco Place platform for customers in Alanya with two independent verticals:
 
-- **go-cleany** — apartment cleaning with Telegram cleaner dispatch and photo reports;
-- **go-renty** — apartment catalog, date-range and monthly pricing, immediate booking and rental administration.
+- **Loco Cleaning** — apartment cleaning with Telegram cleaner dispatch and platform-owned photo reports;
+- **Loco Rent** — apartment catalog, date-range and monthly pricing, immediate booking and rental administration.
 
 Both verticals share customer identity, communication, media, retention and the React application shell. Their aggregates and business rules remain separate: `CleaningOrder` is not reused as a rental booking.
 
-`go-renty` is the customer-facing brand. Existing technical namespaces intentionally remain `/rent`,
-`/api/v1/rental` and `Rental*`.
+Public names are Loco Place, Loco Cleaning and Loco Rent. Existing technical namespaces intentionally
+remain `/cleaning`, `/rent`, `/api/v1/rental`, `Cleaning*` and `Rental*`.
 
 ## Repository layout
 
@@ -72,7 +72,7 @@ can deploy each tested `main` revision automatically through GitHub Actions and 
 
 ```text
 /                         service catalog
-/cleaning                 go-cleany customer flow
+/cleaning                 Loco Cleaning customer flow
 /cleaning/orders          cleaning history
 /rent                     published rental catalog
 /rent/bookings            customer rental bookings

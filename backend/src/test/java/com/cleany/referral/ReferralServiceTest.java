@@ -99,7 +99,7 @@ class ReferralServiceTest {
     void completedCustomerReferral_rewardCreatedForReferrerOnlyAfterCompletion() {
         CleaningOrder order = completedOrder(AcquisitionSource.CUSTOMER_REFERRAL);
         Mockito.when(order.getReferrerCustomerId()).thenReturn(10L);
-        Mockito.when(codeRepository.findByCustomerIdAndActiveTrue(11L))
+        Mockito.when(codeRepository.findFirstByCustomerIdAndActiveTrueOrderByCreatedAtAsc(11L))
                 .thenReturn(Optional.of(Mockito.mock(ReferralCode.class)));
 
         service.completeOrder(order);
@@ -115,7 +115,7 @@ class ReferralServiceTest {
         Mockito.when(order.getReferralPartnerId()).thenReturn(30L);
         Mockito.when(order.getPartnerPayout()).thenReturn(amount("100"));
         Mockito.when(order.getCurrency()).thenReturn("TRY");
-        Mockito.when(codeRepository.findByCustomerIdAndActiveTrue(11L))
+        Mockito.when(codeRepository.findFirstByCustomerIdAndActiveTrueOrderByCreatedAtAsc(11L))
                 .thenReturn(Optional.of(Mockito.mock(ReferralCode.class)));
 
         service.completeOrder(order);

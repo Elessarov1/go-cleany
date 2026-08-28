@@ -46,4 +46,9 @@ public class CustomerAccount {
     void updatePhone(String phone) {
         this.phone = Objects.requireNonNull(phone);
     }
+
+    void mergeProfile(Instant earliestCreatedAt, String mergedPhone) {
+        createdAt = Objects.requireNonNull(earliestCreatedAt, "earliestCreatedAt");
+        phone = mergedPhone;
+    }
 }

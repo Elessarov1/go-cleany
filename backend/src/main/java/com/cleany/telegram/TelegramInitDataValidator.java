@@ -139,8 +139,20 @@ public class TelegramInitDataValidator {
                 optionalText(user, "username"),
                 firstName.textValue(),
                 optionalText(user, "last_name"),
-                optionalText(user, "language_code")
+                optionalText(user, "language_code"),
+                optionalBoolean(user, "allows_write_to_pm")
         );
+    }
+
+    private static boolean optionalBoolean(JsonNode object, String fieldName) {
+        JsonNode value = object.get(fieldName);
+        if (value == null || value.isNull()) {
+            return false;
+        }
+        if (!value.isBoolean()) {
+            throw new CustomerAuthenticationRequiredException();
+        }
+        return value.booleanValue();
     }
 
     private static String optionalText(JsonNode object, String fieldName) {

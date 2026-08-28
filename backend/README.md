@@ -1,9 +1,9 @@
 # go services backend
 
-Single-module Spring Boot backend for the go-cleany cleaning and go-renty apartment-rental verticals.
+Single-module Spring Boot backend for the Loco Cleaning and Loco Rent verticals in Loco Place.
 
-The user-facing rental brand is `go-renty`; technical routes and Java types intentionally retain the
-existing `rent` / `rental` / `Rental*` namespaces.
+Technical routes and Java types intentionally retain the existing `cleaning`, `rent` / `rental`,
+`Cleaning*` and `Rental*` namespaces.
 
 ## Stack
 
@@ -28,7 +28,7 @@ Local PostgreSQL connection settings and placeholder prices are kept in `src/mai
 
 Gradle and the application use the declared Java 25 toolchain.
 
-## go-renty
+## Loco Rent
 
 The rental vertical has independent `RentalProperty`, `RentalBooking` and `RentalOccupancy` models. Published properties are exposed through `/api/v1/rental`; authenticated customers receive server-calculated quotes and create immediately confirmed bookings. Rental price, minimum/maximum stay, booking horizon and active-booking limit are enforced by the backend.
 
@@ -126,8 +126,8 @@ see [`docs/local-docker-runbook.md`](../docs/local-docker-runbook.md).
 
 ## Administration
 
-`ADMIN` is stored against `CustomerAccount`. `ADMIN_TELEGRAM_IDS` and verified
-`ADMIN_GOOGLE_EMAILS` are idempotent bootstrap allowlists, not reusable authorization keys. Telegram
+`ADMIN` is stored against `CustomerAccount`. Verified `ADMIN_GOOGLE_EMAILS` is the only idempotent
+external bootstrap allowlist, not a reusable authorization key. Telegram
 administrators see the shared `/admin` entry; standalone web intentionally hides it and admins open
 `/admin` directly. The sections remain `/admin/cleaning` and `/admin/rent`. Telegram admins can use
 these cleaning commands in the same bot chat:
@@ -145,8 +145,8 @@ API resolves the current `CustomerAccount` and verifies its persisted `ADMIN` ro
 whether authentication came from Telegram or Google.
 
 Successful booking creation and customer cancellation publish transport-neutral rental admin events.
-An `AFTER_COMMIT` listener routes them to the Telegram adapter, which uses the existing
-`ADMIN_TELEGRAM_IDS`. Each administrator controls only their own go-renty booking notifications through
+An `AFTER_COMMIT` listener routes them to the Telegram adapter. Recipients are persisted ADMIN accounts
+with a linked Telegram identity, Telegram write access and an enabled preference. Each administrator controls their own Loco Rent booking notifications through
 `GET` / `PUT /api/v1/admin/rental/notification-preferences`. Preferences are stored in PostgreSQL;
 no row means enabled. This switch does not affect customer, cleaner or cleaning-admin notifications,
 and Telegram delivery failures cannot roll back an already committed rental transition.
