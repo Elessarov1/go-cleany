@@ -5,6 +5,7 @@ import type { AccountIdentities } from "../../domain/customer";
 import { usePlatform } from "../../platform/PlatformProvider";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import { BrandName } from "../../components/BrandName/BrandName";
+import "./AccountPage.css";
 
 const TELEGRAM_LINK_PENDING_UNTIL = "loco-place.telegram-link-pending-until";
 
@@ -102,7 +103,9 @@ export function AccountPage() {
 
       <div className="account-providers">
         <section className="account-provider-card">
-          <div className="account-provider-card__mark">G</div>
+          <div className="account-provider-card__mark account-provider-card__mark--provider-logo">
+            <img className="account-provider-card__logo" src="/assets/icons/google.svg" alt="" aria-hidden="true" />
+          </div>
           <div><h2>Google</h2><p>{google?.linked ? t("account.connected") : t("account.notConnected")}</p></div>
           <span className={`account-provider-card__status${google?.linked ? " is-connected" : ""}`}>
             {google?.linked ? "✓" : "—"}
@@ -110,7 +113,9 @@ export function AccountPage() {
         </section>
 
         <section className="account-provider-card account-provider-card--telegram">
-          <div className="account-provider-card__mark">↗</div>
+          <div className="account-provider-card__mark account-provider-card__mark--provider-logo">
+            <img className="account-provider-card__logo" src="/assets/icons/telegram.svg" alt="" aria-hidden="true" />
+          </div>
           <div className="account-provider-card__content">
             <h2>Telegram</h2>
             {telegram?.linked ? (
