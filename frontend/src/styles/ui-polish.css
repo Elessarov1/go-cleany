@@ -10,29 +10,68 @@
   min-width: 0;
 }
 
-.service-shell[data-platform="telegram"] .brand__word {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .service-shell[data-platform="telegram"] .topbar__actions {
   flex: 0 0 auto;
+}
+
+/* Keep the full Loco Cleaning name visible in the narrow Telegram header. */
+.service-shell[data-platform="telegram"][data-service="cleaning"] .topbar {
+  min-height: 94px;
+  padding-block: 14px;
+}
+
+.service-shell[data-platform="telegram"][data-service="cleaning"] .brand__word {
+  min-width: 0;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.service-shell[data-platform="telegram"][data-service="cleaning"] .brand-name {
+  display: flex;
+  flex-direction: column;
+  line-height: 0.95;
+}
+
+.service-shell[data-platform="telegram"][data-service="cleaning"] .brand-name__prefix,
+.service-shell[data-platform="telegram"][data-service="cleaning"] .brand-name__suffix {
+  display: block;
+  white-space: nowrap;
 }
 
 .booking-form,
 .form-section,
 .form-grid--cleaning-details,
-.form-grid--cleaning-details .field {
+.form-grid--cleaning-details > *,
+.form-grid--cleaning-details .field,
+.form-grid--cleaning-details .field label {
   min-width: 0;
   max-width: 100%;
 }
 
-.form-grid--cleaning-details .field :is(input, textarea, select) {
+.form-grid--cleaning-details .field :is(input, textarea, select, button) {
   display: block;
+  width: 100%;
   min-width: 0;
   max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* iOS gives date inputs an intrinsic inline size that may exceed their grid cell. */
+.form-grid--cleaning-details .field--date input[type="date"] {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.form-grid--cleaning-details .field--date input[type="date"]::-webkit-date-and-time-value {
+  min-width: 0;
+  text-align: center;
 }
 
 .service-shell[data-service="cleaning"] .details-card__price .details-card__price-value strong {
