@@ -38,6 +38,23 @@ function getWebApp(): TelegramWebApp {
   return webApp;
 }
 
+function normalizedParameter(value: string | null | undefined): string | null {
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
+}
+
+function parameterFromLocation(name: string): string | null {
+  const queryValue = normalizedParameter(new URLSearchParams(window.location.search).get(name));
+  if (queryValue) {
+    return queryValue;
+  }
+
+  const hash = window.location.hash.startsWith("#")
+    ? window.location.hash.slice(1)
+    : window.location.hash;
+  return normalizedParameter(new URLSearchParams(hash).get(name));
+}
+
 export class TelegramPlatform implements Platform {
   readonly kind = "TELEGRAM" as const;
 
@@ -67,7 +84,21 @@ export class TelegramPlatform implements Platform {
   }
 
   getStartParameter(): string | null {
-    return getWebApp().initDataUnsafe?.start_param ?? null;
+    const webApp = getWebApp();
+
+    const unsafeStartParameter = normalizedParameter(webApp.initDataUnsafe?.start_param);
+    if (unsafeStartParameter) {
+      return unsafeStartParameter;
+    }
+
+    const validatedInitDataCandidate = normalizedParameter(
+      new URLSearchParams(webApp.initData).get("start_param"),
+    );
+    if (validatedInitDataCandidate) {
+      return validatedInitDataCandidate;
+    }
+
+    return parameterFromLocation("tgWebAppStartParam");
   }
 
   ensureNotificationAccess(): Promise<boolean> {
