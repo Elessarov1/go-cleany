@@ -23,6 +23,12 @@ Prefer simple, explicit Java code.
 
 Use constructor injection.
 
+Production constructors represent real runtime dependencies and invariants.
+
+Do not add shortened, overloaded, defaulting, or compatibility constructors to production classes/records solely to keep old tests compiling. When a required dependency is added, update tests to pass/mock it or extend a test fixture/builder.
+
+Do not hide required production dependencies behind test-only defaults.
+
 Do not introduce an interface unless there is a real implementation boundary or realistic future alternative.
 
 Good examples for interfaces:
@@ -94,6 +100,8 @@ Telegram parsing and validation may remain inside Telegram adapters.
 
 Do not make `TelegramPrincipal` a long-term dependency of generic customer/application services.
 
+`ADMIN` authorization always comes from the persisted `CustomerAccount` role. Verified Google email allowlisting is the only deployment bootstrap; Telegram identity gains the same role only after explicit account linking to that CustomerAccount.
+
 ---
 
 ## Notifications
@@ -108,9 +116,11 @@ business/application event
 → channel adapter
 ```
 
+Telegram is an optional delivery channel.
+
 Cleaner bot interaction may remain Telegram-specific.
 
-When adding a second notification sender, do not broadcast blindly to all registered senders; route by the intended communication identity/channel.
+When adding another notification sender in the future, route by customer identity/communication capability rather than broadcasting blindly.
 
 ---
 
@@ -118,7 +128,7 @@ When adding a second notification sender, do not broadcast blindly to all regist
 
 Important images should be retrievable independently of Telegram.
 
-Target direction:
+Current direction:
 
 ```text
 MediaAsset
@@ -167,7 +177,7 @@ Avoid destructive one-step migrations for major platform-neutralization changes.
 
 Do not hold database transactions open around slow external network calls unless unavoidable.
 
-External Telegram/WhatsApp downloads or sends should generally happen outside unnecessarily long DB transactions.
+External provider downloads or sends should generally happen outside unnecessarily long DB transactions.
 
 Use AFTER_COMMIT behavior when external notification must not happen before the business transaction succeeds.
 
@@ -190,6 +200,8 @@ cross-service persistence behavior
 
 Do not start a full Spring context for trivial pure-unit logic when a small unit test is sufficient.
 
+When a production constructor gains a dependency, update tests to construct the real production shape. Do not preserve obsolete test signatures in production code.
+
 When changing channel-neutral architecture, include regression coverage for current Telegram behavior.
 
 ---
@@ -203,9 +215,10 @@ Kafka
 microservices
 S3/MinIO
 generic workflow engines
+WhatsApp-specific integrations
 ```
 
-without a concrete requirement.
+without a new concrete product requirement.
 
 The current monolith is intentional.
 
