@@ -67,9 +67,10 @@ export function AuthApiProvider({ api, children }: AuthApiProviderProps) {
       setStatus("LOADING");
       try {
         await api.logout();
-        setCurrent(ANONYMOUS);
+        setCurrent(await api.getCurrent());
         setStatus("READY");
       } catch {
+        setCurrent(ANONYMOUS);
         setStatus("ERROR");
       }
     },
