@@ -43,12 +43,11 @@ export async function bootstrap(): Promise<AppServices> {
   await initializeI18n(platform.getLanguage());
   platform.ready();
   const startParameter = platform.getStartParameter();
-  if (platform.kind === "TELEGRAM" && startParameter && window.location.pathname === "/") {
-    window.history.replaceState(
-      null,
-      "",
-      `/account/link/telegram?token=${encodeURIComponent(startParameter)}`,
-    );
+  if (platform.kind === "TELEGRAM" && startParameter) {
+    const accountLinkPath = `/account/link/telegram?token=${encodeURIComponent(startParameter)}`;
+    if (`${window.location.pathname}${window.location.search}` !== accountLinkPath) {
+      window.history.replaceState(null, "", accountLinkPath);
+    }
   }
 
   const baseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
