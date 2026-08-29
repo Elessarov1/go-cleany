@@ -20,6 +20,12 @@
   overflow: hidden;
 }
 
+/* Keep enough line box for descenders such as the "g" in cleaning. */
+.brand .brand-name--service {
+  padding-block: 2px;
+  line-height: 1.06;
+}
+
 .topbar__actions {
   flex: 0 0 auto;
   flex-wrap: nowrap;
@@ -102,7 +108,30 @@
   transform: scale(0.92);
 }
 
+/*
+ * Web customer header uses the same compact first row at every viewport:
+ * brand on the left, utility controls on the right, service navigation below.
+ * The wide desktop breakpoint from global.css can still promote navigation into
+ * the first row at >= 1100px.
+ */
+.service-shell[data-platform="web"][data-layout="customer"] .topbar__inner {
+  align-items: center;
+  grid-template-areas:
+    "brand actions"
+    "navigation navigation";
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  row-gap: 8px;
+}
+
+.service-shell[data-platform="web"][data-layout="customer"] .topbar__actions {
+  width: auto;
+  justify-self: end;
+}
+
 .service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav {
+  width: 100%;
+  align-items: center;
   grid-template-columns: 40px repeat(2, minmax(0, 1fr));
 }
 
@@ -117,11 +146,21 @@
 
 @media (min-width: 768px) {
   .service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav {
+    width: auto;
+    justify-self: start;
     grid-template-columns: 40px repeat(2, auto);
   }
 
   .service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav .web-primary-nav__services {
     min-height: 42px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .service-shell[data-platform="web"][data-layout="customer"] .topbar__inner {
+    grid-template-areas: "brand navigation actions";
+    grid-template-columns: 200px minmax(0, 1fr) auto;
+    gap: 24px;
   }
 }
 
@@ -148,6 +187,10 @@
   .theme-switcher,
   .topbar__services-action {
     border-radius: 11px;
+  }
+
+  .brand .brand-name--service {
+    line-height: 1.08;
   }
 }
 
