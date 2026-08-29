@@ -1,6 +1,29 @@
 /* Compact public footer and legal pages. */
 
+/*
+ * The shared mobile shell historically makes app-content at least one viewport high.
+ * Once a footer is present that would force short web pages to scroll by the footer height.
+ * On standalone customer web pages, let the shell itself own the viewport height and let
+ * shell-body consume the remaining space between the header and footer instead.
+ */
+.service-shell[data-platform="web"][data-layout="customer"] .app-container {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+}
+
+.service-shell[data-platform="web"][data-layout="customer"] .shell-body {
+  flex: 1 0 auto;
+  min-height: 0;
+}
+
+.service-shell[data-platform="web"][data-layout="customer"] .app-content {
+  min-height: 0;
+}
+
 .site-footer {
+  flex: 0 0 auto;
+  margin-top: auto;
   border-top: 1px solid var(--color-line);
   background: color-mix(in srgb, var(--color-surface) 70%, var(--color-canvas));
 }
