@@ -14,33 +14,23 @@ export function ThemeSwitcher() {
 
   useEffect(() => subscribeToSystemTheme(setTheme), []);
 
-  const chooseTheme = (nextTheme: ColorTheme) => {
+  const nextTheme: ColorTheme = theme === "light" ? "dark" : "light";
+  const switchLabel = nextTheme === "dark" ? t("theme.dark") : t("theme.light");
+
+  const toggleTheme = () => {
     selectTheme(nextTheme);
     setTheme(nextTheme);
   };
 
   return (
-    <div className="theme-switcher" role="group" aria-label={t("theme.label")}>
-      <button
-        className={theme === "light" ? "is-active" : ""}
-        type="button"
-        title={t("theme.light")}
-        aria-label={t("theme.light")}
-        aria-pressed={theme === "light"}
-        onClick={() => chooseTheme("light")}
-      >
-        <Icon name="sun" size={16} strokeWidth={2} />
-      </button>
-      <button
-        className={theme === "dark" ? "is-active" : ""}
-        type="button"
-        title={t("theme.dark")}
-        aria-label={t("theme.dark")}
-        aria-pressed={theme === "dark"}
-        onClick={() => chooseTheme("dark")}
-      >
-        <Icon name="moon" size={16} strokeWidth={2} />
-      </button>
-    </div>
+    <button
+      className="theme-switcher"
+      type="button"
+      title={switchLabel}
+      aria-label={switchLabel}
+      onClick={toggleTheme}
+    >
+      <Icon name={theme === "light" ? "sun" : "moon"} size={18} strokeWidth={2} />
+    </button>
   );
 }
