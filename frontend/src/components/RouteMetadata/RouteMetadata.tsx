@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 
 function titleKey(pathname: string): string {
   if (pathname === "/") return "titles.home";
+  if (pathname === "/privacy") return "titles.privacy";
+  if (pathname === "/terms") return "titles.terms";
   if (pathname === "/notifications") return "titles.notifications";
   if (pathname === "/account" || pathname.startsWith("/account/")) return "titles.account";
   if (pathname === "/rent" || pathname === "/rent/properties") return "titles.rent";

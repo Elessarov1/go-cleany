@@ -12,6 +12,7 @@ import { TelegramLinkNudge } from "../TelegramLinkNudge/TelegramLinkNudge";
 import { RouteMetadata } from "../RouteMetadata/RouteMetadata";
 import { NotificationBell } from "../NotificationBell/NotificationBell";
 import { ThemeSwitcher } from "../ThemeSwitcher/ThemeSwitcher";
+import { SiteFooter } from "../SiteFooter/SiteFooter";
 import { useCustomerApi } from "../../api/CustomerApiProvider";
 
 const ACQUISITION_START_PREFIX = "acq_";
@@ -71,7 +72,8 @@ export function AppShell() {
   const admin = location.pathname.startsWith("/admin");
   const rental = location.pathname.startsWith("/rent") || location.pathname.startsWith("/admin/rent");
   const catalog = location.pathname === "/" || location.pathname === "/admin";
-  const neutralCustomer = location.pathname === "/notifications";
+  const publicPlatformPage = location.pathname === "/privacy" || location.pathname === "/terms";
+  const neutralCustomer = location.pathname === "/notifications" || publicPlatformPage;
   const customerServiceHome = location.pathname === "/cleaning"
     || location.pathname === "/rent"
     || location.pathname === "/rent/properties";
@@ -85,6 +87,7 @@ export function AppShell() {
   const brandService: BrandService | undefined = catalog || neutralCustomer ? undefined : rental ? "rental" : "cleaning";
   const showLocalNavigation = !catalog && !neutralCustomer && (!admin || rental);
   const showWebAdminSidebar = standaloneWeb && admin && hasAdminAccess;
+  const showSiteFooter = standaloneWeb && !admin;
 
   return (
     <>
@@ -205,6 +208,8 @@ export function AppShell() {
             <Outlet />
           </main>
         </div>
+
+        {showSiteFooter ? <SiteFooter /> : null}
 
         {showLocalNavigation ? (
           <nav
