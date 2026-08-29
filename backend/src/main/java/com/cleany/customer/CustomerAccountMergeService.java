@@ -49,6 +49,7 @@ public class CustomerAccountMergeService {
 
         mergeRoles(targetCustomerId, sourceCustomerId);
         mergeRentalAdminPreference(targetCustomerId, sourceCustomerId);
+        mergeCustomerAcquisition(targetCustomerId, sourceCustomerId);
         reassignCustomerOwnership(targetCustomerId, sourceCustomerId);
         identityRepository.flush();
         accountRepository.delete(source);
@@ -111,6 +112,29 @@ public class CustomerAccountMergeService {
                 "delete from rental_admin_notification_preference where customer_id = ?",
                 sourceId
         );
+    }
+
+    private void mergeCustomerAcquisition(long targetId, long sourceId) {
+        jdbcTemplate.update("""
+                insert into customer_acquisition(
+                    customer_id, channel, campaign_id, first_touch_at,
+                    first_touch_service, attribution_method, created_at
+                )
+                select ?, channel, campaign_id, first_touch_at,
+                       first_touch_service, attribution_method, created_at
+                  from customer_acquisition
+                 where customer_id in (?, ?)
+                 order by first_touch_at, case when customer_id = ? then 0 else 1 end
+                 limit 1
+                on conflict (customer_id) do update
+                    set channel = excluded.channel,
+                        campaign_id = excluded.campaign_id,
+                        first_touch_at = excluded.first_touch_at,
+                        first_touch_service = excluded.first_touch_service,
+                        attribution_method = excluded.attribution_method,
+                        created_at = excluded.created_at
+                """, targetId, targetId, sourceId, targetId);
+        jdbcTemplate.update("delete from customer_acquisition where customer_id = ?", sourceId);
     }
 
     private void reassignCustomerOwnership(long targetId, long sourceId) {

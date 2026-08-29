@@ -157,6 +157,8 @@ Repository -> Settings -> Environments -> staging
 | `TELEGRAM_MINI_APP_LINK_BASE` | `https://t.me/<bot>/<mini-app>` |
 | `GOOGLE_AUTH_ENABLED` | `true` |
 | `WEB_SESSION_TIMEOUT` | `12h` |
+| `ANALYTICS_ZONE_ID` | `Europe/Istanbul` |
+| `COMMERCIAL_LAUNCH_AT` | `2026-10-01T00:00:00+03:00` после предкоммерческой очистки |
 | `RENTAL_MIN_STAY_DAYS` | `7` |
 | `RENTAL_LONG_TERM_MIN_DAYS` | `30` |
 | `RENTAL_LONG_TERM_DISCOUNT_RATE` | `0.10` |
@@ -191,6 +193,10 @@ fallback-значениями из `.env.production` при Docker Compose inter
 Loco Rent на уборку перед выездом. Значения берутся из GitHub Environment при каждой выкладке и имеют
 приоритет над `.env.production`. Backend дополнительно не позволит запуститься, если ставка выгоды
 превышает доступную комиссионную ставку: это защищает заказ от отрицательной экономики.
+
+`ANALYTICS_ZONE_ID` определяет календарные границы отчётов. `COMMERCIAL_LAUNCH_AT` остаётся пустым до
+финальной предкоммерческой очистки, затем отсекает любые более ранние timestamps. Порядок очистки и
+закрытия destructive lock описан в [pre-commercial reset runbook](precommercial-data-reset.md).
 
 Отдельно в:
 

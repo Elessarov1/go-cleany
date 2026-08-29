@@ -5,6 +5,13 @@ import { HttpApiClient } from "./HttpApiClient";
 export class HttpCustomerApi implements CustomerApi {
   constructor(private readonly client: HttpApiClient) {}
 
+  captureTelegramAcquisition(publicCode: string): Promise<{ targetPath: string }> {
+    return this.client.request("/api/v1/acquisition/telegram", {
+      method: "POST",
+      body: JSON.stringify({ publicCode }),
+    });
+  }
+
   getCurrentProfile(): Promise<CustomerProfile> {
     return this.client.request("/api/v1/customers/me");
   }

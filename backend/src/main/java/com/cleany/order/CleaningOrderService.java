@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.catalog.PlatformService;
+import com.cleany.analytics.CustomerAttributionService;
 import com.cleany.catalog.PlatformServiceAccessService;
 import com.cleany.configuration.CleanerProperties;
 import com.cleany.configuration.CleaningProperties;
@@ -56,6 +57,7 @@ public class CleaningOrderService {
     private final ReferralService referralService;
     private final RentalCleaningBenefitService rentalCleaningBenefitService;
     private final MediaProviderReferenceService mediaProviderReferenceService;
+    private final CustomerAttributionService customerAttributionService;
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -103,6 +105,7 @@ public class CleaningOrderService {
                 ? rentalBenefitPlan.financialSnapshot()
                 : referralPlan.financialSnapshot();
 
+        var createdAt = clock.instant();
         var order = new CleaningOrder(
                 customer.customerId(),
                 customer.externalIdentityId(),
@@ -122,9 +125,10 @@ public class CleaningOrderService {
                 cleaningProperties.currency().getCurrencyCode(),
                 command.requestedDate(),
                 normalizeOptional(command.comment()),
-                clock.instant()
+                createdAt
         );
         CleaningOrder savedOrder = orderRepository.save(order);
+        attachFirstTouchFallback(customer.customerId(), referralPlan, createdAt);
         if (referralPlan != null && referralPlan.rewardId() != null) {
             referralService.reserveReward(referralPlan, savedOrder.getId());
         }
@@ -142,6 +146,35 @@ public class CleaningOrderService {
         );
         eventPublisher.publishEvent(new CleaningOrderCreatedEvent(savedOrder));
         return savedOrder;
+    }
+
+    private void attachFirstTouchFallback(
+            long customerId,
+            OrderReferralPlan referralPlan,
+            java.time.Instant createdAt
+    ) {
+        if (referralPlan != null && referralPlan.partnerId() != null) {
+            customerAttributionService.attachPartnerCode(
+                    customerId,
+                    referralPlan.partnerId(),
+                    createdAt,
+                    PlatformService.CLEANING
+            );
+            return;
+        }
+        if (referralPlan != null && referralPlan.referrerCustomerId() != null) {
+            customerAttributionService.attachCustomerReferralCode(
+                    customerId,
+                    createdAt,
+                    PlatformService.CLEANING
+            );
+            return;
+        }
+        customerAttributionService.attachOrganicFallback(
+                customerId,
+                createdAt,
+                PlatformService.CLEANING
+        );
     }
 
     @Transactional

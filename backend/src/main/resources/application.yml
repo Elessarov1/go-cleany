@@ -129,6 +129,10 @@ account-linking:
 public-application:
   base-url: ${PUBLIC_APP_BASE_URL:https://loco-place.com}
 
+analytics:
+  zone-id: ${ANALYTICS_ZONE_ID:Europe/Istanbul}
+  commercial-launch-at: ${COMMERCIAL_LAUNCH_AT:}
+
 web-auth:
   google:
     enabled: ${GOOGLE_AUTH_ENABLED:false}

@@ -7,6 +7,7 @@ export type IconName =
   | "building"
   | "calendar-plus"
   | "camera"
+  | "chart"
   | "check"
   | "clipboard"
   | "close"
@@ -119,6 +120,12 @@ export function Icon({ name, size = 22, strokeWidth = 1.8 }: IconProps) {
         <>
           <path d="M4 7h3l1.5-2h7L17 7h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" />
           <circle cx="12" cy="13" r="4" />
+        </>
+      ) : null}
+      {name === "chart" ? (
+        <>
+          <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+          <path d="m4 7 6-4 6 6 5-5" />
         </>
       ) : null}
       {name === "user" ? (

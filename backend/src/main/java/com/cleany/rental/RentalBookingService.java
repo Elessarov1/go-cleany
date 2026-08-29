@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.catalog.PlatformService;
+import com.cleany.analytics.CustomerAttributionService;
 import com.cleany.catalog.PlatformServiceAccessService;
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitCancellationService;
 import com.cleany.customer.CurrentCustomer;
@@ -32,6 +33,7 @@ public class RentalBookingService {
     private final RentalCleaningBenefitCancellationService benefitCancellationService;
     private final CustomerAccountService customerAccountService;
     private final PhoneNumberNormalizer phoneNumberNormalizer;
+    private final CustomerAttributionService customerAttributionService;
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -93,6 +95,7 @@ public class RentalBookingService {
         String normalizedPhone = phoneNumberNormalizer.normalize(request.phone());
         customerAccountService.updateNormalizedPhone(customer.customerId(), normalizedPhone);
         RentalPriceQuote quote = priceService.calculate(property, term);
+        var createdAt = clock.instant();
         RentalBooking booking = bookingRepository.saveAndFlush(new RentalBooking(
                 customer.customerId(),
                 customer.externalIdentityId(),
@@ -103,8 +106,13 @@ public class RentalBookingService {
                 request.guests(),
                 request.comment(),
                 quote,
-                clock.instant()
+                createdAt
         ));
+        customerAttributionService.attachOrganicFallback(
+                customer.customerId(),
+                createdAt,
+                PlatformService.RENTAL
+        );
 
         try {
             occupancyRepository.create(

@@ -2,6 +2,10 @@ import type { AccountIdentities, AccountLinkInitiated, CustomerNotification, Cus
 import type { CustomerApi } from "./CustomerApi";
 
 export class MockCustomerApi implements CustomerApi {
+  async captureTelegramAcquisition(): Promise<{ targetPath: string }> {
+    return { targetPath: "/" };
+  }
+
   private linked = false;
   private notifications: CustomerNotification[] = [
     { id: 2, type: "RENTAL_BOOKING_CONFIRMED", targetPath: "/rent/bookings/2", createdAt: new Date().toISOString(), readAt: null },

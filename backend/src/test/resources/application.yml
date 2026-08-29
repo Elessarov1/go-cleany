@@ -113,6 +113,9 @@ account-linking:
 public-application:
   base-url: https://loco-place.com
 
+analytics:
+  zone-id: Europe/Istanbul
+
 web-auth:
   google:
     enabled: false

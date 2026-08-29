@@ -1,6 +1,7 @@
 import type { AccountIdentities, AccountLinkInitiated, CustomerNotificationPage, CustomerProfile } from "../domain/customer";
 
 export interface CustomerApi {
+  captureTelegramAcquisition(publicCode: string): Promise<{ targetPath: string }>;
   getCurrentProfile(): Promise<CustomerProfile>;
   getAccountIdentities(): Promise<AccountIdentities>;
   initiateTelegramLink(): Promise<AccountLinkInitiated>;

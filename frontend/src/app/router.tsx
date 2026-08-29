@@ -24,6 +24,7 @@ import { CustomerAccessGate } from "../components/CustomerAccessGate/CustomerAcc
 import { AccountPage } from "../pages/AccountPage/AccountPage";
 import { TelegramAccountLinkPage } from "../pages/TelegramAccountLinkPage/TelegramAccountLinkPage";
 import { NotificationsPage } from "../pages/NotificationsPage/NotificationsPage";
+import { AdminAnalyticsPage } from "../pages/AdminAnalyticsPage/AdminAnalyticsPage";
 
 function LegacyCleaningOrderRedirect({ created = false }: { created?: boolean }) {
   const { id } = useParams();
@@ -65,6 +66,7 @@ export const router = createBrowserRouter([
         element: <AdminAccessGate />,
         children: [
           { index: true, element: <AdminServiceCatalogPage /> },
+          { path: "analytics", element: <AdminAnalyticsPage /> },
           { path: "cleaning", element: <AdminDashboardPage /> },
           { path: "cleaning/orders/:id", element: <AdminOrderPage /> },
           { path: "rent", element: <Navigate replace to="/admin/rent/properties" /> },
