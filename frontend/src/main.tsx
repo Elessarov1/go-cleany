@@ -6,7 +6,7 @@ import "./styles/variables.css";
 import "./styles/global.css";
 import "./styles/theme-stella.css";
 import "./styles/ui-polish.css";
-import "./styles/service-catalog-motion.css";
+import "./styles/ui-motion.css";
 
 async function start() {
   const rootElement = document.getElementById("root");
