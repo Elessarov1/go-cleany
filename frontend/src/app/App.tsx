@@ -11,6 +11,8 @@ import type { AuthApi } from "../api/AuthApi";
 import { AuthApiProvider } from "../api/AuthApiProvider";
 import type { AnalyticsApi } from "../api/AnalyticsApi";
 import { AnalyticsApiProvider } from "../api/AnalyticsApiProvider";
+import type { TransferApi } from "../api/TransferApi";
+import { TransferApiProvider } from "../api/TransferApiProvider";
 import type { Platform } from "../platform/Platform";
 import { PlatformProvider } from "../platform/PlatformProvider";
 import { router } from "./router";
@@ -23,9 +25,10 @@ interface AppProps {
   platformCatalogApi: PlatformCatalogApi;
   authApi: AuthApi;
   analyticsApi: AnalyticsApi;
+  transferApi: TransferApi;
 }
 
-export function App({ platform, api, customerApi, rentalApi, platformCatalogApi, authApi, analyticsApi }: AppProps) {
+export function App({ platform, api, customerApi, rentalApi, platformCatalogApi, authApi, analyticsApi, transferApi }: AppProps) {
   return (
     <PlatformProvider platform={platform}>
       <AuthApiProvider api={authApi}>
@@ -34,7 +37,9 @@ export function App({ platform, api, customerApi, rentalApi, platformCatalogApi,
             <RentalApiProvider api={rentalApi}>
               <PlatformCatalogApiProvider api={platformCatalogApi}>
                 <AnalyticsApiProvider api={analyticsApi}>
-                  <RouterProvider router={router} />
+                  <TransferApiProvider api={transferApi}>
+                    <RouterProvider router={router} />
+                  </TransferApiProvider>
                 </AnalyticsApiProvider>
               </PlatformCatalogApiProvider>
             </RentalApiProvider>

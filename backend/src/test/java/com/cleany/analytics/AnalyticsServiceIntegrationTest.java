@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.EnumSet;
 import java.util.Map;
@@ -39,6 +40,17 @@ import com.cleany.rental.RentalPropertyResponse;
 import com.cleany.rental.RentalPropertyService;
 import com.cleany.rental.RentalStayPolicy;
 import com.cleany.rental.RentalTermType;
+import com.cleany.transfer.CreateTransferBookingRequest;
+import com.cleany.transfer.TransferAirportRepository;
+import com.cleany.transfer.TransferBookingPolicy;
+import com.cleany.transfer.TransferBookingResponse;
+import com.cleany.transfer.TransferBookingService;
+import com.cleany.transfer.TransferDirection;
+import com.cleany.transfer.TransferDriver;
+import com.cleany.transfer.TransferDriverRepository;
+import com.cleany.transfer.TransferPrice;
+import com.cleany.transfer.TransferPriceRepository;
+import com.cleany.transfer.TransferVehicleTypeRepository;
 
 class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
 
@@ -72,6 +84,13 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private RentalStayPolicy rentalStayPolicy;
 
+    @Autowired private TransferBookingService transferBookingService;
+    @Autowired private TransferBookingPolicy transferBookingPolicy;
+    @Autowired private TransferAirportRepository transferAirportRepository;
+    @Autowired private TransferVehicleTypeRepository transferVehicleRepository;
+    @Autowired private TransferPriceRepository transferPriceRepository;
+    @Autowired private TransferDriverRepository transferDriverRepository;
+
     @Autowired
     private CustomerAccountRepository accountRepository;
 
@@ -84,6 +103,9 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
     @BeforeEach
     @AfterEach
     void cleanDatabase() {
+        jdbcTemplate.update("delete from transfer_booking");
+        transferDriverRepository.deleteAll();
+        transferPriceRepository.deleteAll();
         jdbcTemplate.update("delete from rental_occupancy");
         jdbcTemplate.update("delete from rental_cleaning_benefit");
         jdbcTemplate.update("delete from rental_booking");
@@ -95,6 +117,8 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
         jdbcTemplate.update("delete from acquisition_campaign");
         jdbcTemplate.update("delete from customer_external_identity");
         jdbcTemplate.update("delete from customer_account");
+        jdbcTemplate.update("update platform_service_state set status = 'ENABLED', version = version + 1 where service = 'TRANSFER'");
+        clearPlatformServiceStateCache();
     }
 
     @Test
@@ -213,6 +237,25 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
         );
     }
 
+    @Test
+    void overview_transferFilterUsesCompletedPriceSnapshot() {
+        CurrentCustomer customer = customerAt(PERIOD_EVENT.minusSeconds(600));
+        completeTransfer(customer, PERIOD_EVENT, new BigDecimal("2450.00"));
+
+        AnalyticsOverviewResponse result = analyticsService.overview(
+                PERIOD_DAY,
+                PERIOD_DAY,
+                AnalyticsServiceDimension.TRANSFER
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(1, result.customers().activeCustomers()),
+                () -> Assertions.assertEquals(1, result.averageChecks().size()),
+                () -> Assertions.assertEquals(PlatformService.TRANSFER, result.averageChecks().getFirst().service()),
+                () -> Assertions.assertEquals(new BigDecimal("2450.00"), result.averageChecks().getFirst().amount())
+        );
+    }
+
     private CurrentCustomer customerAt(Instant createdAt) {
         var persisted = CustomerIdentityTestFixture.telegramIdentity(
                 accountRepository,
@@ -312,6 +355,47 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
                 "update rental_booking set status = 'COMPLETED', completed_at = ? where id = ?",
                 Timestamp.from(completedAt),
                 booking.id()
+        );
+    }
+
+    private void completeTransfer(
+            CurrentCustomer customer,
+            Instant completedAt,
+            BigDecimal amount
+    ) {
+        var airport = transferAirportRepository.findAllByOrderBySortOrderAscIdAsc().getFirst();
+        var vehicle = transferVehicleRepository.findAllByOrderBySortOrderAscIdAsc().getFirst();
+        transferPriceRepository.saveAndFlush(new TransferPrice(
+                airport, vehicle, TransferDirection.TO_AIRPORT,
+                amount, "TRY", true, completedAt.minusSeconds(120)
+        ));
+        TransferBookingResponse booking = transferBookingService.create(
+                customer,
+                new CreateTransferBookingRequest(
+                        TransferDirection.TO_AIRPORT,
+                        airport.getId(),
+                        vehicle.getId(),
+                        transferBookingPolicy.earliestBookingDate(),
+                        LocalTime.of(10, 0),
+                        "Analytics transfer address",
+                        2,
+                        2,
+                        null,
+                        null,
+                        "+905551112233",
+                        null
+                )
+        );
+        TransferDriver driver = transferDriverRepository.saveAndFlush(new TransferDriver(
+                "Analytics driver", "+905551119999", true, null, completedAt.minusSeconds(60)
+        ));
+        jdbcTemplate.update(
+                """
+                update transfer_booking
+                   set status = 'COMPLETED', driver_id = ?, confirmed_at = ?, completed_at = ?
+                 where id = ?
+                """,
+                driver.getId(), Timestamp.from(completedAt.minusSeconds(30)), Timestamp.from(completedAt), booking.id()
         );
     }
 

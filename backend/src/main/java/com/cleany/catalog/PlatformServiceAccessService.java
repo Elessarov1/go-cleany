@@ -2,6 +2,7 @@ package com.cleany.catalog;
 
 import java.time.Clock;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.cache.annotation.CacheEvict;
@@ -19,6 +20,10 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class PlatformServiceAccessService {
+
+    private static final Comparator<PlatformServiceStateResponse> DISPLAY_ORDER = Comparator
+            .comparingInt(PlatformServiceStateResponse::displayOrder)
+            .thenComparing(state -> state.service().name());
 
     private final PlatformServiceStateRepository repository;
     private final PlatformServiceStateCache stateCache;
@@ -52,6 +57,7 @@ public class PlatformServiceAccessService {
                                 state.service(),
                                 customerId
                         ))
+                .sorted(DISPLAY_ORDER)
                 .toList();
     }
 
@@ -68,6 +74,7 @@ public class PlatformServiceAccessService {
         adminAccessService.requireCurrentAdmin();
         return Arrays.stream(PlatformService.values())
                 .map(this::requireState)
+                .sorted(DISPLAY_ORDER)
                 .toList();
     }
 
@@ -75,12 +82,13 @@ public class PlatformServiceAccessService {
     @CacheEvict(cacheNames = PlatformServiceStateCache.CACHE_NAME, key = "#service")
     public PlatformServiceStateResponse update(
             PlatformService service,
-            PlatformServiceStatus status
+            PlatformServiceStatus status,
+            Integer displayOrder
     ) {
         long adminCustomerId = adminAccessService.requireCurrentAdmin();
         PlatformServiceState state = repository.findById(service)
                 .orElseThrow(() -> missingState(service));
-        state.changeStatus(status, adminCustomerId, clock.instant());
+        state.updateConfiguration(status, displayOrder, adminCustomerId, clock.instant());
         PlatformServiceStateResponse response = PlatformServiceStateResponse.from(
                 repository.saveAndFlush(state)
         );

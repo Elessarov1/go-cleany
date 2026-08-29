@@ -42,10 +42,23 @@ export function AdminServiceCatalogPage() {
     setSaving(service);
     setFailed(false);
     api.updateStatus(service, status)
-      .then((updated) => setStates((current) => current?.map((item) => (
-        item.service === service ? updated : item
-      )) ?? null))
+      .then((updated) => setStates((current) => replaceAndSort(current, updated)))
       .catch(() => setFailed(true))
+      .finally(() => setSaving(null));
+  };
+
+  const updateDisplayOrder = (
+    service: PlatformService,
+    displayOrder: number,
+  ): Promise<void> => {
+    setSaving(service);
+    setFailed(false);
+    return api.updateDisplayOrder(service, displayOrder)
+      .then((updated) => setStates((current) => replaceAndSort(current, updated)))
+      .catch((error: unknown) => {
+        setFailed(true);
+        throw error;
+      })
       .finally(() => setSaving(null));
   };
 
@@ -90,6 +103,7 @@ export function AdminServiceCatalogPage() {
             state={state}
             disabled={saving === state.service}
             onStatusChange={selectStatus}
+            onDisplayOrderChange={updateDisplayOrder}
           />
         ))}
       </div>
@@ -116,40 +130,91 @@ interface AdminServiceCardProps {
   state: PlatformServiceState;
   disabled: boolean;
   onStatusChange: (service: PlatformService, status: PlatformServiceStatus) => void;
+  onDisplayOrderChange: (service: PlatformService, displayOrder: number) => Promise<void>;
 }
 
-function AdminServiceCard({ state, disabled, onStatusChange }: AdminServiceCardProps) {
+function AdminServiceCard({ state, disabled, onStatusChange, onDisplayOrderChange }: AdminServiceCardProps) {
   const { t } = useTranslation();
+  const [orderValue, setOrderValue] = useState(state.displayOrder.toString());
   const rental = state.service === "RENTAL";
-  const slug = rental ? "rent" : "cleaning";
+  const transfer = state.service === "TRANSFER";
+  const slug = transfer ? "transfer" : rental ? "rent" : "cleaning";
+
+  useEffect(() => {
+    setOrderValue(state.displayOrder.toString());
+  }, [state.displayOrder]);
+
+  const saveDisplayOrder = () => {
+    const parsed = Number(orderValue);
+    if (!Number.isInteger(parsed) || parsed < 0 || parsed > 9999) {
+      setOrderValue(state.displayOrder.toString());
+      return;
+    }
+    if (parsed === state.displayOrder) return;
+    void onDisplayOrderChange(state.service, parsed)
+      .catch(() => setOrderValue(state.displayOrder.toString()));
+  };
+
   return (
     <section className={`admin-service-panel admin-service-panel--${slug}`}>
-      <Link className="admin-service-card" to={rental ? "/admin/rent" : "/admin/cleaning"}>
-        <span><Icon name={rental ? "building" : "sparkles"} size={31} /></span>
+      <Link className="admin-service-card" to={transfer ? "/admin/transfer" : rental ? "/admin/rent" : "/admin/cleaning"}>
+        <span><Icon name={transfer ? "car" : rental ? "building" : "sparkles"} size={31} /></span>
         <div>
-          <small><BrandName service={rental ? "rental" : "cleaning"} /></small>
+          <small><BrandName service={transfer ? "transfer" : rental ? "rental" : "cleaning"} /></small>
           <strong>{t(`adminPlatform.${slug}`)}</strong>
           <p>{t(`adminPlatform.${slug}Text`)}</p>
         </div>
         <Icon name="arrow-right" size={20} />
       </Link>
       <div className="admin-service-state">
-        <label htmlFor={`service-status-${state.service}`}>{t("adminPlatform.statusLabel")}</label>
-        <select
-          id={`service-status-${state.service}`}
-          value={state.status}
-          disabled={disabled}
-          onChange={(event) => onStatusChange(
-            state.service,
-            event.target.value as PlatformServiceStatus,
-          )}
-        >
-          {STATUSES.map((status) => (
-            <option key={status} value={status}>{t(`adminPlatform.status.${status}`)}</option>
-          ))}
-        </select>
+        <div className="admin-service-state__controls">
+          <label>
+            <span>{t("adminPlatform.statusLabel")}</span>
+            <select
+              value={state.status}
+              disabled={disabled}
+              onChange={(event) => onStatusChange(
+                state.service,
+                event.target.value as PlatformServiceStatus,
+              )}
+            >
+              {STATUSES.map((status) => (
+                <option key={status} value={status}>{t(`adminPlatform.status.${status}`)}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>{t("adminPlatform.displayOrderLabel")}</span>
+            <input
+              aria-describedby={`service-order-hint-${state.service}`}
+              type="number"
+              min={0}
+              max={9999}
+              step={10}
+              value={orderValue}
+              disabled={disabled}
+              onChange={(event) => setOrderValue(event.target.value)}
+              onBlur={saveDisplayOrder}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") event.currentTarget.blur();
+              }}
+            />
+          </label>
+        </div>
+        <small id={`service-order-hint-${state.service}`} className="admin-service-state__hint">{t("adminPlatform.displayOrderHint")}</small>
         {state.status === "IN_TEST" ? <p>{t("adminPlatform.inTestDescription")}</p> : null}
       </div>
     </section>
   );
+}
+
+function replaceAndSort(
+  current: PlatformServiceState[] | null,
+  updated: PlatformServiceState,
+): PlatformServiceState[] | null {
+  if (!current) return null;
+  return current
+    .map((item) => item.service === updated.service ? updated : item)
+    .sort((left, right) => left.displayOrder - right.displayOrder
+      || left.service.localeCompare(right.service));
 }

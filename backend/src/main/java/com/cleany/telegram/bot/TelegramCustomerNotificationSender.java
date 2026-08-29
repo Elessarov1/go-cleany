@@ -18,6 +18,8 @@ import com.cleany.notification.CustomerNotificationSender;
 import com.cleany.notification.ReferralUnlockedCustomerNotification;
 import com.cleany.order.CleaningOrderCustomerNotification;
 import com.cleany.rental.RentalBookingCustomerNotification;
+import com.cleany.transfer.TransferAdminNewRequestNotification;
+import com.cleany.transfer.TransferBookingCustomerNotification;
 
 @Component
 @ConditionalOnProperty(prefix = "telegram", name = "bot-enabled", havingValue = "true")
@@ -125,6 +127,26 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
             sendMessage(
                     telegramUserId,
                     messageFactory.rentalCancelled(cancelled, target.languageCode())
+            );
+            return;
+        }
+        if (notification instanceof TransferBookingCustomerNotification transfer) {
+            sendMessage(
+                    telegramUserId,
+                    messageFactory.transferCustomer(transfer, target.languageCode())
+            );
+            return;
+        }
+        if (notification instanceof TransferAdminNewRequestNotification transferAdmin) {
+            botClient.sendMessage(
+                    telegramUserId,
+                    messageFactory.transferAdminRequested(transferAdmin, target.languageCode()),
+                    TelegramBotClient.InlineKeyboard.ofRows(List.of(
+                            TelegramBotClient.InlineButton.url(
+                                    "Открыть заявку",
+                                    publicApplicationProperties.baseUrl() + transferAdmin.targetPath()
+                            )
+                    ))
             );
             return;
         }

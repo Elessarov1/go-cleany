@@ -86,7 +86,7 @@ export function AdminAnalyticsPage() {
         <label className="admin-analytics__service">
           <span>{t("analytics.filters.service")}</span>
           <select value={service} onChange={(event) => setService(event.target.value as AnalyticsService)}>
-            {(["ALL", "CLEANING", "RENTAL"] as AnalyticsService[]).map((item) => (
+            {(["ALL", "CLEANING", "RENTAL", "TRANSFER"] as AnalyticsService[]).map((item) => (
               <option key={item} value={item}>{t(`analytics.services.${item}`)}</option>
             ))}
           </select>
@@ -121,6 +121,10 @@ export function AdminAnalyticsPage() {
             <MetricCard
               label={t("analytics.metrics.rentalAverage")}
               value={formatMoney(checks.get("RENTAL")?.amount, checks.get("RENTAL")?.currency, i18n.language, t("analytics.noData"))}
+            />
+            <MetricCard
+              label={t("analytics.metrics.transferAverage")}
+              value={formatMoney(checks.get("TRANSFER")?.amount, checks.get("TRANSFER")?.currency, i18n.language, t("analytics.noData"))}
             />
           </section>
 

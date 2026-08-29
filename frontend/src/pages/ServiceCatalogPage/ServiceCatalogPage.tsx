@@ -42,7 +42,6 @@ export function ServiceCatalogPage() {
   if (!services) return <LoadingState />;
 
   const cleaning = services.find(({ service }) => service === "CLEANING");
-  const rental = services.find(({ service }) => service === "RENTAL");
   if (referralCode && cleaning) {
     return <Navigate replace to={`/cleaning?ref=${encodeURIComponent(referralCode)}`} />;
   }
@@ -56,26 +55,15 @@ export function ServiceCatalogPage() {
       </header>
 
       <div className="service-catalog__grid">
-        {rental ? (
-          <ServiceCard
-            className="rent"
-            icon="building"
-            path="/rent"
-            title={t("catalog.rent.title")}
-            text={t("catalog.rent.text")}
-            test={rental.status === "IN_TEST"}
-          />
-        ) : null}
-        {cleaning ? (
-          <ServiceCard
-            className="cleaning"
-            icon="sparkles"
-            path="/cleaning"
-            title={t("catalog.cleaning.title")}
-            text={t("catalog.cleaning.text")}
-            test={cleaning.status === "IN_TEST"}
-          />
-        ) : null}
+        {services.map((state) => {
+          if (state.service === "TRANSFER") {
+            return <ServiceCard key={state.service} className="transfer" icon="car" path="/transfer" title={t("catalog.transfer.title")} text={t("catalog.transfer.text")} test={state.status === "IN_TEST"} />;
+          }
+          if (state.service === "RENTAL") {
+            return <ServiceCard key={state.service} className="rent" icon="building" path="/rent" title={t("catalog.rent.title")} text={t("catalog.rent.text")} test={state.status === "IN_TEST"} />;
+          }
+          return <ServiceCard key={state.service} className="cleaning" icon="sparkles" path="/cleaning" title={t("catalog.cleaning.title")} text={t("catalog.cleaning.text")} test={state.status === "IN_TEST"} />;
+        })}
       </div>
 
       {services.length === 0 ? (
@@ -87,8 +75,8 @@ export function ServiceCatalogPage() {
 }
 
 interface ServiceCardProps {
-  className: "rent" | "cleaning";
-  icon: "building" | "sparkles";
+  className: "rent" | "cleaning" | "transfer";
+  icon: "building" | "sparkles" | "car";
   path: string;
   title: string;
   text: string;
@@ -101,7 +89,7 @@ function ServiceCard({ className, icon, path, title, text, test }: ServiceCardPr
     <Link className={`service-card service-card--${className}`} to={path}>
       <span className="service-card__icon"><Icon name={icon} size={34} /></span>
       <span className="service-card__copy">
-        <small><BrandName service={className === "rent" ? "rental" : "cleaning"} /></small>
+        <small><BrandName service={className === "rent" ? "rental" : className} /></small>
         <strong>{title}</strong>
         {test ? <b className="service-test-badge">{t("catalog.testBadge")}</b> : null}
         <span>{text}</span>

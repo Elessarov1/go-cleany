@@ -16,6 +16,7 @@ delete from referral_reward;
 delete from rental_cleaning_benefit;
 delete from rental_occupancy where type = 'BOOKING';
 delete from rental_booking;
+delete from transfer_booking;
 delete from cleaning_order;
 
 -- Operational Cleaning media is everything not owned by the preserved Rental catalog.
@@ -60,6 +61,7 @@ select setval(pg_get_serial_sequence('partner_payout', 'id'), 1, false);
 select setval(pg_get_serial_sequence('referral_reward', 'id'), 1, false);
 select setval(pg_get_serial_sequence('rental_cleaning_benefit', 'id'), 1, false);
 select setval(pg_get_serial_sequence('rental_booking', 'id'), 1, false);
+select setval(pg_get_serial_sequence('transfer_booking', 'id'), 1, false);
 select setval(pg_get_serial_sequence('cleaning_order', 'id'), 1, false);
 select setval(pg_get_serial_sequence('customer_notification', 'id'), 1, false);
 select setval(pg_get_serial_sequence('customer_identity_link_request', 'id'), 1, false);

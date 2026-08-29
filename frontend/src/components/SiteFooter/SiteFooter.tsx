@@ -18,6 +18,7 @@ export function SiteFooter() {
           <strong>{t("footer.services")}</strong>
           <Link to="/cleaning"><BrandName service="cleaning" /></Link>
           <Link to="/rent"><BrandName service="rental" /></Link>
+          <Link to="/transfer"><BrandName service="transfer" /></Link>
         </nav>
 
         <nav className="site-footer__group" aria-label={t("footer.legal")}> 

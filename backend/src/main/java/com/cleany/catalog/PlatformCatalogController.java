@@ -32,8 +32,8 @@ public class PlatformCatalogController {
     @PatchMapping("/api/v1/admin/platform/services/{service}")
     public PlatformServiceStateResponse update(
             @PathVariable PlatformService service,
-            @Valid @RequestBody UpdatePlatformServiceStatusRequest request
+            @Valid @RequestBody UpdatePlatformServiceRequest request
     ) {
-        return accessService.update(service, request.status());
+        return accessService.update(service, request.status(), request.displayOrder());
     }
 }

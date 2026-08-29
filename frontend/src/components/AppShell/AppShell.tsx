@@ -14,6 +14,7 @@ import { NotificationBell } from "../NotificationBell/NotificationBell";
 import { ThemeSwitcher } from "../ThemeSwitcher/ThemeSwitcher";
 import { SiteFooter } from "../SiteFooter/SiteFooter";
 import { useCustomerApi } from "../../api/CustomerApiProvider";
+import { ServiceSelector } from "../ServiceSelector/ServiceSelector";
 
 const ACQUISITION_START_PREFIX = "acq_";
 
@@ -24,11 +25,12 @@ function navClassName({ isActive }: { isActive: boolean }): string {
 function logoTarget(pathname: string): string {
   if (pathname === "/admin") return "/";
   if (pathname.startsWith("/admin/")) return "/admin";
-  if (pathname === "/cleaning" || pathname === "/rent" || pathname === "/rent/properties") {
+  if (pathname === "/cleaning" || pathname === "/rent" || pathname === "/rent/properties" || pathname === "/transfer") {
     return "/";
   }
   if (pathname.startsWith("/cleaning/")) return "/cleaning";
   if (pathname.startsWith("/rent/")) return "/rent";
+  if (pathname.startsWith("/transfer/")) return "/transfer";
   return "/";
 }
 
@@ -71,21 +73,23 @@ export function AppShell() {
 
   const admin = location.pathname.startsWith("/admin");
   const rental = location.pathname.startsWith("/rent") || location.pathname.startsWith("/admin/rent");
+  const transfer = location.pathname.startsWith("/transfer") || location.pathname.startsWith("/admin/transfer");
   const catalog = location.pathname === "/" || location.pathname === "/admin";
   const publicPlatformPage = location.pathname === "/privacy" || location.pathname === "/terms";
   const neutralCustomer = location.pathname === "/notifications" || publicPlatformPage;
   const customerServiceHome = location.pathname === "/cleaning"
     || location.pathname === "/rent"
-    || location.pathname === "/rent/properties";
-  const service = catalog || neutralCustomer ? "platform" : rental ? "rent" : "cleaning";
+    || location.pathname === "/rent/properties"
+    || location.pathname === "/transfer";
+  const service = catalog || neutralCustomer ? "platform" : transfer ? "transfer" : rental ? "rent" : "cleaning";
   const parentRoute = logoTarget(location.pathname);
   const parentLabel = admin && !catalog
     ? t("app.navigation.adminServices")
     : !admin && !catalog && !neutralCustomer && !customerServiceHome
       ? t("app.navigation.serviceHome")
       : t("app.navigation.main");
-  const brandService: BrandService | undefined = catalog || neutralCustomer ? undefined : rental ? "rental" : "cleaning";
-  const showLocalNavigation = !catalog && !neutralCustomer && (!admin || rental);
+  const brandService: BrandService | undefined = catalog || neutralCustomer ? undefined : transfer ? "transfer" : rental ? "rental" : "cleaning";
+  const showLocalNavigation = !catalog && !neutralCustomer && (!admin || rental || transfer);
   const showWebAdminSidebar = standaloneWeb && admin && hasAdminAccess;
   const showSiteFooter = standaloneWeb && !admin;
 
@@ -108,36 +112,17 @@ export function AppShell() {
               aria-label={parentLabel}
             >
               <span className="brand__mark" aria-hidden="true">
-                <Icon name={rental ? "building" : "sparkles"} size={19} strokeWidth={2} />
+                <Icon name={transfer ? "car" : rental ? "building" : "sparkles"} size={19} strokeWidth={2} />
               </span>
               <span className="brand__word"><BrandName service={brandService} /></span>
             </NavLink>
             {standaloneWeb && !admin ? (
-              <nav className="web-primary-nav" aria-label={t("app.navigation.label")}>
-                <NavLink
-                  className="web-primary-nav__services"
-                  to="/"
-                  end
-                  title={t("app.navigation.services")}
-                  aria-label={t("app.navigation.services")}
-                >
-                  <Icon name="services" size={18} />
-                </NavLink>
-                <NavLink to="/cleaning"><BrandName service="cleaning" /></NavLink>
-                <NavLink to="/rent"><BrandName service="rental" /></NavLink>
-              </nav>
+              <div className="web-primary-nav"><ServiceSelector /></div>
             ) : null}
             <div className="topbar__actions">
               {!admin && authentication.status === "READY" && authentication.current.authenticated ? <NotificationBell /> : null}
               {!standaloneWeb && !admin ? (
-                <NavLink
-                  className="topbar__global-link topbar__services-action"
-                  to="/"
-                  title={t("app.navigation.services")}
-                  aria-label={t("app.navigation.services")}
-                >
-                  <Icon name="services" size={18} />
-                </NavLink>
+                <ServiceSelector compact />
               ) : null}
               {admin && !catalog ? (
                 <NavLink
@@ -208,6 +193,14 @@ export function AppShell() {
                   <Icon name="clipboard" size={19} />
                   <span>{t("app.navigation.bookings")}</span>
                 </NavLink>
+                <NavLink to="/admin/transfer/bookings">
+                  <Icon name="car" size={19} />
+                  <span>{t("app.navigation.transfers")}</span>
+                </NavLink>
+                <NavLink to="/admin/transfer/configuration">
+                  <Icon name="services" size={19} />
+                  <span>{t("app.navigation.transferSettings")}</span>
+                </NavLink>
               </nav>
             </aside>
           ) : null}
@@ -223,11 +216,11 @@ export function AppShell() {
             className={`bottom-nav${showAdminNavigation && !admin ? " bottom-nav--three-items" : ""}`}
             aria-label={t("app.navigation.label")}
           >
-            <NavLink className={navClassName} to={admin && rental ? "/admin/rent/properties" : rental ? "/rent" : "/cleaning"} end>
-              <span className="bottom-nav__icon"><Icon name={rental ? "building" : "calendar-plus"} size={21} /></span>
-              <span>{t(rental ? "app.navigation.apartments" : "app.navigation.book")}</span>
+            <NavLink className={navClassName} to={admin && transfer ? "/admin/transfer/configuration" : admin && rental ? "/admin/rent/properties" : transfer ? "/transfer" : rental ? "/rent" : "/cleaning"} end>
+              <span className="bottom-nav__icon"><Icon name={transfer ? "car" : rental ? "building" : "calendar-plus"} size={21} /></span>
+              <span>{t(admin && transfer ? "app.navigation.settings" : transfer ? "app.navigation.transfer" : rental ? "app.navigation.apartments" : "app.navigation.book")}</span>
             </NavLink>
-            <NavLink className={navClassName} to={admin && rental ? "/admin/rent/bookings" : rental ? "/rent/bookings" : "/cleaning/orders"}>
+            <NavLink className={navClassName} to={admin && transfer ? "/admin/transfer/bookings" : admin && rental ? "/admin/rent/bookings" : transfer ? "/transfer/bookings" : rental ? "/rent/bookings" : "/cleaning/orders"}>
               <span className="bottom-nav__icon"><Icon name="clipboard" size={21} /></span>
               <span>{t(rental ? "app.navigation.bookings" : "app.navigation.orders")}</span>
             </NavLink>

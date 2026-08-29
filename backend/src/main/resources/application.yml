@@ -104,6 +104,16 @@ rental:
   max-active-bookings-per-customer: ${RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER:3}
   zone-id: Europe/Istanbul
 
+transfer:
+  min-booking-days-ahead: ${TRANSFER_MIN_BOOKING_DAYS_AHEAD:1}
+  booking-months-ahead: ${TRANSFER_BOOKING_MONTHS_AHEAD:6}
+  time-slot-minutes: ${TRANSFER_TIME_SLOT_MINUTES:30}
+  zone-id: ${TRANSFER_ZONE_ID:Europe/Istanbul}
+  assignment-mode: ${TRANSFER_ASSIGNMENT_MODE:ADMIN_ASSIGNMENT}
+  driver-link:
+    bot-username: ${TELEGRAM_BOT_USERNAME:go_cleany_bot}
+    token-ttl: ${TRANSFER_DRIVER_LINK_TOKEN_TTL:24h}
+
 rental-cleaning-benefit:
   issuance-enabled: ${RENTAL_CLEANING_BENEFIT_ENABLED:true}
   issuance-cron: "${RENTAL_CLEANING_BENEFIT_CRON:0 15 4 * * *}"

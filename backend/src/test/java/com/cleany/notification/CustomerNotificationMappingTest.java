@@ -2,7 +2,8 @@ package com.cleany.notification;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
+import java.time.LocalTime;
+import java.util.Collections;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Assertions;
@@ -17,6 +18,9 @@ import com.cleany.order.OnsiteIssueReason;
 import com.cleany.order.ServiceArea;
 import com.cleany.rental.RentalBookingCustomerNotification;
 import com.cleany.rental.RentalBookingStatus;
+import com.cleany.transfer.TransferAdminNewRequestNotification;
+import com.cleany.transfer.TransferBookingCustomerNotification;
+import com.cleany.transfer.TransferDirection;
 
 class CustomerNotificationMappingTest {
 
@@ -46,11 +50,11 @@ class CustomerNotificationMappingTest {
                         "/cleaning/orders/11", "cleaning-order:11:cancelled"),
                 Arguments.of(new CleaningOrderCustomerNotification.Completed(
                                 11L, ApartmentType.ONE_PLUS_ONE, false, ServiceArea.MAHMUTLAR,
-                                date, null, List.of(), 7),
+                                date, null, Collections.emptyList(), 7),
                         CustomerNotificationType.CLEANING_ORDER_COMPLETED,
                         "/cleaning/orders/11", "cleaning-order:11:completed"),
                 Arguments.of(new CleaningOrderCustomerNotification.OnsiteIssueReported(
-                                11L, OnsiteIssueReason.ACCESS_PROBLEM, null, List.of()),
+                                11L, OnsiteIssueReason.ACCESS_PROBLEM, null, Collections.emptyList()),
                         CustomerNotificationType.CLEANING_ONSITE_ISSUE_REPORTED,
                         "/cleaning/orders/11", "cleaning-order:11:onsite-issue"),
                 Arguments.of(new RentalBookingCustomerNotification.Confirmed(
@@ -63,6 +67,16 @@ class CustomerNotificationMappingTest {
                                 RentalBookingStatus.CANCELLED_BY_CUSTOMER),
                         CustomerNotificationType.RENTAL_BOOKING_CANCELLED,
                         "/rent/bookings/22", "rental-booking:22:cancelled"),
+                Arguments.of(new TransferBookingCustomerNotification(
+                                44L, TransferBookingCustomerNotification.Type.CONFIRMED,
+                                TransferDirection.TO_AIRPORT, "AYT", "Минивэн", "Minivan",
+                                date, LocalTime.of(10, 30), new BigDecimal("3000.00"), "TRY"),
+                        CustomerNotificationType.TRANSFER_CONFIRMED,
+                        "/transfer/bookings/44", "transfer-booking:44:confirmed"),
+                Arguments.of(new TransferAdminNewRequestNotification(
+                                44L, TransferDirection.TO_AIRPORT, "AYT", date, LocalTime.of(10, 30)),
+                        CustomerNotificationType.TRANSFER_ADMIN_REQUESTED,
+                        "/admin/transfer/bookings/44", "transfer-booking:44:admin-requested"),
                 Arguments.of(new ReferralUnlockedCustomerNotification("ALEX7K2"),
                         CustomerNotificationType.REFERRAL_UNLOCKED,
                         "/cleaning/orders", "referral:ALEX7K2:unlocked"),

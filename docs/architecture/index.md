@@ -21,6 +21,7 @@ Read this for:
 - standalone web, Telegram and future native-client direction;
 - future multi-service platform;
 - current Loco Cleaning and Loco Rent vertical boundaries;
+- current Loco Transfer vertical boundary and assignment model;
 - platform vs vertical boundaries;
 - customer identity direction;
 - media and notification architecture direction;
@@ -104,6 +105,16 @@ Stable first-touch, campaign and metric semantics are documented in:
 
 The destructive launch-only cleanup remains an operational runbook in
 `../precommercial-data-reset.md`.
+
+---
+
+## 6. Loco Transfer
+
+Stable transfer workflow, configuration, driver linking and assignment semantics are documented in:
+
+```text
+../loco-transfer.md
+```
 
 ---
 

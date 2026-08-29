@@ -13,12 +13,12 @@ import com.cleany.configuration.TelegramUpdateMode;
 
 class TelegramLongPollingRunnerTest {
 
-    private TelegramCleanerBotService cleanerBotService;
+    private TelegramBotUpdateRouter updateRouter;
     private TelegramLongPollingRunner runner;
 
     @BeforeEach
     void setUp() {
-        cleanerBotService = Mockito.mock(TelegramCleanerBotService.class);
+        updateRouter = Mockito.mock(TelegramBotUpdateRouter.class);
         runner = new TelegramLongPollingRunner(
                 new TelegramProperties(
                         "123456789:test-token",
@@ -33,7 +33,7 @@ class TelegramLongPollingRunnerTest {
                         false
                 ),
                 Mockito.mock(TelegramBotClient.class),
-                cleanerBotService
+                updateRouter
         );
     }
 
@@ -44,14 +44,14 @@ class TelegramLongPollingRunnerTest {
         long nextOffset = runner.processUpdate(0L, update);
 
         Assertions.assertEquals(43L, nextOffset);
-        Mockito.verify(cleanerBotService).handle(update);
+        Mockito.verify(updateRouter).handle(update);
     }
 
     @Test
     void handlerFailure_doesNotReturnAdvancedOffset() {
         TelegramUpdate update = new TelegramUpdate(42L, null, null);
         Mockito.doThrow(new IllegalStateException("failed"))
-                .when(cleanerBotService)
+                .when(updateRouter)
                 .handle(update);
 
         Assertions.assertThrows(
@@ -65,6 +65,6 @@ class TelegramLongPollingRunnerTest {
         long nextOffset = runner.processUpdate(43L, new TelegramUpdate(42L, null, null));
 
         Assertions.assertEquals(43L, nextOffset);
-        Mockito.verifyNoInteractions(cleanerBotService);
+        Mockito.verifyNoInteractions(updateRouter);
     }
 }

@@ -11,4 +11,8 @@ export interface PlatformCatalogApi {
     service: PlatformService,
     status: PlatformServiceStatus,
   ): Promise<PlatformServiceState>;
+  updateDisplayOrder(
+    service: PlatformService,
+    displayOrder: number,
+  ): Promise<PlatformServiceState>;
 }

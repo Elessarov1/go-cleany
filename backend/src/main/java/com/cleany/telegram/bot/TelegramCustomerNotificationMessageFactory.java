@@ -9,6 +9,9 @@ import org.springframework.stereotype.Component;
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitCustomerNotification;
 import com.cleany.finance.ReferralFinancialProperties;
 import com.cleany.rental.RentalBookingCustomerNotification;
+import com.cleany.transfer.TransferAdminNewRequestNotification;
+import com.cleany.transfer.TransferBookingCustomerNotification;
+import com.cleany.transfer.TransferDirection;
 
 @Component
 public class TelegramCustomerNotificationMessageFactory {
@@ -129,6 +132,71 @@ public class TelegramCustomerNotificationMessageFactory {
                         DATE_FORMAT.format(notification.earliestCleaningDate()),
                         DATE_FORMAT.format(notification.checkOutDate())
                 ).strip();
+    }
+
+    public String transferCustomer(
+            TransferBookingCustomerNotification notification,
+            String languageCode
+    ) {
+        boolean english = isEnglish(languageCode);
+        String route = route(
+                notification.direction(),
+                notification.airportCode(),
+                english
+        );
+        String state = english
+                ? switch (notification.eventType()) {
+                    case REQUESTED -> "Request received";
+                    case CONFIRMED -> "Transfer confirmed";
+                    case REJECTED -> "Transfer rejected";
+                    case CANCELLED -> "Transfer cancelled";
+                    case COMPLETED -> "Transfer completed";
+                }
+                : switch (notification.eventType()) {
+                    case REQUESTED -> "Заявка получена";
+                    case CONFIRMED -> "Трансфер подтверждён";
+                    case REJECTED -> "Трансфер отклонён";
+                    case CANCELLED -> "Трансфер отменён";
+                    case COMPLETED -> "Трансфер завершён";
+                };
+        return """
+                🚘 %s · №%d
+
+                %s · %s
+                %s
+                """.formatted(
+                state,
+                notification.bookingId(),
+                DATE_FORMAT.format(notification.pickupDate()),
+                notification.pickupTime(),
+                route
+        ).strip();
+    }
+
+    public String transferAdminRequested(
+            TransferAdminNewRequestNotification notification,
+            String languageCode
+    ) {
+        boolean english = isEnglish(languageCode);
+        return """
+                🚘 %s · №%d
+
+                %s · %s
+                %s
+                """.formatted(
+                english ? "New transfer request" : "Новая заявка на трансфер",
+                notification.bookingId(),
+                DATE_FORMAT.format(notification.pickupDate()),
+                notification.pickupTime(),
+                route(notification.direction(), notification.airportCode(), english)
+        ).strip();
+    }
+
+    private static String route(TransferDirection direction, String airportCode, boolean english) {
+        String alanya = english ? "Alanya" : "Аланья";
+        return direction == TransferDirection.FROM_AIRPORT
+                ? airportCode + " → " + alanya
+                : alanya + " → " + airportCode;
     }
 
     private static String russian(String code, String friendDiscount, String referrerReward) {

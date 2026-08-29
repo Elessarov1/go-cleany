@@ -36,7 +36,7 @@ const MEDIUMS: AcquisitionMedium[] = [
   "OTHER",
 ];
 
-const TARGET_SERVICES: AcquisitionTargetService[] = ["PLATFORM", "CLEANING", "RENTAL"];
+const TARGET_SERVICES: AcquisitionTargetService[] = ["PLATFORM", "CLEANING", "RENTAL", "TRANSFER"];
 
 const DEFAULT_MEDIUM_BY_CHANNEL: Record<CampaignChannel, AcquisitionMedium> = {
   QR: "QR_MAGNET",

@@ -1,6 +1,6 @@
-export type AnalyticsService = "ALL" | "CLEANING" | "RENTAL";
+export type AnalyticsService = "ALL" | "CLEANING" | "RENTAL" | "TRANSFER";
 
-export type AcquisitionTargetService = "PLATFORM" | "CLEANING" | "RENTAL";
+export type AcquisitionTargetService = "PLATFORM" | "CLEANING" | "RENTAL" | "TRANSFER";
 
 export type AcquisitionChannel =
   | "ORGANIC"

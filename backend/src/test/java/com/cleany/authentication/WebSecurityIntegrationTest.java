@@ -103,7 +103,7 @@ class WebSecurityIntegrationTest extends BaseIntegrationTest {
     void anonymousCatalogShowsEnabledAndHidesInTestServices() throws Exception {
         mvc.perform(get("/api/v1/catalog/services"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
+                .andExpect(jsonPath("$.length()").value(3));
 
         jdbcTemplate.update(
                 "update platform_service_state set status = 'IN_TEST' "
@@ -113,8 +113,9 @@ class WebSecurityIntegrationTest extends BaseIntegrationTest {
 
         mvc.perform(get("/api/v1/catalog/services"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].service").value("RENTAL"));
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].service").value("RENTAL"))
+                .andExpect(jsonPath("$[1].service").value("TRANSFER"));
     }
 
     @Test

@@ -17,6 +17,7 @@ export class MockAnalyticsApi implements AnalyticsApi {
       averageChecks: [
         ...(all || request.service === "CLEANING" ? [{ service: "CLEANING" as const, currency: "TRY", amount: 2150, completedTransactions: 19 }] : []),
         ...(all || request.service === "RENTAL" ? [{ service: "RENTAL" as const, currency: "TRY", amount: 27850, completedTransactions: 5 }] : []),
+        ...(all || request.service === "TRANSFER" ? [{ service: "TRANSFER" as const, currency: "TRY", amount: 2400, completedTransactions: 7 }] : []),
       ],
       acquisition: [
         { channel: "QR", campaignId: 12, campaignName: "Mahmutlar magnets", medium: "QR_MAGNET", entries: 170, newCustomers: 28, completedTransactions: 19 },
@@ -36,7 +37,9 @@ export class MockAnalyticsApi implements AnalyticsApi {
       trackingPath: `/a/${request.publicCode}`,
       targetPath: request.targetService === "CLEANING"
         ? "/cleaning"
-        : request.targetService === "RENTAL" ? "/rent" : "/",
+        : request.targetService === "RENTAL"
+          ? "/rent"
+          : request.targetService === "TRANSFER" ? "/transfer" : "/",
     });
   }
 }

@@ -37,6 +37,7 @@ public class CustomerAttributionService {
             case PLATFORM -> null;
             case CLEANING -> PlatformService.CLEANING;
             case RENTAL -> PlatformService.RENTAL;
+            case TRANSFER -> PlatformService.TRANSFER;
         };
         return insertFirstTouch(
                 customerId,

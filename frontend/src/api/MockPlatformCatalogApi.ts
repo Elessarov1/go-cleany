@@ -8,8 +8,9 @@ import type { PlatformCatalogApi } from "./PlatformCatalogApi";
 export class MockPlatformCatalogApi implements PlatformCatalogApi {
   private readonly adminCustomer: boolean;
   private states: PlatformServiceState[] = [
-    state("CLEANING"),
-    state("RENTAL"),
+    state("CLEANING", 10),
+    state("RENTAL", 20),
+    state("TRANSFER", 30),
   ];
 
   constructor(scenario = new URLSearchParams(window.location.search).get("scenario")) {
@@ -26,12 +27,12 @@ export class MockPlatformCatalogApi implements PlatformCatalogApi {
   }
 
   async getServices(): Promise<PlatformServiceState[]> {
-    return this.states.filter(({ status }) => status === "ENABLED"
-      || status === "IN_TEST" && this.adminCustomer);
+    return sorted(this.states.filter(({ status }) => status === "ENABLED"
+      || status === "IN_TEST" && this.adminCustomer));
   }
 
   async getAdminStates(): Promise<PlatformServiceState[]> {
-    return [...this.states];
+    return sorted(this.states);
   }
 
   async updateStatus(
@@ -50,6 +51,22 @@ export class MockPlatformCatalogApi implements PlatformCatalogApi {
     return updated;
   }
 
+  async updateDisplayOrder(
+    service: PlatformService,
+    displayOrder: number,
+  ): Promise<PlatformServiceState> {
+    const current = this.states.find((item) => item.service === service);
+    if (!current) throw new Error(`Unknown platform service: ${service}`);
+    const updated = {
+      ...current,
+      displayOrder,
+      updatedAt: new Date().toISOString(),
+      version: current.version + 1,
+    };
+    this.states = this.states.map((item) => item.service === service ? updated : item);
+    return updated;
+  }
+
   private withStatus(
     service: PlatformService,
     status: PlatformServiceStatus,
@@ -58,12 +75,18 @@ export class MockPlatformCatalogApi implements PlatformCatalogApi {
   }
 }
 
-function state(service: PlatformService): PlatformServiceState {
+function state(service: PlatformService, displayOrder: number): PlatformServiceState {
   return {
     service,
     status: "ENABLED",
+    displayOrder,
     updatedAt: new Date(0).toISOString(),
     updatedByCustomerId: null,
     version: 0,
   };
+}
+
+function sorted(states: PlatformServiceState[]): PlatformServiceState[] {
+  return [...states].sort((left, right) => left.displayOrder - right.displayOrder
+    || left.service.localeCompare(right.service));
 }

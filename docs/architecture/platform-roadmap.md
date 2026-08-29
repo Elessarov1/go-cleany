@@ -32,9 +32,10 @@ Always verify current code and recent git history before assuming an architectur
 
 # 1. Product vision
 
-Loco Cleaning was the first vertical of Loco Place. Loco Rent is now the second real vertical.
+Loco Cleaning was the first vertical of Loco Place, Loco Rent the second, and Loco Transfer is now
+the third real vertical.
 The public names are independent from technical routes and code namespaces, which remain `cleaning`,
-`rent`, `rental`, `Cleaning*` and `Rental*` so rebranding does not force an API migration.
+`rent`, `rental`, `transfer`, `Cleaning*`, `Rental*` and `Transfer*` so rebranding does not force an API migration.
 
 Today:
 
@@ -43,8 +44,10 @@ Loco Place
 
 ├── Loco Cleaning
 │   └── apartment cleaning
-└── Loco Rent
-    └── apartment rental
+├── Loco Rent
+│   └── apartment rental
+└── Loco Transfer
+    └── scheduled fixed-price airport rides
 ```
 
 Future:
@@ -57,6 +60,9 @@ Loco Place
 │
 ├── Loco Rent
 │   └── apartment rental
+│
+├── Loco Transfer
+│   └── scheduled fixed-price airport rides
 │
 ├── handyman / repair
 │   ├── electrician
@@ -86,6 +92,7 @@ What do you need?
 
 [ 🧹 Cleaning ]
 [ 🏢 Apartment rental ]
+[ 🚘 Airport transfer ]
 ```
 
 After selection:
@@ -97,6 +104,9 @@ Cleaning
 Apartment rental
 → Loco Rent flow
 
+Airport transfer
+→ Loco Transfer flow
+
 Handyman
 → handyman-specific flow
 
@@ -106,8 +116,8 @@ Residence
 
 Only implemented verticals belong in the catalog. Do not add placeholder Handyman or Residence cards before those services exist.
 
-Customer availability is platform-owned operational state persisted as `ENABLED`, `IN_TEST` or
-`DISABLED`. `IN_TEST` customer flows are available only to `CustomerAccount` records with `ADMIN`;
+Customer availability and service catalog display order are platform-owned operational state.
+Availability is persisted as `ENABLED`, `IN_TEST` or `DISABLED`. `IN_TEST` customer flows are available only to `CustomerAccount` records with `ADMIN`;
 `DISABLED` blocks every new customer flow. Neither state may hide existing owned transactions or
 disable vertical administration.
 
@@ -263,10 +273,25 @@ Monthly rental remains a concrete dated occupancy: checkout is derived from chec
 `plusMonths`, while pricing is based on `daily × 30 × (1 - configured discount)`. The booking keeps
 the term, month count where applicable, and immutable price snapshots.
 
+Transfer currently contains:
+
+```text
+TransferAirport / TransferVehicleType / TransferPrice
+TransferDriver
+TransferBooking
+fixed-rate snapshots
+admin assignment or atomic Telegram driver self-accept
+```
+
+Transfer drivers are operational actors, not `CustomerAccount` records. Telegram is an optional
+verified adapter for driver notifications and self-accept; phone-only manual assignment remains valid.
+
 Keep separate aggregates such as:
 
 ```text
 CleaningOrder
+RentalBooking
+TransferBooking
 HandymanRequest
 ResidenceCase
 ```
@@ -295,6 +320,9 @@ cleaning → media
 rental → customer
 rental → notification
 rental → media
+
+transfer → customer
+transfer → notification
 
 handyman → customer
 handyman → media
@@ -839,10 +867,11 @@ Public brand mapping is:
 ```text
 Loco Place
 ├── Loco Rent
-└── Loco Cleaning
+├── Loco Cleaning
+└── Loco Transfer
 
 domain: loco-place.com
-technical vertical IDs: RENTAL / CLEANING
+technical vertical IDs: RENTAL / CLEANING / TRANSFER
 ```
 
 The public rebrand does not rename technical routes, Java packages, database objects or deployment paths.
@@ -891,7 +920,8 @@ media
 
 # 26. Multiple verticals
 
-Loco Rent is the second real vertical and validates that shared identity, communication, media, retention and UI infrastructure do not require a generic order aggregate.
+Loco Rent and Loco Transfer validate that shared identity, communication, notification, analytics
+and UI infrastructure do not require a generic order aggregate.
 
 A future Handyman/repair vertical will further test the boundaries because its lifecycle should differ substantially from both cleaning and rental.
 

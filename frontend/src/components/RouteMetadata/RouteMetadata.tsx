@@ -12,6 +12,8 @@ function titleKey(pathname: string): string {
   if (pathname.startsWith("/rent/")) return "titles.rentPage";
   if (pathname === "/cleaning") return "titles.cleaning";
   if (pathname.startsWith("/cleaning/")) return "titles.cleaningPage";
+  if (pathname === "/transfer") return "titles.transfer";
+  if (pathname.startsWith("/transfer/")) return "titles.transferPage";
   if (pathname === "/admin") return "titles.admin";
   if (pathname.startsWith("/admin/")) return "titles.adminPage";
   return "titles.fallback";
