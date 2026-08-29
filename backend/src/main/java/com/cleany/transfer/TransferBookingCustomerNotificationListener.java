@@ -19,36 +19,28 @@ public class TransferBookingCustomerNotificationListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void requested(TransferBookingCreatedEvent event) {
-        send(
-                event.booking().id(), event.customerId(), event.communicationIdentityId(),
-                TransferBookingCustomerNotification.Type.REQUESTED
-        );
+        send(event.booking().id(), event.customerId(), event.communicationIdentityId());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void statusChanged(TransferBookingCustomerEvent event) {
-        send(
-                event.bookingId(), event.customerId(), event.communicationIdentityId(),
-                TransferBookingCustomerNotification.Type.valueOf(event.type().name())
-        );
+        send(event.bookingId(), event.customerId(), event.communicationIdentityId());
     }
 
     private void send(
             long bookingId,
             long customerId,
-            long communicationIdentityId,
-            TransferBookingCustomerNotification.Type type
+            long communicationIdentityId
     ) {
         try {
             dispatcher.send(
                     customerId,
                     communicationIdentityId,
-                    queryService.customer(bookingId, type)
+                    queryService.customer(bookingId)
             );
         } catch (RuntimeException exception) {
             log.error(
-                    "Transfer customer notification {} failed for booking {}",
-                    type,
+                    "Transfer customer status notification failed for booking {}",
                     bookingId,
                     exception
             );

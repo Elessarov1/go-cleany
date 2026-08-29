@@ -20,6 +20,7 @@ import com.cleany.rental.RentalBookingCustomerNotification;
 import com.cleany.rental.RentalBookingStatus;
 import com.cleany.transfer.TransferAdminNewRequestNotification;
 import com.cleany.transfer.TransferBookingCustomerNotification;
+import com.cleany.transfer.TransferBookingStatus;
 import com.cleany.transfer.TransferDirection;
 
 class CustomerNotificationMappingTest {
@@ -68,7 +69,7 @@ class CustomerNotificationMappingTest {
                         CustomerNotificationType.RENTAL_BOOKING_CANCELLED,
                         "/rent/bookings/22", "rental-booking:22:cancelled"),
                 Arguments.of(new TransferBookingCustomerNotification(
-                                44L, TransferBookingCustomerNotification.Type.CONFIRMED,
+                                44L, TransferBookingStatus.CONFIRMED,
                                 TransferDirection.TO_AIRPORT, "AYT", "Минивэн", "Minivan",
                                 date, LocalTime.of(10, 30), new BigDecimal("3000.00"), "TRY"),
                         CustomerNotificationType.TRANSFER_CONFIRMED,

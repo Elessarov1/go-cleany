@@ -158,13 +158,13 @@ public class TransferBookingService {
                 .filter(candidate -> candidate.getCustomerId() == customer.customerId())
                 .orElseThrow(() -> new TransferBookingNotFoundException(bookingId));
         booking.cancelByCustomer(bookingPolicy.hasStarted(booking), clock.instant());
-        publishStatus(booking, TransferBookingCustomerEvent.Type.CANCELLED);
+        publishStatus(booking);
         return TransferBookingResponse.from(booking);
     }
 
-    private void publishStatus(TransferBooking booking, TransferBookingCustomerEvent.Type type) {
+    private void publishStatus(TransferBooking booking) {
         eventPublisher.publishEvent(new TransferBookingCustomerEvent(
-                booking.getId(), booking.getCustomerId(), booking.getCommunicationIdentityId(), type
+                booking.getId(), booking.getCustomerId(), booking.getCommunicationIdentityId()
         ));
     }
 

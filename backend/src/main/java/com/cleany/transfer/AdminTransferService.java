@@ -23,6 +23,7 @@ public class AdminTransferService {
     private final TransferPriceRepository priceRepository;
     private final TransferDriverRepository driverRepository;
     private final TransferBookingRepository bookingRepository;
+    private final TransferDriverAssignmentService driverAssignmentService;
     private final TransferBookingPolicy bookingPolicy;
     private final PhoneNumberNormalizer phoneNumberNormalizer;
     private final ApplicationEventPublisher eventPublisher;
@@ -164,19 +165,13 @@ public class AdminTransferService {
     @Transactional(readOnly = true)
     public TransferBookingResponse booking(long bookingId) {
         accessService.requireCurrentAdmin();
-        TransferBooking booking = requireBooking(bookingId);
-        publishStatus(booking, TransferBookingCustomerEvent.Type.CONFIRMED);
-        return TransferBookingResponse.from(booking);
+        return TransferBookingResponse.from(requireBooking(bookingId));
     }
 
     @Transactional
     public TransferBookingResponse assign(long bookingId, long driverId) {
         accessService.requireCurrentAdmin();
-        requireDriverEnabled(driverId);
-        if (bookingRepository.assignRequestedBooking(bookingId, driverId, clock.instant()) != 1) {
-            throw new TransferAssignmentConflictException(bookingId);
-        }
-        return TransferBookingResponse.from(requireBooking(bookingId));
+        return driverAssignmentService.assignByAdmin(bookingId, driverId);
     }
 
     @Transactional
@@ -184,7 +179,7 @@ public class AdminTransferService {
         accessService.requireCurrentAdmin();
         TransferBooking booking = requireBookingForUpdate(bookingId);
         booking.reject(reason, clock.instant());
-        publishStatus(booking, TransferBookingCustomerEvent.Type.REJECTED);
+        publishStatus(booking);
         return TransferBookingResponse.from(booking);
     }
 
@@ -193,7 +188,7 @@ public class AdminTransferService {
         accessService.requireCurrentAdmin();
         TransferBooking booking = requireBookingForUpdate(bookingId);
         booking.cancelByAdmin(reason, clock.instant());
-        publishStatus(booking, TransferBookingCustomerEvent.Type.CANCELLED);
+        publishStatus(booking);
         return TransferBookingResponse.from(booking);
     }
 
@@ -202,13 +197,13 @@ public class AdminTransferService {
         accessService.requireCurrentAdmin();
         TransferBooking booking = requireBookingForUpdate(bookingId);
         booking.complete(bookingPolicy.hasStarted(booking), clock.instant());
-        publishStatus(booking, TransferBookingCustomerEvent.Type.COMPLETED);
+        publishStatus(booking);
         return TransferBookingResponse.from(booking);
     }
 
-    private void publishStatus(TransferBooking booking, TransferBookingCustomerEvent.Type type) {
+    private void publishStatus(TransferBooking booking) {
         eventPublisher.publishEvent(new TransferBookingCustomerEvent(
-                booking.getId(), booking.getCustomerId(), booking.getCommunicationIdentityId(), type
+                booking.getId(), booking.getCustomerId(), booking.getCommunicationIdentityId()
         ));
     }
 
@@ -225,11 +220,6 @@ public class AdminTransferService {
     private TransferDriver requireDriver(long driverId) {
         return driverRepository.findById(driverId)
                 .orElseThrow(() -> new TransferConfigurationNotFoundException("driver", driverId));
-    }
-
-    private TransferDriver requireDriverEnabled(long driverId) {
-        return driverRepository.findByIdAndEnabledTrue(driverId)
-                .orElseThrow(() -> new TransferConfigurationUnavailableException("driver"));
     }
 
     private TransferBooking requireBooking(long bookingId) {

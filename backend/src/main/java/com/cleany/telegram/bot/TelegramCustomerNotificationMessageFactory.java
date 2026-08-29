@@ -145,14 +145,14 @@ public class TelegramCustomerNotificationMessageFactory {
                 english
         );
         String state = english
-                ? switch (notification.eventType()) {
+                ? switch (notification.status()) {
                     case REQUESTED -> "Request received";
                     case CONFIRMED -> "Transfer confirmed";
                     case REJECTED -> "Transfer rejected";
                     case CANCELLED -> "Transfer cancelled";
                     case COMPLETED -> "Transfer completed";
                 }
-                : switch (notification.eventType()) {
+                : switch (notification.status()) {
                     case REQUESTED -> "Заявка получена";
                     case CONFIRMED -> "Трансфер подтверждён";
                     case REJECTED -> "Трансфер отклонён";

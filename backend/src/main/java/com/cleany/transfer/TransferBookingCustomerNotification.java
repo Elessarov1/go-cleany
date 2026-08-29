@@ -9,7 +9,7 @@ import com.cleany.notification.CustomerNotificationType;
 
 public record TransferBookingCustomerNotification(
         long bookingId,
-        TransferBookingCustomerNotification.Type eventType,
+        TransferBookingStatus status,
         TransferDirection direction,
         String airportCode,
         String vehicleNameRu,
@@ -20,17 +20,9 @@ public record TransferBookingCustomerNotification(
         String priceCurrency
 ) implements CustomerNotification {
 
-    public enum Type {
-        REQUESTED,
-        CONFIRMED,
-        REJECTED,
-        CANCELLED,
-        COMPLETED
-    }
-
     @Override
     public CustomerNotificationType type() {
-        return switch (eventType) {
+        return switch (status) {
             case REQUESTED -> CustomerNotificationType.TRANSFER_REQUESTED;
             case CONFIRMED -> CustomerNotificationType.TRANSFER_CONFIRMED;
             case REJECTED -> CustomerNotificationType.TRANSFER_REJECTED;
@@ -46,6 +38,6 @@ public record TransferBookingCustomerNotification(
 
     @Override
     public String deduplicationKey() {
-        return "transfer-booking:" + bookingId + ":" + eventType.name().toLowerCase();
+        return "transfer-booking:" + bookingId + ":" + status.name().toLowerCase();
     }
 }

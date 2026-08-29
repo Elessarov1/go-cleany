@@ -4055,6 +4055,8 @@ h3 {
 .transfer-booking-detail small { color: var(--color-muted); font-size: 10px; }
 .transfer-booking-detail strong { overflow-wrap: anywhere; font-size: 13px; line-height: 1.45; }
 .transfer-booking-note { margin-top: 12px; }
+.page--transfer-booking .page-actions,
+.page--admin-transfer-booking .page-actions { display: flex; margin-top: 16px; flex-wrap: wrap; gap: 10px; }
 .transfer-status--requested { color: var(--color-ink); background: var(--color-primary-soft); }
 .transfer-status--confirmed,
 .transfer-status--completed { color: var(--color-surface); background: var(--color-primary); }
@@ -4075,6 +4077,8 @@ h3 {
   .transfer-booking-detail { grid-template-columns: 1fr; }
   .transfer-booking-detail > .is-wide { grid-column: auto; }
   .transfer-booking-card__footer { align-items: flex-start; flex-wrap: wrap; }
+  .page--transfer-booking .page-actions,
+  .page--admin-transfer-booking .page-actions { display: grid; grid-template-columns: 1fr; gap: 10px; }
 }
 
 @media (min-width: 900px) {

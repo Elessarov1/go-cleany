@@ -13,13 +13,10 @@ public class TransferBookingNotificationQueryService {
     private final TransferBookingRepository bookingRepository;
 
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
-    public TransferBookingCustomerNotification customer(
-            long bookingId,
-            TransferBookingCustomerNotification.Type type
-    ) {
+    public TransferBookingCustomerNotification customer(long bookingId) {
         TransferBooking booking = requireBooking(bookingId);
         return new TransferBookingCustomerNotification(
-                booking.getId(), type, booking.getDirection(), booking.getAirportCodeSnapshot(),
+                booking.getId(), booking.getStatus(), booking.getDirection(), booking.getAirportCodeSnapshot(),
                 booking.getVehicleNameRuSnapshot(), booking.getVehicleNameEnSnapshot(),
                 booking.getPickupDate(), booking.getPickupTime(), booking.getPriceAmount(),
                 booking.getPriceCurrency()

@@ -2,7 +2,6 @@ package com.cleany.transfer;
 
 import java.math.BigDecimal;
 import java.time.Clock;
-import java.time.LocalDate;
 import java.time.LocalTime;
 
 import org.junit.jupiter.api.AfterEach;
@@ -256,7 +255,7 @@ class TransferBookingIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void adminCanAtomicallyAssignNonTelegramDriverWhileDisabledDriverIsRejected() {
+    void viewingRequestedBookingDoesNotConfirmItAndAdminAssignmentPublishesConfirmedStatus() {
         CurrentCustomer customer = customer("transfer-admin-assignment");
         TransferAirport airport = airport("GZP");
         TransferVehicleType vehicle = vehicle("SEDAN");
@@ -280,6 +279,17 @@ class TransferBookingIntegrationTest extends BaseIntegrationTest {
                 "Manual Driver", "+905551112235", true, null, clock.instant()
         ));
 
+        TransferBookingResponse viewed = adminTransferService.booking(booking.id());
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(TransferBookingStatus.REQUESTED, viewed.status()),
+                () -> Assertions.assertEquals(0, jdbcTemplate.queryForObject("""
+                        select count(*)
+                          from customer_notification
+                         where customer_id = ?
+                           and type = 'TRANSFER_CONFIRMED'
+                        """, Integer.class, customer.customerId()))
+        );
+
         Assertions.assertThrows(
                 TransferConfigurationUnavailableException.class,
                 () -> adminTransferService.assign(booking.id(), disabled.getId())
@@ -293,6 +303,12 @@ class TransferBookingIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertEquals(TransferBookingStatus.CONFIRMED, confirmed.status()),
                 () -> Assertions.assertEquals(manualDriver.getId(), confirmed.driverId()),
                 () -> Assertions.assertEquals("Manual Driver", confirmed.driverName()),
+                () -> Assertions.assertEquals(1, jdbcTemplate.queryForObject("""
+                        select count(*)
+                          from customer_notification
+                         where customer_id = ?
+                           and type = 'TRANSFER_CONFIRMED'
+                        """, Integer.class, customer.customerId())),
                 () -> Assertions.assertThrows(
                         TransferAssignmentConflictException.class,
                         () -> adminTransferService.assign(booking.id(), manualDriver.getId())
