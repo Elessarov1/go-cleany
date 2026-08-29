@@ -683,7 +683,13 @@ Shared platform APIs may include:
 /api/v1/referrals/...
 /api/v1/media/...
 /api/v1/catalog/...
+/api/v1/admin/analytics/...
 ```
+
+Customer acquisition and aggregate business analytics are shared platform capabilities. They may
+reference explicit Cleaning/Rental transactions for successful-operation metrics, but must not merge
+those vertical aggregates or duplicate their business rules. Campaign capture from web or Telegram
+converges on the same canonical `CustomerAccount.id` first-touch model.
 
 Do not preserve ambiguous global `/orders` semantics once multiple order/case types exist.
 

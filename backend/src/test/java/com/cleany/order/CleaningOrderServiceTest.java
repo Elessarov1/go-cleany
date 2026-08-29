@@ -21,6 +21,7 @@ import org.mockito.Mockito;
 import org.springframework.context.ApplicationEventPublisher;
 
 import com.cleany.catalog.PlatformServiceAccessService;
+import com.cleany.analytics.CustomerAttributionService;
 import com.cleany.catalog.PlatformService;
 import com.cleany.catalog.PlatformServiceNotAvailableException;
 import com.cleany.configuration.CleanerProperties;
@@ -58,6 +59,7 @@ class CleaningOrderServiceTest {
     private ReferralService referralService;
     private RentalCleaningBenefitService rentalCleaningBenefitService;
     private MediaProviderReferenceService mediaProviderReferenceService;
+    private CustomerAttributionService customerAttributionService;
     private CleaningOrderService service;
 
     @BeforeEach
@@ -71,6 +73,7 @@ class CleaningOrderServiceTest {
         referralService = Mockito.mock(ReferralService.class);
         rentalCleaningBenefitService = Mockito.mock(RentalCleaningBenefitService.class);
         mediaProviderReferenceService = Mockito.mock(MediaProviderReferenceService.class);
+        customerAttributionService = Mockito.mock(CustomerAttributionService.class);
         CleaningProperties properties = properties();
         Mockito.when(customerAccountService.currentCustomer()).thenReturn(
                 new CurrentCustomer(
@@ -108,6 +111,7 @@ class CleaningOrderServiceTest {
                 referralService,
                 rentalCleaningBenefitService,
                 mediaProviderReferenceService,
+                customerAttributionService,
                 Clock.fixed(NOW, ZoneOffset.UTC),
                 eventPublisher
         );

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cleany.authorization.PlatformRoleService;
+import com.cleany.analytics.AcquisitionCaptureService;
 import com.cleany.configuration.GoogleOidcProperties;
 import com.cleany.customer.CustomerAccountService;
 import com.cleany.customer.CurrentCustomer;
@@ -29,9 +30,13 @@ public class AuthenticationController {
     private final GoogleOidcProperties googleProperties;
     private final LoginTargetValidator loginTargetValidator;
     private final SecurityErrorWriter errorWriter;
+    private final AcquisitionCaptureService acquisitionCaptureService;
 
     @GetMapping("/me")
-    public CurrentAuthenticationResponse me(Authentication authentication) {
+    public CurrentAuthenticationResponse me(
+            Authentication authentication,
+            HttpServletRequest request
+    ) {
         if (authentication == null || !authentication.isAuthenticated()
                 || "anonymousUser".equals(authentication.getPrincipal())) {
             try {
@@ -40,7 +45,9 @@ public class AuthenticationController {
                 return CurrentAuthenticationResponse.anonymous(loginProviders());
             }
         }
-        return authenticated(customerAccountService.currentCustomer());
+        CurrentCustomer customer = customerAccountService.currentCustomer();
+        acquisitionCaptureService.attachPending(customer.customerId(), request.getSession(false));
+        return authenticated(customer);
     }
 
     private CurrentAuthenticationResponse authenticated(CurrentCustomer customer) {

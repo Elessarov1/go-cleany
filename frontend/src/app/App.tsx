@@ -9,6 +9,8 @@ import type { PlatformCatalogApi } from "../api/PlatformCatalogApi";
 import { PlatformCatalogApiProvider } from "../api/PlatformCatalogApiProvider";
 import type { AuthApi } from "../api/AuthApi";
 import { AuthApiProvider } from "../api/AuthApiProvider";
+import type { AnalyticsApi } from "../api/AnalyticsApi";
+import { AnalyticsApiProvider } from "../api/AnalyticsApiProvider";
 import type { Platform } from "../platform/Platform";
 import { PlatformProvider } from "../platform/PlatformProvider";
 import { router } from "./router";
@@ -20,9 +22,10 @@ interface AppProps {
   rentalApi: RentalApi;
   platformCatalogApi: PlatformCatalogApi;
   authApi: AuthApi;
+  analyticsApi: AnalyticsApi;
 }
 
-export function App({ platform, api, customerApi, rentalApi, platformCatalogApi, authApi }: AppProps) {
+export function App({ platform, api, customerApi, rentalApi, platformCatalogApi, authApi, analyticsApi }: AppProps) {
   return (
     <PlatformProvider platform={platform}>
       <AuthApiProvider api={authApi}>
@@ -30,7 +33,9 @@ export function App({ platform, api, customerApi, rentalApi, platformCatalogApi,
           <CleaningApiProvider api={api}>
             <RentalApiProvider api={rentalApi}>
               <PlatformCatalogApiProvider api={platformCatalogApi}>
-                <RouterProvider router={router} />
+                <AnalyticsApiProvider api={analyticsApi}>
+                  <RouterProvider router={router} />
+                </AnalyticsApiProvider>
               </PlatformCatalogApiProvider>
             </RentalApiProvider>
           </CleaningApiProvider>

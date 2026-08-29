@@ -8,6 +8,7 @@
       "orders": "Orders",
       "apartments": "Apartments",
       "bookings": "Bookings",
+      "analytics": "Analytics",
       "admin": "Admin",
       "main": "Home",
       "serviceHome": "Service home",
@@ -353,6 +354,83 @@
     "rentText": "Properties, occupancy and bookings",
     "cleaning": "Cleaning administration",
     "cleaningText": "Orders, photo reports and partners"
+  },
+  "analytics": {
+    "eyebrow": "platform analytics",
+    "title": "Loco Place analytics",
+    "subtitle": "Customer acquisition and key Cleaning and Rental metrics in one place.",
+    "entrySubtitle": "Acquisition channels, repeat customers and average checks",
+    "loadError": "Analytics for the selected period could not be loaded.",
+    "summaryLabel": "Key metrics",
+    "activeCustomers": "Active customers: {{count}}",
+    "noData": "No data",
+    "filters": {
+      "label": "Analytics filters",
+      "TODAY": "Today",
+      "7_DAYS": "7 days",
+      "30_DAYS": "30 days",
+      "THIS_MONTH": "This month",
+      "CUSTOM": "Custom range",
+      "service": "Service",
+      "from": "From",
+      "to": "To"
+    },
+    "services": { "ALL": "All services", "CLEANING": "Cleaning", "RENTAL": "Rental" },
+    "metrics": {
+      "newCustomers": "New customers",
+      "repeatCustomers": "Repeat customers",
+      "cleaningAverage": "Cleaning average check",
+      "rentalAverage": "Rental average check"
+    },
+    "acquisition": {
+      "title": "Acquisition channels",
+      "subtitle": "Entries are campaign-link opens, not unique visitors.",
+      "empty": "There is no acquisition data for this period.",
+      "channel": "Channel",
+      "campaign": "Campaign",
+      "medium": "Medium",
+      "entries": "Entries",
+      "newCustomers": "New customers",
+      "completed": "Completed transactions",
+      "noCampaign": "No campaign"
+    },
+    "channels": {
+      "ORGANIC": "Organic", "QR": "QR", "PARTNER": "Partner",
+      "CUSTOMER_REFERRAL": "Customer referral", "PROMO_CAMPAIGN": "Promo campaign",
+      "DIRECT_CAMPAIGN": "Direct campaign", "OTHER": "Other"
+    },
+    "mediums": {
+      "QR_STICKER": "QR sticker", "QR_MAGNET": "QR magnet", "QR_PRINT": "Printed QR",
+      "PARTNER_LINK": "Partner link", "REFERRAL_CODE": "Referral code",
+      "PROMO_CODE": "Promo code", "DIRECT_LINK": "Direct link", "OTHER": "Other"
+    },
+    "campaigns": {
+      "eyebrow": "acquisition campaign",
+      "create": "Create campaign",
+      "creating": "Creating…",
+      "createTitle": "New campaign",
+      "createText": "Create a separate campaign for each placement. Its public code cannot be changed after printing.",
+      "name": "Descriptive name",
+      "publicCode": "Public code",
+      "publicCodeHint": "Use lowercase Latin letters, numbers and hyphens only. Example: mahmutlar-magnet-sep-2026-a",
+      "channel": "Channel",
+      "medium": "Medium",
+      "targetService": "Customer destination",
+      "partnerId": "Partner ID",
+      "partnerIdHint": "Optional. Use only for a campaign owned by an existing partner.",
+      "createError": "The campaign could not be created. Check the fields and make sure the public code is not already used.",
+      "createdTitle": "Campaign created",
+      "createdText": "The “{{name}}” campaign is active. Use this URL when generating the QR code.",
+      "trackingUrl": "QR code URL",
+      "qrHint": "Entries will be tracked immediately. Do not replace this URL with a direct service link.",
+      "copy": "Copy URL",
+      "copied": "URL copied",
+      "targetServices": {
+        "PLATFORM": "Loco Place home",
+        "CLEANING": "Loco Cleaning",
+        "RENTAL": "Loco Rent"
+      }
+    }
   },
   "adminRental": {
     "nav": {

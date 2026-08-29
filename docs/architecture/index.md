@@ -94,6 +94,19 @@ documented in:
 
 ---
 
+## 5. Acquisition analytics
+
+Stable first-touch, campaign and metric semantics are documented in:
+
+```text
+../acquisition-analytics.md
+```
+
+The destructive launch-only cleanup remains an operational runbook in
+`../precommercial-data-reset.md`.
+
+---
+
 ## Task-specific specifications
 
 Implementation plans for concrete work should normally be supplied directly to the active Codex session.

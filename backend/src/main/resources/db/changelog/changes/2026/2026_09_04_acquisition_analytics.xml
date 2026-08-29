@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260904-01" author="loco-place">
+        <comment>Create stable acquisition campaign definitions.</comment>
+        <createTable tableName="acquisition_campaign">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_acquisition_campaign" nullable="false"/>
+            </column>
+            <column name="public_code" type="VARCHAR(60)"><constraints nullable="false"/></column>
+            <column name="name" type="VARCHAR(255)"><constraints nullable="false"/></column>
+            <column name="channel" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="medium" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="target_service" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="partner_id" type="BIGINT"/>
+            <column name="active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="disabled_at" type="TIMESTAMP WITH TIME ZONE"/>
+        </createTable>
+        <addUniqueConstraint tableName="acquisition_campaign"
+                             columnNames="public_code"
+                             constraintName="uk_acquisition_campaign_public_code"/>
+        <addForeignKeyConstraint baseTableName="acquisition_campaign"
+                                 baseColumnNames="partner_id"
+                                 constraintName="fk_acquisition_campaign_partner"
+                                 referencedTableName="referral_partner"
+                                 referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+        <createIndex tableName="acquisition_campaign" indexName="idx_acquisition_campaign_partner">
+            <column name="partner_id"/>
+        </createIndex>
+        <createIndex tableName="acquisition_campaign" indexName="idx_acquisition_campaign_active_created">
+            <column name="active"/>
+            <column name="created_at" descending="true"/>
+        </createIndex>
+        <sql dbms="postgresql"><![CDATA[
+            alter table acquisition_campaign
+                add constraint ck_acquisition_campaign_public_code check (
+                    public_code ~ '^[a-z0-9]+(-[a-z0-9]+)*$'
+                ),
+                add constraint ck_acquisition_campaign_channel check (
+                    channel in ('ORGANIC', 'QR', 'PARTNER', 'CUSTOMER_REFERRAL',
+                                'PROMO_CAMPAIGN', 'DIRECT_CAMPAIGN', 'OTHER')
+                ),
+                add constraint ck_acquisition_campaign_medium check (
+                    medium in ('QR_STICKER', 'QR_MAGNET', 'QR_PRINT', 'PARTNER_LINK',
+                               'REFERRAL_CODE', 'PROMO_CODE', 'DIRECT_LINK', 'OTHER')
+                ),
+                add constraint ck_acquisition_campaign_target_service check (
+                    target_service in ('PLATFORM', 'CLEANING', 'RENTAL')
+                ),
+                add constraint ck_acquisition_campaign_disabled_state check (
+                    (active and disabled_at is null) or (not active and disabled_at is not null)
+                );
+        ]]></sql>
+        <rollback>
+            <dropTable tableName="acquisition_campaign"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="20260904-02" author="loco-place">
+        <comment>Persist at most one first-touch attribution for each canonical customer.</comment>
+        <createTable tableName="customer_acquisition">
+            <column name="customer_id" type="BIGINT">
+                <constraints primaryKey="true" primaryKeyName="pk_customer_acquisition" nullable="false"/>
+            </column>
+            <column name="channel" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="campaign_id" type="BIGINT"/>
+            <column name="first_touch_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="first_touch_service" type="VARCHAR(32)"/>
+            <column name="attribution_method" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="customer_acquisition"
+                                 baseColumnNames="customer_id"
+                                 constraintName="fk_customer_acquisition_customer"
+                                 referencedTableName="customer_account"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="customer_acquisition"
+                                 baseColumnNames="campaign_id"
+                                 constraintName="fk_customer_acquisition_campaign"
+                                 referencedTableName="acquisition_campaign"
+                                 referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+        <createIndex tableName="customer_acquisition" indexName="idx_customer_acquisition_campaign">
+            <column name="campaign_id"/>
+        </createIndex>
+        <createIndex tableName="customer_acquisition" indexName="idx_customer_acquisition_channel_touch">
+            <column name="channel"/>
+            <column name="first_touch_at"/>
+        </createIndex>
+        <sql dbms="postgresql"><![CDATA[
+            alter table customer_acquisition
+                add constraint ck_customer_acquisition_channel check (
+                    channel in ('ORGANIC', 'QR', 'PARTNER', 'CUSTOMER_REFERRAL',
+                                'PROMO_CAMPAIGN', 'DIRECT_CAMPAIGN', 'OTHER')
+                ),
+                add constraint ck_customer_acquisition_service check (
+                    first_touch_service is null or first_touch_service in ('CLEANING', 'RENTAL')
+                ),
+                add constraint ck_customer_acquisition_method check (
+                    attribution_method in ('CAMPAIGN_LINK', 'TELEGRAM_START_PARAMETER', 'PARTNER_CODE',
+                                           'CUSTOMER_REFERRAL_CODE', 'PROMO_CODE', 'ORGANIC_FALLBACK',
+                                           'BACKFILL')
+                ),
+                add constraint ck_customer_acquisition_campaign_match check (
+                    (campaign_id is not null and channel <> 'ORGANIC')
+                    or campaign_id is null
+                );
+        ]]></sql>
+        <rollback>
+            <dropTable tableName="customer_acquisition"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="20260904-03" author="loco-place">
+        <comment>Record append-only campaign link entries without personal tracking data.</comment>
+        <createTable tableName="acquisition_campaign_entry">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_acquisition_campaign_entry" nullable="false"/>
+            </column>
+            <column name="campaign_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="occurred_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="platform" type="VARCHAR(32)"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="acquisition_campaign_entry"
+                                 baseColumnNames="campaign_id"
+                                 constraintName="fk_acquisition_campaign_entry_campaign"
+                                 referencedTableName="acquisition_campaign"
+                                 referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+        <createIndex tableName="acquisition_campaign_entry" indexName="idx_acquisition_entry_occurred">
+            <column name="occurred_at"/>
+        </createIndex>
+        <createIndex tableName="acquisition_campaign_entry" indexName="idx_acquisition_entry_campaign_occurred">
+            <column name="campaign_id"/>
+            <column name="occurred_at"/>
+        </createIndex>
+        <sql dbms="postgresql"><![CDATA[
+            alter table acquisition_campaign_entry
+                add constraint ck_acquisition_campaign_entry_platform check (
+                    platform in ('WEB', 'TELEGRAM')
+                );
+        ]]></sql>
+        <rollback>
+            <dropTable tableName="acquisition_campaign_entry"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="20260904-04" author="loco-place">
+        <comment>Add event-time indexes used by platform analytics aggregates.</comment>
+        <createIndex tableName="customer_account" indexName="idx_customer_account_created_at">
+            <column name="created_at"/>
+        </createIndex>
+        <createIndex tableName="cleaning_order" indexName="idx_cleaning_order_customer_status_completed">
+            <column name="customer_id"/>
+            <column name="status"/>
+            <column name="completed_at"/>
+        </createIndex>
+        <createIndex tableName="rental_booking" indexName="idx_rental_booking_customer_status_completed">
+            <column name="customer_id"/>
+            <column name="status"/>
+            <column name="completed_at"/>
+        </createIndex>
+        <rollback>
+            <dropIndex tableName="rental_booking" indexName="idx_rental_booking_customer_status_completed"/>
+            <dropIndex tableName="cleaning_order" indexName="idx_cleaning_order_customer_status_completed"/>
+            <dropIndex tableName="customer_account" indexName="idx_customer_account_created_at"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="20260904-05" author="loco-place">
+        <comment>Deterministically backfill first-touch attribution for existing canonical customers.</comment>
+        <sql dbms="postgresql" splitStatements="false"><![CDATA[
+            insert into customer_acquisition(
+                customer_id,
+                channel,
+                campaign_id,
+                first_touch_at,
+                first_touch_service,
+                attribution_method,
+                created_at
+            )
+            select customer.id,
+                   case first_cleaning.acquisition_source
+                       when 'CUSTOMER_REFERRAL' then 'CUSTOMER_REFERRAL'
+                       when 'PARTNER' then 'PARTNER'
+                       else 'ORGANIC'
+                   end,
+                   partner_campaign.id,
+                   customer.created_at,
+                   case
+                       when first_cleaning.created_at is null and first_rental.created_at is null then null
+                       when first_rental.created_at is null then 'CLEANING'
+                       when first_cleaning.created_at is null then 'RENTAL'
+                       when first_cleaning.created_at <= first_rental.created_at then 'CLEANING'
+                       else 'RENTAL'
+                   end,
+                   'BACKFILL',
+                   current_timestamp
+              from customer_account customer
+              left join lateral (
+                  select cleaning.acquisition_source,
+                         cleaning.referral_partner_id,
+                         cleaning.created_at
+                    from cleaning_order cleaning
+                   where cleaning.customer_id = customer.id
+                   order by cleaning.created_at, cleaning.id
+                   limit 1
+              ) first_cleaning on true
+              left join lateral (
+                  select rental.created_at
+                    from rental_booking rental
+                   where rental.customer_id = customer.id
+                   order by rental.created_at, rental.id
+                   limit 1
+              ) first_rental on true
+              left join lateral (
+                  select campaign.id
+                    from acquisition_campaign campaign
+                   where first_cleaning.acquisition_source = 'PARTNER'
+                     and campaign.partner_id = first_cleaning.referral_partner_id
+                     and campaign.medium = 'REFERRAL_CODE'
+                   order by campaign.created_at, campaign.id
+                   limit 1
+              ) partner_campaign on true
+            on conflict (customer_id) do nothing;
+        ]]></sql>
+        <rollback>
+            <delete tableName="customer_acquisition">
+                <where>attribution_method = 'BACKFILL'</where>
+            </delete>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

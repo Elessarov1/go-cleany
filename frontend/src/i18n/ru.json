@@ -8,6 +8,7 @@
       "orders": "Заказы",
       "apartments": "Квартиры",
       "bookings": "Брони",
+      "analytics": "Аналитика",
       "admin": "Админ",
       "main": "Главная",
       "serviceHome": "Главная сервиса",
@@ -355,6 +356,83 @@
     "rentText": "Квартиры, занятость и бронирования",
     "cleaning": "Управление уборкой",
     "cleaningText": "Заказы, фотоотчёты и партнёры"
+  },
+  "analytics": {
+    "eyebrow": "аналитика платформы",
+    "title": "Аналитика Loco Place",
+    "subtitle": "Привлечение клиентов и ключевые показатели Cleaning и Rental в одном месте.",
+    "entrySubtitle": "Каналы привлечения, повторные клиенты и средний чек",
+    "loadError": "Не удалось загрузить аналитику за выбранный период.",
+    "summaryLabel": "Ключевые показатели",
+    "activeCustomers": "Активных клиентов: {{count}}",
+    "noData": "Нет данных",
+    "filters": {
+      "label": "Фильтры аналитики",
+      "TODAY": "Сегодня",
+      "7_DAYS": "7 дней",
+      "30_DAYS": "30 дней",
+      "THIS_MONTH": "Этот месяц",
+      "CUSTOM": "Свой период",
+      "service": "Сервис",
+      "from": "С",
+      "to": "По"
+    },
+    "services": { "ALL": "Все сервисы", "CLEANING": "Cleaning", "RENTAL": "Rental" },
+    "metrics": {
+      "newCustomers": "Новые клиенты",
+      "repeatCustomers": "Повторные клиенты",
+      "cleaningAverage": "Средний чек Cleaning",
+      "rentalAverage": "Средний чек Rental"
+    },
+    "acquisition": {
+      "title": "Каналы привлечения",
+      "subtitle": "Переходы — это открытия campaign-ссылок, а не уникальные посетители.",
+      "empty": "За выбранный период данных о привлечении нет.",
+      "channel": "Канал",
+      "campaign": "Кампания",
+      "medium": "Размещение",
+      "entries": "Переходы",
+      "newCustomers": "Новые клиенты",
+      "completed": "Успешные операции",
+      "noCampaign": "Без кампании"
+    },
+    "channels": {
+      "ORGANIC": "Органика", "QR": "QR", "PARTNER": "Партнёр",
+      "CUSTOMER_REFERRAL": "Рекомендация клиента", "PROMO_CAMPAIGN": "Промокампания",
+      "DIRECT_CAMPAIGN": "Прямая кампания", "OTHER": "Другое"
+    },
+    "mediums": {
+      "QR_STICKER": "QR-наклейка", "QR_MAGNET": "QR-магнит", "QR_PRINT": "Печатный QR",
+      "PARTNER_LINK": "Ссылка партнёра", "REFERRAL_CODE": "Реферальный код",
+      "PROMO_CODE": "Промокод", "DIRECT_LINK": "Прямая ссылка", "OTHER": "Другое"
+    },
+    "campaigns": {
+      "eyebrow": "кампания привлечения",
+      "create": "Создать кампанию",
+      "creating": "Создаём…",
+      "createTitle": "Новая кампания",
+      "createText": "Создайте отдельную кампанию для конкретного размещения. После печати её публичный код изменить нельзя.",
+      "name": "Понятное название",
+      "publicCode": "Публичный код",
+      "publicCodeHint": "Только строчные латинские буквы, цифры и дефисы. Например: mahmutlar-magnet-sep-2026-a",
+      "channel": "Канал",
+      "medium": "Носитель",
+      "targetService": "Куда вести клиента",
+      "partnerId": "ID партнёра",
+      "partnerIdHint": "Необязательно. Заполняйте только для кампании существующего партнёра.",
+      "createError": "Не удалось создать кампанию. Проверьте поля и убедитесь, что публичный код ещё не используется.",
+      "createdTitle": "Кампания создана",
+      "createdText": "Кампания «{{name}}» активна. Используйте эту ссылку при создании QR-кода.",
+      "trackingUrl": "Ссылка для QR-кода",
+      "qrHint": "Переходы начнут учитываться сразу. Не заменяйте эту ссылку прямой ссылкой на сервис.",
+      "copy": "Скопировать ссылку",
+      "copied": "Ссылка скопирована",
+      "targetServices": {
+        "PLATFORM": "Главная Loco Place",
+        "CLEANING": "Loco Cleaning",
+        "RENTAL": "Loco Rent"
+      }
+    }
   },
   "adminRental": {
     "nav": {

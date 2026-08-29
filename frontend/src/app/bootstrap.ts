@@ -14,6 +14,9 @@ import { MockPlatformCatalogApi } from "../api/MockPlatformCatalogApi";
 import type { AuthApi } from "../api/AuthApi";
 import { HttpAuthApi } from "../api/HttpAuthApi";
 import { MockAuthApi } from "../api/MockAuthApi";
+import type { AnalyticsApi } from "../api/AnalyticsApi";
+import { HttpAnalyticsApi } from "../api/HttpAnalyticsApi";
+import { MockAnalyticsApi } from "../api/MockAnalyticsApi";
 import { initializeI18n } from "../i18n";
 import { PreviewPlatform } from "../platform/PreviewPlatform";
 import type { Platform } from "../platform/Platform";
@@ -30,6 +33,7 @@ export interface AppServices {
   rentalApi: RentalApi;
   platformCatalogApi: PlatformCatalogApi;
   authApi: AuthApi;
+  analyticsApi: AnalyticsApi;
 }
 
 export async function bootstrap(): Promise<AppServices> {
@@ -61,6 +65,9 @@ export async function bootstrap(): Promise<AppServices> {
   const authApi: AuthApi = preview
     ? new MockAuthApi()
     : new HttpAuthApi(httpClient);
+  const analyticsApi: AnalyticsApi = preview
+    ? new MockAnalyticsApi()
+    : new HttpAnalyticsApi(httpClient);
 
-  return { platform, api, customerApi, rentalApi, platformCatalogApi, authApi };
+  return { platform, api, customerApi, rentalApi, platformCatalogApi, authApi, analyticsApi };
 }

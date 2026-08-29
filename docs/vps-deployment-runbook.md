@@ -108,6 +108,8 @@ nano .env.production
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — backend-only OAuth credentials;
 - `ADMIN_GOOGLE_EMAILS` — verified Google emails для bootstrap роли `ADMIN`;
 - `WEB_SESSION_TIMEOUT` — срок server-side web-сессии, по умолчанию `12h`;
+- `ANALYTICS_ZONE_ID` — календарная зона аналитики, по умолчанию `Europe/Istanbul`;
+- `COMMERCIAL_LAUNCH_AT` — точная коммерческая точка отсчёта после одноразовой очистки;
 - `CLEANING_PRICES_*` — утверждённые цены в TRY.
 - `REFERRAL_*` — ставки и денежные caps реферальной модели; безопасные значения v1 уже находятся
   в `.env.production.example`.

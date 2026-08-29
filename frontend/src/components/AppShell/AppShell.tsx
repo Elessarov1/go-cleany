@@ -11,6 +11,9 @@ import type { BrandService } from "../../brand/productBrand";
 import { TelegramLinkNudge } from "../TelegramLinkNudge/TelegramLinkNudge";
 import { RouteMetadata } from "../RouteMetadata/RouteMetadata";
 import { NotificationBell } from "../NotificationBell/NotificationBell";
+import { useCustomerApi } from "../../api/CustomerApiProvider";
+
+const ACQUISITION_START_PREFIX = "acq_";
 
 function navClassName({ isActive }: { isActive: boolean }): string {
   return `bottom-nav__link${isActive ? " is-active" : ""}`;
@@ -33,6 +36,7 @@ export function AppShell() {
   const navigate = useNavigate();
   const platform = usePlatform();
   const authentication = useAuthentication();
+  const customerApi = useCustomerApi();
   const telegramStartHandled = useRef(false);
   const hasAdminAccess = authentication.isAdmin;
   const standaloneWeb = platform.kind !== "TELEGRAM";
@@ -50,11 +54,18 @@ export function AppShell() {
     }
 
     telegramStartHandled.current = true;
+    if (startParameter.startsWith(ACQUISITION_START_PREFIX)) {
+      const publicCode = startParameter.slice(ACQUISITION_START_PREFIX.length);
+      void customerApi.captureTelegramAcquisition(publicCode)
+        .then(({ targetPath }) => navigate(targetPath, { replace: true }))
+        .catch(() => navigate("/", { replace: true }));
+      return;
+    }
     const accountLinkPath = `/account/link/telegram?token=${encodeURIComponent(startParameter)}`;
     if (`${location.pathname}${location.search}` !== accountLinkPath) {
       void navigate(accountLinkPath, { replace: true });
     }
-  }, [location.pathname, location.search, navigate, platform]);
+  }, [customerApi, location.pathname, location.search, navigate, platform]);
 
   const admin = location.pathname.startsWith("/admin");
   const rental = location.pathname.startsWith("/rent") || location.pathname.startsWith("/admin/rent");
@@ -168,6 +179,10 @@ export function AppShell() {
                 <NavLink to="/admin" end>
                   <Icon name="services" size={19} />
                   <span>{t("app.navigation.services")}</span>
+                </NavLink>
+                <NavLink to="/admin/analytics">
+                  <Icon name="chart" size={19} />
+                  <span>{t("app.navigation.analytics")}</span>
                 </NavLink>
                 <NavLink to="/admin/cleaning">
                   <Icon name="calendar-plus" size={19} />

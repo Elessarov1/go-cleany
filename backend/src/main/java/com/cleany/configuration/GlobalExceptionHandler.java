@@ -1,6 +1,7 @@
 package com.cleany.configuration;
 
 import java.time.Clock;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -18,6 +19,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitNotApplicableException;
+import com.cleany.analytics.AcquisitionCampaignNotFoundException;
+import com.cleany.analytics.InvalidAcquisitionCampaignException;
+import com.cleany.analytics.InvalidAnalyticsPeriodException;
 import com.cleany.catalog.PlatformServiceNotAvailableException;
 import com.cleany.order.BookingDateNotAvailableException;
 import com.cleany.admin.AdminNotAuthorizedException;
@@ -80,7 +84,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({ConstraintViolationException.class, HttpMessageNotReadableException.class})
     ResponseEntity<ApiError> handleMalformedRequest(Exception exception) {
-        return response(HttpStatus.BAD_REQUEST, "invalid_request", "Request body is invalid", Map.of());
+        return response(HttpStatus.BAD_REQUEST, "invalid_request", "Request body is invalid", Collections.emptyMap());
     }
 
     @ExceptionHandler(BookingDateNotAvailableException.class)
@@ -119,13 +123,13 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST,
                 "invalid_onsite_issue",
                 exception.getMessage(),
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
     @ExceptionHandler(OrderNotFoundException.class)
     ResponseEntity<ApiError> handleNotFound(OrderNotFoundException exception) {
-        return response(HttpStatus.NOT_FOUND, "order_not_found", exception.getMessage(), Map.of());
+        return response(HttpStatus.NOT_FOUND, "order_not_found", exception.getMessage(), Collections.emptyMap());
     }
 
     @ExceptionHandler(RentalPropertyNotFoundException.class)
@@ -134,7 +138,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.NOT_FOUND,
                 "rental_property_not_found",
                 exception.getMessage(),
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
@@ -146,7 +150,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.NOT_FOUND,
                 "rental_property_media_not_found",
                 exception.getMessage(),
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
@@ -158,7 +162,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST,
                 "invalid_rental_property_media",
                 exception.getMessage(),
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
@@ -170,7 +174,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT,
                 "rental_property_cannot_be_published",
                 exception.getMessage(),
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
@@ -182,7 +186,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT,
                 "rental_property_cannot_be_deleted",
                 exception.getMessage(),
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
@@ -194,13 +198,13 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT,
                 "rental_property_cannot_be_unpublished",
                 exception.getMessage(),
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
     @ExceptionHandler(RentalBookingNotFoundException.class)
     ResponseEntity<ApiError> handleRentalBookingNotFound(RentalBookingNotFoundException exception) {
-        return response(HttpStatus.NOT_FOUND, "rental_booking_not_found", exception.getMessage(), Map.of());
+        return response(HttpStatus.NOT_FOUND, "rental_booking_not_found", exception.getMessage(), Collections.emptyMap());
     }
 
     @ExceptionHandler(RentalOccupancyNotFoundException.class)
@@ -211,7 +215,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.NOT_FOUND,
                 "rental_occupancy_not_found",
                 exception.getMessage(),
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
@@ -221,7 +225,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST,
                 "invalid_rental_date_range",
                 exception.getMessage(),
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
@@ -231,7 +235,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST,
                 "rental_min_stay_not_met",
                 exception.getMessage(),
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
@@ -241,7 +245,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST,
                 "rental_max_stay_exceeded",
                 exception.getMessage(),
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
@@ -253,7 +257,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST,
                 "rental_booking_horizon_exceeded",
                 exception.getMessage(),
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
@@ -262,7 +266,7 @@ public class GlobalExceptionHandler {
         String code = exception instanceof InvalidRentalBookingException
                 ? "invalid_rental_booking"
                 : "invalid_rental_occupancy";
-        return response(HttpStatus.BAD_REQUEST, code, exception.getMessage(), Map.of());
+        return response(HttpStatus.BAD_REQUEST, code, exception.getMessage(), Collections.emptyMap());
     }
 
     @ExceptionHandler(RentalPropertyNotAvailableException.class)
@@ -273,13 +277,13 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT,
                 "rental_property_not_available",
                 exception.getMessage(),
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
     @ExceptionHandler(RentalDatesNotAvailableException.class)
     ResponseEntity<ApiError> handleRentalDatesNotAvailable(RentalDatesNotAvailableException exception) {
-        return response(HttpStatus.CONFLICT, "dates_not_available", exception.getMessage(), Map.of());
+        return response(HttpStatus.CONFLICT, "dates_not_available", exception.getMessage(), Collections.emptyMap());
     }
 
     @ExceptionHandler(RentalActiveBookingLimitExceededException.class)
@@ -290,7 +294,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT,
                 "rental_active_booking_limit_exceeded",
                 exception.getMessage(),
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
@@ -302,7 +306,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT,
                 "rental_booking_cannot_be_cancelled",
                 exception.getMessage(),
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
@@ -314,75 +318,109 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT,
                 "rental_booking_cannot_be_completed",
                 exception.getMessage(),
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
     @ExceptionHandler(CustomerAuthenticationRequiredException.class)
     ResponseEntity<ApiError> handleAuthentication(CustomerAuthenticationRequiredException exception) {
-        return response(HttpStatus.UNAUTHORIZED, "authentication_required", exception.getMessage(), Map.of());
+        return response(HttpStatus.UNAUTHORIZED, "authentication_required", exception.getMessage(), Collections.emptyMap());
     }
 
     @ExceptionHandler(TelegramWebhookAuthenticationException.class)
     ResponseEntity<ApiError> handleWebhookAuthentication(TelegramWebhookAuthenticationException exception) {
-        return response(HttpStatus.UNAUTHORIZED, "invalid_webhook_secret", exception.getMessage(), Map.of());
+        return response(HttpStatus.UNAUTHORIZED, "invalid_webhook_secret", exception.getMessage(), Collections.emptyMap());
     }
 
     @ExceptionHandler(CleanerNotAuthorizedException.class)
     ResponseEntity<ApiError> handleCleanerAuthorization(CleanerNotAuthorizedException exception) {
-        return response(HttpStatus.FORBIDDEN, "cleaner_not_authorized", exception.getMessage(), Map.of());
+        return response(HttpStatus.FORBIDDEN, "cleaner_not_authorized", exception.getMessage(), Collections.emptyMap());
     }
 
     @ExceptionHandler(AdminNotAuthorizedException.class)
     ResponseEntity<ApiError> handleAdminAuthorization(AdminNotAuthorizedException exception) {
-        return response(HttpStatus.FORBIDDEN, "admin_not_authorized", exception.getMessage(), Map.of());
+        return response(HttpStatus.FORBIDDEN, "admin_not_authorized", exception.getMessage(), Collections.emptyMap());
     }
 
     @ExceptionHandler({InvalidOrderStateException.class, OrderClaimConflictException.class})
     ResponseEntity<ApiError> handleConflict(RuntimeException exception) {
-        return response(HttpStatus.CONFLICT, "order_state_conflict", exception.getMessage(), Map.of());
+        return response(HttpStatus.CONFLICT, "order_state_conflict", exception.getMessage(), Collections.emptyMap());
     }
 
     @ExceptionHandler(CleaningReportExpiredException.class)
     ResponseEntity<ApiError> handleCleaningReportExpired(CleaningReportExpiredException exception) {
-        return response(HttpStatus.GONE, "cleaning_report_expired", exception.getMessage(), Map.of());
+        return response(HttpStatus.GONE, "cleaning_report_expired", exception.getMessage(), Collections.emptyMap());
     }
 
     @ExceptionHandler(AccountLinkProviderException.class)
     ResponseEntity<ApiError> handleAccountLinkProvider(AccountLinkProviderException exception) {
-        return response(HttpStatus.FORBIDDEN, "account_link_provider_required", exception.getMessage(), Map.of());
+        return response(HttpStatus.FORBIDDEN, "account_link_provider_required", exception.getMessage(), Collections.emptyMap());
     }
 
     @ExceptionHandler(AccountLinkConflictException.class)
     ResponseEntity<ApiError> handleAccountLinkConflict(AccountLinkConflictException exception) {
-        return response(HttpStatus.CONFLICT, "account_link_conflict", exception.getMessage(), Map.of());
+        return response(HttpStatus.CONFLICT, "account_link_conflict", exception.getMessage(), Collections.emptyMap());
     }
 
     @ExceptionHandler(AccountLinkTokenExpiredException.class)
     ResponseEntity<ApiError> handleAccountLinkExpired(AccountLinkTokenExpiredException exception) {
-        return response(HttpStatus.GONE, "account_link_expired", exception.getMessage(), Map.of());
+        return response(HttpStatus.GONE, "account_link_expired", exception.getMessage(), Collections.emptyMap());
     }
 
     @ExceptionHandler(AccountLinkTokenConsumedException.class)
     ResponseEntity<ApiError> handleAccountLinkConsumed(AccountLinkTokenConsumedException exception) {
-        return response(HttpStatus.CONFLICT, "account_link_consumed", exception.getMessage(), Map.of());
+        return response(HttpStatus.CONFLICT, "account_link_consumed", exception.getMessage(), Collections.emptyMap());
     }
 
     @ExceptionHandler(AccountLinkTokenInvalidException.class)
     ResponseEntity<ApiError> handleAccountLinkInvalid(AccountLinkTokenInvalidException exception) {
-        return response(HttpStatus.NOT_FOUND, "account_link_invalid", exception.getMessage(), Map.of());
+        return response(HttpStatus.NOT_FOUND, "account_link_invalid", exception.getMessage(), Collections.emptyMap());
     }
 
     @ExceptionHandler(TelegramIdentityNotLinkedException.class)
     ResponseEntity<ApiError> handleTelegramIdentityNotLinked(TelegramIdentityNotLinkedException exception) {
-        return response(HttpStatus.CONFLICT, "telegram_identity_not_linked", exception.getMessage(), Map.of());
+        return response(HttpStatus.CONFLICT, "telegram_identity_not_linked", exception.getMessage(), Collections.emptyMap());
     }
 
     @ExceptionHandler(CustomerNotificationNotFoundException.class)
     ResponseEntity<ApiError> handleCustomerNotificationNotFound(
             CustomerNotificationNotFoundException exception
     ) {
-        return response(HttpStatus.NOT_FOUND, "customer_notification_not_found", exception.getMessage(), Map.of());
+        return response(HttpStatus.NOT_FOUND, "customer_notification_not_found", exception.getMessage(), Collections.emptyMap());
+    }
+
+    @ExceptionHandler(AcquisitionCampaignNotFoundException.class)
+    ResponseEntity<ApiError> handleAcquisitionCampaignNotFound(
+            AcquisitionCampaignNotFoundException exception
+    ) {
+        return response(
+                HttpStatus.NOT_FOUND,
+                "acquisition_campaign_not_found",
+                exception.getMessage(),
+                Collections.emptyMap()
+        );
+    }
+
+    @ExceptionHandler(InvalidAcquisitionCampaignException.class)
+    ResponseEntity<ApiError> handleInvalidAcquisitionCampaign(
+            InvalidAcquisitionCampaignException exception
+    ) {
+        return response(
+                HttpStatus.BAD_REQUEST,
+                "invalid_acquisition_campaign",
+                exception.getMessage(),
+                Collections.emptyMap()
+        );
+    }
+
+    @ExceptionHandler(InvalidAnalyticsPeriodException.class)
+    ResponseEntity<ApiError> handleInvalidAnalyticsPeriod(InvalidAnalyticsPeriodException exception) {
+        return response(
+                HttpStatus.BAD_REQUEST,
+                "invalid_analytics_period",
+                exception.getMessage(),
+                Collections.emptyMap()
+        );
     }
 
     @ExceptionHandler(PlatformServiceNotAvailableException.class)
@@ -393,7 +431,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.SERVICE_UNAVAILABLE,
                 "service_not_available",
                 "The requested service is not currently available",
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
@@ -415,7 +453,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT,
                 "concurrent_update_conflict",
                 "The resource was changed by another request",
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
@@ -425,7 +463,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.NOT_FOUND,
                 "resource_not_found",
                 "The requested resource was not found",
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
@@ -436,7 +474,7 @@ public class GlobalExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "internal_error",
                 "An unexpected error occurred",
-                Map.of()
+                Collections.emptyMap()
         );
     }
 
