@@ -11,7 +11,78 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    name: Detect application changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.changes.outputs.backend }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+      app: ${{ steps.changes.outputs.app }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed areas
+        id: changes
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CURRENT_SHA: ${{ github.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+
+          backend=false
+          frontend=false
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            # An explicit manual CI run intentionally validates the whole application.
+            backend=true
+            frontend=true
+          else
+            if [[ "$EVENT_NAME" == "pull_request" ]]; then
+              base_sha="$PR_BASE_SHA"
+              git diff --name-only "$base_sha...$CURRENT_SHA" > /tmp/changed-files
+            else
+              if [[ -z "$PUSH_BEFORE_SHA" || "$PUSH_BEFORE_SHA" =~ ^0+$ ]]; then
+                # Safe fallback for the first push / missing before SHA.
+                backend=true
+                frontend=true
+              else
+                git diff --name-only "$PUSH_BEFORE_SHA..$CURRENT_SHA" > /tmp/changed-files
+              fi
+            fi
+
+            if [[ -f /tmp/changed-files ]]; then
+              echo "Changed files:"
+              cat /tmp/changed-files
+
+              if grep -q '^backend/' /tmp/changed-files; then
+                backend=true
+              fi
+              if grep -q '^frontend/' /tmp/changed-files; then
+                frontend=true
+              fi
+            fi
+          fi
+
+          app=false
+          if [[ "$backend" == "true" || "$frontend" == "true" ]]; then
+            app=true
+          fi
+
+          echo "backend=$backend" >> "$GITHUB_OUTPUT"
+          echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
+          echo "app=$app" >> "$GITHUB_OUTPUT"
+          echo "backend=$backend frontend=$frontend app=$app"
+
   backend:
+    name: Backend tests
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -28,6 +99,9 @@ jobs:
         run: ./gradlew test --no-daemon
 
   frontend:
+    name: Frontend build
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -49,13 +123,18 @@ jobs:
 
   deploy_staging:
     name: Deploy staging
-    if: >-
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      github.ref == 'refs/heads/main' &&
-      vars.STAGING_DEPLOY_ENABLED == 'true'
     needs:
+      - changes
       - backend
       - frontend
+    if: >-
+      always() &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      github.ref == 'refs/heads/main' &&
+      vars.STAGING_DEPLOY_ENABLED == 'true' &&
+      needs.changes.outputs.app == 'true' &&
+      (needs.backend.result == 'success' || needs.backend.result == 'skipped') &&
+      (needs.frontend.result == 'success' || needs.frontend.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:

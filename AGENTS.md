@@ -2,114 +2,102 @@
 
 ## Purpose
 
-This file gives Codex the stable context required to work in this repository.
+This file gives Codex stable repository-wide instructions. It is not a task backlog or session log.
 
-Do not use this file as a task backlog or implementation log.
+## Knowledge base — mandatory routing
 
-Task-specific Markdown files may be provided directly in a Codex session and do not need to be persisted in the repository unless explicitly requested.
+The canonical project knowledge base is `docs/`.
+
+Before substantial product, architecture or cross-cutting work:
+
+1. read `docs/CONTEXT.md` to restore current project state;
+2. use `docs/INDEX.md` to identify only the documents relevant to the task;
+3. read `docs/strategy/manifesto.md` for product decisions;
+4. inspect current code/tests/recent git history before assuming a documented capability is missing;
+5. when a durable platform decision changes, update the relevant canonical doc and `docs/CONTEXT.md` in the same change.
+
+The current implementation is the source of truth for implementation state. Stable docs define intended product/architecture constraints. Old task plans must not cause reimplementation of completed work.
+
+### Core product principles
+
+- Loco solves the task; it does not expose a provider catalog as the product.
+- The customer must not become the dispatcher after placing an order.
+- Every subsequent interaction should require fewer user actions when known context can be safely reused.
+- Do not ask again for customer context Loco already knows without a business reason.
+- Cross-service actions should arise from real context, not generic advertising.
+- Repeat and completed tasks/customer matter more than registrations.
+- Support and failure handling are part of the product.
+- Density, contribution and fulfillment matter more than the number of verticals.
+- Automate measured operational pain, not hypothetical future problems.
+- Strategic direction: **From catalog to habit.**
+
+Canonical source: `docs/strategy/manifesto.md`.
 
 ---
 
 ## Project direction
 
-This repository contains the Loco Place platform with three working service verticals:
+This repository contains Loco Place with three implemented verticals:
 
 ```text
 Loco Place
 ├── Loco Cleaning → apartment cleaning
-├── Loco Rent     → apartment catalog, availability and rental bookings
-└── Loco Transfer → scheduled fixed-price airport rides
+├── Loco Rental   → apartment rental
+└── Loco Transfer → scheduled fixed-price airport transfer
 ```
 
-The public canonical domain is:
+Public canonical domain:
 
 ```text
 https://loco-place.com
 ```
 
-Technical names intentionally remain stable where they are internal implementation details:
+Technical names remain stable when they are internal details:
 
 ```text
 repository: go-cleany
-routes: /cleaning, /rent
-packages/namespaces: cleaning, rent, rental, Cleaning*, Rental*
+routes: /cleaning, /rent, /transfer
+packages/namespaces: cleaning, rental, transfer
+aggregates: CleaningOrder, RentalBooking, TransferBooking
 ```
 
 Public branding changes must not force unnecessary API/package/database migrations.
 
-The product may later contain more independent verticals such as:
+Do not create `UniversalOrder`, `UniversalBooking`, or a generic JSONB mega-aggregate. Future verticals own their own business aggregates.
 
-```text
-Handyman / repair
-Residence / relocation assistance
-future services
-```
-
-Do not turn `CleaningOrder` or `RentalBooking` into a universal service order.
-
-WhatsApp integration is not planned. Do not reintroduce WhatsApp-specific architecture, provider placeholders, configuration, or roadmap work unless a new explicit product decision requires it.
-
----
-
-## Required project context
-
-Before architectural or cross-cutting changes, read:
-
-```text
-docs/architecture/index.md
-docs/architecture/platform-roadmap.md
-```
-
-For cleaning referral economics read:
-
-```text
-docs/referral-financial-model.md
-```
-
-Task-specific implementation plans may be supplied directly in the current Codex session.
-
-Treat those files as temporary execution context. Do not persist them in the repository unless explicitly requested.
-
-Documentation describes intent.
-
-The current implementation is the source of truth for actual repository state.
-
-Before implementing any task or roadmap-related change:
-
-1. inspect current code;
-2. inspect relevant tests;
-3. inspect recent git history if the area changed recently;
-4. verify the requested work is not already implemented.
-
-Do not reimplement completed work just because an older task specification mentions it.
+WhatsApp integration is not planned. Do not reintroduce it without a new explicit product decision.
 
 ---
 
 ## Architecture principles
 
+### Modular monolith
+
+Loco Place is one Spring Boot modular monolith. Shared platform concerns can include customer/identity, authentication, catalog/service availability, notification/communication, media/retention, analytics/acquisition and shared admin shell.
+
+Vertical business rules remain vertical-owned.
+
+Cross-service features use explicit bridge/application/read models. Existing example: `RentalCleaningBenefit` connects Rental and Cleaning without merging their aggregates.
+
 ### Customer identity
 
-The internal customer identity is:
+Canonical business identity:
 
 ```text
 CustomerAccount.id
 ```
 
-Do not introduce new business dependencies on Telegram user IDs when `customerId` or an external identity reference is sufficient.
+External channels/providers belong behind identity/adapters.
 
-External channels and authentication providers belong behind identity/adapters.
+`ADMIN` is a persisted `CustomerAccount` role. The deployment bootstrap is verified Google email in `ADMIN_GOOGLE_EMAILS`; Telegram IDs must not bootstrap ADMIN.
 
-`ADMIN` is a persisted platform role of `CustomerAccount`, not a Telegram-specific property.
+Google ↔ Telegram linking is explicit and verified. Never auto-merge identities by email, phone, display name or username.
 
-The only deployment bootstrap for ADMIN is a verified Google email listed in:
+Telegram is optional. A Google-only customer must remain fully usable.
 
-```text
-ADMIN_GOOGLE_EMAILS
-```
+### Service availability
 
-Telegram IDs must not bootstrap ADMIN. After explicit Google ↔ Telegram account linking, Telegram resolves the same `CustomerAccount` and therefore the same persisted role.
-
-Service vertical customer availability is persisted platform state:
+Platform availability states:
 
 ```text
 ENABLED
@@ -117,158 +105,51 @@ IN_TEST
 DISABLED
 ```
 
-`IN_TEST` allows new customer flows only for `ADMIN`; `DISABLED` blocks all new customer flows.
-Existing owned transactions and admin operational workflows remain available.
-
-Standalone web authentication uses direct Google OIDC through Spring Security OAuth2 Client and PostgreSQL-backed server sessions. The application is not an OIDC authorization server. Google provider values are backend deployment secrets and must never be exposed through Vite.
-
-Google ↔ Telegram account linking is implemented and must remain explicit and verified. Never automatically merge external identities by email, phone, display name, username or other correlation.
-
-Telegram remains optional. A Google-only customer must be able to use Loco Place without linking Telegram.
-
----
+`IN_TEST` allows new customer flows only for ADMIN. `DISABLED` blocks new customer flows. Existing owned history and admin operations remain available.
 
 ### Channel neutrality
 
-Business logic must not be duplicated for different customer channels.
-
-Channel-specific concerns belong in adapters.
-
-Today the relevant entry points/channels are:
+Current channels:
 
 ```text
-standalone WEB
+standalone web
 Telegram Mini App / bot
 ```
 
-Future mobile or other channels may be added only when there is a concrete requirement.
-
-Do not encode Telegram-specific assumptions into reusable customer/domain/application logic.
-
----
+Business logic must not be duplicated by channel. Telegram-specific authentication/callback behavior stays at adapter boundaries.
 
 ### Notifications
-
-Domain/application code should express what happened, not how Telegram should display it.
 
 Prefer:
 
 ```text
-application/domain event
-→ notification layer
-→ communication target
-→ channel adapter
+domain/application event
+→ durable semantic notification
+→ communication routing
+→ optional channel adapter
 ```
 
-over direct Telegram delivery from reusable business services.
-
-Telegram is an optional delivery channel, not the canonical location of customer business data.
-
-Existing Telegram cleaner-side interaction may remain Telegram-specific.
-
----
+Domain/application code should express what happened, not how Telegram renders it.
 
 ### Media
 
-Important operational media must belong to the platform.
-
-Do not make external provider file IDs the only canonical representation of important media.
-
-Current direction:
-
-```text
-internal MediaAsset
-→ MediaStorage
-→ PostgreSQL BYTEA for the pilot
-```
-
-Provider-specific metadata such as Telegram file IDs may still be retained for delivery optimizations and diagnostics.
+Important operational media belongs to the platform. Current pilot direction is internal `MediaAsset` / `MediaStorage` with PostgreSQL BYTEA. Provider file IDs may be retained as metadata/optimization but not as the only canonical representation.
 
 Do not store binary content as Base64 in PostgreSQL.
 
----
+### Vertical ownership
 
-### Service neutrality
+Cleaning owns `CleaningOrder`, cleaning pricing, cleaner workflow, completion report/media, onsite issues and Cleaning-specific referral economics.
 
-Platform-level capabilities may include:
+Rental owns `RentalProperty`, `RentalBooking`, `RentalOccupancy`, rental availability/pricing/stay policy and admin workflow.
 
-```text
-customer
-identity
-communication
-notification
-media
-retention
-authentication
-catalog
-shared admin shell
-```
+Transfer owns `TransferAirport`, `TransferVehicleType`, `TransferPrice`, `TransferDriver`, `TransferBooking`, fixed-price snapshots and driver assignment workflow.
 
-Cleaning-specific capabilities remain cleaning-specific:
+Transfer is implemented. Manual driver assignment supports phone-only drivers; Telegram driver self-accept requires verified bot connection and atomic first-wins assignment.
 
-```text
-CleaningOrder
-cleaning pricing
-cleaner workflow
-photo completion report
-onsite issue
-cleaning referral economics
-```
+### Backend authority
 
-Rental-specific capabilities remain rental-specific:
-
-```text
-RentalProperty
-RentalBooking
-RentalOccupancy
-rental pricing and stay policy
-rental administration
-```
-
-Future service verticals should have their own aggregates.
-
-Do not create a generic `UniversalOrder`.
-
-Do not move all service-specific fields into one generic JSONB payload as the primary domain model.
-
----
-
-### Multi-vertical platform architecture
-
-The application is a multi-vertical platform implemented as one modular monolith.
-
-`CustomerAccount` is the shared platform customer identity. Cleaning, rental and future verticals must reference that same identity rather than introduce service-specific customer records.
-
-Every vertical owns its own business aggregates, for example:
-
-```text
-CleaningOrder
-RentalBooking
-future HandymanRequest
-future ResidenceCase
-```
-
-Do not introduce `UniversalOrder`, `UniversalBooking`, or a generic JSON-based service aggregate to unify those verticals.
-
-Cross-service features should use an explicit bridge/application model that may reference aggregates from more than one vertical without merging their domain models.
-
-Frontend, Telegram, future mobile applications and future MCP/agent integrations are adapters or entry points. Business rules must stay in reusable backend application/domain services and must not be duplicated in channel adapters, frontend code, or MCP tools.
-
-Prefer explicit operations such as:
-
-```text
-quoteCleaningOrder
-createCleaningOrder
-quoteRentalBooking
-createRentalBooking
-```
-
-over a generic `createOrder(service, payload)` API. Keep read/quote operations separate from state-changing operations.
-
-The backend remains authoritative for authenticated identity, prices, discounts, availability, ownership, eligibility and status transitions. Never trust a client- or agent-supplied customer ID, calculated price, discount, availability, or business status.
-
-Design state-changing application operations so additional adapters can expose them safely later.
-Future MCP/agent writes should support idempotency against retries and uncertain responses. Future MCP/agent access must use delegated authorization with explicit scopes, never an arbitrary `customerId`. Do not implement MCP, delegated OAuth, agent grants, or payment-agent flows until a concrete requirement exists.
+Backend remains authoritative for authenticated identity, prices, discounts, availability, ownership, eligibility and status transitions. Never trust client/agent-supplied customer IDs, calculated price, discount, availability or business status.
 
 ---
 
@@ -280,7 +161,7 @@ Future MCP/agent writes should support idempotency against retries and uncertain
 Java 25
 Spring Boot 4
 Gradle
-Lombok for new Java boilerplate
+Lombok for appropriate boilerplate
 PostgreSQL
 Liquibase
 Testcontainers
@@ -293,6 +174,7 @@ React 19
 TypeScript
 Vite
 RU / EN i18n
+mobile-first
 ```
 
 ### Deployment
@@ -308,20 +190,20 @@ PostgreSQL backups
 
 ## Working rules
 
-Before implementing a non-trivial change:
+Before a non-trivial change:
 
-1. inspect the existing implementation;
+1. inspect existing implementation;
 2. inspect relevant tests;
-3. read only the stable documentation relevant to the task;
-4. read the task-specific specification supplied in the current session, if any;
+3. load relevant knowledge through `docs/INDEX.md`;
+4. read task-specific temporary specification if supplied;
 5. preserve unrelated behavior;
 6. prefer incremental changes over speculative abstraction.
 
 Avoid unrelated refactoring.
 
-Use Lombok in new Java code when it removes mechanical boilerplate such as dependency constructors, getters, builders, or simple value objects. Keep domain validation and other meaningful logic explicit.
+Use Lombok in new Java code when it removes mechanical boilerplate while keeping domain validation meaningful and explicit.
 
-For empty Java collections, use the explicit `Collections.empty*()` methods:
+For empty Java collections use:
 
 ```java
 Collections.emptyList()
@@ -329,54 +211,19 @@ Collections.emptySet()
 Collections.emptyMap()
 ```
 
-Do not use `List.of()`, `Set.of()`, `Map.of()` or similar zero-argument factories to declare empty
-collections. Whenever a Java file is changed, fix violations of this rule in the touched code as part
-of the same change. Do not perform unrelated repository-wide cleanup solely for this rule.
+Do not use zero-argument `List.of()`, `Set.of()` or `Map.of()` to declare empty collections. When touching a Java file, fix violations in that file; do not do unrelated repository-wide cleanup.
 
 ### Production constructors are not test compatibility APIs
 
-Production classes and records must not gain shortened, overloaded, defaulting, or compatibility constructors solely to keep old tests compiling after production dependencies or invariants change.
+Do not add shortened/defaulting production constructors only to keep old tests compiling. Update tests/fixtures to provide real required dependencies.
 
-When production construction changes, update tests instead:
-
-```text
-use the real production constructor
-provide/mock the new dependency
-extend a test fixture/builder when useful
-```
-
-Do not hide a newly required production dependency by inventing a default value in a shorter constructor only for tests.
-
-Bad pattern:
-
-```java
-Service(DepA a, DepB b, DepC c) { ... }
-
-// added only because old tests still call two args
-Service(DepA a, DepB b) {
-    this(a, b, new DefaultDepC(...));
-}
-```
-
-The same rule applies to records and value types.
-
-Do not create a new production abstraction solely to make tests easier.
-
-Do not create interfaces merely because abstraction is possible.
-
-Create an interface when there is a real boundary or realistic alternative implementation, for example:
-
-```text
-notification channel
-media storage
-external provider integration
-```
+Do not create a production abstraction solely to make tests easier. Create interfaces where there is a real boundary/alternative implementation, e.g. notification channel, media storage or external provider.
 
 ---
 
 ## Infrastructure constraints
 
-Do not introduce the following without a concrete requirement:
+Do not introduce without a concrete measured requirement:
 
 ```text
 microservices
@@ -387,37 +234,19 @@ new databases
 generic event buses
 ```
 
-The current Spring Boot monolith + PostgreSQL architecture is intentional for the pilot.
-
----
+The Spring Boot monolith + PostgreSQL architecture is intentional.
 
 ## Database changes
 
-All schema changes must use Liquibase.
-
-Application rollback does not automatically roll database migrations back.
-
-Prefer backward-compatible expand/contract migrations where practical, especially for cross-cutting architecture changes.
-
-Do not use database stored procedures unless explicitly required.
-
----
+All schema changes use Liquibase. Application rollback does not automatically roll migrations back. Prefer backward-compatible expand/contract where practical. Do not use stored procedures unless explicitly required.
 
 ## Retention
 
-Current pilot retention is configurable and defaults to approximately seven days for heavy operational payloads such as completion-report media.
-
-Existing scheduled cleanup and backup retention already exist.
-
-Do not create duplicate cleanup infrastructure.
-
-When media storage changes, adapt the existing retention mechanism.
-
----
+Current pilot retention is configurable and defaults to approximately seven days for heavy operational payloads. Reuse existing cleanup infrastructure; do not create duplicates.
 
 ## Known intentionally deferred issues
 
-The following are known and are not current blockers unless a task directly touches them:
+Do not repeatedly rediscover these as urgent unless a task touches them:
 
 ```text
 phone-based referral anti-abuse across multiple identities
@@ -427,56 +256,18 @@ branch protection / required checks hardening
 account unlinking policy
 ```
 
-Do not repeatedly rediscover these as new urgent tasks.
-
----
-
 ## Task-specific plans
 
-Task-specific Markdown files supplied directly in a Codex session are temporary execution context.
+Task-specific Markdown supplied in a Codex session is temporary execution context unless explicitly requested as permanent documentation.
 
-They may contain:
-
-```text
-implementation steps
-migration details
-acceptance criteria
-Definition of Done
-temporary architectural work
-```
-
-Do not add these files to the repository by default.
-
-Do not maintain:
-
-```text
-task history
-completed-task archives
-session logs
-implementation diaries
-```
-
-unless explicitly requested.
-
-Stable architectural decisions belong in:
-
-```text
-docs/architecture/
-```
-
-Stable product/domain rules belong in an appropriate permanent `docs/` document.
-
-If implementation of a task changes a long-term architectural decision, update the relevant permanent documentation rather than preserving the temporary task specification.
-
----
+Do not maintain session logs, implementation diaries or completed-task archives. Durable decisions belong in `docs/architecture/decisions/`; stable product/domain context belongs in canonical `docs/` pages.
 
 ## Validation expectations
 
-After implementation:
+- backend changes → run relevant backend tests;
+- frontend changes → run frontend build/tests/lint where applicable;
+- database/cross-layer changes → focused integration coverage;
+- docs-only changes do not require application builds;
+- verify Telegram flows when changing shared identity/notification boundaries.
 
-- run relevant backend tests for backend changes;
-- run frontend build/tests/lint where applicable for frontend changes;
-- run focused integration tests for database or cross-layer changes;
-- verify existing Telegram flow is not broken by platform-neutral refactoring.
-
-Summaries should explain behavioral and architectural consequences, not only list modified files.
+Summaries should explain behavioral/architectural consequences, not only list files.
