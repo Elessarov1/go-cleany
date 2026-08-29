@@ -9,6 +9,7 @@ import "./styles/theme-stella.css";
 import "./styles/ui-polish.css";
 import "./styles/ui-motion.css";
 import "./styles/theme.css";
+import "./styles/site-footer.css";
 
 initializeTheme();
 

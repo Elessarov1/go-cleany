@@ -25,6 +25,7 @@ import { AccountPage } from "../pages/AccountPage/AccountPage";
 import { TelegramAccountLinkPage } from "../pages/TelegramAccountLinkPage/TelegramAccountLinkPage";
 import { NotificationsPage } from "../pages/NotificationsPage/NotificationsPage";
 import { AdminAnalyticsPage } from "../pages/AdminAnalyticsPage/AdminAnalyticsPage";
+import { LegalPage } from "../pages/LegalPage/LegalPage";
 
 function LegacyCleaningOrderRedirect({ created = false }: { created?: boolean }) {
   const { id } = useParams();
@@ -41,6 +42,8 @@ export const router = createBrowserRouter([
     element: <AppShell />,
     children: [
       { path: "/", element: <ServiceCatalogPage /> },
+      { path: "/privacy", element: <LegalPage kind="privacy" /> },
+      { path: "/terms", element: <LegalPage kind="terms" /> },
       { path: "/cleaning", element: <ServiceAvailabilityGate service="CLEANING"><CreateOrderPage /></ServiceAvailabilityGate> },
       {
         element: <CustomerAccessGate />,
