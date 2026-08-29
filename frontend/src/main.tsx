@@ -10,6 +10,7 @@ import "./styles/ui-polish.css";
 import "./styles/ui-motion.css";
 import "./styles/theme.css";
 import "./styles/site-footer.css";
+import "./styles/header-controls.css";
 
 initializeTheme();
 

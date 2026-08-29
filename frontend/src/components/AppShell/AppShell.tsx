@@ -114,7 +114,15 @@ export function AppShell() {
             </NavLink>
             {standaloneWeb && !admin ? (
               <nav className="web-primary-nav" aria-label={t("app.navigation.label")}>
-                <NavLink to="/" end>{t("app.navigation.services")}</NavLink>
+                <NavLink
+                  className="web-primary-nav__services"
+                  to="/"
+                  end
+                  title={t("app.navigation.services")}
+                  aria-label={t("app.navigation.services")}
+                >
+                  <Icon name="services" size={18} />
+                </NavLink>
                 <NavLink to="/cleaning"><BrandName service="cleaning" /></NavLink>
                 <NavLink to="/rent"><BrandName service="rental" /></NavLink>
               </nav>
@@ -123,13 +131,12 @@ export function AppShell() {
               {!admin && authentication.status === "READY" && authentication.current.authenticated ? <NotificationBell /> : null}
               {!standaloneWeb && !admin ? (
                 <NavLink
-                  className="topbar__global-link"
+                  className="topbar__global-link topbar__services-action"
                   to="/"
                   title={t("app.navigation.services")}
                   aria-label={t("app.navigation.services")}
                 >
                   <Icon name="services" size={18} />
-                  <span>{t("app.navigation.services")}</span>
                 </NavLink>
               ) : null}
               {admin && !catalog ? (

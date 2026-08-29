@@ -1,24 +1,33 @@
+import type { ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { changeLanguage, type AppLanguage } from "../../i18n";
+import {
+  changeLanguage,
+  SUPPORTED_LANGUAGES,
+  type AppLanguage,
+} from "../../i18n";
 
 export function LanguageSwitcher() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const activeLanguage: AppLanguage = i18n.resolvedLanguage === "ru" ? "ru" : "en";
 
+  const handleChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    void changeLanguage(event.target.value as AppLanguage);
+  };
+
   return (
-    <div className="language-switcher" aria-label="Language">
-      {(["ru", "en"] as AppLanguage[]).map((language) => (
-        <button
-          key={language}
-          className={activeLanguage === language ? "is-active" : undefined}
-          type="button"
-          aria-pressed={activeLanguage === language}
-          onClick={() => void changeLanguage(language)}
-        >
-          {language.toUpperCase()}
-        </button>
-      ))}
+    <div className="language-selector">
+      <select
+        value={activeLanguage}
+        aria-label={t("language.label")}
+        title={t("language.label")}
+        onChange={handleChange}
+      >
+        {SUPPORTED_LANGUAGES.map((language) => (
+          <option key={language} value={language}>
+            {language.toUpperCase()}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
-

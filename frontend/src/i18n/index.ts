@@ -3,7 +3,8 @@ import { initReactI18next } from "react-i18next";
 import en from "./en.json";
 import ru from "./ru.json";
 
-export type AppLanguage = "ru" | "en";
+export const SUPPORTED_LANGUAGES = ["ru", "en"] as const;
+export type AppLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 const LANGUAGE_KEY = "cleany.language";
 
@@ -17,6 +18,15 @@ const themeTranslations = {
     label: "Цветовая тема",
     light: "Светлая тема",
     dark: "Тёмная тема",
+  },
+} as const;
+
+const languageTranslations = {
+  en: {
+    label: "Language",
+  },
+  ru: {
+    label: "Язык",
   },
 } as const;
 
@@ -134,9 +144,13 @@ const legalTranslations = {
   },
 } as const;
 
+function isAppLanguage(value: string | null): value is AppLanguage {
+  return value !== null && SUPPORTED_LANGUAGES.includes(value as AppLanguage);
+}
+
 function resolveLanguage(platformLanguage: string | null): AppLanguage {
   const storedLanguage = localStorage.getItem(LANGUAGE_KEY);
-  if (storedLanguage === "ru" || storedLanguage === "en") {
+  if (isAppLanguage(storedLanguage)) {
     return storedLanguage;
   }
 
@@ -155,6 +169,7 @@ export async function initializeI18n(
           translation: {
             ...en,
             theme: themeTranslations.en,
+            language: languageTranslations.en,
             footer: footerTranslations.en,
             legal: legalTranslations.en,
             titles: {
@@ -168,6 +183,7 @@ export async function initializeI18n(
           translation: {
             ...ru,
             theme: themeTranslations.ru,
+            language: languageTranslations.ru,
             footer: footerTranslations.ru,
             legal: legalTranslations.ru,
             titles: {
@@ -180,7 +196,7 @@ export async function initializeI18n(
       },
       lng: language,
       fallbackLng: "en",
-      supportedLngs: ["en", "ru"],
+      supportedLngs: SUPPORTED_LANGUAGES,
       interpolation: {
         escapeValue: false,
       },
