@@ -53,6 +53,12 @@ a {
   flex: 0 0 auto;
 }
 
+.icon--transfer-car {
+  background: currentColor;
+  -webkit-mask: url("/assets/icons/loco-transfer-car.png") center / contain no-repeat;
+  mask: url("/assets/icons/loco-transfer-car.png") center / contain no-repeat;
+}
+
 p,
 h1,
 h2,
@@ -2078,6 +2084,7 @@ h3 {
 .service-card:active { transform: scale(0.985); }
 .service-card--rent { background: linear-gradient(135deg, #fffaf4, #f8e8d7); border-color: #ecd3bd; }
 .service-card--cleaning { background: linear-gradient(135deg, #f8fdff, #deeff6); border-color: #c9e1eb; }
+.service-card--transfer { color: oklch(0.235 0 0); background: linear-gradient(135deg, oklch(0.953 0.0156 86.4257), oklch(0.8647 0.0201 87.5232)); border-color: oklch(0.8434 0.0231 87.1621); }
 .service-card__icon {
   display: grid;
   width: 58px;
@@ -2088,6 +2095,7 @@ h3 {
 }
 .service-card--rent .service-card__icon { background: #d77d3e; }
 .service-card--cleaning .service-card__icon { background: #1685b3; }
+.service-card--transfer .service-card__icon { color: oklch(0.9169 0.0175 99.616); background: oklch(0.3012 0 0); }
 .service-card__copy { display: grid; min-width: 0; gap: 5px; }
 .service-card__copy small {
   color: var(--color-muted);
@@ -2786,6 +2794,7 @@ h3 {
 
 .admin-service-panel--rent .admin-service-card > span { background: #d77d3e; }
 .admin-service-panel--cleaning .admin-service-card > span { background: #1685b3; }
+.admin-service-panel--transfer .admin-service-card > span { color: oklch(0.9169 0.0175 99.616); background: oklch(0.3012 0 0); }
 .admin-service-card div { display: grid; min-width: 0; gap: 5px; }
 .admin-service-card small { color: var(--color-muted); font-size: 10px; font-weight: 850; letter-spacing: 0.1em; text-transform: uppercase; }
 .admin-service-card strong { font-size: 21px; letter-spacing: -0.035em; }
@@ -2796,15 +2805,22 @@ h3 {
   padding: 16px 24px 20px;
   border-top: 1px solid var(--color-line);
 }
+.admin-service-state__controls { display: grid; grid-template-columns: minmax(0, 1fr) 84px; align-items: end; gap: 10px; }
 .admin-service-state label {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
   color: var(--color-muted);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.admin-service-state select {
+.admin-service-state select,
+.admin-service-state input {
   width: 100%;
+  min-width: 0;
+  min-height: 42px;
   padding: 11px 12px;
   color: var(--color-ink);
   background: var(--color-surface-strong);
@@ -2812,6 +2828,8 @@ h3 {
   border-radius: 12px;
   font-weight: 720;
 }
+.admin-service-state input { text-align: center; font-variant-numeric: tabular-nums; }
+.admin-service-state__hint { color: var(--color-muted); font-size: 10px; line-height: 1.4; }
 .admin-service-state p,
 .admin-service-state__error {
   margin: 0;
@@ -3223,15 +3241,13 @@ h3 {
 }
 
 .service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav {
-  display: grid;
+  display: block;
   width: 100%;
   margin: 0;
   grid-area: navigation;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
 }
 
-.service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav a {
+.service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav > a {
   display: flex;
   min-width: 0;
   min-height: 38px;
@@ -3247,10 +3263,44 @@ h3 {
   white-space: nowrap;
 }
 
-.service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav a:hover,
-.service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav a.active {
+.service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav > a:hover,
+.service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav > a.active {
   color: var(--color-primary-dark);
   background: var(--color-primary-soft);
+}
+
+@media (max-width: 767px) {
+  .service-shell[data-platform="web"][data-layout="admin"] .topbar {
+    min-height: 0;
+  }
+
+  .service-shell[data-platform="web"][data-layout="admin"] .topbar__inner {
+    display: flex;
+    gap: 8px;
+  }
+
+  .service-shell[data-platform="web"][data-layout="admin"] .brand {
+    min-width: 0;
+  }
+
+  .service-shell[data-platform="web"][data-layout="admin"] .topbar__actions {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .service-shell[data-platform="web"][data-layout="admin"] :is(.topbar__global-link, .topbar__auth-action) {
+    width: 38px;
+    padding-inline: 9px;
+    justify-content: center;
+  }
+
+  .service-shell[data-platform="web"][data-layout="admin"] :is(.topbar__global-link, .topbar__auth-action) span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
 }
 
 .auth-required--compact {
@@ -3307,11 +3357,9 @@ h3 {
   .service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav {
     width: auto;
     justify-self: start;
-    grid-template-columns: repeat(3, auto);
-    gap: 6px;
   }
 
-  .service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav a {
+  .service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav > a {
     min-height: 42px;
     padding: 11px 13px;
     border-radius: 11px;
@@ -3933,6 +3981,175 @@ h3 {
 .cleaning-report-lightbox { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; background: rgb(14 25 34 / 88%); }
 .cleaning-report-lightbox img { max-width: min(1100px, 100%); max-height: 88vh; border-radius: 12px; }
 .cleaning-report-lightbox button { position: absolute; top: 18px; right: 22px; border: 0; color: #fff; background: transparent; font-size: 36px; cursor: pointer; }
+
+/* Loco Transfer */
+.page--transfer,
+.page--transfer-bookings,
+.page--transfer-booking {
+  width: min(100%, 880px);
+  margin-inline: auto;
+}
+
+.transfer-hero {
+  display: grid;
+  max-width: 680px;
+  margin-bottom: 24px;
+  gap: 10px;
+}
+
+.transfer-hero h1 { max-width: 640px; margin: 0; font-size: clamp(32px, 7vw, 58px); line-height: 0.98; letter-spacing: -0.055em; }
+.transfer-hero p { max-width: 620px; margin: 0; color: var(--color-muted); font-size: 15px; line-height: 1.65; }
+.transfer-form { display: grid; gap: 14px; }
+.transfer-panel,
+.transfer-summary,
+.transfer-booking-detail,
+.transfer-booking-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-medium);
+  box-shadow: var(--shadow-small);
+}
+.transfer-panel { padding: 18px; }
+.transfer-panel__heading { display: flex; margin-bottom: 16px; align-items: center; gap: 10px; }
+.transfer-panel__heading > span { display: grid; width: 30px; height: 30px; place-items: center; color: var(--color-surface); background: var(--color-primary); border-radius: 999px; font-size: 10px; font-weight: 850; }
+.transfer-panel__heading h2 { margin: 0; font-size: 19px; letter-spacing: -0.025em; }
+.transfer-direction { display: grid; margin-bottom: 14px; padding: 4px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; background: var(--color-primary-soft); border-radius: var(--radius-small); }
+.transfer-direction button { min-height: 44px; padding: 9px 12px; color: var(--color-muted); background: transparent; border: 0; border-radius: 6px; font: inherit; font-size: 13px; font-weight: 780; cursor: pointer; }
+.transfer-direction button.is-selected { color: var(--color-ink); background: var(--color-surface); box-shadow: 0 2px 8px hsl(0 0% 0% / 0.08); }
+.transfer-panel > .field + .field { margin-top: 0; }
+.transfer-vehicles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.transfer-vehicle { display: grid; min-width: 0; min-height: 130px; padding: 15px; gap: 10px; text-align: left; color: var(--color-ink); background: var(--color-surface-strong); border: 1px solid var(--color-line); border-radius: var(--radius-small); cursor: pointer; }
+.transfer-vehicle:hover { border-color: var(--color-primary); }
+.transfer-vehicle.is-selected { border-color: var(--color-primary); box-shadow: inset 0 0 0 1px var(--color-primary); }
+.transfer-vehicle > span:first-child { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.transfer-vehicle strong { font-size: 17px; }
+.transfer-vehicle small { color: var(--color-muted); font-size: 9px; letter-spacing: 0.1em; }
+.transfer-vehicle__capacity { color: var(--color-muted); font-size: 11px; line-height: 1.5; }
+.transfer-vehicle b { margin-top: auto; font-size: 15px; }
+.transfer-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+.transfer-form-grid .field + .field { margin-top: 0; }
+.transfer-form-grid__wide { grid-column: 1 / -1; }
+.transfer-form-grid textarea { min-height: 88px; }
+.transfer-summary { display: grid; padding: 18px; gap: 12px; }
+.transfer-summary > div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.transfer-summary span { color: var(--color-muted); font-size: 12px; }
+.transfer-summary strong { font-size: 25px; letter-spacing: -0.04em; }
+.transfer-summary p,
+.transfer-booking-note { margin: 0; color: var(--color-muted); font-size: 11px; line-height: 1.55; }
+.transfer-unavailable { color: var(--color-ink); background: var(--color-surface); }
+.transfer-booking-list { display: grid; gap: 10px; }
+.transfer-booking-card { display: grid; padding: 17px; gap: 7px; color: var(--color-ink); text-decoration: none; }
+.transfer-booking-card:hover { border-color: var(--color-primary); transform: translateY(-1px); }
+.transfer-booking-card__top,
+.transfer-booking-card__footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.transfer-booking-card__top > span { color: var(--color-muted); font-size: 10px; font-weight: 800; }
+.transfer-booking-card h2 { margin: 4px 0 0; font-size: 18px; }
+.transfer-booking-card p { margin: 0; color: var(--color-muted); font-size: 12px; }
+.transfer-booking-card__footer { margin-top: 6px; }
+.transfer-booking-card__footer strong { font-size: 12px; }
+.transfer-booking-card__footer b { margin-left: auto; font-size: 13px; }
+.transfer-booking-header { display: grid; justify-items: start; }
+.transfer-booking-detail { display: grid; padding: 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; overflow: hidden; background: var(--color-line); }
+.transfer-booking-detail > div { display: grid; min-height: 74px; padding: 13px; align-content: center; gap: 5px; background: var(--color-surface); }
+.transfer-booking-detail > .is-wide { grid-column: 1 / -1; }
+.transfer-booking-detail small { color: var(--color-muted); font-size: 10px; }
+.transfer-booking-detail strong { overflow-wrap: anywhere; font-size: 13px; line-height: 1.45; }
+.transfer-booking-note { margin-top: 12px; }
+.transfer-status--requested { color: var(--color-ink); background: var(--color-primary-soft); }
+.transfer-status--confirmed,
+.transfer-status--completed { color: var(--color-surface); background: var(--color-primary); }
+.transfer-status--cancelled,
+.transfer-status--rejected { color: var(--color-muted); background: var(--color-surface-strong); border: 1px solid var(--color-line); }
+
+@media (max-width: 520px) {
+  .page--transfer,
+  .page--transfer-bookings,
+  .page--transfer-booking { padding-inline: 14px; }
+  .transfer-hero h1 { font-size: clamp(30px, 10vw, 42px); }
+  .transfer-panel,
+  .transfer-summary { padding: 14px; }
+  .transfer-vehicles,
+  .transfer-form-grid { grid-template-columns: 1fr; }
+  .transfer-form-grid__wide { grid-column: auto; }
+  .transfer-vehicle { min-height: 116px; }
+  .transfer-booking-detail { grid-template-columns: 1fr; }
+  .transfer-booking-detail > .is-wide { grid-column: auto; }
+  .transfer-booking-card__footer { align-items: flex-start; flex-wrap: wrap; }
+}
+
+@media (min-width: 900px) {
+  .service-shell[data-platform="web"] .page--transfer { width: min(100%, 1040px); }
+  .service-shell[data-platform="web"] .transfer-form { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .service-shell[data-platform="web"] .transfer-form > :nth-child(3) { grid-column: 1 / -1; }
+  .service-shell[data-platform="web"] .transfer-summary { grid-column: 1 / -1; }
+}
+
+/* Transfer administration */
+.page--admin-transfer,
+.page--admin-transfer-booking,
+.page--admin-transfer-config { width: min(100%, 1100px); margin-inline: auto; }
+.admin-transfer-filters { display: grid; margin-bottom: 16px; grid-template-columns: repeat(2, minmax(0, 220px)); gap: 10px; }
+.admin-transfer-filters .field + .field { margin-top: 0; }
+.admin-transfer-booking-list { display: grid; gap: 8px; }
+.admin-transfer-booking-row { display: grid; padding: 13px 15px; grid-template-columns: 130px minmax(190px, 1fr) minmax(160px, 0.7fr) auto; align-items: center; gap: 14px; color: var(--color-ink); background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius-small); text-decoration: none; }
+.admin-transfer-booking-row:hover { border-color: var(--color-primary); }
+.admin-transfer-booking-row > span { display: grid; min-width: 0; gap: 4px; }
+.admin-transfer-booking-row small { overflow: hidden; color: var(--color-muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.admin-transfer-booking-row strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.admin-transfer-actions { display: grid; margin-top: 14px; padding: 16px; gap: 13px; background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius-medium); }
+.admin-transfer-assign { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
+.admin-transfer-section { margin-top: 16px; padding: 16px; background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius-medium); box-shadow: var(--shadow-small); }
+.admin-transfer-section > header { margin-bottom: 14px; }
+.admin-transfer-section h2 { margin: 0 0 5px; font-size: 19px; }
+.admin-transfer-section header p { margin: 0; color: var(--color-muted); font-size: 11px; line-height: 1.5; }
+.admin-transfer-editor-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 12px; }
+.admin-transfer-config-card,
+.admin-transfer-price { display: grid; min-width: 0; padding: 16px; align-content: start; gap: 14px; background: var(--color-surface-strong); border: 1px solid var(--color-line); border-radius: var(--radius-small); }
+.admin-transfer-config-card.is-new { border-style: dashed; }
+.admin-transfer-config-card__header { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.admin-transfer-config-card__header > div { display: grid; min-width: 0; gap: 3px; }
+.admin-transfer-config-card__header strong { overflow-wrap: anywhere; font-size: 14px; }
+.admin-transfer-config-card__header small { color: var(--color-muted); font-size: 10px; line-height: 1.4; }
+.admin-transfer-config-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+.admin-transfer-field { display: grid; min-width: 0; align-content: start; gap: 7px; }
+.admin-transfer-config-fields > .admin-transfer-field { grid-template-rows: minmax(0, 1fr) auto; align-content: stretch; }
+.admin-transfer-field.is-wide { grid-column: 1 / -1; }
+.admin-transfer-field > span { display: grid; gap: 3px; color: var(--color-ink); font-size: 11px; font-weight: 750; }
+.admin-transfer-field > span small { color: var(--color-muted); font-size: 9px; font-weight: 500; line-height: 1.4; }
+.admin-transfer-field input,
+.admin-transfer-field select { width: 100%; min-width: 0; min-height: 42px; padding: 9px 10px; color: var(--color-ink); background: var(--color-canvas); border: 1px solid var(--color-line); border-radius: 8px; font: inherit; font-size: 12px; }
+.admin-transfer-field input:focus,
+.admin-transfer-field select:focus { border-color: var(--color-primary); outline: 2px solid color-mix(in srgb, var(--color-primary) 18%, transparent); outline-offset: 1px; }
+.admin-transfer-config-card > .button,
+.admin-transfer-price > .button { width: 100%; }
+.admin-transfer-config-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.admin-transfer-config-actions small { color: var(--color-muted); font-size: 10px; line-height: 1.4; }
+.admin-transfer-driver-link { justify-self: start; overflow-wrap: anywhere; font-size: 10px; }
+.admin-transfer-advanced { padding: 9px 10px; background: color-mix(in srgb, var(--color-canvas) 70%, transparent); border: 1px solid var(--color-line); border-radius: 8px; }
+.admin-transfer-advanced summary { color: var(--color-muted); font-size: 10px; font-weight: 750; cursor: pointer; }
+.admin-transfer-advanced[open] summary { margin-bottom: 10px; }
+.admin-transfer-toggle { display: inline-flex; min-width: 0; align-items: center; gap: 7px; color: var(--color-muted); font-size: 10px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+.admin-transfer-toggle input { width: 17px; height: 17px; min-height: auto; margin: 0; accent-color: var(--color-primary); }
+.admin-transfer-price-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: 10px; }
+
+@media (max-width: 760px) {
+  .page--admin-transfer,
+  .page--admin-transfer-booking,
+  .page--admin-transfer-config { padding-inline: 14px; }
+  .admin-transfer-filters { grid-template-columns: 1fr; }
+  .admin-transfer-booking-row { grid-template-columns: 1fr auto; }
+  .admin-transfer-booking-row > span:nth-child(2),
+  .admin-transfer-booking-row > span:nth-child(3) { grid-column: 1 / -1; }
+  .admin-transfer-assign { grid-template-columns: 1fr; }
+  .admin-transfer-assign .button { width: 100%; }
+}
+
+@media (max-width: 430px) {
+  .admin-transfer-config-fields { grid-template-columns: 1fr; }
+  .admin-transfer-field.is-wide { grid-column: auto; }
+  .admin-transfer-config-actions { align-items: stretch; flex-direction: column; }
+  .admin-transfer-config-actions .button { width: 100%; }
+}
 .order-card__report-cue { display: block; margin-top: 4px; color: #397594; }
 
 .notification-bell {

@@ -1,6 +1,6 @@
 # Loco Place acquisition analytics
 
-Analytics is a platform capability shared by Loco Cleaning and Loco Rental. Canonical customer
+Analytics is a platform capability shared by Loco Cleaning, Loco Rental and Loco Transfer. Canonical customer
 identity is `CustomerAccount.id`; Telegram and standalone web are only capture/authentication adapters.
 
 ## First-touch rules
@@ -10,7 +10,7 @@ At most one `customer_acquisition` row exists per canonical customer. Priority i
 1. explicit active campaign link;
 2. existing partner code;
 3. existing customer referral code;
-4. organic fallback on the first Cleaning order or Rental booking.
+4. organic fallback on the first Cleaning order, Rental booking or Transfer request.
 
 A later campaign or code never overwrites first touch. Account merge keeps the earlier of the two
 attributions. Existing customers are deterministically backfilled; historical QR sources are not guessed.
@@ -68,7 +68,7 @@ GET /api/v1/admin/analytics/overview?from=2026-08-01&to=2026-08-31&service=ALL
 ```
 
 The `/admin/analytics` UI provides Today, 7-day, 30-day, current-month and custom filters plus the
-ALL/CLEANING/RENTAL dimension.
+ALL/CLEANING/RENTAL/TRANSFER dimension.
 
 - new customers use `CustomerAccount.created_at` and first-touch service;
 - active customers have at least one successful transaction in the selected period/service;
@@ -76,6 +76,7 @@ ALL/CLEANING/RENTAL dimension.
   across platform verticals;
 - Cleaning average check uses completed `final_customer_price` snapshots;
 - Rental average check uses completed `total_price` snapshots;
+- Transfer average check uses completed `price_amount` snapshots;
 - currencies are never summed or averaged together.
 
 Each metric uses its own business event timestamp. Calendar boundaries use `ANALYTICS_ZONE_ID`

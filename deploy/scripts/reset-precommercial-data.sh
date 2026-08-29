@@ -70,6 +70,7 @@ select section, table_name, record_count
       ('DELETE', 'referral_reward', (select count(*) from referral_reward)),
       ('DELETE', 'partner_payout', (select count(*) from partner_payout)),
       ('DELETE', 'rental_booking', (select count(*) from rental_booking)),
+      ('DELETE', 'transfer_booking', (select count(*) from transfer_booking)),
       ('DELETE', 'rental_booking_occupancy', (select count(*) from rental_occupancy where type = 'BOOKING')),
       ('DELETE', 'rental_cleaning_benefit', (select count(*) from rental_cleaning_benefit)),
       ('DELETE', 'operational_media_asset', (
@@ -85,6 +86,10 @@ select section, table_name, record_count
             join customer_role role on role.customer_id = account.id and role.role = 'ADMIN'
       )),
       ('KEEP', 'rental_property', (select count(*) from rental_property)),
+      ('KEEP', 'transfer_airport', (select count(*) from transfer_airport)),
+      ('KEEP', 'transfer_vehicle_type', (select count(*) from transfer_vehicle_type)),
+      ('KEEP', 'transfer_price', (select count(*) from transfer_price)),
+      ('KEEP', 'transfer_driver', (select count(*) from transfer_driver)),
       ('KEEP', 'rental_property_media', (select count(*) from rental_property_media)),
       ('KEEP', 'non_booking_occupancy', (select count(*) from rental_occupancy where type <> 'BOOKING')),
       ('KEEP', 'referral_partner', (select count(*) from referral_partner)),
@@ -124,9 +129,10 @@ for row in "${counts[@]}"; do
 done
 echo
 echo "PURGE: customer analytics and sessions; all Cleaning transactions/history/media;"
-echo "       Rental bookings, BOOKING occupancy and booking-derived benefits; ordinary customers."
+echo "       Rental/Transfer bookings, BOOKING occupancy and booking-derived benefits; ordinary customers."
 echo "PRESERVE: ADMIN accounts/identities/roles; Rental catalog/media and non-BOOKING occupancy;"
 echo "          referral partners/partner codes; acquisition campaigns; platform configuration."
+echo "          Transfer airports, vehicles, rates and drivers."
 
 if [[ ${execute} != true ]]; then
   echo
@@ -189,6 +195,7 @@ select 'customer_acquisition', count(*) from customer_acquisition
 union all select 'acquisition_campaign_entry', count(*) from acquisition_campaign_entry
 union all select 'cleaning_order', count(*) from cleaning_order
 union all select 'rental_booking', count(*) from rental_booking
+union all select 'transfer_booking', count(*) from transfer_booking
 union all select 'customer_notification', count(*) from customer_notification
 union all select 'ordinary_customer_account', count(*) from customer_account account
  where not exists (
@@ -211,6 +218,10 @@ select 'admin_customer_account', count(distinct account.id)
   from customer_account account join customer_role role on role.customer_id = account.id and role.role = 'ADMIN'
 union all select 'rental_property', count(*) from rental_property
 union all select 'rental_property_media', count(*) from rental_property_media
+union all select 'transfer_airport', count(*) from transfer_airport
+union all select 'transfer_vehicle_type', count(*) from transfer_vehicle_type
+union all select 'transfer_price', count(*) from transfer_price
+union all select 'transfer_driver', count(*) from transfer_driver
 union all select 'non_booking_occupancy', count(*) from rental_occupancy where type <> 'BOOKING'
 union all select 'referral_partner', count(*) from referral_partner
 union all select 'partner_referral_code', count(*) from referral_code where partner_id is not null

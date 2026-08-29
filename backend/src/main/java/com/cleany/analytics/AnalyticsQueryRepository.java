@@ -39,6 +39,13 @@ public class AnalyticsQueryRepository {
                        and rental.completed_at >= :fromInclusive
                        and rental.completed_at < :toExclusive
                        and :service in ('ALL', 'RENTAL')
+                    union all
+                    select transfer.customer_id
+                      from transfer_booking transfer
+                     where transfer.status = 'COMPLETED'
+                       and transfer.completed_at >= :fromInclusive
+                       and transfer.completed_at < :toExclusive
+                       and :service in ('ALL', 'TRANSFER')
                 ),
                 active_customers as (
                     select distinct customer_id from period_transactions
@@ -53,6 +60,11 @@ public class AnalyticsQueryRepository {
                           union all
                           select customer_id
                             from rental_booking
+                           where status = 'COMPLETED'
+                             and completed_at >= :lifetimeFromInclusive
+                          union all
+                          select customer_id
+                            from transfer_booking
                            where status = 'COMPLETED'
                              and completed_at >= :lifetimeFromInclusive
                       ) successful
@@ -114,6 +126,15 @@ public class AnalyticsQueryRepository {
                          and rental.completed_at >= :fromInclusive
                          and rental.completed_at < :toExclusive
                          and :service in ('ALL', 'RENTAL')
+                      union all
+                      select 'TRANSFER' service,
+                             transfer.price_currency currency,
+                             transfer.price_amount amount
+                        from transfer_booking transfer
+                       where transfer.status = 'COMPLETED'
+                         and transfer.completed_at >= :fromInclusive
+                         and transfer.completed_at < :toExclusive
+                         and :service in ('ALL', 'TRANSFER')
                   ) successful
                  group by successful.service, successful.currency
                  order by successful.service, successful.currency
@@ -170,6 +191,13 @@ public class AnalyticsQueryRepository {
                        and rental.completed_at >= :fromInclusive
                        and rental.completed_at < :toExclusive
                        and :service in ('ALL', 'RENTAL')
+                    union all
+                    select transfer.customer_id
+                      from transfer_booking transfer
+                     where transfer.status = 'COMPLETED'
+                       and transfer.completed_at >= :fromInclusive
+                       and transfer.completed_at < :toExclusive
+                       and :service in ('ALL', 'TRANSFER')
                 ),
                 transaction_counts as (
                     select coalesce(acquisition.channel, 'ORGANIC') channel,

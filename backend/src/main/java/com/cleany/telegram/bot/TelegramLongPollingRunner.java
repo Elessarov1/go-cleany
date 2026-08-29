@@ -25,7 +25,7 @@ public class TelegramLongPollingRunner implements SmartLifecycle {
 
     private final TelegramProperties properties;
     private final TelegramBotClient botClient;
-    private final TelegramCleanerBotService cleanerBotService;
+    private final TelegramBotUpdateRouter updateRouter;
 
     private volatile boolean running;
     private volatile Thread pollingThread;
@@ -33,11 +33,11 @@ public class TelegramLongPollingRunner implements SmartLifecycle {
     public TelegramLongPollingRunner(
             TelegramProperties properties,
             TelegramBotClient botClient,
-            TelegramCleanerBotService cleanerBotService
+            TelegramBotUpdateRouter updateRouter
     ) {
         this.properties = properties;
         this.botClient = botClient;
-        this.cleanerBotService = cleanerBotService;
+        this.updateRouter = updateRouter;
     }
 
     @Override
@@ -69,7 +69,7 @@ public class TelegramLongPollingRunner implements SmartLifecycle {
         if (update == null || update.updateId() < currentOffset) {
             return currentOffset;
         }
-        cleanerBotService.handle(update);
+        updateRouter.handle(update);
         return update.updateId() + 1;
     }
 

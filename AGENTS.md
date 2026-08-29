@@ -12,12 +12,13 @@ Task-specific Markdown files may be provided directly in a Codex session and do 
 
 ## Project direction
 
-This repository contains the Loco Place platform with two working service verticals:
+This repository contains the Loco Place platform with three working service verticals:
 
 ```text
 Loco Place
 ├── Loco Cleaning → apartment cleaning
-└── Loco Rent     → apartment catalog, availability and rental bookings
+├── Loco Rent     → apartment catalog, availability and rental bookings
+└── Loco Transfer → scheduled fixed-price airport rides
 ```
 
 The public canonical domain is:

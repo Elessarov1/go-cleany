@@ -26,4 +26,14 @@ export class HttpPlatformCatalogApi implements PlatformCatalogApi {
       body: JSON.stringify({ status }),
     });
   }
+
+  updateDisplayOrder(
+    service: PlatformService,
+    displayOrder: number,
+  ): Promise<PlatformServiceState> {
+    return this.client.request(`/api/v1/admin/platform/services/${service}`, {
+      method: "PATCH",
+      body: JSON.stringify({ displayOrder }),
+    });
+  }
 }

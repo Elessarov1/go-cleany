@@ -23,6 +23,7 @@ Telegram identities, роли и настройки административн
 - customer-owned `referral_code`, все `referral_reward` и `partner_payout`;
 - все Cleaning orders, events, completion photos, onsite issues и их platform media;
 - все Rental bookings, только occupancy типа `BOOKING`, booking-derived cleaning benefits;
+- все Transfer bookings и связанные с ними notification/analytics outcomes;
 - media assets/provider references, не принадлежащие `rental_property_media`.
 
 Перед удалением скрипт явно разрывает reservation-ссылки `CleaningOrder → ReferralReward` и
@@ -38,6 +39,7 @@ Telegram identities, роли и настройки административн
 - occupancy `OWNER_BLOCK`, `MAINTENANCE`, `EXTERNAL_BOOKING` и любые другие не-`BOOKING` типы;
 - `referral_partner` и partner-owned referral codes;
 - `acquisition_campaign`, включая неизменные `public_code` уже напечатанных QR.
+- Transfer airports, vehicle types, fixed rates, drivers and verified driver Telegram configuration;
 
 Скрипт сравнивает количество сохранённых записей до и после транзакции. Sequence сбрасываются только
 для таблиц, которые гарантированно очищаются полностью; sequence campaigns, partners, properties,

@@ -81,6 +81,16 @@ rental:
   max-active-bookings-per-customer: 3
   zone-id: Europe/Istanbul
 
+transfer:
+  min-booking-days-ahead: 1
+  booking-months-ahead: 6
+  time-slot-minutes: 30
+  zone-id: Europe/Istanbul
+  assignment-mode: ADMIN_ASSIGNMENT
+  driver-link:
+    bot-username: test_bot
+    token-ttl: 24h
+
 rental-cleaning-benefit:
   issuance-enabled: false
   issuance-cron: "0 15 4 * * *"

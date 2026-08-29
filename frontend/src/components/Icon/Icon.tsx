@@ -6,6 +6,7 @@ export type IconName =
   | "bell"
   | "building"
   | "calendar-plus"
+  | "car"
   | "camera"
   | "chart"
   | "check"
@@ -29,6 +30,10 @@ interface IconProps {
 }
 
 export function Icon({ name, size = 22, strokeWidth = 1.8 }: IconProps) {
+  if (name === "car") {
+    return <span aria-hidden="true" className="icon icon--transfer-car" style={{ width: size, height: size }} />;
+  }
+
   const common = {
     fill: "none",
     stroke: "currentColor",

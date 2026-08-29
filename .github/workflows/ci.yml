@@ -85,6 +85,8 @@ jobs:
           APP_HOST: ${{ vars.APP_HOST }}
           CLEANER_TELEGRAM_IDS: ${{ vars.CLEANER_TELEGRAM_IDS }}
           TELEGRAM_MINI_APP_LINK_BASE: ${{ vars.TELEGRAM_MINI_APP_LINK_BASE }}
+          TELEGRAM_BOT_USERNAME: ${{ vars.TELEGRAM_BOT_USERNAME || 'go_cleany_bot' }}
+          TRANSFER_ASSIGNMENT_MODE: ${{ vars.TRANSFER_ASSIGNMENT_MODE || 'ADMIN_ASSIGNMENT' }}
           GOOGLE_AUTH_ENABLED: ${{ vars.GOOGLE_AUTH_ENABLED || 'false' }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
@@ -141,6 +143,14 @@ jobs:
             echo "TELEGRAM_MINI_APP_LINK_BASE must be an https://t.me/ Mini App link." >&2
             exit 1
           }
+          [[ "$TELEGRAM_BOT_USERNAME" =~ ^[A-Za-z0-9_]{5,32}$ ]] || {
+            echo "TELEGRAM_BOT_USERNAME must be a Telegram username without @." >&2
+            exit 1
+          }
+          [[ "$TRANSFER_ASSIGNMENT_MODE" == "ADMIN_ASSIGNMENT" || "$TRANSFER_ASSIGNMENT_MODE" == "DRIVER_SELF_ACCEPT" ]] || {
+            echo "TRANSFER_ASSIGNMENT_MODE must be ADMIN_ASSIGNMENT or DRIVER_SELF_ACCEPT." >&2
+            exit 1
+          }
           for variable in \
             RENTAL_MIN_STAY_DAYS \
             RENTAL_LONG_TERM_MIN_DAYS \
@@ -176,6 +186,8 @@ jobs:
           APP_HOST: ${{ vars.APP_HOST }}
           CLEANER_TELEGRAM_IDS: ${{ vars.CLEANER_TELEGRAM_IDS }}
           TELEGRAM_MINI_APP_LINK_BASE: ${{ vars.TELEGRAM_MINI_APP_LINK_BASE }}
+          TELEGRAM_BOT_USERNAME: ${{ vars.TELEGRAM_BOT_USERNAME || 'go_cleany_bot' }}
+          TRANSFER_ASSIGNMENT_MODE: ${{ vars.TRANSFER_ASSIGNMENT_MODE || 'ADMIN_ASSIGNMENT' }}
           GOOGLE_AUTH_ENABLED: ${{ vars.GOOGLE_AUTH_ENABLED || 'false' }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
@@ -213,6 +225,8 @@ jobs:
             APP_HOST='$APP_HOST' \
             CLEANER_TELEGRAM_IDS='$CLEANER_TELEGRAM_IDS' \
             TELEGRAM_MINI_APP_LINK_BASE='$TELEGRAM_MINI_APP_LINK_BASE' \
+            TELEGRAM_BOT_USERNAME='$TELEGRAM_BOT_USERNAME' \
+            TRANSFER_ASSIGNMENT_MODE='$TRANSFER_ASSIGNMENT_MODE' \
             PUBLIC_APP_BASE_URL='https://$APP_HOST' \
             GOOGLE_AUTH_ENABLED='$GOOGLE_AUTH_ENABLED' \
             GOOGLE_CLIENT_ID=\$(printf '%s' '$google_client_id_b64' | base64 --decode) \

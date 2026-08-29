@@ -147,25 +147,141 @@
   }
 }
 
-/* Three equal cells keep Services / Cleaning / Rental visually centered. */
+/* One stable selector scales without adding another permanent header item per vertical. */
 .service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav {
   width: 100%;
+}
+
+.service-selector {
+  position: relative;
+  min-width: 0;
+}
+
+.service-selector__trigger {
+  display: flex;
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 12px;
   align-items: center;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  color: var(--color-primary-dark);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  box-shadow: var(--shadow-small);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
 }
 
-.service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav > a {
-  justify-content: center;
-  text-align: center;
+.service-selector__trigger > .icon:last-child {
+  margin-left: auto;
+  transform: rotate(90deg);
+  transition: transform 180ms ease;
 }
 
-.service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav .web-primary-nav__services {
+.service-selector__trigger[aria-expanded="true"] > .icon:last-child {
+  transform: rotate(-90deg);
+}
+
+.service-selector__trigger:hover,
+.service-selector__trigger:focus-visible,
+.service-selector__trigger[aria-expanded="true"] {
+  background: var(--color-primary-soft);
+}
+
+.service-selector__menu {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 8px);
+  left: 0;
   display: grid;
+  width: min(330px, calc(100vw - 28px));
+  padding: 10px;
+  gap: 5px;
+  color: var(--color-ink);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-medium);
+}
+
+.service-selector__menu[hidden] {
+  display: none;
+}
+
+.service-selector__menu > strong {
+  padding: 7px 9px 9px;
+  color: var(--color-muted);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.service-selector__item {
+  display: grid;
+  min-width: 0;
+  min-height: 58px;
+  padding: 8px 9px;
+  grid-template-columns: 38px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-ink);
+  border-radius: 10px;
+}
+
+.service-selector__item:hover,
+.service-selector__item:focus-visible,
+.service-selector__item.is-active {
+  background: var(--color-primary-soft);
+}
+
+.service-selector__icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  color: var(--color-primary-dark);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+}
+
+.service-selector__item > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.service-selector__item .brand-name {
+  font-size: 13px;
+}
+
+.service-selector__item small {
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.service-selector--compact .service-selector__trigger {
   width: 40px;
   min-width: 40px;
+  height: 40px;
   padding: 0;
-  place-items: center;
-  justify-self: center;
+  justify-content: center;
+}
+
+.service-selector--compact .service-selector__trigger > span,
+.service-selector--compact .service-selector__trigger > .icon:last-child {
+  display: none;
+}
+
+.service-selector--compact .service-selector__menu {
+  right: 0;
+  left: auto;
 }
 
 @media (min-width: 1100px) {
@@ -178,18 +294,11 @@
   .service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav {
     width: auto;
     justify-self: start;
-    grid-template-columns: 40px repeat(2, auto);
-    gap: 6px;
   }
 
-  .service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav > a {
-    justify-content: initial;
-    text-align: initial;
-  }
-
-  .service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav .web-primary-nav__services {
+  .service-shell[data-platform="web"][data-layout="customer"] .service-selector__trigger {
+    width: 180px;
     min-height: 42px;
-    justify-self: start;
   }
 }
 
@@ -207,6 +316,7 @@
   }
 
   .topbar__services-action,
+  .service-selector--compact .service-selector__trigger,
   .language-selector,
   .theme-switcher,
   .service-shell[data-platform="web"][data-layout="customer"] .topbar__auth-action {
@@ -220,6 +330,7 @@
   .language-selector select,
   .theme-switcher,
   .topbar__services-action,
+  .service-selector--compact .service-selector__trigger,
   .service-shell[data-platform="web"][data-layout="customer"] .topbar__auth-action {
     border-radius: 10px;
   }

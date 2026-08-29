@@ -3,7 +3,8 @@ package com.cleany.analytics;
 public enum AcquisitionTargetService {
     PLATFORM("/"),
     CLEANING("/cleaning"),
-    RENTAL("/rent");
+    RENTAL("/rent"),
+    TRANSFER("/transfer");
 
     private final String targetPath;
 

@@ -5,6 +5,7 @@ import java.time.Instant;
 public record PlatformServiceStateResponse(
         PlatformService service,
         PlatformServiceStatus status,
+        int displayOrder,
         Instant updatedAt,
         Long updatedByCustomerId,
         long version
@@ -14,6 +15,7 @@ public record PlatformServiceStateResponse(
         return new PlatformServiceStateResponse(
                 state.getService(),
                 state.getStatus(),
+                state.getDisplayOrder(),
                 state.getUpdatedAt(),
                 state.getUpdatedByCustomerId(),
                 state.getVersion()

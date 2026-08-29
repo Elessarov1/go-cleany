@@ -155,6 +155,8 @@ Repository -> Settings -> Environments -> staging
 | `APP_HOST` | `loco-place.com` |
 | `CLEANER_TELEGRAM_IDS` | `123456789,987654321` |
 | `TELEGRAM_MINI_APP_LINK_BASE` | `https://t.me/<bot>/<mini-app>` |
+| `TELEGRAM_BOT_USERNAME` | `go_cleany_bot` без `@` |
+| `TRANSFER_ASSIGNMENT_MODE` | `ADMIN_ASSIGNMENT` или `DRIVER_SELF_ACCEPT` |
 | `GOOGLE_AUTH_ENABLED` | `true` |
 | `WEB_SESSION_TIMEOUT` | `12h` |
 | `ANALYTICS_ZONE_ID` | `Europe/Istanbul` |
@@ -169,7 +171,9 @@ Repository -> Settings -> Environments -> staging
 | `RENTAL_CLEANING_MAX_DISCOUNT` | `2000` |
 
 `CLEANER_TELEGRAM_IDS` должен содержать только numeric Telegram IDs через
-запятую, без пробелов. Workflow валидирует этот формат до SSH/deploy. `TELEGRAM_MINI_APP_LINK_BASE` задаёт deep link без bot token.
+запятую, без пробелов. Workflow валидирует этот формат до SSH/deploy. `TELEGRAM_MINI_APP_LINK_BASE`
+задаёт deep link без bot token. `TELEGRAM_BOT_USERNAME` нужен для одноразовых driver-link URL, а
+`TRANSFER_ASSIGNMENT_MODE` переключает ручное назначение и атомарный self-accept.
 
 Google provider values и email allowlist хранятся именно в Environment **Secrets**, не Variables.
 При `GOOGLE_AUTH_ENABLED=true` workflow проверяет их наличие и передаёт только в runtime backend;

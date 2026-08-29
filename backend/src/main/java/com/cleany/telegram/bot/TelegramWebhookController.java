@@ -17,14 +17,14 @@ public class TelegramWebhookController {
     static final String SECRET_HEADER = "X-Telegram-Bot-Api-Secret-Token";
 
     private final TelegramWebhookSecretValidator secretValidator;
-    private final TelegramCleanerBotService cleanerBotService;
+    private final TelegramBotUpdateRouter updateRouter;
 
     public TelegramWebhookController(
             TelegramWebhookSecretValidator secretValidator,
-            TelegramCleanerBotService cleanerBotService
+            TelegramBotUpdateRouter updateRouter
     ) {
         this.secretValidator = secretValidator;
-        this.cleanerBotService = cleanerBotService;
+        this.updateRouter = updateRouter;
     }
 
     @PostMapping
@@ -33,7 +33,7 @@ public class TelegramWebhookController {
             @RequestBody TelegramUpdate update
     ) {
         secretValidator.validate(secret);
-        cleanerBotService.handle(update);
+        updateRouter.handle(update);
         return ResponseEntity.ok().build();
     }
 }

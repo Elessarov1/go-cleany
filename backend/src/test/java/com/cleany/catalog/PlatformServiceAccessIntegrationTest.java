@@ -54,6 +54,12 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
         jdbcTemplate.update("""
                 update platform_service_state
                    set status = 'ENABLED',
+                       display_order = case service
+                           when 'CLEANING' then 10
+                           when 'RENTAL' then 20
+                           when 'TRANSFER' then 30
+                           else 100
+                       end,
                        updated_at = current_timestamp,
                        updated_by_customer_id = null,
                        version = version + 1
@@ -62,11 +68,11 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void migrationSeedsBothRealServicesAsEnabled() {
+    void migrationSeedsAllRealServices() {
         var states = stateRepository.findAll();
 
         Assertions.assertAll(
-                () -> Assertions.assertEquals(2, states.size()),
+                () -> Assertions.assertEquals(3, states.size()),
                 () -> Assertions.assertEquals(
                         EnumSet.allOf(PlatformService.class),
                         states.stream()
@@ -75,7 +81,14 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
                 ),
                 () -> Assertions.assertTrue(states.stream().allMatch(
                         state -> state.getStatus() == PlatformServiceStatus.ENABLED
-                ))
+                )),
+                () -> Assertions.assertEquals(
+                        java.util.List.of(10, 20, 30),
+                        states.stream()
+                                .map(PlatformServiceState::getDisplayOrder)
+                                .sorted()
+                                .toList()
+                )
         );
     }
 
@@ -104,7 +117,12 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
                 ))
         );
 
-        cleaning.changeStatus(PlatformServiceStatus.IN_TEST, admin.customerId(), java.time.Instant.now());
+        cleaning.updateConfiguration(
+                PlatformServiceStatus.IN_TEST,
+                null,
+                admin.customerId(),
+                java.time.Instant.now()
+        );
         cleaning = stateRepository.saveAndFlush(cleaning);
         clearPlatformServiceStateCache();
         Assertions.assertAll(
@@ -118,7 +136,12 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
                 ))
         );
 
-        cleaning.changeStatus(PlatformServiceStatus.DISABLED, admin.customerId(), java.time.Instant.now());
+        cleaning.updateConfiguration(
+                PlatformServiceStatus.DISABLED,
+                null,
+                admin.customerId(),
+                java.time.Instant.now()
+        );
         stateRepository.saveAndFlush(cleaning);
         clearPlatformServiceStateCache();
         Assertions.assertAll(
@@ -171,7 +194,8 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
 
         PlatformServiceStateResponse updated = accessService.update(
                 PlatformService.CLEANING,
-                PlatformServiceStatus.DISABLED
+                PlatformServiceStatus.DISABLED,
+                null
         );
         PlatformServiceStateResponse refreshed = stateCache.get(PlatformService.CLEANING);
 
@@ -180,6 +204,44 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertEquals(PlatformServiceStatus.DISABLED, updated.status()),
                 () -> Assertions.assertEquals(PlatformServiceStatus.DISABLED, refreshed.status()),
                 () -> Assertions.assertNotSame(initial, refreshed)
+        );
+    }
+
+    @Test
+    void administratorControlsCatalogDisplayOrderWithoutChangingAvailability() {
+        CurrentCustomer admin = customer(ExternalIdentityProvider.GOOGLE, "order-admin");
+        Mockito.when(adminAccessService.requireCurrentAdmin()).thenReturn(admin.customerId());
+
+        accessService.update(PlatformService.CLEANING, null, 30);
+        accessService.update(PlatformService.RENTAL, null, 10);
+        accessService.update(PlatformService.TRANSFER, null, 20);
+
+        var expectedOrder = java.util.List.of(
+                PlatformService.RENTAL,
+                PlatformService.TRANSFER,
+                PlatformService.CLEANING
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(
+                        expectedOrder,
+                        accessService.currentCustomerCatalog().stream()
+                                .map(PlatformServiceStateResponse::service)
+                                .toList()
+                ),
+                () -> Assertions.assertEquals(
+                        expectedOrder,
+                        accessService.adminStates().stream()
+                                .map(PlatformServiceStateResponse::service)
+                                .toList()
+                ),
+                () -> Assertions.assertTrue(accessService.adminStates().stream().allMatch(
+                        state -> state.status() == PlatformServiceStatus.ENABLED
+                )),
+                () -> Assertions.assertThrows(
+                        IllegalArgumentException.class,
+                        () -> accessService.update(PlatformService.CLEANING, null, -1)
+                )
         );
     }
 

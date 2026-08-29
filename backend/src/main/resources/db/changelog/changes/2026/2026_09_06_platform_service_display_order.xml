@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260906-01" author="loco-place">
+        <comment>Add administrator-controlled display order for platform services.</comment>
+
+        <addColumn tableName="platform_service_state">
+            <column name="display_order" type="INTEGER" defaultValueNumeric="100">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <sql dbms="postgresql"><![CDATA[
+            update platform_service_state
+               set display_order = case service
+                   when 'CLEANING' then 10
+                   when 'RENTAL' then 20
+                   when 'TRANSFER' then 30
+                   else 100
+               end;
+
+            alter table platform_service_state
+                add constraint ck_platform_service_state_display_order
+                    check (display_order between 0 and 9999);
+        ]]></sql>
+
+        <dropDefaultValue tableName="platform_service_state" columnName="display_order"/>
+
+        <rollback>
+            <dropColumn tableName="platform_service_state" columnName="display_order"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

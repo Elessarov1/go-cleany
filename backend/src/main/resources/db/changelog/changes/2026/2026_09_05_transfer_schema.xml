@@ -1,0 +1,383 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260905-01" author="loco-place">
+        <comment>Create the independent Loco Transfer domain and register its platform dimensions.</comment>
+
+        <sql dbms="postgresql"><![CDATA[
+            alter table platform_service_state drop constraint ck_platform_service_state_service;
+            alter table platform_service_state
+                add constraint ck_platform_service_state_service
+                    check (service in ('CLEANING', 'RENTAL', 'TRANSFER'));
+
+            alter table acquisition_campaign drop constraint ck_acquisition_campaign_target_service;
+            alter table acquisition_campaign
+                add constraint ck_acquisition_campaign_target_service
+                    check (target_service in ('PLATFORM', 'CLEANING', 'RENTAL', 'TRANSFER'));
+
+            alter table customer_acquisition drop constraint ck_customer_acquisition_service;
+            alter table customer_acquisition
+                add constraint ck_customer_acquisition_service
+                    check (first_touch_service is null or first_touch_service in ('CLEANING', 'RENTAL', 'TRANSFER'));
+        ]]></sql>
+
+        <insert tableName="platform_service_state">
+            <column name="service" value="TRANSFER"/>
+            <column name="status" value="IN_TEST"/>
+            <column name="updated_at" valueComputed="CURRENT_TIMESTAMP"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+
+        <createTable tableName="transfer_airport">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_transfer_airport" nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(8)"><constraints nullable="false"/></column>
+            <column name="name_ru" type="VARCHAR(255)"><constraints nullable="false"/></column>
+            <column name="name_en" type="VARCHAR(255)"><constraints nullable="false"/></column>
+            <column name="enabled" type="BOOLEAN"><constraints nullable="false"/></column>
+            <column name="sort_order" type="INTEGER"><constraints nullable="false"/></column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0"><constraints nullable="false"/></column>
+        </createTable>
+        <addUniqueConstraint tableName="transfer_airport" columnNames="code"
+                             constraintName="uk_transfer_airport_code"/>
+        <createIndex tableName="transfer_airport" indexName="idx_transfer_airport_enabled_order">
+            <column name="enabled"/>
+            <column name="sort_order"/>
+            <column name="id"/>
+        </createIndex>
+
+        <createTable tableName="transfer_vehicle_type">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_transfer_vehicle_type" nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="name_ru" type="VARCHAR(255)"><constraints nullable="false"/></column>
+            <column name="name_en" type="VARCHAR(255)"><constraints nullable="false"/></column>
+            <column name="max_passengers" type="INTEGER"><constraints nullable="false"/></column>
+            <column name="max_luggage" type="INTEGER"><constraints nullable="false"/></column>
+            <column name="enabled" type="BOOLEAN"><constraints nullable="false"/></column>
+            <column name="sort_order" type="INTEGER"><constraints nullable="false"/></column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0"><constraints nullable="false"/></column>
+        </createTable>
+        <addUniqueConstraint tableName="transfer_vehicle_type" columnNames="code"
+                             constraintName="uk_transfer_vehicle_type_code"/>
+        <createIndex tableName="transfer_vehicle_type" indexName="idx_transfer_vehicle_enabled_order">
+            <column name="enabled"/>
+            <column name="sort_order"/>
+            <column name="id"/>
+        </createIndex>
+
+        <createTable tableName="transfer_price">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_transfer_price" nullable="false"/>
+            </column>
+            <column name="airport_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="vehicle_type_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="direction" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="amount" type="NUMERIC(12,2)"><constraints nullable="false"/></column>
+            <column name="currency" type="VARCHAR(3)"><constraints nullable="false"/></column>
+            <column name="enabled" type="BOOLEAN"><constraints nullable="false"/></column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="transfer_price" baseColumnNames="airport_id"
+                                 constraintName="fk_transfer_price_airport"
+                                 referencedTableName="transfer_airport" referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+        <addForeignKeyConstraint baseTableName="transfer_price" baseColumnNames="vehicle_type_id"
+                                 constraintName="fk_transfer_price_vehicle"
+                                 referencedTableName="transfer_vehicle_type" referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+        <addUniqueConstraint tableName="transfer_price"
+                             columnNames="airport_id,vehicle_type_id,direction"
+                             constraintName="uk_transfer_price_route_vehicle"/>
+        <createIndex tableName="transfer_price" indexName="idx_transfer_price_enabled_route">
+            <column name="enabled"/>
+            <column name="airport_id"/>
+            <column name="vehicle_type_id"/>
+            <column name="direction"/>
+        </createIndex>
+
+        <createTable tableName="transfer_driver">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_transfer_driver" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)"><constraints nullable="false"/></column>
+            <column name="phone" type="VARCHAR(40)"><constraints nullable="false"/></column>
+            <column name="enabled" type="BOOLEAN"><constraints nullable="false"/></column>
+            <column name="configured_telegram_user_id" type="BIGINT"/>
+            <column name="verified_telegram_user_id" type="BIGINT"/>
+            <column name="telegram_chat_id" type="BIGINT"/>
+            <column name="telegram_notifications_enabled" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="telegram_bot_authorized_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="version" type="BIGINT" defaultValueNumeric="0"><constraints nullable="false"/></column>
+        </createTable>
+        <addUniqueConstraint tableName="transfer_driver" columnNames="configured_telegram_user_id"
+                             constraintName="uk_transfer_driver_configured_telegram"/>
+        <addUniqueConstraint tableName="transfer_driver" columnNames="verified_telegram_user_id"
+                             constraintName="uk_transfer_driver_verified_telegram"/>
+        <createIndex tableName="transfer_driver" indexName="idx_transfer_driver_enabled">
+            <column name="enabled"/>
+            <column name="id"/>
+        </createIndex>
+
+        <createTable tableName="transfer_driver_link_token">
+            <column name="token_hash" type="VARCHAR(64)">
+                <constraints primaryKey="true" primaryKeyName="pk_transfer_driver_link_token" nullable="false"/>
+            </column>
+            <column name="driver_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="expires_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="consumed_at" type="TIMESTAMP WITH TIME ZONE"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="transfer_driver_link_token" baseColumnNames="driver_id"
+                                 constraintName="fk_transfer_driver_link_token_driver"
+                                 referencedTableName="transfer_driver" referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="transfer_driver_link_token" indexName="idx_transfer_driver_link_token_driver">
+            <column name="driver_id"/>
+            <column name="consumed_at"/>
+            <column name="expires_at"/>
+        </createIndex>
+
+        <createTable tableName="transfer_booking">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_transfer_booking" nullable="false"/>
+            </column>
+            <column name="customer_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="communication_identity_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="customer_name_snapshot" type="VARCHAR(255)"><constraints nullable="false"/></column>
+            <column name="customer_phone_snapshot" type="VARCHAR(40)"><constraints nullable="false"/></column>
+            <column name="direction" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="airport_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="airport_code_snapshot" type="VARCHAR(8)"><constraints nullable="false"/></column>
+            <column name="airport_name_ru_snapshot" type="VARCHAR(255)"><constraints nullable="false"/></column>
+            <column name="airport_name_en_snapshot" type="VARCHAR(255)"><constraints nullable="false"/></column>
+            <column name="vehicle_type_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="vehicle_code_snapshot" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="vehicle_name_ru_snapshot" type="VARCHAR(255)"><constraints nullable="false"/></column>
+            <column name="vehicle_name_en_snapshot" type="VARCHAR(255)"><constraints nullable="false"/></column>
+            <column name="pickup_date" type="DATE"><constraints nullable="false"/></column>
+            <column name="pickup_time" type="TIME"><constraints nullable="false"/></column>
+            <column name="address" type="VARCHAR(1000)"><constraints nullable="false"/></column>
+            <column name="passenger_count" type="INTEGER"><constraints nullable="false"/></column>
+            <column name="luggage_count" type="INTEGER"><constraints nullable="false"/></column>
+            <column name="flight_number" type="VARCHAR(64)"/>
+            <column name="scheduled_arrival_time" type="TIME"/>
+            <column name="comment" type="VARCHAR(1000)"/>
+            <column name="price_amount" type="NUMERIC(12,2)"><constraints nullable="false"/></column>
+            <column name="price_currency" type="VARCHAR(3)"><constraints nullable="false"/></column>
+            <column name="status" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="driver_id" type="BIGINT"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="confirmed_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="completed_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="cancelled_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="rejected_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="status_reason" type="VARCHAR(1000)"/>
+            <column name="version" type="BIGINT" defaultValueNumeric="0"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="transfer_booking" baseColumnNames="customer_id"
+                                 constraintName="fk_transfer_booking_customer"
+                                 referencedTableName="customer_account" referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+        <addForeignKeyConstraint baseTableName="transfer_booking"
+                                 baseColumnNames="communication_identity_id,customer_id"
+                                 constraintName="fk_transfer_booking_communication_identity"
+                                 referencedTableName="customer_external_identity"
+                                 referencedColumnNames="id,customer_id" onDelete="RESTRICT"/>
+        <addForeignKeyConstraint baseTableName="transfer_booking" baseColumnNames="airport_id"
+                                 constraintName="fk_transfer_booking_airport"
+                                 referencedTableName="transfer_airport" referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+        <addForeignKeyConstraint baseTableName="transfer_booking" baseColumnNames="vehicle_type_id"
+                                 constraintName="fk_transfer_booking_vehicle"
+                                 referencedTableName="transfer_vehicle_type" referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+        <addForeignKeyConstraint baseTableName="transfer_booking" baseColumnNames="driver_id"
+                                 constraintName="fk_transfer_booking_driver"
+                                 referencedTableName="transfer_driver" referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+        <createIndex tableName="transfer_booking" indexName="idx_transfer_booking_customer_created">
+            <column name="customer_id"/>
+            <column name="created_at" descending="true"/>
+            <column name="id" descending="true"/>
+        </createIndex>
+        <createIndex tableName="transfer_booking" indexName="idx_transfer_booking_status_pickup">
+            <column name="status"/>
+            <column name="pickup_date"/>
+            <column name="pickup_time"/>
+        </createIndex>
+        <createIndex tableName="transfer_booking" indexName="idx_transfer_booking_driver_pickup">
+            <column name="driver_id"/>
+            <column name="pickup_date"/>
+            <column name="pickup_time"/>
+        </createIndex>
+        <createIndex tableName="transfer_booking" indexName="idx_transfer_booking_customer_status_completed">
+            <column name="customer_id"/>
+            <column name="status"/>
+            <column name="completed_at"/>
+        </createIndex>
+
+        <sql dbms="postgresql"><![CDATA[
+            alter table transfer_airport
+                add constraint ck_transfer_airport_code check (code ~ '^[A-Z0-9]{3,8}$'),
+                add constraint ck_transfer_airport_sort_order check (sort_order >= 0);
+
+            alter table transfer_vehicle_type
+                add constraint ck_transfer_vehicle_code check (code ~ '^[A-Z0-9_]{2,32}$'),
+                add constraint ck_transfer_vehicle_capacity check (
+                    max_passengers >= 1 and max_luggage >= 0
+                ),
+                add constraint ck_transfer_vehicle_sort_order check (sort_order >= 0);
+
+            alter table transfer_price
+                add constraint ck_transfer_price_direction check (
+                    direction in ('TO_AIRPORT', 'FROM_AIRPORT')
+                ),
+                add constraint ck_transfer_price_amount check (amount > 0),
+                add constraint ck_transfer_price_currency check (currency ~ '^[A-Z]{3}$');
+
+            alter table transfer_driver
+                add constraint ck_transfer_driver_telegram_ids check (
+                    (configured_telegram_user_id is null or configured_telegram_user_id > 0)
+                    and (verified_telegram_user_id is null or verified_telegram_user_id > 0)
+                    and (telegram_chat_id is null or telegram_chat_id > 0)
+                ),
+                add constraint ck_transfer_driver_telegram_state check (
+                    (
+                        verified_telegram_user_id is null
+                        and telegram_chat_id is null
+                        and telegram_bot_authorized_at is null
+                        and not telegram_notifications_enabled
+                    )
+                    or (
+                        configured_telegram_user_id = verified_telegram_user_id
+                        and verified_telegram_user_id is not null
+                        and telegram_chat_id is not null
+                        and telegram_bot_authorized_at is not null
+                    )
+                );
+
+            alter table transfer_driver_link_token
+                add constraint ck_transfer_driver_link_token_expiry check (expires_at > created_at),
+                add constraint ck_transfer_driver_link_token_consumed check (
+                    consumed_at is null or consumed_at >= created_at
+                );
+
+            alter table transfer_booking
+                add constraint ck_transfer_booking_direction check (
+                    direction in ('TO_AIRPORT', 'FROM_AIRPORT')
+                ),
+                add constraint ck_transfer_booking_capacity check (
+                    passenger_count >= 1 and luggage_count >= 0
+                ),
+                add constraint ck_transfer_booking_flight check (
+                    direction <> 'FROM_AIRPORT'
+                    or (flight_number is not null and scheduled_arrival_time is not null)
+                ),
+                add constraint ck_transfer_booking_price check (price_amount > 0),
+                add constraint ck_transfer_booking_currency check (price_currency ~ '^[A-Z]{3}$'),
+                add constraint ck_transfer_booking_status check (
+                    status in ('REQUESTED', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'REJECTED')
+                ),
+                add constraint ck_transfer_booking_state_timestamps check (
+                    (status = 'REQUESTED' and driver_id is null and confirmed_at is null
+                        and completed_at is null and cancelled_at is null and rejected_at is null)
+                    or (status = 'CONFIRMED' and driver_id is not null and confirmed_at is not null
+                        and completed_at is null and cancelled_at is null and rejected_at is null)
+                    or (status = 'COMPLETED' and driver_id is not null and confirmed_at is not null
+                        and completed_at is not null and cancelled_at is null and rejected_at is null)
+                    or (status = 'CANCELLED' and completed_at is null and cancelled_at is not null
+                        and rejected_at is null)
+                    or (status = 'REJECTED' and driver_id is null and confirmed_at is null
+                        and completed_at is null and cancelled_at is null and rejected_at is not null)
+                );
+        ]]></sql>
+
+        <insert tableName="transfer_airport">
+            <column name="code" value="GZP"/>
+            <column name="name_ru" value="Аэропорт Газипаша"/>
+            <column name="name_en" value="Alanya Gazipaşa Airport"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="sort_order" valueNumeric="10"/>
+            <column name="created_at" valueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" valueComputed="CURRENT_TIMESTAMP"/>
+        </insert>
+        <insert tableName="transfer_airport">
+            <column name="code" value="AYT"/>
+            <column name="name_ru" value="Аэропорт Анталья"/>
+            <column name="name_en" value="Antalya Airport"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="sort_order" valueNumeric="20"/>
+            <column name="created_at" valueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" valueComputed="CURRENT_TIMESTAMP"/>
+        </insert>
+        <insert tableName="transfer_vehicle_type">
+            <column name="code" value="SEDAN"/>
+            <column name="name_ru" value="Седан"/>
+            <column name="name_en" value="Sedan"/>
+            <column name="max_passengers" valueNumeric="3"/>
+            <column name="max_luggage" valueNumeric="3"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="sort_order" valueNumeric="10"/>
+            <column name="created_at" valueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" valueComputed="CURRENT_TIMESTAMP"/>
+        </insert>
+        <insert tableName="transfer_vehicle_type">
+            <column name="code" value="MINIVAN"/>
+            <column name="name_ru" value="Минивэн"/>
+            <column name="name_en" value="Minivan"/>
+            <column name="max_passengers" valueNumeric="6"/>
+            <column name="max_luggage" valueNumeric="6"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="sort_order" valueNumeric="20"/>
+            <column name="created_at" valueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" valueComputed="CURRENT_TIMESTAMP"/>
+        </insert>
+
+        <dropDefaultValue tableName="transfer_airport" columnName="version"/>
+        <dropDefaultValue tableName="transfer_vehicle_type" columnName="version"/>
+        <dropDefaultValue tableName="transfer_price" columnName="version"/>
+        <dropDefaultValue tableName="transfer_driver" columnName="version"/>
+        <dropDefaultValue tableName="transfer_booking" columnName="version"/>
+
+        <rollback>
+            <dropTable tableName="transfer_booking"/>
+            <dropTable tableName="transfer_price"/>
+            <dropTable tableName="transfer_driver_link_token"/>
+            <dropTable tableName="transfer_driver"/>
+            <dropTable tableName="transfer_vehicle_type"/>
+            <dropTable tableName="transfer_airport"/>
+            <delete tableName="platform_service_state"><where>service = 'TRANSFER'</where></delete>
+            <sql dbms="postgresql"><![CDATA[
+                alter table platform_service_state drop constraint ck_platform_service_state_service;
+                alter table platform_service_state
+                    add constraint ck_platform_service_state_service
+                        check (service in ('CLEANING', 'RENTAL'));
+                alter table acquisition_campaign drop constraint ck_acquisition_campaign_target_service;
+                alter table acquisition_campaign
+                    add constraint ck_acquisition_campaign_target_service
+                        check (target_service in ('PLATFORM', 'CLEANING', 'RENTAL'));
+                alter table customer_acquisition drop constraint ck_customer_acquisition_service;
+                alter table customer_acquisition
+                    add constraint ck_customer_acquisition_service
+                        check (first_touch_service is null or first_touch_service in ('CLEANING', 'RENTAL'));
+            ]]></sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

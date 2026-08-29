@@ -54,6 +54,25 @@
   gap: 5px;
 }
 
+.service-shell[data-service="transfer"] {
+  --color-canvas: oklch(0.9195 0.0169 88.003);
+  --color-surface: oklch(0.953 0.0156 86.4257);
+  --color-surface-strong: oklch(0.9169 0.0175 99.616);
+  --color-ink: oklch(0.235 0 0);
+  --color-muted: oklch(0.4688 0.0136 84.5932);
+  --color-line: oklch(0.8434 0.0231 87.1621);
+  --color-primary: oklch(0.3012 0 0);
+  --color-primary-dark: oklch(0.235 0 0);
+  --color-primary-soft: oklch(0.8647 0.0201 87.5232);
+  --color-accent: oklch(0.3012 0 0);
+  --color-accent-soft: oklch(0.9169 0.0175 99.616);
+  --shadow-small: 0 4px 10px hsl(0 0% 0% / 0.1);
+  --shadow-medium: 0 4px 10px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+  --radius-small: 8px;
+  --radius-medium: 10px;
+  --radius-large: 12px;
+}
+
 :root[data-theme="dark"] {
   color-scheme: dark;
   --color-canvas: #0d171c;
@@ -103,6 +122,26 @@
   --color-accent-soft: color-mix(in srgb, var(--color-accent) 17%, var(--color-surface-strong));
   --shadow-small: 0 4px 14px rgb(0 0 0 / 22%);
   --shadow-medium: 0 18px 46px rgb(0 0 0 / 32%);
+}
+
+:root[data-theme="dark"] .service-shell[data-service="transfer"] {
+  --color-canvas: oklch(0.1913 0 0);
+  --color-surface: oklch(0.2264 0 0);
+  --color-surface-strong: oklch(0.252 0 0);
+  --color-ink: oklch(0.9173 0.0133 82.4015);
+  --color-muted: oklch(0.6348 0.0113 81.7875);
+  --color-line: oklch(0.2931 0 0);
+  --color-primary: oklch(0.852 0.0205 100.6306);
+  --color-primary-dark: oklch(0.9173 0.0133 82.4015);
+  --color-primary-soft: oklch(0.3329 0 0);
+  --color-accent: oklch(0.852 0.0205 100.6306);
+  --color-accent-soft: oklch(0.285 0 0);
+  --shadow-small: 0 6px 15px hsl(0 0% 0% / 0.3);
+  --shadow-medium: 0 6px 15px hsl(0 0% 0% / 0.3), 0 4px 6px -1px hsl(0 0% 0% / 0.3);
+}
+
+:root[data-theme="dark"] .service-shell[data-service="transfer"] .button--primary {
+  color: oklch(0.3329 0 0);
 }
 
 :root[data-theme="dark"] .service-shell,
@@ -156,6 +195,16 @@
   border-color: var(--color-line);
 }
 
+:root[data-theme="dark"] .service-shell[data-service="platform"] .service-card--transfer {
+  color: var(--color-ink);
+  background: linear-gradient(
+    145deg,
+    var(--color-surface-strong),
+    color-mix(in oklch, #d8cfb7 10%, var(--color-surface-strong))
+  );
+  border-color: var(--color-line);
+}
+
 :root[data-theme="dark"] .service-shell[data-service="cleaning"] .cleaning-card.is-selected {
   background: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface-strong));
 }
@@ -191,6 +240,16 @@
 ) {
   background-color: var(--color-surface-strong);
   border-color: var(--color-line);
+}
+
+:root[data-theme="dark"] .service-shell[data-service="cleaning"] .payment-note {
+  color: var(--color-ink);
+  background: var(--color-primary-soft);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 34%, var(--color-line));
+}
+
+:root[data-theme="dark"] .service-shell[data-service="cleaning"] .payment-note > span {
+  color: var(--color-primary-dark);
 }
 
 :root[data-theme="dark"] .service-shell .button--secondary,

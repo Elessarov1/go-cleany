@@ -26,6 +26,12 @@ import { TelegramAccountLinkPage } from "../pages/TelegramAccountLinkPage/Telegr
 import { NotificationsPage } from "../pages/NotificationsPage/NotificationsPage";
 import { AdminAnalyticsPage } from "../pages/AdminAnalyticsPage/AdminAnalyticsPage";
 import { LegalPage } from "../pages/LegalPage/LegalPage";
+import { TransferPage } from "../pages/TransferPage/TransferPage";
+import { TransferBookingsPage } from "../pages/TransferBookingsPage/TransferBookingsPage";
+import { TransferBookingDetailsPage } from "../pages/TransferBookingDetailsPage/TransferBookingDetailsPage";
+import { AdminTransferBookingsPage } from "../pages/AdminTransferBookingsPage/AdminTransferBookingsPage";
+import { AdminTransferBookingPage } from "../pages/AdminTransferBookingPage/AdminTransferBookingPage";
+import { AdminTransferConfigurationPage } from "../pages/AdminTransferConfigurationPage/AdminTransferConfigurationPage";
 
 function LegacyCleaningOrderRedirect({ created = false }: { created?: boolean }) {
   const { id } = useParams();
@@ -53,6 +59,9 @@ export const router = createBrowserRouter([
           { path: "/cleaning/orders/:id/created", element: <OrderCreatedPage /> },
           { path: "/rent/bookings", element: <RentalBookingsPage /> },
           { path: "/rent/bookings/:id", element: <RentalBookingDetailsPage /> },
+          { path: "/transfer", element: <ServiceAvailabilityGate service="TRANSFER"><TransferPage /></ServiceAvailabilityGate> },
+          { path: "/transfer/bookings", element: <TransferBookingsPage /> },
+          { path: "/transfer/bookings/:id", element: <TransferBookingDetailsPage /> },
           { path: "/account", element: <AccountPage /> },
           { path: "/account/link/telegram", element: <TelegramAccountLinkPage /> },
           { path: "/notifications", element: <NotificationsPage /> },
@@ -78,6 +87,10 @@ export const router = createBrowserRouter([
           { path: "rent/properties/:id/calendar", element: <AdminRentalCalendarPage /> },
           { path: "rent/bookings", element: <AdminRentalBookingsPage /> },
           { path: "rent/bookings/:id", element: <AdminRentalBookingPage /> },
+          { path: "transfer", element: <Navigate replace to="/admin/transfer/bookings" /> },
+          { path: "transfer/bookings", element: <AdminTransferBookingsPage /> },
+          { path: "transfer/bookings/:id", element: <AdminTransferBookingPage /> },
+          { path: "transfer/configuration", element: <AdminTransferConfigurationPage /> },
           { path: "orders/:id", element: <LegacyAdminOrderRedirect /> },
         ],
       },

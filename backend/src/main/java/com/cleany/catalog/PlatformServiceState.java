@@ -36,6 +36,9 @@ public class PlatformServiceState {
     @Column(name = "updated_by_customer_id")
     private Long updatedByCustomerId;
 
+    @Column(name = "display_order", nullable = false)
+    private int displayOrder;
+
     @Version
     @Column(name = "version", nullable = false)
     private long version;
@@ -43,23 +46,41 @@ public class PlatformServiceState {
     public PlatformServiceState(
             PlatformService service,
             PlatformServiceStatus status,
-            Instant updatedAt
+            Instant updatedAt,
+            int displayOrder
     ) {
         this.service = Objects.requireNonNull(service, "service");
         this.status = Objects.requireNonNull(status, "status");
         this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt");
+        this.displayOrder = requireValidDisplayOrder(displayOrder);
     }
 
-    public void changeStatus(
+    public void updateConfiguration(
             PlatformServiceStatus status,
+            Integer displayOrder,
             long updatedByCustomerId,
             Instant updatedAt
     ) {
         if (updatedByCustomerId <= 0) {
             throw new IllegalArgumentException("updatedByCustomerId must be positive");
         }
-        this.status = Objects.requireNonNull(status, "status");
+        if (status == null && displayOrder == null) {
+            throw new IllegalArgumentException("At least one platform service setting must be provided");
+        }
+        if (status != null) {
+            this.status = status;
+        }
+        if (displayOrder != null) {
+            this.displayOrder = requireValidDisplayOrder(displayOrder);
+        }
         this.updatedByCustomerId = updatedByCustomerId;
         this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt");
+    }
+
+    private static int requireValidDisplayOrder(int displayOrder) {
+        if (displayOrder < 0 || displayOrder > 9999) {
+            throw new IllegalArgumentException("displayOrder must be between 0 and 9999");
+        }
+        return displayOrder;
     }
 }

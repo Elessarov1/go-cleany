@@ -8,6 +8,10 @@
       "orders": "Orders",
       "apartments": "Apartments",
       "bookings": "Bookings",
+      "transfer": "Book",
+      "transfers": "Transfers",
+      "transferSettings": "Transfer settings",
+      "settings": "Settings",
       "analytics": "Analytics",
       "admin": "Admin",
       "main": "Home",
@@ -339,6 +343,8 @@
     "title": "Service administration",
     "subtitle": "Choose a vertical. Each service keeps its own data and workflows.",
     "statusLabel": "Customer availability",
+    "displayOrderLabel": "Order",
+    "displayOrderHint": "A smaller number displays the service earlier.",
     "status": {
       "ENABLED": "Enabled",
       "IN_TEST": "In test",
@@ -353,12 +359,97 @@
     "rent": "Rental administration",
     "rentText": "Properties, occupancy and bookings",
     "cleaning": "Cleaning administration",
-    "cleaningText": "Orders, photo reports and partners"
+    "cleaningText": "Orders, photo reports and partners",
+    "transfer": "Transfer administration",
+    "transferText": "Routes, rates, drivers and requests"
+  },
+  "adminTransfer": {
+    "save": "Save",
+    "add": "Add",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "order": "Order",
+    "advanced": "Advanced settings",
+    "sortOrder": "Display order",
+    "sortOrderHint": "A smaller number places the item higher in the list.",
+    "nameRu": "Russian name",
+    "nameEn": "English name",
+    "configuration": {
+      "title": "Loco Transfer settings",
+      "subtitle": "Routes, vehicles, fixed rates, and drivers.",
+      "open": "Settings",
+      "loadError": "We could not load transfer settings.",
+      "saveError": "We could not save the changes. Check the values."
+    },
+    "airports": {
+      "title": "Airports",
+      "text": "Customers see only enabled airports with an active rate.",
+      "new": "Add an airport",
+      "add": "Add airport",
+      "code": "Airport code",
+      "codeHint": "A short international code such as GZP or AYT."
+    },
+    "vehicles": {
+      "title": "Vehicle classes",
+      "text": "Capacity is validated by the server when a request is created.",
+      "new": "Add a vehicle class",
+      "add": "Add vehicle class",
+      "code": "Internal code",
+      "codeHint": "A short Latin identifier such as SUV.",
+      "maxPassengers": "Maximum passengers",
+      "maxPassengersHint": "The number of passengers accepted for one ride.",
+      "maxLuggage": "Maximum luggage items",
+      "maxLuggageHint": "The number of suitcases that fit in the vehicle."
+    },
+    "prices": {
+      "title": "Rate matrix",
+      "text": "Set a separate price for each airport, vehicle, and direction.",
+      "amount": "Ride price",
+      "amountHint": "The fixed amount shown to the customer.",
+      "currency": "Currency"
+    },
+    "drivers": {
+      "title": "Drivers",
+      "text": "Telegram is optional for manual administrator assignment.",
+      "new": "New driver",
+      "add": "Add driver",
+      "name": "Name",
+      "phone": "Phone",
+      "telegramId": "Telegram User ID (not username)",
+      "telegramHint": "Optional. After saving, the driver must still open their personal link and confirm the connection in the bot.",
+      "createLink": "Create and copy link",
+      "linkHint": "Save the driver's Telegram ID first.",
+      "linkReady": "Link ready. Open in Telegram",
+      "linkError": "Could not create the link. Save the Telegram ID first.",
+      "telegram": { "NOT_CONFIGURED": "Telegram not configured", "AWAITING_AUTHORIZATION": "Awaiting bot authorization", "CONNECTED": "Telegram connected" }
+    },
+    "bookings": {
+      "title": "Transfer requests",
+      "subtitle": "Assign drivers and manage ride status.",
+      "open": "Requests",
+      "status": "Status",
+      "date": "Pickup date",
+      "all": "All statuses",
+      "empty": "No requests match these filters",
+      "loadError": "We could not load transfer requests."
+    },
+    "booking": {
+      "title": "Transfer request",
+      "customer": "Customer",
+      "driver": "Driver",
+      "assign": "Assign and confirm",
+      "reason": "Cancellation or rejection reason",
+      "reject": "Reject",
+      "cancel": "Cancel",
+      "complete": "Complete",
+      "loadError": "We could not load the request.",
+      "actionError": "The action failed: the request may have changed or the ride has not started yet."
+    }
   },
   "analytics": {
     "eyebrow": "platform analytics",
     "title": "Loco Place analytics",
-    "subtitle": "Customer acquisition and key Cleaning and Rental metrics in one place.",
+    "subtitle": "Customer acquisition and key metrics for every Loco Place service in one place.",
     "entrySubtitle": "Acquisition channels, repeat customers and average checks",
     "loadError": "Analytics for the selected period could not be loaded.",
     "summaryLabel": "Key metrics",
@@ -375,12 +466,13 @@
       "from": "From",
       "to": "To"
     },
-    "services": { "ALL": "All services", "CLEANING": "Cleaning", "RENTAL": "Rental" },
+    "services": { "ALL": "All services", "CLEANING": "Cleaning", "RENTAL": "Rental", "TRANSFER": "Transfer" },
     "metrics": {
       "newCustomers": "New customers",
       "repeatCustomers": "Repeat customers",
       "cleaningAverage": "Cleaning average check",
-      "rentalAverage": "Rental average check"
+      "rentalAverage": "Rental average check",
+      "transferAverage": "Transfer average check"
     },
     "acquisition": {
       "title": "Acquisition channels",
@@ -597,6 +689,10 @@
       "title": "Order cleaning",
       "text": "Clear fixed pricing and a completion photo report"
     },
+    "transfer": {
+      "title": "Book a transfer",
+      "text": "A fixed-price ride between Alanya and the airport"
+    },
     "note": "One profile, different services. Your contacts and history stay close."
   },
   "rental": {
@@ -763,6 +859,75 @@
       "COMPLETED": "Completed"
     }
   },
+  "transfer": {
+    "title": "Airport transfers without unnecessary calls",
+    "subtitle": "Choose the route and vehicle class. We will review the request, assign a driver, and confirm the ride.",
+    "loadError": "We could not load the available routes.",
+    "unavailableTitle": "Rates are not open yet",
+    "unavailableText": "The administrator is preparing routes and prices. The service will appear here after configuration.",
+    "route": { "title": "Route", "direction": "Direction", "airport": "Airport" },
+    "direction": { "TO_AIRPORT": "To the airport", "FROM_AIRPORT": "From the airport" },
+    "vehicle": {
+      "title": "Vehicle class",
+      "capacity": "Up to {{passengers}} passengers · up to {{luggage}} luggage",
+      "unavailable": "There is no active rate for this route yet."
+    },
+    "details": {
+      "title": "Ride details",
+      "date": "Pickup date",
+      "time": "Pickup time",
+      "pickupAddress": "Pickup address in Alanya",
+      "destinationAddress": "Destination address in Alanya",
+      "addressPlaceholder": "Area, street, building, or residence name",
+      "passengers": "Passengers",
+      "luggage": "Luggage",
+      "flight": "Flight number",
+      "arrivalTime": "Scheduled arrival time",
+      "phone": "Phone number",
+      "comment": "Comment"
+    },
+    "summary": {
+      "fixedPrice": "Fixed price",
+      "requested": "After submission, the request will await confirmation. No online payment is charged."
+    },
+    "submit": "Send request",
+    "submitting": "Sending…",
+    "submitError": "We could not create the request. Check the details and try again.",
+    "status": {
+      "REQUESTED": "Awaiting confirmation",
+      "CONFIRMED": "Confirmed",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "REJECTED": "Rejected"
+    },
+    "bookings": {
+      "title": "My transfers",
+      "subtitle": "All requests and confirmed rides in one place.",
+      "emptyTitle": "No transfers yet",
+      "emptyText": "Choose an airport, vehicle, and pickup time. Your request will appear here.",
+      "emptyAction": "Book a transfer",
+      "loadError": "We could not load your transfers."
+    },
+    "booking": {
+      "title": "Transfer details",
+      "loadError": "We could not find this transfer.",
+      "direction": "Direction",
+      "airport": "Airport",
+      "dateTime": "Date and time",
+      "vehicle": "Vehicle",
+      "address": "Address",
+      "passengers": "Passengers",
+      "luggage": "Luggage",
+      "flight": "Flight and arrival time",
+      "phone": "Phone",
+      "price": "Price",
+      "driver": "Driver",
+      "comment": "Comment",
+      "reason": "Reason",
+      "requestNote": "The request is confirmed after a driver has been assigned.",
+      "cancel": "Cancel request"
+    }
+  },
   "account": {
     "title": "Account",
     "subtitle": "Manage sign-in methods and optional notification channels.",
@@ -806,6 +971,12 @@
       "CLEANING_ONSITE_ISSUE_REPORTED": "Your order is paused while the issue is reviewed",
       "RENTAL_BOOKING_CONFIRMED": "Your booking was confirmed",
       "RENTAL_BOOKING_CANCELLED": "Your booking was cancelled",
+      "TRANSFER_REQUESTED": "Your transfer request was received",
+      "TRANSFER_CONFIRMED": "Your transfer was confirmed",
+      "TRANSFER_REJECTED": "Your transfer request was rejected",
+      "TRANSFER_CANCELLED": "Your transfer was cancelled",
+      "TRANSFER_COMPLETED": "Your transfer was completed",
+      "TRANSFER_ADMIN_REQUESTED": "New transfer request",
       "REFERRAL_UNLOCKED": "Your referral code is available",
       "RENTAL_CLEANING_BENEFIT_AVAILABLE": "Your pre-checkout cleaning discount is available"
     }
@@ -818,6 +989,8 @@
     "rentPage": "Apartment rentals | Loco Rent",
     "cleaning": "Loco Cleaning — apartment cleaning in Alanya | Loco Place",
     "cleaningPage": "Orders and cleaning | Loco Cleaning",
+    "transfer": "Loco Transfer — Alanya airport transfers | Loco Place",
+    "transferPage": "Requests and rides | Loco Transfer",
     "account": "Account | Loco Place",
     "notifications": "Notifications | Loco Place",
     "admin": "Admin | Loco Place",

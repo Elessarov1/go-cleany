@@ -61,6 +61,13 @@ import com.cleany.customer.AccountLinkTokenExpiredException;
 import com.cleany.customer.AccountLinkTokenInvalidException;
 import com.cleany.customer.TelegramIdentityNotLinkedException;
 import com.cleany.notification.CustomerNotificationNotFoundException;
+import com.cleany.transfer.InvalidTransferBookingException;
+import com.cleany.transfer.TransferBookingNotFoundException;
+import com.cleany.transfer.TransferBookingStateException;
+import com.cleany.transfer.TransferConfigurationUnavailableException;
+import com.cleany.transfer.TransferConfigurationNotFoundException;
+import com.cleany.transfer.TransferAssignmentConflictException;
+import com.cleany.transfer.TransferDriverLinkException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -433,6 +440,58 @@ public class GlobalExceptionHandler {
                 "The requested service is not currently available",
                 Collections.emptyMap()
         );
+    }
+
+    @ExceptionHandler(TransferBookingNotFoundException.class)
+    ResponseEntity<ApiError> handleTransferBookingNotFound(
+            TransferBookingNotFoundException exception
+    ) {
+        return response(
+                HttpStatus.NOT_FOUND,
+                "transfer_booking_not_found",
+                exception.getMessage(),
+                Collections.emptyMap()
+        );
+    }
+
+    @ExceptionHandler(TransferConfigurationNotFoundException.class)
+    ResponseEntity<ApiError> handleTransferConfigurationNotFound(
+            TransferConfigurationNotFoundException exception
+    ) {
+        return response(
+                HttpStatus.NOT_FOUND,
+                "transfer_configuration_not_found",
+                exception.getMessage(),
+                Collections.emptyMap()
+        );
+    }
+
+    @ExceptionHandler(InvalidTransferBookingException.class)
+    ResponseEntity<ApiError> handleInvalidTransferBooking(
+            InvalidTransferBookingException exception
+    ) {
+        return response(
+                HttpStatus.BAD_REQUEST,
+                "invalid_transfer_booking",
+                exception.getMessage(),
+                Collections.emptyMap()
+        );
+    }
+
+    @ExceptionHandler({
+            TransferBookingStateException.class,
+            TransferConfigurationUnavailableException.class,
+            TransferAssignmentConflictException.class,
+            TransferDriverLinkException.class
+    })
+    ResponseEntity<ApiError> handleTransferConflict(RuntimeException exception) {
+        String code = switch (exception) {
+            case TransferBookingStateException ignored -> "transfer_booking_state_conflict";
+            case TransferAssignmentConflictException ignored -> "transfer_assignment_conflict";
+            case TransferDriverLinkException ignored -> "transfer_driver_link_conflict";
+            default -> "transfer_configuration_unavailable";
+        };
+        return response(HttpStatus.CONFLICT, code, exception.getMessage(), Collections.emptyMap());
     }
 
     @ExceptionHandler(RentalCleaningBenefitNotApplicableException.class)
