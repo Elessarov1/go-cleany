@@ -10,6 +10,8 @@ updated: 2026-08-30
 
 This is not a release changelog. It records only major changes that alter how future product/architecture discussions should be framed.
 
+For the current project state, read [CONTEXT.md](CONTEXT.md). For task-specific document routing, use [INDEX.md](INDEX.md). For accepted durable decisions, see [architecture/decisions/README.md](architecture/decisions/README.md).
+
 ## 2026-08-30
 
 - Formalized the Loco Place product manifesto.
@@ -17,7 +19,7 @@ This is not a release changelog. It records only major changes that alter how fu
 - Strategic direction: **From catalog to habit**.
 - Proposed North Star: **Completed tasks per active customer**.
 - Defined `Retention & Trust` as the next major cross-functional phase after the implemented core verticals.
-- Established an AI-first repository knowledge base with `CONTEXT.md` and `INDEX.md`.
+- Established an AI-first repository knowledge base with [CONTEXT.md](CONTEXT.md) and [INDEX.md](INDEX.md).
 - CI is expected to test/deploy only application areas that changed; documentation-only changes must not trigger backend/frontend builds or staging deployment.
 
 ## 2026-08-29

@@ -115,6 +115,16 @@ Read:
 - [architecture/decisions/README.md](architecture/decisions/README.md)
 - [architecture/platform-roadmap.md](architecture/platform-roadmap.md) for detailed historic direction.
 
+## Decision / strategy history
+
+When the task requires understanding why the current direction was chosen or whether a decision is newer than another, read:
+
+- [CHANGELOG-CONTEXT.md](CHANGELOG-CONTEXT.md) for major changes in project framing;
+- [architecture/decisions/README.md](architecture/decisions/README.md) for accepted durable architecture/product decisions;
+- relevant Git history when implementation chronology matters.
+
+Do not load the context changelog for every task; it is historical context, not mandatory execution context.
+
 ## Deployment / CI / environment
 
 Read:
@@ -132,4 +142,4 @@ Read:
 
 ## Documentation changes
 
-Update [CONTEXT.md](CONTEXT.md) only for durable project-level changes. Update this index when a new canonical document needs routing. Do not create permanent documents for temporary task execution logs.
+Update [CONTEXT.md](CONTEXT.md) only for durable project-level changes. Update this index when a new canonical document needs routing. Record major changes in strategic/product/architecture framing in [CHANGELOG-CONTEXT.md](CHANGELOG-CONTEXT.md). Do not create permanent documents for temporary task execution logs.

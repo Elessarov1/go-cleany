@@ -18,6 +18,12 @@ It exists for three readers at once:
 
 Start with [CONTEXT.md](CONTEXT.md), then use [INDEX.md](INDEX.md) to load only the documents relevant to the task.
 
+## Project context
+
+- [Current context](CONTEXT.md) — compact current-state restore point for humans and AI agents.
+- [Knowledge routing index](INDEX.md) — task-oriented routing to the minimum relevant documentation.
+- [Context changelog](CHANGELOG-CONTEXT.md) — major product and architecture changes that explain how the current direction was reached.
+
 ## Canonical strategy
 
 - [Product manifesto](strategy/manifesto.md) — why Loco Place exists and the principles that constrain product decisions.
