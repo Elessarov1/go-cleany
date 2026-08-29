@@ -11,6 +11,7 @@ import type { BrandService } from "../../brand/productBrand";
 import { TelegramLinkNudge } from "../TelegramLinkNudge/TelegramLinkNudge";
 import { RouteMetadata } from "../RouteMetadata/RouteMetadata";
 import { NotificationBell } from "../NotificationBell/NotificationBell";
+import { ThemeSwitcher } from "../ThemeSwitcher/ThemeSwitcher";
 import { useCustomerApi } from "../../api/CustomerApiProvider";
 
 const ACQUISITION_START_PREFIX = "acq_";
@@ -168,6 +169,7 @@ export function AppShell() {
                 ) : null
               ) : null}
               <LanguageSwitcher />
+              <ThemeSwitcher />
             </div>
           </div>
         </header>

@@ -1,0 +1,308 @@
+/*
+ * Lightweight motion layer for the existing Loco Place UI.
+ * The patterns are intentionally limited to transitions, reveal animations,
+ * hover/focus feedback and subtle movement of content that already exists.
+ */
+
+:root {
+  --ui-motion-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ui-motion-ease-standard: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* Route/page entrance: a restrained fade-in-up pattern. */
+.app-content > .page {
+  animation: ui-page-enter 420ms var(--ui-motion-ease-out) both;
+}
+
+/* Existing catalog copy and cards reveal in a short sequence. */
+.page--service-catalog .service-catalog__header > * {
+  animation: ui-reveal-up 460ms var(--ui-motion-ease-out) both;
+}
+
+.page--service-catalog .service-catalog__header > :nth-child(2) {
+  animation-delay: 55ms;
+}
+
+.page--service-catalog .service-catalog__header > :nth-child(3) {
+  animation-delay: 105ms;
+}
+
+.page--service-catalog .service-catalog__grid > .service-card {
+  animation: ui-card-enter 480ms 130ms var(--ui-motion-ease-out) both;
+}
+
+.page--service-catalog .service-catalog__grid > .service-card:nth-child(2) {
+  animation-delay: 190ms;
+}
+
+.page--service-catalog .service-catalog__note {
+  animation: ui-reveal-up 440ms 245ms var(--ui-motion-ease-out) both;
+}
+
+/* Existing service cards: lift, icon response and directional arrow feedback. */
+.service-card,
+.rental-property-card {
+  transform: translateZ(0);
+  transition:
+    transform 260ms var(--ui-motion-ease-out),
+    box-shadow 260ms ease,
+    border-color 260ms ease,
+    background-color 260ms ease;
+}
+
+.service-card__icon,
+.service-card > .icon:last-child,
+.rental-property-card__price > .icon,
+.back-link > .icon {
+  transition: transform 240ms var(--ui-motion-ease-out), filter 240ms ease;
+}
+
+/* Rental cards keep the existing photos but make them feel less static. */
+.rental-property-card__image {
+  overflow: hidden;
+}
+
+.rental-property-card__image img,
+.rental-gallery__viewport figure img,
+.rental-gallery__thumbnails img {
+  transition:
+    transform 620ms var(--ui-motion-ease-out),
+    filter 360ms ease,
+    opacity 240ms ease;
+}
+
+.rental-property-list > .rental-property-card {
+  animation: ui-card-enter 480ms var(--ui-motion-ease-out) both;
+}
+
+.rental-property-list > .rental-property-card:nth-child(2) { animation-delay: 55ms; }
+.rental-property-list > .rental-property-card:nth-child(3) { animation-delay: 110ms; }
+.rental-property-list > .rental-property-card:nth-child(4) { animation-delay: 165ms; }
+
+/* Buttons and compact controls get tactile movement without changing markup. */
+.button,
+.icon-button,
+.notification-bell,
+.topbar__global-link,
+.topbar__auth-action,
+.language-switcher button,
+.choice-card,
+.rental-term-selector button,
+.rental-gallery__arrow,
+.rental-gallery__dots button,
+.rental-gallery__thumbnails button {
+  transition:
+    transform 180ms var(--ui-motion-ease-standard),
+    box-shadow 220ms ease,
+    border-color 220ms ease,
+    background-color 220ms ease,
+    color 220ms ease,
+    opacity 220ms ease;
+}
+
+.button:active:not(:disabled),
+.icon-button:active:not(:disabled),
+.notification-bell:active:not(:disabled),
+.topbar__global-link:active,
+.topbar__auth-action:active:not(:disabled),
+.choice-card:active:not(:disabled),
+.rental-term-selector button:active:not(:disabled),
+.rental-gallery__arrow:active:not(:disabled),
+.rental-gallery__thumbnails button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.975);
+}
+
+/* Existing hero marks get a nearly imperceptible idle float. */
+.hero__art,
+.rental-hero__mark {
+  animation: ui-soft-float 5.8s 700ms ease-in-out infinite;
+  transform-origin: center;
+}
+
+/* Existing selected states settle in with a small scale response. */
+.choice-card.is-selected,
+.rental-term-selector button.is-selected {
+  animation: ui-selection-settle 260ms var(--ui-motion-ease-out);
+}
+
+/* Gallery navigation stays visually responsive during image browsing. */
+.rental-gallery__dots button.is-active {
+  transform: scale(1.22);
+}
+
+.rental-gallery__thumbnails button.is-active {
+  transform: translateY(-2px);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .service-card:hover,
+  .service-card:focus-visible {
+    transform: translateY(-5px);
+    border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-line));
+    box-shadow: 0 18px 42px color-mix(in srgb, var(--color-primary) 13%, transparent);
+  }
+
+  .service-card:hover .service-card__icon,
+  .service-card:focus-visible .service-card__icon {
+    transform: translateY(-2px) scale(1.045);
+    filter: drop-shadow(0 7px 10px color-mix(in srgb, var(--color-primary) 18%, transparent));
+  }
+
+  .service-card:hover > .icon:last-child,
+  .service-card:focus-visible > .icon:last-child {
+    transform: translateX(5px);
+  }
+
+  .rental-property-card:hover,
+  .rental-property-card:focus-visible {
+    transform: translateY(-5px);
+    border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-line));
+    box-shadow: 0 20px 46px color-mix(in srgb, var(--color-primary) 12%, transparent);
+  }
+
+  .rental-property-card:hover .rental-property-card__image img,
+  .rental-property-card:focus-visible .rental-property-card__image img {
+    transform: scale(1.035);
+  }
+
+  .rental-property-card:hover .rental-property-card__price > .icon,
+  .rental-property-card:focus-visible .rental-property-card__price > .icon {
+    transform: translateX(4px);
+  }
+
+  .rental-gallery__viewport figure:hover img {
+    transform: scale(1.018);
+    filter: saturate(1.025) contrast(1.015);
+  }
+
+  .button:hover:not(:disabled),
+  .button:focus-visible,
+  .topbar__global-link:hover,
+  .topbar__global-link:focus-visible,
+  .topbar__auth-action:hover:not(:disabled),
+  .topbar__auth-action:focus-visible,
+  .notification-bell:hover:not(:disabled),
+  .notification-bell:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: 0 9px 22px color-mix(in srgb, var(--color-primary) 14%, transparent);
+  }
+
+  .icon-button:hover:not(:disabled),
+  .icon-button:focus-visible,
+  .rental-gallery__arrow:hover:not(:disabled),
+  .rental-gallery__arrow:focus-visible {
+    transform: translateY(-1px) scale(1.045);
+  }
+
+  .choice-card:hover:not(:disabled),
+  .choice-card:focus-visible,
+  .rental-term-selector button:hover:not(:disabled),
+  .rental-term-selector button:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: 0 9px 20px color-mix(in srgb, var(--color-primary) 9%, transparent);
+  }
+
+  .back-link:hover > .icon,
+  .back-link:focus-visible > .icon {
+    transform: translateX(-4px);
+  }
+
+  .language-switcher button:hover:not(.is-active),
+  .language-switcher button:focus-visible:not(.is-active) {
+    transform: translateY(-1px);
+  }
+
+  .rental-gallery__thumbnails button:hover:not(.is-active),
+  .rental-gallery__thumbnails button:focus-visible:not(.is-active) {
+    transform: translateY(-2px);
+  }
+
+  .rental-gallery__thumbnails button:hover img,
+  .rental-gallery__thumbnails button:focus-visible img {
+    transform: scale(1.045);
+  }
+}
+
+@keyframes ui-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ui-reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ui-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes ui-soft-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes ui-selection-settle {
+  0% { transform: scale(0.985); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-content > .page,
+  .page--service-catalog .service-catalog__header > *,
+  .page--service-catalog .service-catalog__grid > .service-card,
+  .page--service-catalog .service-catalog__note,
+  .rental-property-list > .rental-property-card,
+  .hero__art,
+  .rental-hero__mark,
+  .choice-card.is-selected,
+  .rental-term-selector button.is-selected {
+    animation: none !important;
+  }
+
+  .service-card,
+  .rental-property-card,
+  .service-card__icon,
+  .service-card > .icon:last-child,
+  .rental-property-card__price > .icon,
+  .back-link > .icon,
+  .rental-property-card__image img,
+  .rental-gallery__viewport figure img,
+  .rental-gallery__thumbnails img,
+  .button,
+  .icon-button,
+  .notification-bell,
+  .topbar__global-link,
+  .topbar__auth-action,
+  .language-switcher button,
+  .choice-card,
+  .rental-term-selector button,
+  .rental-gallery__arrow,
+  .rental-gallery__dots button,
+  .rental-gallery__thumbnails button {
+    transition: none !important;
+  }
+
+  .rental-gallery__viewport {
+    scroll-behavior: auto;
+  }
+}
