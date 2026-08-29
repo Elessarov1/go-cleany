@@ -6,6 +6,10 @@ import { Icon } from "../../components/Icon/Icon";
 import { BrandName } from "../../components/BrandName/BrandName";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import type { PlatformServiceState } from "../../domain/platformService";
+import {
+  ServiceCatalogScene,
+  type ServiceCatalogSceneState,
+} from "./ServiceCatalogScene";
 
 export function ServiceCatalogPage() {
   const { t } = useTranslation();
@@ -14,6 +18,7 @@ export function ServiceCatalogPage() {
   const [services, setServices] = useState<PlatformServiceState[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [sceneState, setSceneState] = useState<ServiceCatalogSceneState>("idle");
   const referralCode = searchParams.get("ref")?.trim();
 
   useEffect(() => {
@@ -49,11 +54,14 @@ export function ServiceCatalogPage() {
 
   return (
     <div className="page page--service-catalog">
-      <header className="service-catalog__header">
-        <span className="eyebrow"><BrandName /> services</span>
-        <h1>{t("catalog.title")}</h1>
-        <p>{t("catalog.subtitle")}</p>
-      </header>
+      <div className="service-catalog__hero">
+        <header className="service-catalog__header">
+          <span className="eyebrow"><BrandName /> services</span>
+          <h1>{t("catalog.title")}</h1>
+          <p>{t("catalog.subtitle")}</p>
+        </header>
+        <ServiceCatalogScene activeService={sceneState} />
+      </div>
 
       <div className="service-catalog__grid">
         {rental ? (
@@ -64,6 +72,8 @@ export function ServiceCatalogPage() {
             title={t("catalog.rent.title")}
             text={t("catalog.rent.text")}
             test={rental.status === "IN_TEST"}
+            onActivate={() => setSceneState("rent")}
+            onDeactivate={() => setSceneState("idle")}
           />
         ) : null}
         {cleaning ? (
@@ -74,6 +84,8 @@ export function ServiceCatalogPage() {
             title={t("catalog.cleaning.title")}
             text={t("catalog.cleaning.text")}
             test={cleaning.status === "IN_TEST"}
+            onActivate={() => setSceneState("cleaning")}
+            onDeactivate={() => setSceneState("idle")}
           />
         ) : null}
       </div>
@@ -93,12 +105,31 @@ interface ServiceCardProps {
   title: string;
   text: string;
   test: boolean;
+  onActivate: () => void;
+  onDeactivate: () => void;
 }
 
-function ServiceCard({ className, icon, path, title, text, test }: ServiceCardProps) {
+function ServiceCard({
+  className,
+  icon,
+  path,
+  title,
+  text,
+  test,
+  onActivate,
+  onDeactivate,
+}: ServiceCardProps) {
   const { t } = useTranslation();
   return (
-    <Link className={`service-card service-card--${className}`} to={path}>
+    <Link
+      className={`service-card service-card--${className}`}
+      to={path}
+      onPointerEnter={onActivate}
+      onPointerLeave={onDeactivate}
+      onPointerDown={onActivate}
+      onFocus={onActivate}
+      onBlur={onDeactivate}
+    >
       <span className="service-card__icon"><Icon name={icon} size={34} /></span>
       <span className="service-card__copy">
         <small><BrandName service={className === "rent" ? "rental" : "cleaning"} /></small>
