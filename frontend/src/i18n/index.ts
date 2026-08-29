@@ -7,6 +7,19 @@ export type AppLanguage = "ru" | "en";
 
 const LANGUAGE_KEY = "cleany.language";
 
+const themeTranslations = {
+  en: {
+    label: "Color theme",
+    light: "Light theme",
+    dark: "Dark theme",
+  },
+  ru: {
+    label: "Цветовая тема",
+    light: "Светлая тема",
+    dark: "Тёмная тема",
+  },
+} as const;
+
 function resolveLanguage(platformLanguage: string | null): AppLanguage {
   const storedLanguage = localStorage.getItem(LANGUAGE_KEY);
   if (storedLanguage === "ru" || storedLanguage === "en") {
@@ -24,8 +37,8 @@ export async function initializeI18n(
   if (!i18n.isInitialized) {
     await i18n.use(initReactI18next).init({
       resources: {
-        en: { translation: en },
-        ru: { translation: ru },
+        en: { translation: { ...en, theme: themeTranslations.en } },
+        ru: { translation: { ...ru, theme: themeTranslations.ru } },
       },
       lng: language,
       fallbackLng: "en",
@@ -46,4 +59,3 @@ export async function changeLanguage(language: AppLanguage): Promise<void> {
 }
 
 export default i18n;
-

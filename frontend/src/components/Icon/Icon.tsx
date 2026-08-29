@@ -18,6 +18,7 @@ export type IconName =
   | "moon"
   | "services"
   | "sparkles"
+  | "sun"
   | "user"
   | "wallet";
 
@@ -109,6 +110,12 @@ export function Icon({ name, size = 22, strokeWidth = 1.8 }: IconProps) {
         </>
       ) : null}
       {name === "moon" ? <path d="M20 15.5A8.5 8.5 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5Z" /> : null}
+      {name === "sun" ? (
+        <>
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41" />
+        </>
+      ) : null}
       {name === "wallet" ? (
         <>
           <path d="M4 6h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12" />
