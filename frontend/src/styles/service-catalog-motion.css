@@ -1,0 +1,483 @@
+/* Animated Loco Place service catalog experiment. */
+
+.page--service-catalog {
+  position: relative;
+  isolation: isolate;
+}
+
+.service-catalog__hero {
+  display: grid;
+  gap: 20px;
+  margin-bottom: 26px;
+}
+
+.service-catalog__header {
+  margin-bottom: 0;
+  animation: catalog-copy-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.service-catalog-scene {
+  --scene-accent: var(--color-primary);
+  --scene-accent-soft: var(--color-primary-soft);
+  position: relative;
+  min-height: 210px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 78% 18%, color-mix(in srgb, var(--scene-accent) 20%, transparent), transparent 34%),
+    linear-gradient(145deg, color-mix(in srgb, var(--color-surface-strong) 96%, var(--scene-accent-soft)) 0%, var(--scene-accent-soft) 100%);
+  border: 1px solid color-mix(in srgb, var(--scene-accent) 18%, var(--color-line));
+  border-radius: 28px;
+  box-shadow: 0 20px 55px color-mix(in srgb, var(--scene-accent) 13%, transparent);
+  transition:
+    background 420ms ease,
+    border-color 420ms ease,
+    box-shadow 420ms ease,
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: catalog-scene-in 620ms 90ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.service-catalog-scene[data-scene="rent"] {
+  --scene-accent: #d77d3e;
+  --scene-accent-soft: #fae8d8;
+  transform: translateY(-2px);
+}
+
+.service-catalog-scene[data-scene="cleaning"] {
+  --scene-accent: #1685b3;
+  --scene-accent-soft: #e1f4fb;
+  transform: translateY(-2px);
+}
+
+.service-catalog-scene__glow {
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  inset: 50% auto auto 50%;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--scene-accent) 16%, transparent);
+  filter: blur(22px);
+  transform: translate(-50%, -45%);
+  transition: background 420ms ease, transform 420ms ease;
+  animation: catalog-glow 6s ease-in-out infinite;
+}
+
+.service-catalog-scene[data-scene="rent"] .service-catalog-scene__glow {
+  transform: translate(-41%, -42%) scale(1.12);
+}
+
+.service-catalog-scene[data-scene="cleaning"] .service-catalog-scene__glow {
+  transform: translate(-59%, -48%) scale(1.08);
+}
+
+.service-catalog-scene__svg {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 210px;
+  overflow: visible;
+}
+
+.scene-orbit ellipse {
+  fill: none;
+  stroke: color-mix(in srgb, var(--scene-accent) 18%, transparent);
+  stroke-width: 1.4;
+  stroke-dasharray: 7 9;
+  transform-origin: 160px 122px;
+  animation: catalog-orbit 28s linear infinite;
+}
+
+.scene-orbit--front {
+  fill: var(--scene-accent);
+}
+
+.scene-orbit__dot {
+  opacity: 0.56;
+  transform-origin: 160px 122px;
+}
+
+.scene-orbit__dot--one {
+  animation: catalog-orbit-dot 8s ease-in-out infinite;
+}
+
+.scene-orbit__dot--two {
+  animation: catalog-orbit-dot 8s 1.8s ease-in-out infinite reverse;
+}
+
+.scene-cloud {
+  fill: color-mix(in srgb, var(--color-surface-strong) 82%, transparent);
+  opacity: 0.82;
+}
+
+.scene-cloud--left {
+  animation: catalog-cloud-left 8s ease-in-out infinite;
+}
+
+.scene-cloud--right {
+  opacity: 0.58;
+  animation: catalog-cloud-right 10s 1.2s ease-in-out infinite;
+}
+
+.scene-house {
+  filter: drop-shadow(0 16px 18px color-mix(in srgb, var(--scene-accent) 14%, transparent));
+}
+
+.scene-house__roof {
+  fill: var(--scene-accent);
+  transition: fill 420ms ease, transform 420ms ease;
+  transform-origin: 160px 105px;
+}
+
+.scene-house__body {
+  fill: color-mix(in srgb, var(--color-surface-strong) 96%, var(--scene-accent-soft));
+  stroke: color-mix(in srgb, var(--scene-accent) 22%, var(--color-line));
+  stroke-width: 1.2;
+  transition: fill 420ms ease, stroke 420ms ease;
+}
+
+.scene-house__window {
+  fill: color-mix(in srgb, var(--scene-accent) 17%, #ffffff);
+  transition: fill 420ms ease, filter 420ms ease;
+}
+
+.scene-house__door {
+  fill: color-mix(in srgb, var(--scene-accent) 54%, var(--color-surface-strong));
+  transition: fill 420ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: 146px 174px;
+}
+
+.scene-house__handle {
+  fill: #ffffff;
+}
+
+.scene-plant {
+  fill: color-mix(in srgb, #4f9b72 74%, var(--scene-accent));
+  transform-origin: 77px 196px;
+  animation: catalog-plant 5s ease-in-out infinite;
+}
+
+.scene-plant__stem {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.scene-service {
+  opacity: 0.48;
+  transition: opacity 320ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.service-catalog-scene[data-scene="rent"] .scene-service--rent,
+.service-catalog-scene[data-scene="cleaning"] .scene-service--cleaning {
+  opacity: 1;
+}
+
+.service-catalog-scene[data-scene="rent"] .scene-service--cleaning,
+.service-catalog-scene[data-scene="cleaning"] .scene-service--rent {
+  opacity: 0.12;
+}
+
+.scene-bubble circle {
+  fill: color-mix(in srgb, #ffffff 46%, transparent);
+  stroke: color-mix(in srgb, #1685b3 45%, #ffffff);
+  stroke-width: 1.4;
+}
+
+.scene-bubble--one {
+  animation: catalog-bubble 4.8s ease-in-out infinite;
+}
+
+.scene-bubble--two {
+  animation: catalog-bubble 4.8s 1.2s ease-in-out infinite;
+}
+
+.scene-spark {
+  fill: #ffffff;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, #1685b3 42%, transparent));
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.scene-spark--one {
+  animation: catalog-spark 3.6s ease-in-out infinite;
+}
+
+.scene-spark--two {
+  animation: catalog-spark 3.6s 1.1s ease-in-out infinite;
+}
+
+.scene-cleaning-sweep {
+  fill: none;
+  stroke: color-mix(in srgb, #1685b3 58%, #ffffff);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 42 70;
+  opacity: 0.78;
+  animation: catalog-cleaning-sweep 4.4s ease-in-out infinite;
+}
+
+.scene-key {
+  fill: none;
+  stroke: color-mix(in srgb, #d77d3e 82%, #7b4726);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: catalog-key 5s ease-in-out infinite;
+}
+
+.scene-door-light {
+  fill: color-mix(in srgb, #f5b977 62%, transparent);
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+
+.service-catalog-scene[data-scene="rent"] .scene-door-light {
+  opacity: 0.68;
+  animation: catalog-door-light 2.8s ease-in-out infinite;
+}
+
+.service-catalog-scene[data-scene="rent"] .scene-house__door {
+  transform: perspective(120px) rotateY(-11deg);
+}
+
+.service-catalog-scene[data-scene="rent"] .scene-house__window {
+  fill: color-mix(in srgb, #f5b977 42%, #ffffff);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, #f5b977 35%, transparent));
+}
+
+.service-catalog-scene[data-scene="cleaning"] .scene-house__roof {
+  transform: translateY(-1px);
+}
+
+.scene-rent-line {
+  fill: none;
+  stroke: color-mix(in srgb, #d77d3e 34%, transparent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 5 7;
+}
+
+.service-catalog__grid {
+  perspective: 900px;
+}
+
+.service-card {
+  position: relative;
+  overflow: hidden;
+  transform: translateZ(0);
+  transition:
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 240ms ease,
+    border-color 240ms ease,
+    background 240ms ease;
+  animation: catalog-card-in 520ms 160ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.service-card:nth-child(2) {
+  animation-delay: 220ms;
+}
+
+.service-card::after {
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  inset: -85px -70px auto auto;
+  content: "";
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-primary) 7%, transparent);
+  transform: scale(0.75);
+  transition: transform 280ms ease, background 280ms ease;
+  pointer-events: none;
+}
+
+.service-card:hover,
+.service-card:focus-visible {
+  z-index: 1;
+  transform: translateY(-5px) scale(1.008);
+  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-line));
+  box-shadow: 0 20px 44px color-mix(in srgb, var(--color-primary) 14%, transparent);
+}
+
+.service-card:hover::after,
+.service-card:focus-visible::after {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  transform: scale(1.08);
+}
+
+.service-card:active {
+  transform: translateY(-1px) scale(0.988);
+}
+
+.service-card > .icon:last-child {
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.service-card:hover > .icon:last-child,
+.service-card:focus-visible > .icon:last-child {
+  transform: translateX(4px);
+}
+
+.service-card__icon {
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), filter 260ms ease;
+}
+
+.service-card:hover .service-card__icon,
+.service-card:focus-visible .service-card__icon {
+  transform: translateY(-2px) rotate(-3deg) scale(1.05);
+  filter: drop-shadow(0 8px 10px color-mix(in srgb, var(--color-primary) 20%, transparent));
+}
+
+.service-catalog__note {
+  animation: catalog-copy-in 520ms 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes catalog-copy-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes catalog-scene-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes catalog-card-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes catalog-glow {
+  0%, 100% { opacity: 0.72; }
+  50% { opacity: 1; }
+}
+
+@keyframes catalog-orbit {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes catalog-orbit-dot {
+  0%, 100% { opacity: 0.36; transform: translateY(0); }
+  50% { opacity: 0.8; transform: translateY(-4px); }
+}
+
+@keyframes catalog-cloud-left {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(8px); }
+}
+
+@keyframes catalog-cloud-right {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-9px); }
+}
+
+@keyframes catalog-plant {
+  0%, 100% { transform: rotate(-1deg); }
+  50% { transform: rotate(2deg); }
+}
+
+@keyframes catalog-bubble {
+  0%, 100% { opacity: 0.2; transform: translateY(7px) scale(0.9); }
+  50% { opacity: 0.9; transform: translateY(-6px) scale(1.06); }
+}
+
+@keyframes catalog-spark {
+  0%, 100% { opacity: 0.35; transform: scale(0.82) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.08) rotate(7deg); }
+}
+
+@keyframes catalog-cleaning-sweep {
+  0%, 100% { stroke-dashoffset: 0; opacity: 0.28; }
+  50% { stroke-dashoffset: -50; opacity: 0.9; }
+}
+
+@keyframes catalog-key {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-4px) rotate(4deg); }
+}
+
+@keyframes catalog-door-light {
+  0%, 100% { opacity: 0.38; }
+  50% { opacity: 0.78; }
+}
+
+@media (min-width: 768px) {
+  .service-shell[data-platform="web"] .service-catalog__hero {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 0.78fr);
+    align-items: center;
+    gap: 30px;
+    margin-bottom: 34px;
+  }
+
+  .service-shell[data-platform="web"] .service-catalog__header {
+    max-width: 660px;
+  }
+
+  .service-shell[data-platform="web"] .service-catalog-scene {
+    min-height: 260px;
+  }
+
+  .service-shell[data-platform="web"] .service-catalog-scene__svg {
+    height: 260px;
+  }
+}
+
+@media (max-width: 480px) {
+  .service-catalog-scene {
+    min-height: 184px;
+    border-radius: 24px;
+  }
+
+  .service-catalog-scene__svg {
+    height: 184px;
+  }
+
+  .service-card:hover,
+  .service-card:focus-visible {
+    transform: translateY(-3px) scale(1.004);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .service-catalog__header,
+  .service-catalog-scene,
+  .service-catalog-scene__glow,
+  .scene-orbit ellipse,
+  .scene-orbit__dot,
+  .scene-cloud,
+  .scene-plant,
+  .scene-bubble,
+  .scene-spark,
+  .scene-cleaning-sweep,
+  .scene-key,
+  .scene-door-light,
+  .service-card,
+  .service-catalog__note {
+    animation: none !important;
+  }
+
+  .service-catalog-scene,
+  .service-catalog-scene__glow,
+  .scene-house__roof,
+  .scene-house__body,
+  .scene-house__window,
+  .scene-house__door,
+  .scene-service,
+  .service-card,
+  .service-card::after,
+  .service-card > .icon:last-child,
+  .service-card__icon {
+    transition: none !important;
+  }
+
+  .service-card:hover,
+  .service-card:focus-visible,
+  .service-card:active,
+  .service-card:hover .service-card__icon,
+  .service-card:focus-visible .service-card__icon,
+  .service-card:hover > .icon:last-child,
+  .service-card:focus-visible > .icon:last-child {
+    transform: none;
+  }
+}
