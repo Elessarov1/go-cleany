@@ -1,5 +1,6 @@
 package com.cleany.configuration;
 
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Set;
 
@@ -29,7 +30,7 @@ public record OnsiteIssueProperties(
             throw new IllegalArgumentException("onsite-issue.max-photo-size must be positive");
         }
         supportedContentTypes = supportedContentTypes == null
-                ? Set.of()
+                ? Collections.emptySet()
                 : supportedContentTypes.stream()
                         .map(value -> value.toLowerCase(Locale.ROOT).trim())
                         .filter(value -> !value.isEmpty())

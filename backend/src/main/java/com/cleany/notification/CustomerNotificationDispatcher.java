@@ -1,10 +1,11 @@
 package com.cleany.notification;
 
+import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.HashSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +61,7 @@ public class CustomerNotificationDispatcher {
                 .orElse(null);
         var identities = identityRepository.findAllByCustomerIdOrderByProvider(customerId);
         if (identities == null || identities.isEmpty()) {
-            identities = identity == null ? List.of() : List.of(identity);
+            identities = identity == null ? Collections.emptyList() : List.of(identity);
         }
         boolean delivered = false;
         var deliveredProviders = new HashSet<ExternalIdentityProvider>();

@@ -1,4 +1,8 @@
 spring:
+  cache:
+    cache-names: platformServiceState
+    caffeine:
+      spec: maximumSize=64
   application:
     name: cleany
 

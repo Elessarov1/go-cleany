@@ -52,7 +52,8 @@ class PostgresMediaStorageIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertEquals(expected.length, stored.sizeBytes()),
                 () -> Assertions.assertEquals(sha256(expected), stored.sha256()),
                 () -> Assertions.assertNotNull(stored.createdAt()),
-                () -> Assertions.assertArrayEquals(expected, loaded.content()),
+                () -> Assertions.assertSame(callerCopy, loaded.content()),
+                () -> Assertions.assertEquals(0, loaded.content()[0]),
                 () -> Assertions.assertArrayEquals(expected, loadedAgain.content()),
                 () -> Assertions.assertEquals(stored.sha256(), loaded.sha256())
         );

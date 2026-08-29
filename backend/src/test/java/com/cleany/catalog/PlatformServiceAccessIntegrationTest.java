@@ -6,9 +6,12 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import com.cleany.admin.AdminAccessService;
 import com.cleany.authorization.CustomerRoleRepository;
 import com.cleany.authorization.PlatformRole;
 import com.cleany.authorization.PlatformRoleService;
@@ -38,6 +41,12 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private PlatformServiceStateCache stateCache;
+
+    @MockitoBean
+    private AdminAccessService adminAccessService;
+
     @BeforeEach
     @AfterEach
     void resetPlatformState() {
@@ -49,6 +58,7 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
                        updated_by_customer_id = null,
                        version = version + 1
                 """);
+        clearPlatformServiceStateCache();
     }
 
     @Test
@@ -96,6 +106,7 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
 
         cleaning.changeStatus(PlatformServiceStatus.IN_TEST, admin.customerId(), java.time.Instant.now());
         cleaning = stateRepository.saveAndFlush(cleaning);
+        clearPlatformServiceStateCache();
         Assertions.assertAll(
                 () -> Assertions.assertFalse(accessService.canStartCustomerFlow(
                         PlatformService.CLEANING,
@@ -109,6 +120,7 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
 
         cleaning.changeStatus(PlatformServiceStatus.DISABLED, admin.customerId(), java.time.Instant.now());
         stateRepository.saveAndFlush(cleaning);
+        clearPlatformServiceStateCache();
         Assertions.assertAll(
                 () -> Assertions.assertFalse(accessService.canStartCustomerFlow(
                         PlatformService.CLEANING,
@@ -125,6 +137,49 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
                                 admin.customerId()
                         )
                 )
+        );
+    }
+
+    @Test
+    void serviceStateSnapshotIsCachedUntilExplicitInvalidation() {
+        PlatformServiceStateResponse initial = stateCache.get(PlatformService.CLEANING);
+
+        jdbcTemplate.update("""
+                update platform_service_state
+                   set status = 'DISABLED',
+                       updated_at = current_timestamp,
+                       version = version + 1
+                 where service = 'CLEANING'
+                """);
+
+        PlatformServiceStateResponse cached = stateCache.get(PlatformService.CLEANING);
+        clearPlatformServiceStateCache();
+        PlatformServiceStateResponse refreshed = stateCache.get(PlatformService.CLEANING);
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(PlatformServiceStatus.ENABLED, initial.status()),
+                () -> Assertions.assertSame(initial, cached),
+                () -> Assertions.assertEquals(PlatformServiceStatus.DISABLED, refreshed.status())
+        );
+    }
+
+    @Test
+    void administrativeUpdateEvictsCachedServiceState() {
+        CurrentCustomer admin = customer(ExternalIdentityProvider.GOOGLE, "cache-admin");
+        Mockito.when(adminAccessService.requireCurrentAdmin()).thenReturn(admin.customerId());
+        PlatformServiceStateResponse initial = stateCache.get(PlatformService.CLEANING);
+
+        PlatformServiceStateResponse updated = accessService.update(
+                PlatformService.CLEANING,
+                PlatformServiceStatus.DISABLED
+        );
+        PlatformServiceStateResponse refreshed = stateCache.get(PlatformService.CLEANING);
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(PlatformServiceStatus.ENABLED, initial.status()),
+                () -> Assertions.assertEquals(PlatformServiceStatus.DISABLED, updated.status()),
+                () -> Assertions.assertEquals(PlatformServiceStatus.DISABLED, refreshed.status()),
+                () -> Assertions.assertNotSame(initial, refreshed)
         );
     }
 
@@ -159,4 +214,5 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
                 "ru"
         ));
     }
+
 }

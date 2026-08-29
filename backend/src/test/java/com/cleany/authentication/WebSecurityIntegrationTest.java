@@ -109,6 +109,7 @@ class WebSecurityIntegrationTest extends BaseIntegrationTest {
                 "update platform_service_state set status = 'IN_TEST' "
                         + "where service = 'CLEANING'"
         );
+        clearPlatformServiceStateCache();
 
         mvc.perform(get("/api/v1/catalog/services"))
                 .andExpect(status().isOk())

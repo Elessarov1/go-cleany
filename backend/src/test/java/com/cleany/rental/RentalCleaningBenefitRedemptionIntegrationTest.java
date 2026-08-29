@@ -290,6 +290,7 @@ class RentalCleaningBenefitRedemptionIntegrationTest extends BaseIntegrationTest
         jdbcTemplate.update(
                 "update platform_service_state set status = 'DISABLED' where service = 'CLEANING'"
         );
+        clearPlatformServiceStateCache();
 
         RentalCleaningContextResponse response = contextService.context(
                 context.customer(),

@@ -8,28 +8,30 @@ import org.junit.jupiter.api.Test;
 class MediaValueObjectsTest {
 
     @Test
-    void uploadAndLoadedContent_doNotExposeMutableBinaryArrays() {
+    void uploadAndLoadedContent_copyMutableInputAtTheirBoundaries() {
         byte[] source = {1, 2, 3};
         var upload = new MediaUpload(source, " Image/PNG ");
         source[0] = 9;
         byte[] uploadContent = upload.content();
         uploadContent[1] = 9;
 
+        byte[] loadedSource = upload.content();
         var loaded = new MediaContent(
                 42L,
-                upload.content(),
+                loadedSource,
                 upload.contentType(),
                 3L,
                 "a".repeat(64),
                 Instant.parse("2026-08-21T12:00:00Z")
         );
+        loadedSource[2] = 9;
         byte[] loadedContent = loaded.content();
-        loadedContent[2] = 9;
 
         Assertions.assertAll(
                 () -> Assertions.assertArrayEquals(new byte[]{1, 2, 3}, upload.content()),
                 () -> Assertions.assertEquals("image/png", upload.contentType()),
-                () -> Assertions.assertArrayEquals(new byte[]{1, 2, 3}, loaded.content())
+                () -> Assertions.assertArrayEquals(new byte[]{1, 2, 3}, loadedContent),
+                () -> Assertions.assertSame(loadedContent, loaded.content())
         );
     }
 

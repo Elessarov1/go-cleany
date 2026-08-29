@@ -339,5 +339,6 @@ class RentalCleaningBenefitIssuanceIntegrationTest extends BaseIntegrationTest {
                 "update platform_service_state set status = ? where service = 'CLEANING'",
                 status.name()
         );
+        clearPlatformServiceStateCache();
     }
 }

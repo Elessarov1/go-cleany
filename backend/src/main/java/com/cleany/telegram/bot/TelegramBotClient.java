@@ -2,6 +2,7 @@ package com.cleany.telegram.bot;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public interface TelegramBotClient {
@@ -54,12 +55,12 @@ public interface TelegramBotClient {
 
         public InlineKeyboard {
             rows = rows == null
-                    ? List.of()
+                    ? Collections.emptyList()
                     : rows.stream().map(List::copyOf).toList();
         }
 
         public static InlineKeyboard empty() {
-            return new InlineKeyboard(List.of());
+            return new InlineKeyboard(Collections.emptyList());
         }
 
         @SafeVarargs

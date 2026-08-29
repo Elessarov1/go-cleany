@@ -1,5 +1,6 @@
 package com.cleany.configuration;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -10,7 +11,7 @@ public record AdminProperties(List<String> googleEmails) {
 
     public AdminProperties {
         googleEmails = googleEmails == null
-                ? List.of()
+                ? Collections.emptyList()
                 : googleEmails.stream()
                         .filter(email -> email != null && !email.isBlank())
                         .map(email -> email.trim().toLowerCase(Locale.ROOT))

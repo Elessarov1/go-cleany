@@ -1,6 +1,6 @@
 package com.cleany.authentication;
 
-import java.util.List;
+import java.util.Collections;
 
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 
@@ -11,7 +11,7 @@ public class TmaAuthenticationToken extends AbstractAuthenticationToken {
     private final AuthenticatedCustomerIdentity principal;
 
     public TmaAuthenticationToken(AuthenticatedCustomerIdentity principal) {
-        super(List.of());
+        super(Collections.emptyList());
         this.principal = principal;
         setAuthenticated(true);
     }

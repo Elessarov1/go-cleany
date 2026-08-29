@@ -1,8 +1,9 @@
 package com.cleany.rental;
 
 import java.time.Clock;
-import java.util.Map;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -146,7 +147,7 @@ public class RentalPropertyService {
             boolean admin
     ) {
         if (properties.isEmpty()) {
-            return List.of();
+            return Collections.emptyList();
         }
         List<Long> propertyIds = properties.stream().map(RentalProperty::getId).toList();
         Map<Long, List<RentalPropertyMedia>> mediaByPropertyId = mediaRepository
@@ -156,7 +157,7 @@ public class RentalPropertyService {
         return properties.stream()
                 .map(property -> response(
                         property,
-                        mediaByPropertyId.getOrDefault(property.getId(), List.of()),
+                        mediaByPropertyId.getOrDefault(property.getId(), Collections.emptyList()),
                         admin
                 ))
                 .toList();

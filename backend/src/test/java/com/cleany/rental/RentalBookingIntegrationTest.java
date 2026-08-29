@@ -159,6 +159,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
                    set status = 'DISABLED'
                  where service = 'RENTAL'
                 """);
+        clearPlatformServiceStateCache();
 
         Assertions.assertAll(
                 () -> Assertions.assertThrows(

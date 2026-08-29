@@ -1,5 +1,6 @@
 package com.cleany.authentication;
 
+import java.util.Collections;
 import java.util.Set;
 
 import com.cleany.authorization.PlatformRole;
@@ -20,7 +21,7 @@ public record CurrentAuthenticationResponse(
                 null,
                 null,
                 null,
-                Set.of(),
+                Collections.emptySet(),
                 loginProviders
         );
     }

@@ -3,6 +3,7 @@ package com.cleany.order;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -54,11 +55,21 @@ public class CustomerCleaningReportService {
 
     private CustomerCleaningReportResponse report(CleaningOrder order) {
         if (order.getStatus() != CleaningOrderStatus.COMPLETED || order.getCompletedAt() == null) {
-            return response(CleaningReportStatus.NOT_READY, null, order.getCleanerComment(), List.of());
+            return response(
+                    CleaningReportStatus.NOT_READY,
+                    null,
+                    order.getCleanerComment(),
+                    Collections.emptyList()
+            );
         }
         Instant expiresAt = order.getCompletedAt().plus(Duration.ofDays(retentionProperties.days()));
         if (!clock.instant().isBefore(expiresAt)) {
-            return response(CleaningReportStatus.EXPIRED, expiresAt, order.getCleanerComment(), List.of());
+            return response(
+                    CleaningReportStatus.EXPIRED,
+                    expiresAt,
+                    order.getCleanerComment(),
+                    Collections.emptyList()
+            );
         }
         List<CustomerCleaningReportPhotoResponse> photos = photoRepository
                 .findAllByOrderIdOrderByCreatedAtAscIdAsc(order.getId())

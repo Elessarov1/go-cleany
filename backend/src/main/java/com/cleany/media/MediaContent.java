@@ -4,6 +4,11 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
 
+/**
+ * Request-scoped media read result. Construction makes the single defensive copy at the storage
+ * boundary; callers must treat the buffer returned by {@link #content()} as read-only and consume
+ * it once.
+ */
 public record MediaContent(
         long mediaId,
         byte[] content,
@@ -27,10 +32,5 @@ public record MediaContent(
         }
         sha256 = Objects.requireNonNull(sha256, "sha256");
         createdAt = Objects.requireNonNull(createdAt, "createdAt");
-    }
-
-    @Override
-    public byte[] content() {
-        return Arrays.copyOf(content, content.length);
     }
 }

@@ -1,5 +1,6 @@
 package com.cleany.telegram.bot;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +48,7 @@ public class HttpTelegramBotClient implements TelegramBotClient {
                 ),
                 TelegramUpdatesResponse.class
         );
-        return response.result() == null ? List.of() : List.copyOf(response.result());
+        return response.result() == null ? Collections.emptyList() : List.copyOf(response.result());
     }
 
     @Override

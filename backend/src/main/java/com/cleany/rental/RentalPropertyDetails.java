@@ -3,6 +3,7 @@ package com.cleany.rental;
 import static com.cleany.common.text.TextValues.normalizeOptional;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -33,7 +34,7 @@ public record RentalPropertyDetails(
         area = normalizeOptional(area);
         address = normalizeOptional(address);
         currency = normalizeCurrency(currency);
-        amenities = amenities == null ? Set.of() : Set.copyOf(amenities);
+        amenities = amenities == null ? Collections.emptySet() : Set.copyOf(amenities);
 
         requireMinimum(bedrooms, 0, "bedrooms");
         requireMinimum(beds, 1, "beds");

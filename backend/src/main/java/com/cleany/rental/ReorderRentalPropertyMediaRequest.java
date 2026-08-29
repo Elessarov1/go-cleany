@@ -1,5 +1,6 @@
 package com.cleany.rental;
 
+import java.util.Collections;
 import java.util.List;
 
 import jakarta.validation.constraints.NotEmpty;
@@ -11,6 +12,6 @@ public record ReorderRentalPropertyMediaRequest(
 ) {
 
     public ReorderRentalPropertyMediaRequest {
-        mediaIds = mediaIds == null ? List.of() : List.copyOf(mediaIds);
+        mediaIds = mediaIds == null ? Collections.emptyList() : List.copyOf(mediaIds);
     }
 }

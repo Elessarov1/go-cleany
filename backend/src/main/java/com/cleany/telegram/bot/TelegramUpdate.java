@@ -1,5 +1,6 @@
 package com.cleany.telegram.bot;
 
+import java.util.Collections;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -43,7 +44,7 @@ public record TelegramUpdate(
     ) {
 
         public Message {
-            photo = photo == null ? List.of() : List.copyOf(photo);
+            photo = photo == null ? Collections.emptyList() : List.copyOf(photo);
         }
 
     }

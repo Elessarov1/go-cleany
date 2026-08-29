@@ -2,7 +2,7 @@ package com.cleany.authentication;
 
 import java.io.IOException;
 import java.time.Clock;
-import java.util.Map;
+import java.util.Collections;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -34,7 +34,7 @@ public class SecurityErrorWriter {
                 status,
                 code,
                 message,
-                Map.of()
+                Collections.emptyMap()
         ));
     }
 }
