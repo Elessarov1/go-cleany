@@ -99,6 +99,11 @@
       "benefit": "Your personal code {{code}} applies to cleaning from {{from}} to {{to}} and replaces other discounts.",
       "notApplicable": "This benefit is unavailable or the selected date is outside the checkout-cleaning window. Check the eligible dates."
     },
+    "repeatContext": {
+      "title": "Repeat order #{{id}}",
+      "text": "The cleaning details and address were filled from your past order. Choose a new date and review everything.",
+      "error": "We could not reuse that order. You can still create a new cleaning manually."
+    },
     "validation": {
       "area": "Choose an area",
       "apartmentType": "Choose an apartment type",
@@ -200,6 +205,7 @@
     "cancelConfirm": "Cancel this order?",
     "cancelling": "Cancelling…",
     "cancelError": "The order could not be cancelled.",
+    "repeat": "Repeat cleaning",
     "loadError": "We could not find this order.",
     "reportTitle": "Cleaning report",
     "reportAvailableUntil": "Available until {{date}}",
@@ -458,6 +464,7 @@
     "noData": "No data",
     "insufficientData": "Insufficient data",
     "days": "{{count}} days",
+    "hours": "{{count}} hours",
     "businessHealth": {
       "title": "Business Health",
       "subtitle": "Completed tasks and relationship depth among active customers in the selected period."
@@ -472,6 +479,18 @@
       "title": "Next completed task",
       "subtitle": "Only the immediate next task after the first completed task is counted.",
       "result": "{{converted}} of {{cohort}} customers"
+    },
+    "repeatActions": {
+      "title": "Repeat task",
+      "subtitle": "The funnel from showing the action to completing a repeated cleaning or ride.",
+      "empty": "There are no completed repeat-eligible tasks in this period.",
+      "shown": "Action shown",
+      "started": "Prefilled flow opened",
+      "created": "Repeat created",
+      "completed": "Repeat completed",
+      "startRate": "Start conversion",
+      "completionRate": "Completed from created",
+      "medianTime": "Median time to creation"
     },
     "averageChecks": {
       "title": "Average check",
@@ -907,6 +926,7 @@
       "title": "Ride details",
       "date": "Pickup date",
       "time": "Pickup time",
+      "selectTime": "Choose a time",
       "pickupAddress": "Pickup address in Alanya",
       "destinationAddress": "Destination address in Alanya",
       "addressPlaceholder": "Area, street, building, or residence name",
@@ -924,6 +944,11 @@
     "submit": "Send request",
     "submitting": "Sending…",
     "submitError": "We could not create the request. Check the details and try again.",
+    "repeatContext": {
+      "title": "Repeat transfer #{{id}}",
+      "text": "The route and ride details were filled from your past transfer. Choose a new date and time, then review everything.",
+      "error": "We could not reuse that transfer. You can still create a new request manually."
+    },
     "status": {
       "REQUESTED": "Awaiting confirmation",
       "CONFIRMED": "Confirmed",
@@ -956,6 +981,7 @@
       "comment": "Comment",
       "reason": "Reason",
       "requestNote": "The request is confirmed after a driver has been assigned.",
+      "repeat": "Book again",
       "cancel": "Cancel request"
     }
   },

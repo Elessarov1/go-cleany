@@ -1,7 +1,7 @@
 ---
 title: Retention and Progressive Convenience
 type: cross-functional
-status: proposed
+status: active
 scope: platform
 updated: 2026-08-30
 ---
@@ -30,7 +30,20 @@ Continue to use read models/composition, not `UniversalOrder`.
 
 ### Repeat / Book again
 
-For suitable completed tasks, create a new transaction with safe previous choices prefilled.
+Cleaning and Transfer support repeat actions from an owned `COMPLETED` source transaction:
+
+```text
+/cleaning?repeatFrom=<orderId>
+/transfer?repeatFrom=<bookingId>
+```
+
+The detail page exposes the action only while the service catalog permits a new customer flow. The backend independently verifies current identity, ownership, completed source status and service availability when opening prefill and again when creating the target transaction.
+
+Cleaning reuses area, address, apartment type, duplex and cleaning type. Transfer reuses direction, address and passenger/luggage counts; airport and vehicle are reused only while that exact current configuration pair remains bookable. The form uses the current `CustomerAccount` phone.
+
+Never copy source date/time, price, assignment, status, discount/referral/benefit, comment, flight data or historical phone. The customer chooses new scheduling data and the backend recalculates current price, availability and eligibility.
+
+The new transaction stores only a typed self-reference to its source (`CleaningOrder` → `CleaningOrder`, `TransferBooking` → `TransferBooking`). No universal context/order aggregate is introduced.
 
 Do not copy stale price, eligibility, availability or status. The backend recalculates current business truth.
 

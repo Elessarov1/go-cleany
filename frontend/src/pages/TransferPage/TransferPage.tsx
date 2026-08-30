@@ -1,13 +1,15 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useTransferApi } from "../../api/TransferApiProvider";
 import { useCustomerApi } from "../../api/CustomerApiProvider";
 import { BrandName } from "../../components/BrandName/BrandName";
+import { Icon } from "../../components/Icon/Icon";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import type {
   TransferConfiguration,
   TransferDirection,
+  TransferRepeatPrefill,
   TransferVehicleType,
 } from "../../domain/transfer";
 import { formatPrice } from "../../domain/pricing";
@@ -24,6 +26,7 @@ export function TransferPage() {
   const api = useTransferApi();
   const customerApi = useCustomerApi();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [configuration, setConfiguration] = useState<TransferConfiguration | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -40,7 +43,16 @@ export function TransferPage() {
   const [scheduledArrivalTime, setScheduledArrivalTime] = useState("");
   const [phone, setPhone] = useState("");
   const [comment, setComment] = useState("");
+  const [repeatContext, setRepeatContext] = useState<TransferRepeatPrefill | null>(null);
+  const [repeatContextError, setRepeatContextError] = useState(false);
   const russian = i18n.resolvedLanguage?.startsWith("ru") ?? true;
+  const rawRepeatSourceId = searchParams.get("repeatFrom");
+  const parsedRepeatSourceId = rawRepeatSourceId === null ? null : Number(rawRepeatSourceId);
+  const repeatSourceId = parsedRepeatSourceId !== null
+    && Number.isSafeInteger(parsedRepeatSourceId)
+    && parsedRepeatSourceId > 0
+    ? parsedRepeatSourceId
+    : null;
 
   useEffect(() => {
     let active = true;
@@ -60,6 +72,52 @@ export function TransferPage() {
       active = false;
     };
   }, [api, customerApi]);
+
+  useEffect(() => {
+    setRepeatContext(null);
+    setRepeatContextError(false);
+    if (rawRepeatSourceId === null || !configuration) return;
+    if (repeatSourceId === null) {
+      setRepeatContextError(true);
+      return;
+    }
+    let active = true;
+    api.getRepeatPrefill(repeatSourceId)
+      .then((context) => {
+        if (!active) return;
+        const configuredAirportId = context.airportId !== null
+          && configuration.airports.some((airport) => airport.id === context.airportId)
+          && configuration.prices.some((price) => price.airportId === context.airportId
+            && price.direction === context.direction)
+          ? context.airportId
+          : configuration.airports.find((airport) => configuration.prices.some((price) => (
+            price.airportId === airport.id && price.direction === context.direction
+          )))?.id ?? 0;
+        const configuredVehicles = configuration.vehicleTypes.filter((candidate) => (
+          configuration.prices.some((price) => price.airportId === configuredAirportId
+            && price.vehicleTypeId === candidate.id
+            && price.direction === context.direction)
+        ));
+        const configuredVehicle = configuredVehicles.find((candidate) => candidate.id === context.vehicleTypeId)
+          ?? configuredVehicles[0];
+        setRepeatContext(context);
+        setDirection(context.direction);
+        setAirportId(configuredAirportId);
+        setVehicleTypeId(configuredVehicle?.id ?? 0);
+        setAddress(context.address);
+        setPassengerCount(Math.min(context.passengerCount, configuredVehicle?.maxPassengers ?? 1));
+        setLuggageCount(Math.min(context.luggageCount, configuredVehicle?.maxLuggage ?? 0));
+        setPickupDate("");
+        setPickupTime("");
+        setFlightNumber("");
+        setScheduledArrivalTime("");
+        setComment("");
+      })
+      .catch(() => {
+        if (active) setRepeatContextError(true);
+      });
+    return () => { active = false; };
+  }, [api, configuration, rawRepeatSourceId, repeatSourceId]);
 
   const availableVehicles = useMemo(() => {
     if (!configuration || !airportId) return [];
@@ -104,6 +162,7 @@ export function TransferPage() {
         scheduledArrivalTime: direction === "FROM_AIRPORT" ? scheduledArrivalTime : null,
         phone,
         comment: comment || null,
+        repeatFromBookingId: repeatContext?.sourceBookingId,
       });
       navigate(`/transfer/bookings/${booking.id}`);
     } catch {
@@ -123,6 +182,17 @@ export function TransferPage() {
         <h1>{t("transfer.title")}</h1>
         <p>{t("transfer.subtitle")}</p>
       </header>
+
+      {repeatContext ? (
+        <section className="repeat-context-card transfer-repeat-context">
+          <span><Icon name="car" size={22} /></span>
+          <div>
+            <strong>{t("transfer.repeatContext.title", { id: repeatContext.sourceBookingId })}</strong>
+            <p>{t("transfer.repeatContext.text")}</p>
+          </div>
+        </section>
+      ) : null}
+      {repeatContextError ? <p className="form-alert">{t("transfer.repeatContext.error")}</p> : null}
 
       {configuration.prices.length === 0 ? (
         <section className="empty-state transfer-unavailable">
@@ -187,6 +257,7 @@ export function TransferPage() {
               <label className="field">
                 <span>{t("transfer.details.time")}</span>
                 <select value={pickupTime} onChange={(event) => setPickupTime(event.target.value)} required>
+                  <option value="" disabled>{t("transfer.details.selectTime")}</option>
                   {timeSlots(configuration.timeSlotMinutes).map((value) => <option key={value}>{value}</option>)}
                 </select>
               </label>

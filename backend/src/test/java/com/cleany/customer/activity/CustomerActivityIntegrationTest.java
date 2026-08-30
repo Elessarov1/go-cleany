@@ -311,6 +311,7 @@ class CustomerActivityIntegrationTest extends BaseIntegrationTest {
                 null,
                 null,
                 "+905551112233",
+                null,
                 null
         ));
     }

@@ -10,6 +10,7 @@ import type {
   CleaningOrder,
   CleaningOrderQuote,
   CleaningOrderQuoteRequest,
+  CleaningRepeatPrefill,
   CreateCleaningOrderRequest,
   ReferralSummary,
 } from "../domain/order";
@@ -29,6 +30,8 @@ export interface CleaningApi {
   getReferralSummary(): Promise<ReferralSummary>;
   getOrders(): Promise<CleaningOrder[]>;
   getOrder(id: number): Promise<CleaningOrder>;
+  recordRepeatShown(id: number): Promise<void>;
+  getRepeatPrefill(id: number): Promise<CleaningRepeatPrefill>;
   getReportPhoto(orderId: number, mediaId: number): Promise<Blob>;
   cancelOrder(id: number): Promise<CleaningOrder>;
 }

@@ -2724,6 +2724,31 @@ h3 {
 .rental-cleaning-context strong { font-size: 12px; }
 .rental-cleaning-context p,
 .rental-cleaning-context small { margin-top: 3px; color: var(--color-muted); font-size: 10px; line-height: 1.4; }
+.repeat-context-card {
+  display: flex;
+  margin: 0 0 14px;
+  padding: 14px;
+  align-items: flex-start;
+  gap: 11px;
+  color: var(--color-primary-dark);
+  background: var(--color-primary-soft);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 28%, var(--color-line));
+  border-radius: 15px;
+}
+.repeat-context-card > span {
+  display: grid;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  color: var(--color-primary);
+  background: var(--color-surface);
+  border-radius: 11px;
+}
+.repeat-context-card strong,
+.repeat-context-card p { display: block; margin: 0; }
+.repeat-context-card strong { color: var(--color-ink); font-size: 12px; }
+.repeat-context-card p { margin-top: 3px; color: var(--color-muted); font-size: 10px; line-height: 1.4; }
 
 @media (min-width: 540px) {
   .service-catalog__grid { gap: 15px; }
@@ -3166,6 +3191,13 @@ h3 {
 .admin-analytics__transition > span { display: block; color: var(--color-muted); font-size: 12px; font-weight: 800; }
 .admin-analytics__transition strong { display: block; margin-top: 8px; overflow-wrap: anywhere; font-size: 25px; line-height: 1.1; }
 .admin-analytics__transition small { display: block; margin-top: 6px; color: var(--color-primary-dark); font-weight: 750; }
+.admin-analytics__repeat-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.admin-analytics__repeat { min-width: 0; padding: 20px; border: 1px solid var(--color-line); border-radius: 18px; background: var(--color-surface); box-shadow: var(--shadow-soft); }
+.admin-analytics__repeat h3 { margin: 0 0 14px; font-size: 19px; }
+.admin-analytics__repeat dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.admin-analytics__repeat dl div { min-width: 0; padding: 12px; border-radius: 12px; background: color-mix(in srgb, var(--color-canvas) 62%, var(--color-surface)); }
+.admin-analytics__repeat dt { color: var(--color-muted); font-size: 12px; font-weight: 750; }
+.admin-analytics__repeat dd { margin: 5px 0 0; overflow-wrap: anywhere; color: var(--color-ink); font-size: 18px; font-weight: 850; }
 .admin-analytics__table-wrap { width: 100%; overflow-x: auto; }
 .admin-analytics__table { width: 100%; min-width: 790px; border-collapse: collapse; }
 .admin-analytics__table th, .admin-analytics__table td { padding: 14px 16px; border-bottom: 1px solid var(--color-line); text-align: left; font-size: 13px; }
@@ -3223,6 +3255,7 @@ h3 {
   .admin-analytics__section-heading { align-items: flex-start; flex-direction: column; padding: 16px; }
   .admin-analytics__section-heading--standalone { padding: 0 0 11px; }
   .admin-analytics__transition-grid { padding: 14px; }
+  .admin-analytics__repeat-grid { grid-template-columns: minmax(0, 1fr); }
   .admin-analytics-entry { grid-template-columns: 44px minmax(0, 1fr) 18px; padding: 16px; }
   .admin-analytics-entry > span { width: 44px; height: 44px; }
   .campaign-dialog { padding: 20px 16px; border-radius: 24px 24px 0 0; }
@@ -3234,6 +3267,8 @@ h3 {
   .admin-analytics__cards { grid-template-columns: minmax(0, 1fr); }
   .admin-analytics__card span { min-height: 0; }
   .admin-analytics__transition-grid { grid-template-columns: minmax(0, 1fr); }
+  .admin-analytics__repeat { padding: 16px; }
+  .admin-analytics__repeat dl { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* The standalone customer header keeps the same controls in the same order on every route. */

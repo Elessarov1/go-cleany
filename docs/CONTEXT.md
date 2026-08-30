@@ -158,6 +158,8 @@ The UI should progressively use known context to reduce friction. New users prov
 
 Unified customer Activity is implemented at `/account/activity`. Its API composes customer-owned Cleaning, Rental and Transfer data at request time into active/upcoming and terminal-history sections while keeping each vertical aggregate and detail workflow independent. Activity and `/notifications` form one visually unified customer section with persistent tabs while remaining separate read models and routes. The shared customer navigation uses Activity as its stable history destination; legacy vertical list routes remain available.
 
+Same-service repeat is implemented for owned completed Cleaning and Transfer transactions. Their detail pages open safe prefilled forms; the backend rechecks ownership, completed status, service availability and current business configuration at both prefill and creation. Only explicitly reusable fields are copied, current account phone is used, and new scheduling/current price/incentives/assignment/status are never inherited. Typed self-source links preserve attribution without a universal transaction model.
+
 ## Identity
 
 Canonical internal identity:
@@ -269,6 +271,8 @@ Stable campaign entry:
 Admin analytics supports ALL/CLEANING/RENTAL/TRANSFER and calculates new/active customer acquisition, average checks from completed price snapshots without mixing currencies, and Business Health metrics from completed Cleaning, Rental and Transfer tasks.
 
 Retention uses first-completed-task mature 30/90-day cohorts, cumulative mature second-order conversion and median time to the second task. Initial cross-service funnels count only the immediate next completed task. Empty mature cohorts are reported as insufficient data, not zero retention.
+
+Cleaning/Transfer repeat UX is measured as shown → prefill opened → linked repeat created → linked repeat completed, including median time from source completion to repeat creation. Interaction events are deduplicated; creation/completion come from vertical source links.
 
 See [cross-functional/analytics.md](cross-functional/analytics.md).
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useTransferApi } from "../../api/TransferApiProvider";
+import { usePlatformCatalogApi } from "../../api/PlatformCatalogApiProvider";
 import { BrandName } from "../../components/BrandName/BrandName";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import { TransferBookingStatus } from "../../components/TransferBookingStatus/TransferBookingStatus";
@@ -13,9 +14,11 @@ export function TransferBookingDetailsPage() {
   const { id } = useParams();
   const { t, i18n } = useTranslation();
   const api = useTransferApi();
+  const catalogApi = usePlatformCatalogApi();
   const [booking, setBooking] = useState<TransferBooking | null>(null);
   const [failed, setFailed] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [repeatAvailable, setRepeatAvailable] = useState(false);
   const bookingId = Number(id);
   const russian = i18n.resolvedLanguage?.startsWith("ru") ?? true;
   const locale = russian ? "ru-RU" : "en-GB";
@@ -37,6 +40,20 @@ export function TransferBookingDetailsPage() {
       active = false;
     };
   }, [api, bookingId]);
+
+  useEffect(() => {
+    let active = true;
+    setRepeatAvailable(false);
+    if (booking?.status !== "COMPLETED") return () => { active = false; };
+    catalogApi.getServices()
+      .then((services) => {
+        if (!active || !services.some((service) => service.service === "TRANSFER")) return;
+        setRepeatAvailable(true);
+        void api.recordRepeatShown(booking.id).catch(() => undefined);
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [api, booking, catalogApi]);
 
   async function cancel() {
     if (!booking) return;
@@ -79,6 +96,11 @@ export function TransferBookingDetailsPage() {
       <p className="transfer-booking-note">{t("transfer.booking.requestNote")}</p>
       <div className="page-actions">
         <Link className="button button--secondary" to="/transfer/bookings">{t("common.back")}</Link>
+        {repeatAvailable ? (
+          <Link className="button button--primary" to={`/transfer?repeatFrom=${booking.id}`}>
+            {t("transfer.booking.repeat")}
+          </Link>
+        ) : null}
         {canCancel ? <button className="button button--danger" disabled={cancelling} type="button" onClick={() => void cancel()}>{t("transfer.booking.cancel")}</button> : null}
       </div>
     </div>

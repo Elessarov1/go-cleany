@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.catalog.PlatformService;
 import com.cleany.analytics.CustomerAttributionService;
+import com.cleany.analytics.RepeatActionEventType;
+import com.cleany.analytics.RepeatActionTrackingService;
 import com.cleany.catalog.PlatformServiceAccessService;
 import com.cleany.configuration.CleanerProperties;
 import com.cleany.configuration.CleaningProperties;
@@ -31,6 +33,7 @@ import com.cleany.pricing.CleaningPriceService;
 import com.cleany.referral.OrderReferralPlan;
 import com.cleany.referral.ReferralUnlockedEvent;
 import com.cleany.referral.ReferralService;
+import com.cleany.repeat.RepeatSourceNotEligibleException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -58,6 +61,7 @@ public class CleaningOrderService {
     private final RentalCleaningBenefitService rentalCleaningBenefitService;
     private final MediaProviderReferenceService mediaProviderReferenceService;
     private final CustomerAttributionService customerAttributionService;
+    private final RepeatActionTrackingService repeatActionTrackingService;
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -67,13 +71,33 @@ public class CleaningOrderService {
     }
 
     @Transactional
+    public CleaningOrder createOrder(
+            CreateCleaningOrderCommand command,
+            Long repeatFromOrderId
+    ) {
+        return createOrder(customerAccountService.currentCustomer(), command, repeatFromOrderId);
+    }
+
+    @Transactional
     public CleaningOrder createOrder(CurrentCustomer customer, CreateCleaningOrderCommand command) {
+        return createOrder(customer, command, null);
+    }
+
+    @Transactional
+    public CleaningOrder createOrder(
+            CurrentCustomer customer,
+            CreateCleaningOrderCommand command,
+            Long repeatFromOrderId
+    ) {
         Objects.requireNonNull(customer, "customer");
         platformServiceAccessService.requireCanStartCustomerFlow(
                 PlatformService.CLEANING,
                 customer.customerId()
         );
         customerAccountService.lock(customer.customerId());
+        CleaningOrder repeatSource = repeatFromOrderId == null
+                ? null
+                : requireRepeatSource(customer, repeatFromOrderId);
         validateRequestedDate(command.requestedDate());
         String normalizedPhone = phoneNumberNormalizer.normalize(command.phone());
         customerAccountService.updateNormalizedPhone(customer.customerId(), normalizedPhone);
@@ -127,6 +151,9 @@ public class CleaningOrderService {
                 normalizeOptional(command.comment()),
                 createdAt
         );
+        if (repeatSource != null) {
+            order.markRepeatOf(repeatSource.getId());
+        }
         CleaningOrder savedOrder = orderRepository.save(order);
         attachFirstTouchFallback(customer.customerId(), referralPlan, createdAt);
         if (referralPlan != null && referralPlan.rewardId() != null) {
@@ -146,6 +173,39 @@ public class CleaningOrderService {
         );
         eventPublisher.publishEvent(new CleaningOrderCreatedEvent(savedOrder));
         return savedOrder;
+    }
+
+    @Transactional
+    public void recordRepeatShown(long orderId) {
+        recordRepeatShown(customerAccountService.currentCustomer(), orderId);
+    }
+
+    @Transactional
+    public void recordRepeatShown(CurrentCustomer customer, long orderId) {
+        CleaningOrder source = requireRepeatSource(customer, orderId);
+        repeatActionTrackingService.record(
+                customer.customerId(),
+                PlatformService.CLEANING,
+                source.getId(),
+                RepeatActionEventType.CTA_SHOWN
+        );
+    }
+
+    @Transactional
+    public CleaningRepeatPrefillResponse repeatPrefill(long orderId) {
+        return repeatPrefill(customerAccountService.currentCustomer(), orderId);
+    }
+
+    @Transactional
+    public CleaningRepeatPrefillResponse repeatPrefill(CurrentCustomer customer, long orderId) {
+        CleaningOrder source = requireRepeatSource(customer, orderId);
+        repeatActionTrackingService.record(
+                customer.customerId(),
+                PlatformService.CLEANING,
+                source.getId(),
+                RepeatActionEventType.PREFILL_STARTED
+        );
+        return CleaningRepeatPrefillResponse.from(source);
     }
 
     private void attachFirstTouchFallback(
@@ -529,6 +589,18 @@ public class CleaningOrderService {
     private CleaningOrder findCustomerOrder(long orderId, long customerId) {
         return orderRepository.findByIdAndCustomerId(orderId, customerId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
+    }
+
+    private CleaningOrder requireRepeatSource(CurrentCustomer customer, long orderId) {
+        platformServiceAccessService.requireCanStartCustomerFlow(
+                PlatformService.CLEANING,
+                customer.customerId()
+        );
+        CleaningOrder source = findCustomerOrder(orderId, customer.customerId());
+        if (source.getStatus() != CleaningOrderStatus.COMPLETED) {
+            throw new RepeatSourceNotEligibleException("Cleaning order", orderId);
+        }
+        return source;
     }
 
     private void validateRequestedDate(LocalDate requestedDate) {

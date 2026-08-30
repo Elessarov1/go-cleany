@@ -8,6 +8,7 @@ public record AnalyticsOverviewResponse(
         AnalyticsBusinessHealthMetrics businessHealth,
         AnalyticsRetentionMetrics retention,
         List<AnalyticsTransitionMetric> transitions,
+        List<AnalyticsRepeatActionMetric> repeatActions,
         List<AverageCheckMetric> averageChecks,
         List<AcquisitionMetric> acquisition
 ) {

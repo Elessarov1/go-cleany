@@ -10,6 +10,7 @@ import type {
   TransferBooking,
   TransferConfiguration,
   TransferDriverLink,
+  TransferRepeatPrefill,
   UpdateTransferAirportRequest,
   UpdateTransferVehicleRequest,
   UpsertTransferDriverRequest,
@@ -21,6 +22,8 @@ export interface TransferApi {
   createBooking(request: CreateTransferBookingRequest): Promise<TransferBooking>;
   getBookings(): Promise<TransferBooking[]>;
   getBooking(id: number): Promise<TransferBooking>;
+  recordRepeatShown(id: number): Promise<void>;
+  getRepeatPrefill(id: number): Promise<TransferRepeatPrefill>;
   cancelBooking(id: number): Promise<TransferBooking>;
   getAdminAirports(): Promise<AdminTransferAirport[]>;
   createAdminAirport(request: CreateTransferAirportRequest): Promise<AdminTransferAirport>;

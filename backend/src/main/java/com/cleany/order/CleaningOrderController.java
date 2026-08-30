@@ -35,7 +35,7 @@ public class CleaningOrderController {
     public ResponseEntity<CleaningOrderResponse> createOrder(
             @Valid @RequestBody CreateCleaningOrderRequest request
     ) {
-        var order = orderService.createOrder(request.toCommand());
+        var order = orderService.createOrder(request.toCommand(), request.repeatFromOrderId());
         var response = CleaningOrderResponse.from(order, reportService.summary(order));
         return ResponseEntity
                 .created(URI.create(BASE_PATH + "/" + order.getId()))
@@ -60,6 +60,17 @@ public class CleaningOrderController {
     public CleaningOrderResponse getOrder(@PathVariable long id) {
         CleaningOrder order = orderService.getCurrentCustomerOrder(id);
         return CleaningOrderResponse.from(order, reportService.summary(order));
+    }
+
+    @PostMapping("/{id}/repeat-shown")
+    public ResponseEntity<Void> recordRepeatShown(@PathVariable long id) {
+        orderService.recordRepeatShown(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/repeat-prefill")
+    public CleaningRepeatPrefillResponse repeatPrefill(@PathVariable long id) {
+        return orderService.repeatPrefill(id);
     }
 
     @PostMapping("/{id}/cancel")

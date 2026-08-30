@@ -22,6 +22,7 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import com.cleany.catalog.PlatformServiceAccessService;
 import com.cleany.analytics.CustomerAttributionService;
+import com.cleany.analytics.RepeatActionTrackingService;
 import com.cleany.catalog.PlatformService;
 import com.cleany.catalog.PlatformServiceNotAvailableException;
 import com.cleany.configuration.CleanerProperties;
@@ -112,6 +113,7 @@ class CleaningOrderServiceTest {
                 rentalCleaningBenefitService,
                 mediaProviderReferenceService,
                 customerAttributionService,
+                Mockito.mock(RepeatActionTrackingService.class),
                 Clock.fixed(NOW, ZoneOffset.UTC),
                 eventPublisher
         );

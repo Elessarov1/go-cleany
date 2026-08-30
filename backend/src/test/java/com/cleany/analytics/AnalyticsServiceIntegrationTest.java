@@ -230,6 +230,70 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void overview_reportsRepeatActionFunnelBySourceService() {
+        CurrentCustomer customer = customerAt(PERIOD_EVENT.minusSeconds(3600));
+        CreateCleaningOrderCommand command = new CreateCleaningOrderCommand(
+                ServiceArea.MAHMUTLAR,
+                "Repeat analytics address",
+                ApartmentType.TWO_PLUS_ONE,
+                false,
+                CleaningType.REGULAR,
+                LocalDate.now(ZoneId.of("Europe/Istanbul")).plusDays(1),
+                "+905551112233",
+                null,
+                null,
+                null
+        );
+        CleaningOrder source = cleaningOrderService.createOrder(customer, command);
+        jdbcTemplate.update(
+                "update cleaning_order set status = 'COMPLETED', completed_at = ? where id = ?",
+                Timestamp.from(PERIOD_EVENT),
+                source.getId()
+        );
+        CleaningOrder repeated = cleaningOrderService.createOrder(customer, command, source.getId());
+        jdbcTemplate.update(
+                "update cleaning_order set created_at = ?, status = 'COMPLETED', completed_at = ? where id = ?",
+                Timestamp.from(PERIOD_EVENT.plusSeconds(3600)),
+                Timestamp.from(PERIOD_EVENT.plusSeconds(7200)),
+                repeated.getId()
+        );
+        jdbcTemplate.update(
+                """
+                insert into repeat_action_event(customer_id, service, source_entity_id, event_type, occurred_at)
+                values (?, 'CLEANING', ?, 'CTA_SHOWN', ?),
+                       (?, 'CLEANING', ?, 'PREFILL_STARTED', ?)
+                """,
+                customer.customerId(), source.getId(), Timestamp.from(PERIOD_EVENT.plusSeconds(300)),
+                customer.customerId(), source.getId(), Timestamp.from(PERIOD_EVENT.plusSeconds(600))
+        );
+
+        AnalyticsOverviewResponse all = analyticsService.overview(
+                PERIOD_DAY,
+                PERIOD_DAY,
+                AnalyticsServiceDimension.ALL
+        );
+        AnalyticsRepeatActionMetric metric = all.repeatActions().getFirst();
+        AnalyticsOverviewResponse transfer = analyticsService.overview(
+                PERIOD_DAY,
+                PERIOD_DAY,
+                AnalyticsServiceDimension.TRANSFER
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(1, all.repeatActions().size()),
+                () -> Assertions.assertEquals(PlatformService.CLEANING, metric.service()),
+                () -> Assertions.assertEquals(1, metric.shownSources()),
+                () -> Assertions.assertEquals(1, metric.startedSources()),
+                () -> Assertions.assertEquals(1, metric.createdRepeatSources()),
+                () -> Assertions.assertEquals(1, metric.completedRepeatSources()),
+                () -> Assertions.assertEquals(new BigDecimal("1.0000"), metric.startRate()),
+                () -> Assertions.assertEquals(new BigDecimal("1.0000"), metric.completionRate()),
+                () -> Assertions.assertEquals(new BigDecimal("1.0"), metric.medianHoursToRepeat()),
+                () -> Assertions.assertTrue(transfer.repeatActions().isEmpty())
+        );
+    }
+
+    @Test
     void overview_retentionUsesMatureCohortsAndInclusiveThirtyAndNinetyDayBoundaries() {
         Instant firstA = Instant.parse("2026-01-02T10:00:00Z");
         CurrentCustomer exactThirtyDays = customerAt(firstA.minusSeconds(60));
@@ -530,6 +594,7 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
                         null,
                         null,
                         "+905551112233",
+                        null,
                         null
                 )
         );

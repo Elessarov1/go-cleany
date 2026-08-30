@@ -33,6 +33,9 @@ public class CleaningOrder {
     @Column(name = "communication_identity_id", nullable = false)
     private long communicationIdentityId;
 
+    @Column(name = "repeat_source_order_id")
+    private Long repeatSourceOrderId;
+
     @Column(name = "customer_name", nullable = false, length = 255)
     private String customerName;
 
@@ -246,6 +249,13 @@ public class CleaningOrder {
         status = CleaningOrderStatus.CANCELLED;
     }
 
+    void markRepeatOf(long sourceOrderId) {
+        if (sourceOrderId <= 0) {
+            throw new IllegalArgumentException("Repeat source order id must be positive");
+        }
+        repeatSourceOrderId = sourceOrderId;
+    }
+
     void cancelByCleaner(long cleanerId) {
         requireAssignedCleaner(cleanerId);
         if (status != CleaningOrderStatus.ACCEPTED && status != CleaningOrderStatus.AWAITING_REPORT) {
@@ -339,6 +349,10 @@ public class CleaningOrder {
 
     public long getCommunicationIdentityId() {
         return communicationIdentityId;
+    }
+
+    public Long getRepeatSourceOrderId() {
+        return repeatSourceOrderId;
     }
 
     public String getCustomerName() {

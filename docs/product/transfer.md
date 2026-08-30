@@ -86,6 +86,12 @@ See [architecture/telegram.md](../architecture/telegram.md).
 
 Business time uses `Europe/Istanbul`. Current configuration includes minimum booking days ahead, maximum months ahead and 30-minute slot granularity.
 
+## Repeat ride
+
+An owned completed transfer can start a new ride through `/transfer?repeatFrom=<bookingId>`. Safe prefill includes direction, address and passenger/luggage counts. Airport and vehicle are retained only if their current direction-specific price pair is still enabled; otherwise the form selects a currently available pair. Date, time, current account phone, flight details and comment must be supplied or confirmed for the new ride.
+
+The new `TransferBooking` stores a typed source-booking reference but receives fresh configuration/price snapshots and begins in `REQUESTED`. Driver, status, old price and other fulfillment state are never copied.
+
 ## Visual identity
 
 Transfer intentionally uses the implemented monochrome/warm-neutral visual direction rather than inheriting Cleaning blue or Rental warm service color. Use the existing implementation as visual source of truth; do not introduce AI-generated decorative vehicle artwork.

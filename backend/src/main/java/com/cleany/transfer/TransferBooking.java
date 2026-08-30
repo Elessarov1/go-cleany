@@ -41,6 +41,9 @@ public class TransferBooking {
     @Column(name = "communication_identity_id", nullable = false)
     private long communicationIdentityId;
 
+    @Column(name = "repeat_source_booking_id")
+    private Long repeatSourceBookingId;
+
     @Column(name = "customer_name_snapshot", nullable = false)
     private String customerNameSnapshot;
 
@@ -178,6 +181,13 @@ public class TransferBooking {
         this.driver = driver;
         status = TransferBookingStatus.CONFIRMED;
         this.confirmedAt = Objects.requireNonNull(confirmedAt, "confirmedAt");
+    }
+
+    void markRepeatOf(long sourceBookingId) {
+        if (sourceBookingId <= 0) {
+            throw new IllegalArgumentException("Repeat source booking id must be positive");
+        }
+        repeatSourceBookingId = sourceBookingId;
     }
 
     public void reject(String reason, Instant rejectedAt) {

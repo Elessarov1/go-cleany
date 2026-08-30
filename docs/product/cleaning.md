@@ -36,12 +36,14 @@ Cleaning is strategically important because it can become a recurring resident u
 Retention opportunities:
 
 ```text
-Repeat / Book again
-safe prefill from previous cleaning
+Repeat / Book again — implemented for completed owned orders
+safe prefill from previous cleaning — area/address/apartment/duplex/type
 saved address
 contextual repeat reminder
 automatic source-order context for support
 ```
+
+Repeat creation stores `CleaningOrder.repeatSourceOrderId`. It never inherits scheduling, price, incentives, comments, fulfillment assignment or status. Current service availability, pricing, phone and eligibility remain authoritative at creation time.
 
 Do not invent a generic recurrence engine before repeat behavior is observed.
 

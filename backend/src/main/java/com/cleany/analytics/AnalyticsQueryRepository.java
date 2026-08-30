@@ -274,6 +274,113 @@ public class AnalyticsQueryRepository {
         });
     }
 
+    public List<AnalyticsRepeatActionMetric> repeatActions(AnalyticsTimeWindow window) {
+        return jdbcTemplate.query("""
+                with source_tasks as (
+                    select cleaning.id source_id,
+                           cleaning.customer_id,
+                           'CLEANING' service,
+                           cleaning.completed_at source_completed_at
+                      from cleaning_order cleaning
+                     where cleaning.status = 'COMPLETED'
+                       and cleaning.completed_at >= :fromInclusive
+                       and cleaning.completed_at < :toExclusive
+                       and :service in ('ALL', 'CLEANING')
+                    union all
+                    select transfer.id source_id,
+                           transfer.customer_id,
+                           'TRANSFER' service,
+                           transfer.completed_at source_completed_at
+                      from transfer_booking transfer
+                     where transfer.status = 'COMPLETED'
+                       and transfer.completed_at >= :fromInclusive
+                       and transfer.completed_at < :toExclusive
+                       and :service in ('ALL', 'TRANSFER')
+                ),
+                repeat_targets as (
+                    select cleaning.repeat_source_order_id source_id,
+                           'CLEANING' service,
+                           cleaning.created_at,
+                           cleaning.status,
+                           cleaning.completed_at
+                      from cleaning_order cleaning
+                     where cleaning.repeat_source_order_id is not null
+                       and cleaning.created_at < :toExclusive
+                    union all
+                    select transfer.repeat_source_booking_id source_id,
+                           'TRANSFER' service,
+                           transfer.created_at,
+                           transfer.status,
+                           transfer.completed_at
+                      from transfer_booking transfer
+                     where transfer.repeat_source_booking_id is not null
+                       and transfer.created_at < :toExclusive
+                ),
+                source_metrics as (
+                    select source.*,
+                           exists (
+                               select 1
+                                 from repeat_action_event event
+                                where event.customer_id = source.customer_id
+                                  and event.service = source.service
+                                  and event.source_entity_id = source.source_id
+                                  and event.event_type = 'CTA_SHOWN'
+                                  and event.occurred_at < :toExclusive
+                           ) shown,
+                           exists (
+                               select 1
+                                 from repeat_action_event event
+                                where event.customer_id = source.customer_id
+                                  and event.service = source.service
+                                  and event.source_entity_id = source.source_id
+                                  and event.event_type = 'PREFILL_STARTED'
+                                  and event.occurred_at < :toExclusive
+                           ) started,
+                           (select min(target.created_at)
+                              from repeat_targets target
+                             where target.service = source.service
+                               and target.source_id = source.source_id
+                           ) first_repeat_created_at,
+                           exists (
+                               select 1
+                                 from repeat_targets target
+                                where target.service = source.service
+                                  and target.source_id = source.source_id
+                                  and target.status = 'COMPLETED'
+                                  and target.completed_at < :toExclusive
+                           ) completed
+                      from source_tasks source
+                )
+                select service,
+                       count(*) filter (where shown) shown_sources,
+                       count(*) filter (where started) started_sources,
+                       count(*) filter (where first_repeat_created_at is not null) created_sources,
+                       count(*) filter (where completed) completed_sources,
+                       percentile_cont(0.5) within group (
+                           order by extract(epoch from (first_repeat_created_at - source_completed_at)) / 3600.0
+                       ) filter (where first_repeat_created_at is not null) median_hours
+                  from source_metrics
+                 group by service
+                 order by service
+                """, parameters(window), (resultSet, rowNumber) -> {
+            long shown = resultSet.getLong("shown_sources");
+            long started = resultSet.getLong("started_sources");
+            long created = resultSet.getLong("created_sources");
+            long completed = resultSet.getLong("completed_sources");
+            BigDecimal medianHours = resultSet.getBigDecimal("median_hours");
+            return new AnalyticsRepeatActionMetric(
+                    PlatformService.valueOf(resultSet.getString("service")),
+                    shown,
+                    started,
+                    created,
+                    completed,
+                    nullableRatio(started, shown),
+                    nullableRatio(completed, created),
+                    medianHours == null ? null : medianHours.setScale(1, RoundingMode.HALF_UP)
+            );
+        });
+    }
+
     public AnalyticsCustomerMetrics customerMetrics(AnalyticsTimeWindow window) {
         Map<String, Object> parameters = parameters(window);
         return jdbcTemplate.queryForObject("""

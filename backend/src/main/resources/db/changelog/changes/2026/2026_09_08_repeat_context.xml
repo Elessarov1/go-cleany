@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260908-01" author="loco-place">
+        <comment>Link repeated cleaning and transfer transactions to their completed source.</comment>
+        <addColumn tableName="cleaning_order">
+            <column name="repeat_source_order_id" type="BIGINT"/>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="cleaning_order"
+                                 baseColumnNames="repeat_source_order_id"
+                                 constraintName="fk_cleaning_order_repeat_source"
+                                 referencedTableName="cleaning_order"
+                                 referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <createIndex tableName="cleaning_order" indexName="idx_cleaning_order_repeat_source">
+            <column name="repeat_source_order_id"/>
+        </createIndex>
+
+        <addColumn tableName="transfer_booking">
+            <column name="repeat_source_booking_id" type="BIGINT"/>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="transfer_booking"
+                                 baseColumnNames="repeat_source_booking_id"
+                                 constraintName="fk_transfer_booking_repeat_source"
+                                 referencedTableName="transfer_booking"
+                                 referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <createIndex tableName="transfer_booking" indexName="idx_transfer_booking_repeat_source">
+            <column name="repeat_source_booking_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropIndex tableName="transfer_booking" indexName="idx_transfer_booking_repeat_source"/>
+            <dropForeignKeyConstraint baseTableName="transfer_booking"
+                                      constraintName="fk_transfer_booking_repeat_source"/>
+            <dropColumn tableName="transfer_booking" columnName="repeat_source_booking_id"/>
+            <dropIndex tableName="cleaning_order" indexName="idx_cleaning_order_repeat_source"/>
+            <dropForeignKeyConstraint baseTableName="cleaning_order"
+                                      constraintName="fk_cleaning_order_repeat_source"/>
+            <dropColumn tableName="cleaning_order" columnName="repeat_source_order_id"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="20260908-02" author="loco-place">
+        <comment>Record unique customer interactions with repeat actions.</comment>
+        <createTable tableName="repeat_action_event">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_repeat_action_event" nullable="false"/>
+            </column>
+            <column name="customer_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="service" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="source_entity_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="event_type" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="occurred_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="repeat_action_event"
+                                 baseColumnNames="customer_id"
+                                 constraintName="fk_repeat_action_event_customer"
+                                 referencedTableName="customer_account"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addUniqueConstraint tableName="repeat_action_event"
+                             columnNames="customer_id,service,source_entity_id,event_type"
+                             constraintName="uk_repeat_action_event_source_type"/>
+        <createIndex tableName="repeat_action_event" indexName="idx_repeat_action_event_service_time">
+            <column name="service"/>
+            <column name="occurred_at"/>
+        </createIndex>
+        <sql dbms="postgresql"><![CDATA[
+            alter table repeat_action_event
+                add constraint ck_repeat_action_event_service check (
+                    service in ('CLEANING', 'TRANSFER')
+                ),
+                add constraint ck_repeat_action_event_type check (
+                    event_type in ('CTA_SHOWN', 'PREFILL_STARTED')
+                ),
+                add constraint ck_repeat_action_event_source check (source_entity_id > 0);
+        ]]></sql>
+        <rollback>
+            <dropTable tableName="repeat_action_event"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

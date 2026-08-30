@@ -37,6 +37,17 @@ Current successful transaction values use immutable completed snapshots and neve
 
 The admin overview also exposes Business Health, mature retention cohorts and immediate-next-task transitions directly from current transactional data. No separate analytics database or generic transaction aggregate is used.
 
+The same overview exposes a lightweight repeat-action funnel for Cleaning and Transfer. Its source cohort is completed source transactions inside the selected reporting period and service filter:
+
+```text
+repeat action shown
+→ safe prefill opened
+→ linked repeat transaction created
+→ linked repeat transaction completed
+```
+
+Shown/opened interactions are durable semantic events, deduplicated per customer, service, source and event type. Created/completed counts come from typed source links on the vertical transactions. Start rate is opened/shown, completion rate is completed/created, and time to repeat is the median from source completion to linked repeat creation. A missing denominator is returned as `null`, not as 0%.
+
 ## Business Health semantics
 
 For the selected reporting period and service filter:

@@ -28,6 +28,7 @@ public class AnalyticsService {
                 queryRepository.businessHealth(window),
                 queryRepository.retention(window),
                 queryRepository.transitions(window),
+                queryRepository.repeatActions(window),
                 queryRepository.averageChecks(window),
                 queryRepository.acquisitionMetrics(window)
         );

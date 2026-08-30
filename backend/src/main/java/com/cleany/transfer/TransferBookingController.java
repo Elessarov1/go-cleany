@@ -48,6 +48,17 @@ public class TransferBookingController {
         return bookingService.currentCustomerBooking(bookingId);
     }
 
+    @PostMapping("/bookings/{bookingId}/repeat-shown")
+    public ResponseEntity<Void> recordRepeatShown(@PathVariable long bookingId) {
+        bookingService.recordRepeatShown(bookingId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/bookings/{bookingId}/repeat-prefill")
+    public TransferRepeatPrefillResponse repeatPrefill(@PathVariable long bookingId) {
+        return bookingService.repeatPrefill(bookingId);
+    }
+
     @PostMapping("/bookings/{bookingId}/cancel")
     public TransferBookingResponse cancel(@PathVariable long bookingId) {
         return bookingService.cancelCurrentCustomerBooking(bookingId);

@@ -10,6 +10,7 @@ import type {
   CleaningOrder,
   CleaningOrderQuote,
   CleaningOrderQuoteRequest,
+  CleaningRepeatPrefill,
   CreateCleaningOrderRequest,
   ReferralSummary,
 } from "../domain/order";
@@ -98,6 +99,14 @@ export class HttpCleaningApi implements CleaningApi {
 
   getOrder(id: number): Promise<CleaningOrder> {
     return this.request(`/api/v1/cleaning/orders/${id}`);
+  }
+
+  async recordRepeatShown(id: number): Promise<void> {
+    await this.request(`/api/v1/cleaning/orders/${id}/repeat-shown`, { method: "POST" });
+  }
+
+  getRepeatPrefill(id: number): Promise<CleaningRepeatPrefill> {
+    return this.request(`/api/v1/cleaning/orders/${id}/repeat-prefill`, { method: "POST" });
   }
 
   getReportPhoto(orderId: number, mediaId: number): Promise<Blob> {

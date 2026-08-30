@@ -13,6 +13,7 @@ import type {
   ApartmentType,
   CleaningType,
   CleaningOrderQuote,
+  CleaningRepeatPrefill,
   CreateCleaningOrderRequest,
   ServiceArea,
 } from "../../domain/order";
@@ -79,17 +80,53 @@ export function CreateOrderPage() {
   const [rentalContext, setRentalContext] = useState<RentalCleaningContext | null>(null);
   const [rentalPromoCode, setRentalPromoCode] = useState("");
   const [rentalBenefitError, setRentalBenefitError] = useState(false);
+  const [repeatContext, setRepeatContext] = useState<CleaningRepeatPrefill | null>(null);
+  const [repeatContextError, setRepeatContextError] = useState(false);
   const locale = i18n.resolvedLanguage === "ru" ? "ru-RU" : "en-GB";
 
   useEffect(() => {
     const referralCode = searchParams.get("ref")?.trim();
-    if (referralCode && !searchParams.get("rentalBooking")) {
+    if (referralCode && !searchParams.get("rentalBooking") && !searchParams.get("repeatFrom")) {
       setForm((current) => ({
         ...current,
         referralCode: referralCode.slice(0, 32).toUpperCase(),
       }));
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    setRepeatContext(null);
+    setRepeatContextError(false);
+    if (!authentication.current.authenticated || searchParams.get("rentalBooking")) return;
+    const rawSourceId = searchParams.get("repeatFrom");
+    if (rawSourceId === null) return;
+    const sourceOrderId = Number(rawSourceId);
+    if (!Number.isSafeInteger(sourceOrderId) || sourceOrderId <= 0) {
+      setRepeatContextError(true);
+      return;
+    }
+    let active = true;
+    api.getRepeatPrefill(sourceOrderId)
+      .then((context) => {
+        if (!active) return;
+        setRepeatContext(context);
+        setForm((current) => ({
+          ...current,
+          area: context.area,
+          address: context.address,
+          apartmentType: context.apartmentType,
+          duplex: context.duplex,
+          cleaningType: context.cleaningType,
+          requestedDate: "",
+          comment: "",
+          referralCode: "",
+        }));
+      })
+      .catch(() => {
+        if (active) setRepeatContextError(true);
+      });
+    return () => { active = false; };
+  }, [api, authentication.current.authenticated, searchParams]);
 
   useEffect(() => {
     if (!authentication.current.authenticated) {
@@ -342,6 +379,7 @@ export function CreateOrderPage() {
       comment: form.comment.trim() || undefined,
       referralCode: rentalPromoCode ? undefined : form.referralCode.trim() || undefined,
       rentalCleaningPromoCode: rentalPromoCode || undefined,
+      repeatFromOrderId: repeatContext?.sourceOrderId,
     };
 
     try {
@@ -391,6 +429,10 @@ export function CreateOrderPage() {
       ) {
         setRentalBenefitError(true);
         setSubmitError("rentalBenefit");
+      } else if (error instanceof CleaningApiError && error.code === "repeat_source_not_eligible") {
+        setRepeatContext(null);
+        setRepeatContextError(true);
+        setSubmitError("createOrder");
       } else {
         setSubmitError("createOrder");
       }
@@ -444,6 +486,17 @@ export function CreateOrderPage() {
           </div>
         </section>
       ) : null}
+
+      {repeatContext ? (
+        <section className="repeat-context-card">
+          <span><Icon name="calendar-plus" size={21} /></span>
+          <div>
+            <strong>{t("create.repeatContext.title", { id: repeatContext.sourceOrderId })}</strong>
+            <p>{t("create.repeatContext.text")}</p>
+          </div>
+        </section>
+      ) : null}
+      {repeatContextError ? <p className="form-alert">{t("create.repeatContext.error")}</p> : null}
 
       <form className="booking-form" noValidate onSubmit={handleSubmit}>
         <section className="form-section">

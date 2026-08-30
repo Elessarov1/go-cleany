@@ -10,6 +10,7 @@ import type {
   TransferBooking,
   TransferConfiguration,
   TransferDriverLink,
+  TransferRepeatPrefill,
   UpdateTransferAirportRequest,
   UpdateTransferVehicleRequest,
   UpsertTransferDriverRequest,
@@ -38,6 +39,14 @@ export class HttpTransferApi implements TransferApi {
 
   getBooking(id: number): Promise<TransferBooking> {
     return this.client.request(`/api/v1/transfer/bookings/${id}`);
+  }
+
+  async recordRepeatShown(id: number): Promise<void> {
+    await this.client.request(`/api/v1/transfer/bookings/${id}/repeat-shown`, { method: "POST" });
+  }
+
+  getRepeatPrefill(id: number): Promise<TransferRepeatPrefill> {
+    return this.client.request(`/api/v1/transfer/bookings/${id}/repeat-prefill`, { method: "POST" });
   }
 
   cancelBooking(id: number): Promise<TransferBooking> {

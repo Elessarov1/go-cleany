@@ -33,6 +33,7 @@ import com.cleany.order.OrderClaimConflictException;
 import com.cleany.order.OrderNotFoundException;
 import com.cleany.order.CleaningReportExpiredException;
 import com.cleany.referral.ReferralNotApplicableException;
+import com.cleany.repeat.RepeatSourceNotEligibleException;
 import com.cleany.rental.InvalidRentalBookingException;
 import com.cleany.rental.InvalidRentalDateRangeException;
 import com.cleany.rental.InvalidRentalOccupancyException;
@@ -438,6 +439,18 @@ public class GlobalExceptionHandler {
                 HttpStatus.SERVICE_UNAVAILABLE,
                 "service_not_available",
                 "The requested service is not currently available",
+                Collections.emptyMap()
+        );
+    }
+
+    @ExceptionHandler(RepeatSourceNotEligibleException.class)
+    ResponseEntity<ApiError> handleRepeatSourceNotEligible(
+            RepeatSourceNotEligibleException exception
+    ) {
+        return response(
+                HttpStatus.CONFLICT,
+                "repeat_source_not_eligible",
+                exception.getMessage(),
                 Collections.emptyMap()
         );
     }

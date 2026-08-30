@@ -38,6 +38,16 @@ export interface CreateCleaningOrderRequest {
   comment?: string;
   referralCode?: string;
   rentalCleaningPromoCode?: string;
+  repeatFromOrderId?: number;
+}
+
+export interface CleaningRepeatPrefill {
+  sourceOrderId: number;
+  area: ServiceArea;
+  address: string;
+  apartmentType: ApartmentType;
+  duplex: boolean;
+  cleaningType: CleaningType;
 }
 
 export interface CleaningOrderQuoteRequest {

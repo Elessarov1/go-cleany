@@ -124,7 +124,7 @@ class TransferAssignmentConcurrencyIntegrationTest extends BaseIntegrationTest {
         return bookingService.create(customer, new CreateTransferBookingRequest(
                 TransferDirection.TO_AIRPORT, airport.getId(), vehicle.getId(),
                 bookingPolicy.earliestBookingDate(), LocalTime.of(10, 0), "Kestel, Alanya",
-                2, 2, null, null, "+905551112233", null
+                2, 2, null, null, "+905551112233", null, null
         ));
     }
 

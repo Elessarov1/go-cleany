@@ -1,6 +1,7 @@
 package com.cleany.transfer;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.LocalTime;
 
@@ -15,12 +16,14 @@ import org.mockito.Mockito;
 
 import com.cleany.admin.AdminAccessService;
 import com.cleany.base.BaseIntegrationTest;
+import com.cleany.catalog.PlatformServiceNotAvailableException;
 import com.cleany.customer.AuthenticatedCustomerIdentity;
 import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountRepository;
 import com.cleany.customer.CustomerAccountService;
 import com.cleany.customer.CustomerExternalIdentityRepository;
 import com.cleany.customer.ExternalIdentityProvider;
+import com.cleany.repeat.RepeatSourceNotEligibleException;
 
 class TransferBookingIntegrationTest extends BaseIntegrationTest {
 
@@ -227,6 +230,7 @@ class TransferBookingIntegrationTest extends BaseIntegrationTest {
                 "TK123",
                 LocalTime.of(3, 0),
                 "+905551112233",
+                null,
                 null
         );
 
@@ -347,6 +351,120 @@ class TransferBookingIntegrationTest extends BaseIntegrationTest {
         );
     }
 
+    @Test
+    void completedOwnedBooking_prefillsReusableFieldsAndCreatesFreshLinkedBooking() {
+        CurrentCustomer owner = customer("transfer-repeat-owner");
+        TransferAirport airport = airport("AYT");
+        TransferVehicleType vehicle = vehicle("MINIVAN");
+        TransferPrice price = priceRepository.saveAndFlush(new TransferPrice(
+                airport,
+                vehicle,
+                TransferDirection.TO_AIRPORT,
+                new BigDecimal("3200.00"),
+                "TRY",
+                true,
+                clock.instant()
+        ));
+        TransferBookingResponse source = bookingService.create(
+                owner,
+                request(airport, vehicle, TransferDirection.TO_AIRPORT, null, null)
+        );
+        markCompleted(source);
+
+        bookingService.recordRepeatShown(owner, source.id());
+        bookingService.recordRepeatShown(owner, source.id());
+        TransferRepeatPrefillResponse prefill = bookingService.repeatPrefill(owner, source.id());
+        bookingService.repeatPrefill(owner, source.id());
+        price.update(new BigDecimal("4100.00"), "TRY", true, clock.instant());
+        priceRepository.saveAndFlush(price);
+        TransferBookingResponse repeated = bookingService.create(owner, new CreateTransferBookingRequest(
+                prefill.direction(),
+                prefill.airportId(),
+                prefill.vehicleTypeId(),
+                bookingPolicy.earliestBookingDate().plusDays(1),
+                LocalTime.of(11, 0),
+                prefill.address(),
+                prefill.passengerCount(),
+                prefill.luggageCount(),
+                null,
+                null,
+                "+905559990000",
+                null,
+                source.id()
+        ));
+        jdbcTemplate.update("update transfer_price set enabled = false where id = ?", price.getId());
+        TransferRepeatPrefillResponse unavailablePair = bookingService.repeatPrefill(owner, source.id());
+        TransferBooking repeatedEntity = bookingRepository.findById(repeated.id()).orElseThrow();
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(source.id(), prefill.sourceBookingId()),
+                () -> Assertions.assertEquals(TransferDirection.TO_AIRPORT, prefill.direction()),
+                () -> Assertions.assertEquals(airport.getId(), prefill.airportId()),
+                () -> Assertions.assertEquals(vehicle.getId(), prefill.vehicleTypeId()),
+                () -> Assertions.assertEquals("Kestel, Alanya", prefill.address()),
+                () -> Assertions.assertEquals(source.id(), repeatedEntity.getRepeatSourceBookingId()),
+                () -> Assertions.assertEquals(new BigDecimal("4100.00"), repeated.priceAmount()),
+                () -> Assertions.assertEquals("+905559990000", repeated.phone()),
+                () -> Assertions.assertNull(repeated.flightNumber()),
+                () -> Assertions.assertNull(repeated.scheduledArrivalTime()),
+                () -> Assertions.assertNull(repeated.comment()),
+                () -> Assertions.assertNotEquals(source.pickupDate(), repeated.pickupDate()),
+                () -> Assertions.assertNotEquals(source.pickupTime(), repeated.pickupTime()),
+                () -> Assertions.assertNull(unavailablePair.airportId()),
+                () -> Assertions.assertNull(unavailablePair.vehicleTypeId()),
+                () -> Assertions.assertEquals(2L, jdbcTemplate.queryForObject(
+                        "select count(*) from repeat_action_event where customer_id = ? and service = 'TRANSFER'",
+                        Long.class,
+                        owner.customerId()
+                ))
+        );
+    }
+
+    @Test
+    void transferRepeatRejectsForeignNonCompletedAndDisabledSources() {
+        CurrentCustomer owner = customer("transfer-repeat-validation-owner");
+        CurrentCustomer stranger = customer("transfer-repeat-validation-stranger");
+        TransferAirport airport = airport("GZP");
+        TransferVehicleType vehicle = vehicle("SEDAN");
+        priceRepository.saveAndFlush(new TransferPrice(
+                airport,
+                vehicle,
+                TransferDirection.TO_AIRPORT,
+                new BigDecimal("1800.00"),
+                "TRY",
+                true,
+                clock.instant()
+        ));
+        TransferBookingResponse source = bookingService.create(
+                owner,
+                request(airport, vehicle, TransferDirection.TO_AIRPORT, null, null)
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertThrows(
+                        RepeatSourceNotEligibleException.class,
+                        () -> bookingService.repeatPrefill(owner, source.id())
+                ),
+                () -> Assertions.assertThrows(
+                        TransferBookingNotFoundException.class,
+                        () -> bookingService.repeatPrefill(stranger, source.id())
+                )
+        );
+
+        markCompleted(source);
+        jdbcTemplate.update("""
+                update platform_service_state
+                   set status = 'DISABLED', version = version + 1
+                 where service = 'TRANSFER'
+                """);
+        clearPlatformServiceStateCache();
+
+        Assertions.assertThrows(
+                PlatformServiceNotAvailableException.class,
+                () -> bookingService.repeatPrefill(owner, source.id())
+        );
+    }
+
     private CreateTransferBookingRequest request(
             TransferAirport airport,
             TransferVehicleType vehicle,
@@ -366,7 +484,29 @@ class TransferBookingIntegrationTest extends BaseIntegrationTest {
                 flightNumber,
                 scheduledArrivalTime,
                 "+90 555 111 22 33",
+                null,
                 null
+        );
+    }
+
+    private void markCompleted(TransferBookingResponse booking) {
+        TransferDriver driver = driverRepository.saveAndFlush(new TransferDriver(
+                "Repeat test driver",
+                "+905551118888",
+                true,
+                null,
+                clock.instant().minusSeconds(120)
+        ));
+        jdbcTemplate.update(
+                """
+                update transfer_booking
+                   set status = 'COMPLETED', driver_id = ?, confirmed_at = ?, completed_at = ?
+                 where id = ?
+                """,
+                driver.getId(),
+                Timestamp.from(clock.instant().minusSeconds(60)),
+                Timestamp.from(clock.instant()),
+                booking.id()
         );
     }
 

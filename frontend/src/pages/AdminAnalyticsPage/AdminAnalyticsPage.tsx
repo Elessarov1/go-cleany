@@ -191,6 +191,36 @@ export function AdminAnalyticsPage() {
             </div>
           </section>
 
+          <section className="admin-analytics__section" aria-labelledby="repeat-actions-heading">
+            <SectionHeading
+              id="repeat-actions-heading"
+              title={t("analytics.repeatActions.title")}
+              subtitle={t("analytics.repeatActions.subtitle")}
+            />
+            {overview.repeatActions.length === 0 ? (
+              <p className="admin-analytics__empty admin-analytics__empty--card">{t("analytics.repeatActions.empty")}</p>
+            ) : (
+              <div className="admin-analytics__repeat-grid">
+                {overview.repeatActions.map((metric) => (
+                  <article className="admin-analytics__repeat" key={metric.service}>
+                    <h3>{t(`analytics.services.${metric.service}`)}</h3>
+                    <dl>
+                      <div><dt>{t("analytics.repeatActions.shown")}</dt><dd>{number.format(metric.shownSources)}</dd></div>
+                      <div><dt>{t("analytics.repeatActions.started")}</dt><dd>{number.format(metric.startedSources)}</dd></div>
+                      <div><dt>{t("analytics.repeatActions.created")}</dt><dd>{number.format(metric.createdRepeatSources)}</dd></div>
+                      <div><dt>{t("analytics.repeatActions.completed")}</dt><dd>{number.format(metric.completedRepeatSources)}</dd></div>
+                      <div><dt>{t("analytics.repeatActions.startRate")}</dt><dd>{formatRate(metric.startRate, percent, t("analytics.insufficientData"))}</dd></div>
+                      <div><dt>{t("analytics.repeatActions.completionRate")}</dt><dd>{formatRate(metric.completionRate, percent, t("analytics.insufficientData"))}</dd></div>
+                      <div><dt>{t("analytics.repeatActions.medianTime")}</dt><dd>{metric.medianHoursToRepeat === null
+                        ? t("analytics.insufficientData")
+                        : t("analytics.hours", { count: decimal.format(metric.medianHoursToRepeat) })}</dd></div>
+                    </dl>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+
           <section className="admin-analytics__section" aria-labelledby="average-checks-heading">
             <SectionHeading
               id="average-checks-heading"

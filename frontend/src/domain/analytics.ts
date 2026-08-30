@@ -70,6 +70,16 @@ export interface AnalyticsOverview {
     convertedCustomers: number;
     conversionRate: number | null;
   }>;
+  repeatActions: Array<{
+    service: "CLEANING" | "TRANSFER";
+    shownSources: number;
+    startedSources: number;
+    createdRepeatSources: number;
+    completedRepeatSources: number;
+    startRate: number | null;
+    completionRate: number | null;
+    medianHoursToRepeat: number | null;
+  }>;
   averageChecks: Array<{
     service: Exclude<AnalyticsService, "ALL">;
     currency: string;

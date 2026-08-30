@@ -9,9 +9,12 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import com.cleany.analytics.CustomerAttributionService;
 import com.cleany.catalog.PlatformService;
+import com.cleany.analytics.RepeatActionEventType;
+import com.cleany.analytics.RepeatActionTrackingService;
 import com.cleany.catalog.PlatformServiceAccessService;
 import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountService;
+import com.cleany.repeat.RepeatSourceNotEligibleException;
 import com.cleany.order.PhoneNumberNormalizer;
 
 import lombok.RequiredArgsConstructor;
@@ -29,6 +32,7 @@ public class TransferBookingService {
     private final CustomerAccountService customerAccountService;
     private final PhoneNumberNormalizer phoneNumberNormalizer;
     private final CustomerAttributionService customerAttributionService;
+    private final RepeatActionTrackingService repeatActionTrackingService;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
@@ -68,6 +72,9 @@ public class TransferBookingService {
             CreateTransferBookingRequest request
     ) {
         requireCustomerFlow(customer);
+        TransferBooking repeatSource = request.repeatFromBookingId() == null
+                ? null
+                : requireRepeatSource(customer, request.repeatFromBookingId());
         bookingPolicy.requireBookable(request.pickupDate(), request.pickupTime());
         TransferAirport airport = airportRepository.findByIdAndEnabledTrue(request.airportId())
                 .orElseThrow(() -> new TransferConfigurationUnavailableException("airport"));
@@ -86,7 +93,7 @@ public class TransferBookingService {
         String normalizedPhone = phoneNumberNormalizer.normalize(request.phone());
         customerAccountService.updateNormalizedPhone(customer.customerId(), normalizedPhone);
         var createdAt = clock.instant();
-        TransferBooking booking = bookingRepository.saveAndFlush(new TransferBooking(
+        TransferBooking booking = new TransferBooking(
                 new NewTransferBooking(
                         customer.customerId(),
                         customer.externalIdentityId(),
@@ -106,7 +113,11 @@ public class TransferBookingService {
                         price,
                         createdAt
                 )
-        ));
+        );
+        if (repeatSource != null) {
+            booking.markRepeatOf(repeatSource.getId());
+        }
+        booking = bookingRepository.saveAndFlush(booking);
         customerAttributionService.attachOrganicFallback(
                 customer.customerId(),
                 createdAt,
@@ -119,6 +130,58 @@ public class TransferBookingService {
                 booking.getCommunicationIdentityId()
         ));
         return response;
+    }
+
+    @Transactional
+    public void recordRepeatShown(long bookingId) {
+        recordRepeatShown(customerAccountService.currentCustomer(), bookingId);
+    }
+
+    @Transactional
+    public void recordRepeatShown(CurrentCustomer customer, long bookingId) {
+        TransferBooking source = requireRepeatSource(customer, bookingId);
+        repeatActionTrackingService.record(
+                customer.customerId(),
+                PlatformService.TRANSFER,
+                source.getId(),
+                RepeatActionEventType.CTA_SHOWN
+        );
+    }
+
+    @Transactional
+    public TransferRepeatPrefillResponse repeatPrefill(long bookingId) {
+        return repeatPrefill(customerAccountService.currentCustomer(), bookingId);
+    }
+
+    @Transactional
+    public TransferRepeatPrefillResponse repeatPrefill(CurrentCustomer customer, long bookingId) {
+        TransferBooking source = requireRepeatSource(customer, bookingId);
+        boolean currentPairAvailable = source.getAirport().isEnabled()
+                && source.getVehicleType().isEnabled()
+                && priceRepository.findByAirport_IdAndVehicleType_IdAndDirectionAndEnabledTrue(
+                        source.getAirport().getId(),
+                        source.getVehicleType().getId(),
+                        source.getDirection()
+                ).isPresent();
+        repeatActionTrackingService.record(
+                customer.customerId(),
+                PlatformService.TRANSFER,
+                source.getId(),
+                RepeatActionEventType.PREFILL_STARTED
+        );
+        return new TransferRepeatPrefillResponse(
+                source.getId(),
+                source.getDirection(),
+                currentPairAvailable ? source.getAirport().getId() : null,
+                currentPairAvailable ? source.getVehicleType().getId() : null,
+                source.getAddress(),
+                currentPairAvailable
+                        ? Math.min(source.getPassengerCount(), source.getVehicleType().getMaxPassengers())
+                        : source.getPassengerCount(),
+                currentPairAvailable
+                        ? Math.min(source.getLuggageCount(), source.getVehicleType().getMaxLuggage())
+                        : source.getLuggageCount()
+        );
     }
 
     @Transactional(readOnly = true)
@@ -171,6 +234,15 @@ public class TransferBookingService {
     private TransferBooking requireCustomerBooking(long bookingId, long customerId) {
         return bookingRepository.findByIdAndCustomerId(bookingId, customerId)
                 .orElseThrow(() -> new TransferBookingNotFoundException(bookingId));
+    }
+
+    private TransferBooking requireRepeatSource(CurrentCustomer customer, long bookingId) {
+        requireCustomerFlow(customer);
+        TransferBooking source = requireCustomerBooking(bookingId, customer.customerId());
+        if (source.getStatus() != TransferBookingStatus.COMPLETED) {
+            throw new RepeatSourceNotEligibleException("Transfer booking", bookingId);
+        }
+        return source;
     }
 
     private void requireCustomerFlow(CurrentCustomer customer) {

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCleaningApi } from "../../api/CleaningApiProvider";
+import { usePlatformCatalogApi } from "../../api/PlatformCatalogApiProvider";
 import { Icon } from "../../components/Icon/Icon";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import { OrderStatus } from "../../components/OrderStatus/OrderStatus";
@@ -15,6 +16,7 @@ export function OrderDetailsPage() {
   const orderId = Number(id);
   const { t, i18n } = useTranslation();
   const api = useCleaningApi();
+  const catalogApi = usePlatformCatalogApi();
   const location = useLocation();
   const [order, setOrder] = useState<CleaningOrder | null>(null);
   const [error, setError] = useState(false);
@@ -23,6 +25,7 @@ export function OrderDetailsPage() {
   const [cancelError, setCancelError] = useState(false);
   const [reportPhotos, setReportPhotos] = useState<Array<{ id: number; url: string }>>([]);
   const [activePhoto, setActivePhoto] = useState<string | null>(null);
+  const [repeatAvailable, setRepeatAvailable] = useState(false);
   const locale = i18n.resolvedLanguage === "ru" ? "ru-RU" : "en-GB";
 
   useEffect(() => {
@@ -61,6 +64,20 @@ export function OrderDetailsPage() {
       urls.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [api, order, orderId]);
+
+  useEffect(() => {
+    let active = true;
+    setRepeatAvailable(false);
+    if (order?.status !== "COMPLETED") return () => { active = false; };
+    catalogApi.getServices()
+      .then((services) => {
+        if (!active || !services.some((service) => service.service === "CLEANING")) return;
+        setRepeatAvailable(true);
+        void api.recordRepeatShown(order.id).catch(() => undefined);
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [api, catalogApi, order]);
 
   const cancelOrder = async () => {
     if (!window.confirm(t("details.cancelConfirm"))) return;
@@ -188,6 +205,11 @@ export function OrderDetailsPage() {
       </div>
 
       {cancelError ? <p className="form-alert" role="alert">{t("details.cancelError")}</p> : null}
+      {repeatAvailable ? (
+        <Link className="button button--primary button--full" to={`/cleaning?repeatFrom=${order.id}`}>
+          {t("details.repeat")}
+        </Link>
+      ) : null}
       {order.status === "NEW" ? (
         <button
           className="button button--danger button--full"

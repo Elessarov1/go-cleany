@@ -12,6 +12,7 @@ import type {
   CleaningOrderQuote,
   CleaningOrderQuoteRequest,
   CleaningOrderStatus,
+  CleaningRepeatPrefill,
   CreateCleaningOrderRequest,
   ReferralSummary,
 } from "../domain/order";
@@ -392,6 +393,28 @@ export class MockCleaningApi implements CleaningApi {
     }
 
     return simulateNetwork(order);
+  }
+
+  async recordRepeatShown(id: number): Promise<void> {
+    const order = await this.getOrder(id);
+    if (order.status !== "COMPLETED") {
+      throw new CleaningApiError("Cleaning order is not eligible for repeat", 409);
+    }
+  }
+
+  async getRepeatPrefill(id: number): Promise<CleaningRepeatPrefill> {
+    const order = await this.getOrder(id);
+    if (order.status !== "COMPLETED") {
+      throw new CleaningApiError("Cleaning order is not eligible for repeat", 409);
+    }
+    return simulateNetwork({
+      sourceOrderId: order.id,
+      area: order.area,
+      address: order.address,
+      apartmentType: order.apartmentType,
+      duplex: order.duplex,
+      cleaningType: order.cleaningType,
+    });
   }
 
   async getReportPhoto(): Promise<Blob> {

@@ -53,6 +53,17 @@ export interface CreateTransferBookingRequest {
   scheduledArrivalTime?: string | null;
   phone: string;
   comment?: string | null;
+  repeatFromBookingId?: number;
+}
+
+export interface TransferRepeatPrefill {
+  sourceBookingId: number;
+  direction: TransferDirection;
+  airportId: number | null;
+  vehicleTypeId: number | null;
+  address: string;
+  passengerCount: number;
+  luggageCount: number;
 }
 
 export interface TransferBooking {

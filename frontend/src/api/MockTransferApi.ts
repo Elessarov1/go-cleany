@@ -10,6 +10,7 @@ import type {
   TransferBooking,
   TransferConfiguration,
   TransferDriverLink,
+  TransferRepeatPrefill,
   UpdateTransferAirportRequest,
   UpdateTransferVehicleRequest,
   UpsertTransferDriverRequest,
@@ -136,6 +137,36 @@ export class MockTransferApi implements TransferApi {
     return booking
       ? Promise.resolve(booking)
       : Promise.reject(new ApiError("Transfer booking not found", 404));
+  }
+
+  async recordRepeatShown(id: number): Promise<void> {
+    const booking = await this.getBooking(id);
+    if (booking.status !== "COMPLETED") {
+      throw new ApiError("Transfer booking is not eligible for repeat", 409);
+    }
+  }
+
+  async getRepeatPrefill(id: number): Promise<TransferRepeatPrefill> {
+    const booking = await this.getBooking(id);
+    if (booking.status !== "COMPLETED") {
+      throw new ApiError("Transfer booking is not eligible for repeat", 409);
+    }
+    const airport = configuration.airports.find((item) => item.code === booking.airportCode);
+    const vehicle = configuration.vehicleTypes.find((item) => item.code === booking.vehicleCode);
+    const pairAvailable = airport && vehicle && configuration.prices.some((price) => (
+      price.airportId === airport.id
+      && price.vehicleTypeId === vehicle.id
+      && price.direction === booking.direction
+    ));
+    return {
+      sourceBookingId: booking.id,
+      direction: booking.direction,
+      airportId: pairAvailable ? airport.id : null,
+      vehicleTypeId: pairAvailable ? vehicle.id : null,
+      address: booking.address,
+      passengerCount: pairAvailable ? Math.min(booking.passengerCount, vehicle.maxPassengers) : booking.passengerCount,
+      luggageCount: pairAvailable ? Math.min(booking.luggageCount, vehicle.maxLuggage) : booking.luggageCount,
+    };
   }
 
   async cancelBooking(id: number): Promise<TransferBooking> {
