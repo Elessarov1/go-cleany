@@ -8,11 +8,13 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Collections;
 
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import com.cleany.catalog.PlatformService;
+import com.cleany.crossservice.rentaltransfer.RentalTransferContextType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -272,6 +274,99 @@ public class AnalyticsQueryRepository {
                     nullableRatio(convertedCustomers, cohortCustomers)
             );
         });
+    }
+
+    public AnalyticsRentalTransferMetrics rentalToTransfer(AnalyticsTimeWindow window) {
+        List<RentalTransferMetricRow> rows = jdbcTemplate.query("""
+                with shown_contexts as (
+                    select event.customer_id,
+                           event.rental_booking_id,
+                           event.context_type,
+                           min(event.occurred_at) shown_at
+                      from rental_transfer_action_event event
+                     where event.event_type = 'CTA_SHOWN'
+                       and event.occurred_at >= :fromInclusive
+                       and event.occurred_at < :toExclusive
+                       and :service in ('ALL', 'RENTAL')
+                     group by event.customer_id, event.rental_booking_id, event.context_type
+                ),
+                context_metrics as (
+                    select shown.*,
+                           exists (
+                               select 1
+                                 from rental_transfer_action_event started
+                                where started.customer_id = shown.customer_id
+                                  and started.rental_booking_id = shown.rental_booking_id
+                                  and started.context_type = shown.context_type
+                                  and started.event_type = 'PREFILL_STARTED'
+                                  and started.occurred_at < :toExclusive
+                           ) started,
+                           (select min(transfer.created_at)
+                              from transfer_booking transfer
+                             where transfer.customer_id = shown.customer_id
+                               and transfer.source_rental_booking_id = shown.rental_booking_id
+                               and transfer.rental_context_type = shown.context_type
+                               and transfer.created_at < :toExclusive
+                           ) first_created_at,
+                           exists (
+                               select 1
+                                 from transfer_booking transfer
+                                where transfer.customer_id = shown.customer_id
+                                  and transfer.source_rental_booking_id = shown.rental_booking_id
+                                  and transfer.rental_context_type = shown.context_type
+                                  and transfer.status = 'COMPLETED'
+                                  and transfer.completed_at < :toExclusive
+                           ) completed
+                      from shown_contexts shown
+                )
+                select context_type,
+                       grouping(context_type) total,
+                       count(*) shown_sources,
+                       count(*) filter (where started) started_sources,
+                       count(*) filter (where first_created_at is not null) created_sources,
+                       count(*) filter (where completed) completed_sources,
+                       percentile_cont(0.5) within group (
+                           order by extract(epoch from (first_created_at - shown_at)) / 3600.0
+                       ) filter (where first_created_at is not null) median_hours
+                  from context_metrics
+                 group by grouping sets ((context_type), ())
+                 order by grouping(context_type) desc, context_type
+                """, parameters(window), (resultSet, rowNumber) -> {
+            long shown = resultSet.getLong("shown_sources");
+            long started = resultSet.getLong("started_sources");
+            long created = resultSet.getLong("created_sources");
+            long completed = resultSet.getLong("completed_sources");
+            BigDecimal median = resultSet.getBigDecimal("median_hours");
+            return new RentalTransferMetricRow(
+                    resultSet.getInt("total") == 1,
+                    resultSet.getString("context_type") == null
+                            ? null
+                            : RentalTransferContextType.valueOf(resultSet.getString("context_type")),
+                    new AnalyticsActionFunnelMetric(
+                            shown,
+                            started,
+                            created,
+                            completed,
+                            nullableRatio(started, shown),
+                            nullableRatio(created, shown),
+                            nullableRatio(completed, created),
+                            median == null ? null : median.setScale(1, RoundingMode.HALF_UP)
+                    )
+            );
+        });
+        AnalyticsActionFunnelMetric total = rows.stream()
+                .filter(RentalTransferMetricRow::total)
+                .map(RentalTransferMetricRow::funnel)
+                .findFirst()
+                .orElseGet(AnalyticsQueryRepository::emptyActionFunnel);
+        List<AnalyticsRentalTransferContextMetric> byContext = rows.stream()
+                .filter(row -> !row.total())
+                .map(row -> new AnalyticsRentalTransferContextMetric(row.context(), row.funnel()))
+                .toList();
+        return new AnalyticsRentalTransferMetrics(
+                total,
+                byContext.isEmpty() ? Collections.emptyList() : byContext
+        );
     }
 
     public List<AnalyticsRepeatActionMetric> repeatActions(AnalyticsTimeWindow window) {
@@ -642,5 +737,16 @@ public class AnalyticsQueryRepository {
 
     private static BigDecimal nullableRatio(long numerator, long denominator) {
         return denominator == 0 ? null : ratio(numerator, denominator);
+    }
+
+    private static AnalyticsActionFunnelMetric emptyActionFunnel() {
+        return new AnalyticsActionFunnelMetric(0, 0, 0, 0, null, null, null, null);
+    }
+
+    private record RentalTransferMetricRow(
+            boolean total,
+            RentalTransferContextType context,
+            AnalyticsActionFunnelMetric funnel
+    ) {
     }
 }

@@ -49,6 +49,17 @@ public class TransferBookingPolicy {
         return properties.timeSlotMinutes();
     }
 
+    public boolean isBookableDate(LocalDate pickupDate) {
+        LocalDate requiredDate = Objects.requireNonNull(pickupDate, "pickupDate");
+        return !requiredDate.isBefore(earliestBookingDate())
+                && !requiredDate.isAfter(latestBookingDate());
+    }
+
+    public LocalDate bookingOpensOn(LocalDate pickupDate) {
+        return Objects.requireNonNull(pickupDate, "pickupDate")
+                .minusMonths(properties.bookingMonthsAhead());
+    }
+
     public boolean hasStarted(TransferBooking booking) {
         Objects.requireNonNull(booking, "booking");
         return !clock.instant().isBefore(pickupInstant(booking.getPickupDate(), booking.getPickupTime()));

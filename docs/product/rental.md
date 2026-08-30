@@ -3,7 +3,7 @@ title: Loco Rental
 type: vertical-context
 status: active
 scope: rental
-updated: 2026-08-30
+updated: 2026-08-31
 ---
 
 # Loco Rental
@@ -46,7 +46,7 @@ property address
 
 That makes Rental a strong source for contextual actions such as airport transfer and checkout cleaning.
 
-## Existing cross-service bridge
+## Existing cross-service bridges
 
 Implemented:
 
@@ -57,6 +57,18 @@ RentalBooking
 ```
 
 See [../rental-cleaning-benefit.md](../rental-cleaning-benefit.md).
+
+Also implemented:
+
+```text
+RentalBooking arrival/checkout context
+→ typed RentalTransferContext
+→ TransferBooking
+```
+
+The owned booking detail presents arrival and checkout in one contextual card. Transfer availability and booking horizon are recalculated from current configuration. The property address and source date are safe editable suggestions; Transfer remains responsible for current price, airport/vehicle capacity and fulfillment state.
+
+A matching active/completed Transfer suppresses the corresponding action. Cancelled/rejected transfers permit another attempt. Rental cancellation does not cascade into Transfer cancellation.
 
 ## Retention/cross-service opportunities
 

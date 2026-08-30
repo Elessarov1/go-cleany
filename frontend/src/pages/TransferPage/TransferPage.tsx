@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useTransferApi } from "../../api/TransferApiProvider";
 import { useCustomerApi } from "../../api/CustomerApiProvider";
+import { useRentalApi } from "../../api/RentalApiProvider";
 import { BrandName } from "../../components/BrandName/BrandName";
 import { Icon } from "../../components/Icon/Icon";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
@@ -12,6 +13,7 @@ import type {
   TransferRepeatPrefill,
   TransferVehicleType,
 } from "../../domain/transfer";
+import type { RentalTransferContextType, RentalTransferPrefill } from "../../domain/rental";
 import { formatPrice } from "../../domain/pricing";
 
 function timeSlots(step: number): string[] {
@@ -25,6 +27,7 @@ export function TransferPage() {
   const { t, i18n } = useTranslation();
   const api = useTransferApi();
   const customerApi = useCustomerApi();
+  const rentalApi = useRentalApi();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [configuration, setConfiguration] = useState<TransferConfiguration | null>(null);
@@ -45,6 +48,8 @@ export function TransferPage() {
   const [comment, setComment] = useState("");
   const [repeatContext, setRepeatContext] = useState<TransferRepeatPrefill | null>(null);
   const [repeatContextError, setRepeatContextError] = useState(false);
+  const [rentalContext, setRentalContext] = useState<RentalTransferPrefill | null>(null);
+  const [rentalContextError, setRentalContextError] = useState(false);
   const russian = i18n.resolvedLanguage?.startsWith("ru") ?? true;
   const rawRepeatSourceId = searchParams.get("repeatFrom");
   const parsedRepeatSourceId = rawRepeatSourceId === null ? null : Number(rawRepeatSourceId);
@@ -52,6 +57,17 @@ export function TransferPage() {
     && Number.isSafeInteger(parsedRepeatSourceId)
     && parsedRepeatSourceId > 0
     ? parsedRepeatSourceId
+    : null;
+  const rawRentalBookingId = searchParams.get("rentalBooking");
+  const parsedRentalBookingId = rawRentalBookingId === null ? null : Number(rawRentalBookingId);
+  const rentalBookingId = parsedRentalBookingId !== null
+    && Number.isSafeInteger(parsedRentalBookingId)
+    && parsedRentalBookingId > 0
+    ? parsedRentalBookingId
+    : null;
+  const rawRentalContext = searchParams.get("rentalContext");
+  const rentalContextType = rawRentalContext === "ARRIVAL" || rawRentalContext === "CHECKOUT"
+    ? rawRentalContext as RentalTransferContextType
     : null;
 
   useEffect(() => {
@@ -76,7 +92,7 @@ export function TransferPage() {
   useEffect(() => {
     setRepeatContext(null);
     setRepeatContextError(false);
-    if (rawRepeatSourceId === null || !configuration) return;
+    if (rawRepeatSourceId === null || !configuration || rawRentalBookingId !== null) return;
     if (repeatSourceId === null) {
       setRepeatContextError(true);
       return;
@@ -117,7 +133,54 @@ export function TransferPage() {
         if (active) setRepeatContextError(true);
       });
     return () => { active = false; };
-  }, [api, configuration, rawRepeatSourceId, repeatSourceId]);
+  }, [api, configuration, rawRentalBookingId, rawRepeatSourceId, repeatSourceId]);
+
+  useEffect(() => {
+    setRentalContext(null);
+    setRentalContextError(false);
+    if (rawRentalBookingId === null || !configuration) return;
+    if (rentalBookingId === null || rentalContextType === null || rawRepeatSourceId !== null) {
+      setRentalContextError(true);
+      return;
+    }
+    let active = true;
+    rentalApi.getTransferPrefill(rentalBookingId, rentalContextType)
+      .then((context) => {
+        if (!active) return;
+        const configuredAirportId = configuration.airports.find((airport) => (
+          configuration.prices.some((price) => price.airportId === airport.id
+            && price.direction === context.direction)
+        ))?.id ?? 0;
+        const configuredVehicle = configuration.vehicleTypes.find((vehicle) => (
+          configuration.prices.some((price) => price.airportId === configuredAirportId
+            && price.vehicleTypeId === vehicle.id
+            && price.direction === context.direction)
+        ));
+        setRentalContext(context);
+        setDirection(context.direction);
+        setAirportId(configuredAirportId);
+        setVehicleTypeId(configuredVehicle?.id ?? 0);
+        setPickupDate(context.suggestedDate);
+        setPickupTime("");
+        setAddress(context.address);
+        setPassengerCount(1);
+        setLuggageCount(0);
+        setFlightNumber("");
+        setScheduledArrivalTime("");
+        setComment("");
+      })
+      .catch(() => {
+        if (active) setRentalContextError(true);
+      });
+    return () => { active = false; };
+  }, [
+    configuration,
+    rawRentalBookingId,
+    rawRepeatSourceId,
+    rentalApi,
+    rentalBookingId,
+    rentalContextType,
+  ]);
 
   const availableVehicles = useMemo(() => {
     if (!configuration || !airportId) return [];
@@ -163,6 +226,10 @@ export function TransferPage() {
         phone,
         comment: comment || null,
         repeatFromBookingId: repeatContext?.sourceBookingId,
+        rentalSource: rentalContext ? {
+          bookingId: rentalContext.rentalBookingId,
+          context: rentalContext.context,
+        } : undefined,
       });
       navigate(`/transfer/bookings/${booking.id}`);
     } catch {
@@ -193,6 +260,16 @@ export function TransferPage() {
         </section>
       ) : null}
       {repeatContextError ? <p className="form-alert">{t("transfer.repeatContext.error")}</p> : null}
+      {rentalContext ? (
+        <section className="repeat-context-card transfer-rental-context">
+          <span><Icon name="home" size={22} /></span>
+          <div>
+            <strong>{t("transfer.rentalContext.title", { id: rentalContext.rentalBookingId })}</strong>
+            <p>{t(`transfer.rentalContext.${rentalContext.context}`)}</p>
+          </div>
+        </section>
+      ) : null}
+      {rentalContextError ? <p className="form-alert">{t("transfer.rentalContext.error")}</p> : null}
 
       {configuration.prices.length === 0 ? (
         <section className="empty-state transfer-unavailable">
@@ -209,7 +286,10 @@ export function TransferPage() {
                   className={direction === value ? "is-selected" : ""}
                   key={value}
                   type="button"
-                  onClick={() => setDirection(value)}
+                  onClick={() => {
+                    if (rentalContext && rentalContext.direction !== value) setRentalContext(null);
+                    setDirection(value);
+                  }}
                 >
                   {t(`transfer.direction.${value}`)}
                 </button>

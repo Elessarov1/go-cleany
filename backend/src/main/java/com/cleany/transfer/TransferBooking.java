@@ -25,6 +25,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import com.cleany.crossservice.rentaltransfer.RentalTransferContextType;
+
 @Entity
 @Table(name = "transfer_booking")
 @Getter
@@ -43,6 +45,13 @@ public class TransferBooking {
 
     @Column(name = "repeat_source_booking_id")
     private Long repeatSourceBookingId;
+
+    @Column(name = "source_rental_booking_id")
+    private Long sourceRentalBookingId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "rental_context_type", length = 32)
+    private RentalTransferContextType rentalContext;
 
     @Column(name = "customer_name_snapshot", nullable = false)
     private String customerNameSnapshot;
@@ -187,7 +196,21 @@ public class TransferBooking {
         if (sourceBookingId <= 0) {
             throw new IllegalArgumentException("Repeat source booking id must be positive");
         }
+        if (sourceRentalBookingId != null) {
+            throw new IllegalStateException("Transfer booking already has a rental source");
+        }
         repeatSourceBookingId = sourceBookingId;
+    }
+
+    void markRentalSource(long rentalBookingId, RentalTransferContextType context) {
+        if (rentalBookingId <= 0) {
+            throw new IllegalArgumentException("Rental booking id must be positive");
+        }
+        if (repeatSourceBookingId != null) {
+            throw new IllegalStateException("Transfer booking already has a repeat source");
+        }
+        sourceRentalBookingId = rentalBookingId;
+        rentalContext = Objects.requireNonNull(context, "context");
     }
 
     public void reject(String reason, Instant rejectedAt) {

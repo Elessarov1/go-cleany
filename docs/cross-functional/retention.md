@@ -3,7 +3,7 @@ title: Retention and Progressive Convenience
 type: cross-functional
 status: active
 scope: platform
-updated: 2026-08-30
+updated: 2026-08-31
 ---
 
 # Retention & Progressive Convenience
@@ -84,6 +84,17 @@ Rental checkout + property address
 ```
 
 Do not trust client-supplied copied ownership data; resolve source records for the authenticated customer on the backend.
+
+Rental → Transfer is implemented as an explicit bridge. A confirmed owned Rental exposes independent arrival and checkout actions while their dates are still actionable:
+
+```text
+ARRIVAL  → FROM_AIRPORT → check-in date  → property destination
+CHECKOUT → TO_AIRPORT   → checkout date → property pickup
+```
+
+The backend computes whether each option is bookable now or when its Transfer booking window opens. A current matching Transfer suppresses only the corresponding option. Typed links close the option even when the customer edits the suggested date/address; conservative matching also recognizes an unlinked Transfer for the same customer, direction, source date and normalized property address.
+
+The customer still chooses airport, time, vehicle, passenger/luggage and flight data. Changing direction leaves the Rental flow and creates a normal Transfer. Cancelling Rental never silently cancels its separately created Transfer.
 
 ### Contextual next action
 

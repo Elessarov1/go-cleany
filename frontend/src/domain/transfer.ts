@@ -54,6 +54,10 @@ export interface CreateTransferBookingRequest {
   phone: string;
   comment?: string | null;
   repeatFromBookingId?: number;
+  rentalSource?: {
+    bookingId: number;
+    context: "ARRIVAL" | "CHECKOUT";
+  };
 }
 
 export interface TransferRepeatPrefill {

@@ -3,7 +3,7 @@ title: Loco Transfer
 type: vertical-context
 status: active
 scope: transfer
-updated: 2026-08-30
+updated: 2026-08-31
 ---
 
 # Loco Transfer
@@ -91,6 +91,18 @@ Business time uses `Europe/Istanbul`. Current configuration includes minimum boo
 An owned completed transfer can start a new ride through `/transfer?repeatFrom=<bookingId>`. Safe prefill includes direction, address and passenger/luggage counts. Airport and vehicle are retained only if their current direction-specific price pair is still enabled; otherwise the form selects a currently available pair. Date, time, current account phone, flight details and comment must be supplied or confirmed for the new ride.
 
 The new `TransferBooking` stores a typed source-booking reference but receives fresh configuration/price snapshots and begins in `REQUESTED`. Driver, status, old price and other fulfillment state are never copied.
+
+## Rental context
+
+A confirmed owned Rental can open Transfer with explicit `ARRIVAL` or `CHECKOUT` context:
+
+```text
+/transfer?rentalBooking=<id>&rentalContext=ARRIVAL|CHECKOUT
+```
+
+The bridge derives direction, source date and current property address on the backend, and validates ownership, Rental status, service availability and Transfer booking horizon again at creation. Date/address may be edited; changing direction clears the source context. Airport, time, vehicle, passenger/luggage and flight details remain current customer inputs.
+
+`TransferBooking` stores nullable typed Rental source fields. An active/completed linked booking is unique per Rental/context; cancellation or rejection permits a retry. An unlinked Transfer with the same customer, direction, source date and normalized property address also suppresses duplicate prompting. Rental and Transfer lifecycles remain independent.
 
 ## Visual identity
 

@@ -3,7 +3,7 @@ title: Loco Place Analytics
 type: cross-functional
 status: active
 scope: platform
-updated: 2026-08-30
+updated: 2026-08-31
 ---
 
 # Analytics
@@ -47,6 +47,17 @@ repeat action shown
 ```
 
 Shown/opened interactions are durable semantic events, deduplicated per customer, service, source and event type. Created/completed counts come from typed source links on the vertical transactions. Start rate is opened/shown, completion rate is completed/created, and time to repeat is the median from source completion to linked repeat creation. A missing denominator is returned as `null`, not as 0%.
+
+The overview also exposes the contextual Rental → Transfer funnel, as a total and separately for arrival and checkout:
+
+```text
+context action shown
+→ Transfer prefill opened
+→ typed related Transfer created
+→ related Transfer completed
+```
+
+Its cohort is the first deduplicated `CTA_SHOWN` for a Rental booking/context inside the selected period. It is available for `ALL` and source-service `RENTAL` filters. Start rate is opened/shown, creation rate is created/shown, completion rate is completed/created, and conversion time is the median from first shown to first linked Transfer creation. Events live in the explicit Rental/Transfer bridge; this does not introduce a universal cross-service event or transaction model.
 
 ## Business Health semantics
 
@@ -122,7 +133,7 @@ new customers
 90-day repeat — implemented with mature cohorts
 customers with 2+ lifetime completed tasks — implemented for period-active customers
 customers using 2+ services — implemented for period-active customers
-cross-service conversion — initial immediate-next funnels implemented
+cross-service conversion — immediate-next and contextual Rental → Transfer funnels implemented
 average check by service + currency — implemented
 GMV
 Loco revenue when available

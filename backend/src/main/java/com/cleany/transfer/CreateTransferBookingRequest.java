@@ -9,6 +9,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.Valid;
+
+import com.cleany.crossservice.rentaltransfer.RentalTransferSourceRequest;
 
 public record CreateTransferBookingRequest(
         @NotNull TransferDirection direction,
@@ -23,6 +26,7 @@ public record CreateTransferBookingRequest(
         LocalTime scheduledArrivalTime,
         @NotBlank @Size(max = 40) String phone,
         @Size(max = 1000) String comment,
-        @Positive Long repeatFromBookingId
+        @Positive Long repeatFromBookingId,
+        @Valid RentalTransferSourceRequest rentalSource
 ) {
 }

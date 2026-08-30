@@ -7,6 +7,9 @@ import type {
   RentalAvailabilityRange,
   RentalBooking,
   RentalCleaningContext,
+  RentalTransferContext,
+  RentalTransferContextType,
+  RentalTransferPrefill,
   RentalBookingProperty,
   RentalBookingQuote,
   RentalBookingQuoteRequest,
@@ -17,12 +20,14 @@ import type {
   UpdateRentalPropertyRequest,
   UpsertRentalOccupancyRequest,
 } from "../domain/rental";
+import type { TransferBooking, TransferDirection } from "../domain/transfer";
 import type { Platform } from "../platform/Platform";
 import { addMonthsToInputValue } from "../utils/format";
 import { ApiError } from "./ApiError";
 import type { RentalApi } from "./RentalApi";
 
 const STORAGE_KEY = "cleany.mock.rental-bookings.v2";
+const TRANSFER_STORAGE_KEY = "cleany.mock.transfer-bookings.v1";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const mockRentalConfiguration: RentalConfiguration = {
@@ -53,6 +58,10 @@ function durationDays(start: string, end: string): number {
 
 function roundMoney(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function normalizeAddress(value: string): string {
+  return value.trim().replace(/\s+/g, " ").toLocaleLowerCase();
 }
 
 const properties: RentalProperty[] = [
@@ -368,6 +377,51 @@ export class MockRentalApi implements RentalApi {
     });
   }
 
+  async getTransferContext(id: number): Promise<RentalTransferContext> {
+    const booking = await this.getBooking(id);
+    const property = properties.find((item) => item.id === booking.property.id);
+    if (!property?.address) throw new ApiError("Rental property address is unavailable", 404);
+    if (booking.status !== "CONFIRMED") {
+      return simulateNetwork({ rentalBookingId: id, transferFlowAvailable: true, options: [] });
+    }
+    const earliest = dateFromToday(1);
+    const latest = dateFromToday(183);
+    const candidates: Array<[RentalTransferContextType, TransferDirection, string]> = [
+      ["ARRIVAL", "FROM_AIRPORT", booking.checkInDate],
+      ["CHECKOUT", "TO_AIRPORT", booking.checkOutDate],
+    ];
+    const options = candidates
+      .filter(([, direction, date]) => date >= earliest
+        && !this.hasMatchingTransfer(id, direction, date, property.address!))
+      .map(([context, direction, suggestedDate]) => ({
+        context,
+        direction,
+        suggestedDate,
+        address: property.address!,
+        availability: suggestedDate <= latest ? "BOOKABLE" as const : "AVAILABLE_LATER" as const,
+        availableFromDate: suggestedDate <= latest ? null : addMonthsToInputValue(suggestedDate, -6),
+      }));
+    return simulateNetwork({ rentalBookingId: id, transferFlowAvailable: true, options });
+  }
+
+  async recordTransferContextShown(id: number, context: RentalTransferContextType): Promise<void> {
+    await this.requireBookableTransferContext(id, context);
+  }
+
+  async getTransferPrefill(
+    id: number,
+    context: RentalTransferContextType,
+  ): Promise<RentalTransferPrefill> {
+    const option = await this.requireBookableTransferContext(id, context);
+    return {
+      rentalBookingId: id,
+      context,
+      direction: option.direction,
+      suggestedDate: option.suggestedDate,
+      address: option.address,
+    };
+  }
+
   async cancelBooking(id: number): Promise<RentalBooking> {
     const bookings = readBookings();
     const booking = bookings.find((item) => item.id === id);
@@ -602,6 +656,36 @@ export class MockRentalApi implements RentalApi {
   private replaceProperty(property: RentalProperty): void {
     const index = properties.findIndex((item) => item.id === property.id);
     if (index >= 0) properties[index] = property;
+  }
+
+  private async requireBookableTransferContext(id: number, context: RentalTransferContextType) {
+    const response = await this.getTransferContext(id);
+    const option = response.options.find((item) => item.context === context
+      && item.availability === "BOOKABLE");
+    if (!option) throw new ApiError("Rental transfer context is not eligible", 409);
+    return option;
+  }
+
+  private hasMatchingTransfer(
+    rentalBookingId: number,
+    direction: TransferDirection,
+    date: string,
+    address: string,
+  ): boolean {
+    const raw = localStorage.getItem(TRANSFER_STORAGE_KEY);
+    const transfers = raw ? JSON.parse(raw) as Array<TransferBooking & {
+      sourceRentalBookingId?: number;
+      rentalContext?: RentalTransferContextType;
+    }> : [];
+    return transfers.some((transfer) => (
+      ["REQUESTED", "CONFIRMED", "COMPLETED"].includes(transfer.status)
+      && (
+        transfer.sourceRentalBookingId === rentalBookingId
+        || transfer.direction === direction
+          && transfer.pickupDate === date
+          && normalizeAddress(transfer.address) === normalizeAddress(address)
+      )
+    ));
   }
 
   async unpublishAdminProperty(id: number): Promise<RentalProperty> {

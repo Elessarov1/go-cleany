@@ -191,6 +191,78 @@ export function AdminAnalyticsPage() {
             </div>
           </section>
 
+          {service === "ALL" || service === "RENTAL" ? (
+            <section className="admin-analytics__section" aria-labelledby="rental-transfer-heading">
+              <SectionHeading
+                id="rental-transfer-heading"
+                title={t("analytics.rentalToTransfer.title")}
+                subtitle={t("analytics.rentalToTransfer.subtitle")}
+              />
+              <div className="admin-analytics__cards admin-analytics__cards--retention">
+                <MetricCard
+                  label={t("analytics.rentalToTransfer.shown")}
+                  value={number.format(overview.rentalToTransfer.total.shownSources)}
+                />
+                <MetricCard
+                  label={t("analytics.rentalToTransfer.started")}
+                  value={number.format(overview.rentalToTransfer.total.startedSources)}
+                  detail={formatRate(
+                    overview.rentalToTransfer.total.startRate,
+                    percent,
+                    t("analytics.insufficientData"),
+                  )}
+                />
+                <MetricCard
+                  label={t("analytics.rentalToTransfer.created")}
+                  value={number.format(overview.rentalToTransfer.total.createdSources)}
+                  detail={formatRate(
+                    overview.rentalToTransfer.total.creationRate,
+                    percent,
+                    t("analytics.insufficientData"),
+                  )}
+                />
+                <MetricCard
+                  label={t("analytics.rentalToTransfer.completed")}
+                  value={number.format(overview.rentalToTransfer.total.completedSources)}
+                  detail={formatRate(
+                    overview.rentalToTransfer.total.completionRate,
+                    percent,
+                    t("analytics.insufficientData"),
+                  )}
+                />
+                <MetricCard
+                  label={t("analytics.rentalToTransfer.medianTime")}
+                  value={overview.rentalToTransfer.total.medianHoursToCreation === null
+                    ? t("analytics.insufficientData")
+                    : t("analytics.hours", {
+                      count: decimal.format(overview.rentalToTransfer.total.medianHoursToCreation),
+                    })}
+                />
+              </div>
+              {overview.rentalToTransfer.byContext.length > 0 ? (
+                <div className="admin-analytics__repeat-grid admin-analytics__rental-transfer-grid">
+                  {overview.rentalToTransfer.byContext.map(({ context, funnel }) => (
+                    <article className="admin-analytics__repeat" key={context}>
+                      <h3>{t(`analytics.rentalToTransfer.context.${context}`)}</h3>
+                      <dl>
+                        <div><dt>{t("analytics.rentalToTransfer.shown")}</dt><dd>{number.format(funnel.shownSources)}</dd></div>
+                        <div><dt>{t("analytics.rentalToTransfer.started")}</dt><dd>{number.format(funnel.startedSources)}</dd></div>
+                        <div><dt>{t("analytics.rentalToTransfer.created")}</dt><dd>{number.format(funnel.createdSources)}</dd></div>
+                        <div><dt>{t("analytics.rentalToTransfer.completed")}</dt><dd>{number.format(funnel.completedSources)}</dd></div>
+                        <div><dt>{t("analytics.rentalToTransfer.startRate")}</dt><dd>{formatRate(funnel.startRate, percent, t("analytics.insufficientData"))}</dd></div>
+                        <div><dt>{t("analytics.rentalToTransfer.creationRate")}</dt><dd>{formatRate(funnel.creationRate, percent, t("analytics.insufficientData"))}</dd></div>
+                        <div><dt>{t("analytics.rentalToTransfer.completionRate")}</dt><dd>{formatRate(funnel.completionRate, percent, t("analytics.insufficientData"))}</dd></div>
+                        <div><dt>{t("analytics.rentalToTransfer.medianTime")}</dt><dd>{funnel.medianHoursToCreation === null
+                          ? t("analytics.insufficientData")
+                          : t("analytics.hours", { count: decimal.format(funnel.medianHoursToCreation) })}</dd></div>
+                      </dl>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
           <section className="admin-analytics__section" aria-labelledby="repeat-actions-heading">
             <SectionHeading
               id="repeat-actions-heading"

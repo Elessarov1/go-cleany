@@ -35,6 +35,42 @@ export class MockAnalyticsApi implements AnalyticsApi {
         medianDaysToSecondTask: 18.5,
       },
       transitions: transitions.filter((transition) => all || transition.fromService === request.service),
+      rentalToTransfer: all || request.service === "RENTAL" ? {
+        total: {
+          shownSources: 12,
+          startedSources: 8,
+          createdSources: 6,
+          completedSources: 4,
+          startRate: 0.6667,
+          creationRate: 0.5,
+          completionRate: 0.6667,
+          medianHoursToCreation: 5.5,
+        },
+        byContext: [
+          {
+            context: "ARRIVAL" as const,
+            funnel: {
+              shownSources: 7, startedSources: 5, createdSources: 4, completedSources: 3,
+              startRate: 0.7143, creationRate: 0.5714, completionRate: 0.75,
+              medianHoursToCreation: 4,
+            },
+          },
+          {
+            context: "CHECKOUT" as const,
+            funnel: {
+              shownSources: 5, startedSources: 3, createdSources: 2, completedSources: 1,
+              startRate: 0.6, creationRate: 0.4, completionRate: 0.5,
+              medianHoursToCreation: 8,
+            },
+          },
+        ],
+      } : {
+        total: {
+          shownSources: 0, startedSources: 0, createdSources: 0, completedSources: 0,
+          startRate: null, creationRate: null, completionRate: null, medianHoursToCreation: null,
+        },
+        byContext: [],
+      },
       repeatActions: [
         {
           service: "CLEANING" as const,

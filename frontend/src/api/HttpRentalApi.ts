@@ -6,6 +6,9 @@ import type {
   RentalAvailability,
   RentalBooking,
   RentalCleaningContext,
+  RentalTransferContext,
+  RentalTransferContextType,
+  RentalTransferPrefill,
   RentalBookingQuote,
   RentalBookingQuoteRequest,
   RentalConfiguration,
@@ -72,6 +75,24 @@ export class HttpRentalApi implements RentalApi {
 
   getCleaningContext(id: number): Promise<RentalCleaningContext> {
     return this.client.request(`/api/v1/rental/bookings/${id}/cleaning-context`);
+  }
+
+  getTransferContext(id: number): Promise<RentalTransferContext> {
+    return this.client.request(`/api/v1/rental/bookings/${id}/transfer-context`);
+  }
+
+  async recordTransferContextShown(id: number, context: RentalTransferContextType): Promise<void> {
+    await this.client.request(
+      `/api/v1/rental/bookings/${id}/transfer-context/${context}/shown`,
+      { method: "POST" },
+    );
+  }
+
+  getTransferPrefill(id: number, context: RentalTransferContextType): Promise<RentalTransferPrefill> {
+    return this.client.request(
+      `/api/v1/rental/bookings/${id}/transfer-context/${context}/prefill`,
+      { method: "POST" },
+    );
   }
 
   cancelBooking(id: number): Promise<RentalBooking> {

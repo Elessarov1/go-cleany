@@ -167,6 +167,32 @@ export interface RentalCleaningContext {
   cleaningFlowAvailable: boolean;
 }
 
+export type RentalTransferContextType = "ARRIVAL" | "CHECKOUT";
+export type RentalTransferContextAvailability = "BOOKABLE" | "AVAILABLE_LATER";
+
+export interface RentalTransferContextOption {
+  context: RentalTransferContextType;
+  availability: RentalTransferContextAvailability;
+  direction: "TO_AIRPORT" | "FROM_AIRPORT";
+  suggestedDate: string;
+  address: string;
+  availableFromDate: string | null;
+}
+
+export interface RentalTransferContext {
+  rentalBookingId: number;
+  transferFlowAvailable: boolean;
+  options: RentalTransferContextOption[];
+}
+
+export interface RentalTransferPrefill {
+  rentalBookingId: number;
+  context: RentalTransferContextType;
+  direction: "TO_AIRPORT" | "FROM_AIRPORT";
+  suggestedDate: string;
+  address: string;
+}
+
 export interface UpdateRentalPropertyRequest {
   titleRu: string | null;
   titleEn: string | null;

@@ -5,7 +5,11 @@ import { useRentalApi } from "../../api/RentalApiProvider";
 import { Icon } from "../../components/Icon/Icon";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import { RentalBookingStatus } from "../../components/RentalBookingStatus/RentalBookingStatus";
-import type { RentalBooking, RentalCleaningContext } from "../../domain/rental";
+import type {
+  RentalBooking,
+  RentalCleaningContext,
+  RentalTransferContext,
+} from "../../domain/rental";
 import { formatPrice } from "../../domain/pricing";
 import { formatDate, todayAsInputValue } from "../../utils/format";
 import { rentalLanguage, rentalPropertyTitle } from "../../utils/rental";
@@ -22,6 +26,7 @@ export function RentalBookingDetailsPage() {
   const api = useRentalApi();
   const [booking, setBooking] = useState<RentalBooking | null>(null);
   const [cleaningContext, setCleaningContext] = useState<RentalCleaningContext | null>(null);
+  const [transferContext, setTransferContext] = useState<RentalTransferContext | null>(null);
   const [error, setError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [cancelling, setCancelling] = useState(false);
@@ -35,16 +40,31 @@ export function RentalBookingDetailsPage() {
   useEffect(() => {
     let active = true;
     setError(false);
-    Promise.all([api.getBooking(bookingId), api.getCleaningContext(bookingId)])
-      .then(([bookingValue, cleaningValue]) => {
-        if (active) {
-          setBooking(bookingValue);
-          setCleaningContext(cleaningValue);
-        }
+    setCleaningContext(null);
+    setTransferContext(null);
+    api.getBooking(bookingId)
+      .then((bookingValue) => {
+        if (active) setBooking(bookingValue);
       })
       .catch(() => {
         if (active) setError(true);
       });
+    api.getCleaningContext(bookingId)
+      .then((value) => {
+        if (active) setCleaningContext(value);
+      })
+      .catch(() => undefined);
+    api.getTransferContext(bookingId)
+      .then((value) => {
+        if (!active) return;
+        setTransferContext(value);
+        value.options
+          .filter((option) => option.availability === "BOOKABLE")
+          .forEach((option) => {
+            void api.recordTransferContextShown(bookingId, option.context).catch(() => undefined);
+          });
+      })
+      .catch(() => undefined);
     return () => {
       active = false;
     };
@@ -124,6 +144,49 @@ export function RentalBookingDetailsPage() {
         ) : null}
         <div className="rental-price-snapshot__total"><span>{t("rental.booking.total")}</span><strong>{formatPrice(booking.totalPrice, booking.currency, locale)}</strong></div>
       </section>
+
+      {transferContext?.transferFlowAvailable && transferContext.options.length > 0 ? (
+        <section className="rental-transfer-cta">
+          <div className="rental-transfer-cta__heading">
+            <span><Icon name="car" size={22} /></span>
+            <div>
+              <h2>{t("rental.bookingDetails.transferTitle")}</h2>
+              <p>{t("rental.bookingDetails.transferText")}</p>
+            </div>
+          </div>
+          <div className="rental-transfer-cta__options">
+            {transferContext.options.map((option) => {
+              const query = new URLSearchParams({
+                rentalBooking: String(booking.id),
+                rentalContext: option.context,
+              });
+              return (
+                <div className="rental-transfer-cta__option" key={option.context}>
+                  <div>
+                    <strong>{t(`rental.bookingDetails.transferContext.${option.context}`)}</strong>
+                    <span>{formatDate(option.suggestedDate, locale)}</span>
+                    {option.availability === "AVAILABLE_LATER" && option.availableFromDate ? (
+                      <small>{t("rental.bookingDetails.transferAvailableFrom", {
+                        date: formatDate(option.availableFromDate, locale),
+                      })}</small>
+                    ) : null}
+                  </div>
+                  {option.availability === "BOOKABLE" ? (
+                    <Link className="button button--primary" to={`/transfer?${query.toString()}`}>
+                      {t("rental.bookingDetails.bookTransfer")}
+                      <Icon name="arrow-right" size={16} />
+                    </Link>
+                  ) : (
+                    <span className="rental-transfer-cta__later">
+                      {t("rental.bookingDetails.transferLater")}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       {showCleaningCta && cleaningContext ? (
         <section className="rental-cleaning-cta">

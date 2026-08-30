@@ -480,6 +480,22 @@
       "subtitle": "Only the immediate next task after the first completed task is counted.",
       "result": "{{converted}} of {{cohort}} customers"
     },
+    "rentalToTransfer": {
+      "title": "Rental → Transfer",
+      "subtitle": "How arrival and checkout context converts into created and completed transfers.",
+      "shown": "Offer shown",
+      "started": "Booking flow opened",
+      "created": "Transfers created",
+      "completed": "Transfers completed",
+      "startRate": "Start conversion",
+      "creationRate": "Created from shown",
+      "completionRate": "Completed from created",
+      "medianTime": "Median time to creation",
+      "context": {
+        "ARRIVAL": "Arrival transfer",
+        "CHECKOUT": "Checkout transfer"
+      }
+    },
     "repeatActions": {
       "title": "Repeat task",
       "subtitle": "The funnel from showing the action to completing a repeated cleaning or ride.",
@@ -895,6 +911,15 @@
       "cleaningWindow": "For cleaning from {{from}} to {{to}}",
       "cleaningFutureBenefit": "A personal cleaning benefit will appear shortly before checkout.",
       "bookCleaning": "Book cleaning",
+      "transferTitle": "Transfer for your stay",
+      "transferText": "We already know the dates and address. Choose the airport, time, and vehicle.",
+      "transferContext": {
+        "ARRIVAL": "From the airport to the apartment",
+        "CHECKOUT": "From the apartment to the airport"
+      },
+      "transferAvailableFrom": "Booking opens {{date}}",
+      "transferLater": "Available later",
+      "bookTransfer": "Book",
       "benefitStatus": {
         "AVAILABLE": "Available",
         "RESERVED": "Applied to an order",
@@ -948,6 +973,12 @@
       "title": "Repeat transfer #{{id}}",
       "text": "The route and ride details were filled from your past transfer. Choose a new date and time, then review everything.",
       "error": "We could not reuse that transfer. You can still create a new request manually."
+    },
+    "rentalContext": {
+      "title": "Transfer for rental booking #{{id}}",
+      "ARRIVAL": "We filled in the check-in date and apartment address. Choose the airport, arrival time, and vehicle.",
+      "CHECKOUT": "We filled in the checkout date and pickup address. Choose the airport, time, and vehicle.",
+      "error": "That rental context is no longer available. You can still create a new request manually."
     },
     "status": {
       "REQUESTED": "Awaiting confirmation",

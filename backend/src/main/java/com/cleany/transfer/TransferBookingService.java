@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import com.cleany.analytics.CustomerAttributionService;
 import com.cleany.catalog.PlatformService;
@@ -16,6 +17,9 @@ import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountService;
 import com.cleany.repeat.RepeatSourceNotEligibleException;
 import com.cleany.order.PhoneNumberNormalizer;
+import com.cleany.crossservice.rentaltransfer.RentalTransferAlreadyBookedException;
+import com.cleany.crossservice.rentaltransfer.RentalTransferContextService;
+import com.cleany.crossservice.rentaltransfer.ResolvedRentalTransferSource;
 
 import lombok.RequiredArgsConstructor;
 
@@ -33,6 +37,7 @@ public class TransferBookingService {
     private final PhoneNumberNormalizer phoneNumberNormalizer;
     private final CustomerAttributionService customerAttributionService;
     private final RepeatActionTrackingService repeatActionTrackingService;
+    private final RentalTransferContextService rentalTransferContextService;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
@@ -72,9 +77,21 @@ public class TransferBookingService {
             CreateTransferBookingRequest request
     ) {
         requireCustomerFlow(customer);
+        if (request.repeatFromBookingId() != null && request.rentalSource() != null) {
+            throw new InvalidTransferBookingException(
+                    "Repeat and rental transfer sources cannot be used together"
+            );
+        }
         TransferBooking repeatSource = request.repeatFromBookingId() == null
                 ? null
                 : requireRepeatSource(customer, request.repeatFromBookingId());
+        ResolvedRentalTransferSource rentalSource = request.rentalSource() == null
+                ? null
+                : rentalTransferContextService.resolveForCreation(
+                        customer,
+                        request.rentalSource(),
+                        request.direction()
+                );
         bookingPolicy.requireBookable(request.pickupDate(), request.pickupTime());
         TransferAirport airport = airportRepository.findByIdAndEnabledTrue(request.airportId())
                 .orElseThrow(() -> new TransferConfigurationUnavailableException("airport"));
@@ -117,7 +134,23 @@ public class TransferBookingService {
         if (repeatSource != null) {
             booking.markRepeatOf(repeatSource.getId());
         }
-        booking = bookingRepository.saveAndFlush(booking);
+        if (rentalSource != null) {
+            booking.markRentalSource(
+                    rentalSource.rentalBookingId(),
+                    rentalSource.context()
+            );
+        }
+        try {
+            booking = bookingRepository.saveAndFlush(booking);
+        } catch (DataIntegrityViolationException exception) {
+            if (rentalSource != null) {
+                throw new RentalTransferAlreadyBookedException(
+                        rentalSource.rentalBookingId(),
+                        rentalSource.context()
+                );
+            }
+            throw exception;
+        }
         customerAttributionService.attachOrganicFallback(
                 customer.customerId(),
                 createdAt,

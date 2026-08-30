@@ -103,6 +103,7 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
     @BeforeEach
     @AfterEach
     void cleanDatabase() {
+        jdbcTemplate.update("delete from rental_transfer_action_event");
         jdbcTemplate.update("delete from transfer_booking");
         transferDriverRepository.deleteAll();
         transferPriceRepository.deleteAll();
@@ -290,6 +291,138 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertEquals(new BigDecimal("1.0000"), metric.completionRate()),
                 () -> Assertions.assertEquals(new BigDecimal("1.0"), metric.medianHoursToRepeat()),
                 () -> Assertions.assertTrue(transfer.repeatActions().isEmpty())
+        );
+    }
+
+    @Test
+    void overview_reportsRentalToTransferFunnelByContextAndSourceService() {
+        CurrentCustomer customer = customerAt(PERIOD_EVENT.minusSeconds(3600));
+        RentalPropertyResponse draft = rentalPropertyService.createDraft();
+        rentalPropertyService.update(draft.id(), new RentalPropertyDetails(
+                "Контекст трансфера",
+                "Transfer context property",
+                "Rental to Transfer analytics property",
+                "Махмутлар",
+                "Analytics contextual address",
+                1,
+                1,
+                1,
+                2,
+                new BigDecimal("50.00"),
+                2,
+                new BigDecimal("100.00"),
+                "TRY",
+                EnumSet.of(RentalAmenity.WIFI)
+        ));
+        jdbcTemplate.update("update rental_property set status = 'PUBLISHED' where id = ?", draft.id());
+        LocalDate checkIn = rentalStayPolicy.today().plusDays(2);
+        RentalBookingResponse rental = rentalBookingService.create(customer, new CreateRentalBookingRequest(
+                draft.id(),
+                RentalTermType.DATE_RANGE,
+                checkIn,
+                checkIn.plusDays(7),
+                null,
+                1,
+                "+905551112233",
+                null
+        ));
+        var airport = transferAirportRepository.findAllByOrderBySortOrderAscIdAsc().getFirst();
+        var vehicle = transferVehicleRepository.findAllByOrderBySortOrderAscIdAsc().getFirst();
+        transferPriceRepository.saveAndFlush(new TransferPrice(
+                airport,
+                vehicle,
+                TransferDirection.FROM_AIRPORT,
+                new BigDecimal("2500.00"),
+                "TRY",
+                true,
+                PERIOD_EVENT.minusSeconds(60)
+        ));
+        TransferBookingResponse transfer = transferBookingService.create(
+                customer,
+                new CreateTransferBookingRequest(
+                        TransferDirection.FROM_AIRPORT,
+                        airport.getId(),
+                        vehicle.getId(),
+                        transferBookingPolicy.earliestBookingDate(),
+                        LocalTime.of(10, 0),
+                        "Analytics contextual address",
+                        1,
+                        0,
+                        "TK123",
+                        LocalTime.of(9, 30),
+                        "+905551112233",
+                        null,
+                        null,
+                        null
+                )
+        );
+        TransferDriver driver = transferDriverRepository.saveAndFlush(new TransferDriver(
+                "Context analytics driver",
+                "+905551118888",
+                true,
+                null,
+                PERIOD_EVENT.plusSeconds(8000)
+        ));
+        jdbcTemplate.update("""
+                insert into rental_transfer_action_event(
+                    customer_id, rental_booking_id, context_type, event_type, occurred_at
+                ) values
+                    (?, ?, 'ARRIVAL', 'CTA_SHOWN', ?),
+                    (?, ?, 'ARRIVAL', 'PREFILL_STARTED', ?),
+                    (?, ?, 'CHECKOUT', 'CTA_SHOWN', ?)
+                """,
+                customer.customerId(), rental.id(), Timestamp.from(PERIOD_EVENT),
+                customer.customerId(), rental.id(), Timestamp.from(PERIOD_EVENT.plusSeconds(3600)),
+                customer.customerId(), rental.id(), Timestamp.from(PERIOD_EVENT.plusSeconds(60))
+        );
+        jdbcTemplate.update("""
+                update transfer_booking
+                   set source_rental_booking_id = ?, rental_context_type = 'ARRIVAL',
+                       created_at = ?, status = 'COMPLETED', driver_id = ?,
+                       confirmed_at = ?, completed_at = ?
+                 where id = ?
+                """,
+                rental.id(),
+                Timestamp.from(PERIOD_EVENT.plusSeconds(7200)),
+                driver.getId(),
+                Timestamp.from(PERIOD_EVENT.plusSeconds(9000)),
+                Timestamp.from(PERIOD_EVENT.plusSeconds(10800)),
+                transfer.id()
+        );
+
+        AnalyticsOverviewResponse all = analyticsService.overview(
+                PERIOD_DAY,
+                PERIOD_DAY,
+                AnalyticsServiceDimension.ALL
+        );
+        AnalyticsOverviewResponse rentalOnly = analyticsService.overview(
+                PERIOD_DAY,
+                PERIOD_DAY,
+                AnalyticsServiceDimension.RENTAL
+        );
+        AnalyticsOverviewResponse transferOnly = analyticsService.overview(
+                PERIOD_DAY,
+                PERIOD_DAY,
+                AnalyticsServiceDimension.TRANSFER
+        );
+        AnalyticsActionFunnelMetric total = all.rentalToTransfer().total();
+        Map<String, AnalyticsActionFunnelMetric> contexts = all.rentalToTransfer().byContext().stream()
+                .collect(Collectors.toMap(metric -> metric.context().name(), AnalyticsRentalTransferContextMetric::funnel));
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(2, total.shownSources()),
+                () -> Assertions.assertEquals(1, total.startedSources()),
+                () -> Assertions.assertEquals(1, total.createdSources()),
+                () -> Assertions.assertEquals(1, total.completedSources()),
+                () -> Assertions.assertEquals(new BigDecimal("0.5000"), total.startRate()),
+                () -> Assertions.assertEquals(new BigDecimal("0.5000"), total.creationRate()),
+                () -> Assertions.assertEquals(new BigDecimal("1.0000"), total.completionRate()),
+                () -> Assertions.assertEquals(new BigDecimal("2.0"), total.medianHoursToCreation()),
+                () -> Assertions.assertEquals(2, contexts.size()),
+                () -> Assertions.assertEquals(1, contexts.get("ARRIVAL").completedSources()),
+                () -> Assertions.assertEquals(0, contexts.get("CHECKOUT").startedSources()),
+                () -> Assertions.assertEquals(2, rentalOnly.rentalToTransfer().total().shownSources()),
+                () -> Assertions.assertEquals(0, transferOnly.rentalToTransfer().total().shownSources())
         );
     }
 
@@ -594,6 +727,7 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
                         null,
                         null,
                         "+905551112233",
+                        null,
                         null,
                         null
                 )

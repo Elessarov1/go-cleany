@@ -3,6 +3,10 @@ package com.cleany.transfer;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDate;
+import java.util.Set;
+
+import com.cleany.crossservice.rentaltransfer.RentalTransferContextType;
 
 import jakarta.persistence.LockModeType;
 
@@ -24,6 +28,20 @@ public interface TransferBookingRepository extends JpaRepository<TransferBooking
 
     @EntityGraph(attributePaths = {"airport", "vehicleType", "driver"})
     Optional<TransferBooking> findByIdAndCustomerId(long id, long customerId);
+
+    boolean existsByCustomerIdAndSourceRentalBookingIdAndRentalContextAndStatusIn(
+            long customerId,
+            long sourceRentalBookingId,
+            RentalTransferContextType rentalContext,
+            Set<TransferBookingStatus> statuses
+    );
+
+    List<TransferBooking> findAllByCustomerIdAndSourceRentalBookingIdIsNullAndDirectionAndPickupDateAndStatusIn(
+            long customerId,
+            TransferDirection direction,
+            LocalDate pickupDate,
+            Set<TransferBookingStatus> statuses
+    );
 
     @EntityGraph(attributePaths = {"airport", "vehicleType", "driver"})
     List<TransferBooking> findAllByOrderByPickupDateDescPickupTimeDescIdDesc();

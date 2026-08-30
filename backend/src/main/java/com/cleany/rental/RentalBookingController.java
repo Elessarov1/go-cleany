@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cleany.crossservice.rentalcleaning.RentalCleaningContextResponse;
 import com.cleany.crossservice.rentalcleaning.RentalCleaningContextService;
+import com.cleany.crossservice.rentaltransfer.RentalTransferContextResponse;
+import com.cleany.crossservice.rentaltransfer.RentalTransferContextService;
+import com.cleany.crossservice.rentaltransfer.RentalTransferContextType;
+import com.cleany.crossservice.rentaltransfer.RentalTransferPrefillResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,6 +31,7 @@ public class RentalBookingController {
 
     private final RentalBookingService bookingService;
     private final RentalCleaningContextService cleaningContextService;
+    private final RentalTransferContextService transferContextService;
 
     @PostMapping("/quote")
     public RentalBookingQuoteResponse quote(
@@ -58,6 +63,28 @@ public class RentalBookingController {
     @GetMapping("/{bookingId}/cleaning-context")
     public RentalCleaningContextResponse getCleaningContext(@PathVariable long bookingId) {
         return cleaningContextService.currentCustomerContext(bookingId);
+    }
+
+    @GetMapping("/{bookingId}/transfer-context")
+    public RentalTransferContextResponse getTransferContext(@PathVariable long bookingId) {
+        return transferContextService.currentCustomerContext(bookingId);
+    }
+
+    @PostMapping("/{bookingId}/transfer-context/{context}/shown")
+    public ResponseEntity<Void> recordTransferContextShown(
+            @PathVariable long bookingId,
+            @PathVariable RentalTransferContextType context
+    ) {
+        transferContextService.recordShown(bookingId, context);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{bookingId}/transfer-context/{context}/prefill")
+    public RentalTransferPrefillResponse transferPrefill(
+            @PathVariable long bookingId,
+            @PathVariable RentalTransferContextType context
+    ) {
+        return transferContextService.prefill(bookingId, context);
     }
 
     @PostMapping("/{bookingId}/cancel")

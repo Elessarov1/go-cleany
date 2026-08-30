@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260909-01" author="loco-place">
+        <comment>Link a transfer to its explicit Rental arrival or checkout context.</comment>
+        <addColumn tableName="transfer_booking">
+            <column name="source_rental_booking_id" type="BIGINT"/>
+            <column name="rental_context_type" type="VARCHAR(32)"/>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="transfer_booking"
+                                 baseColumnNames="source_rental_booking_id"
+                                 constraintName="fk_transfer_booking_source_rental"
+                                 referencedTableName="rental_booking"
+                                 referencedColumnNames="id"/>
+        <createIndex tableName="transfer_booking" indexName="idx_transfer_booking_source_rental">
+            <column name="source_rental_booking_id"/>
+            <column name="rental_context_type"/>
+        </createIndex>
+        <sql dbms="postgresql"><![CDATA[
+            alter table transfer_booking
+                add constraint ck_transfer_booking_rental_context check (
+                    (source_rental_booking_id is null and rental_context_type is null)
+                    or
+                    (source_rental_booking_id is not null
+                        and rental_context_type in ('ARRIVAL', 'CHECKOUT'))
+                ),
+                add constraint ck_transfer_booking_single_source check (
+                    repeat_source_booking_id is null or source_rental_booking_id is null
+                );
+
+            create unique index uk_transfer_booking_active_rental_context
+                on transfer_booking(source_rental_booking_id, rental_context_type)
+                where source_rental_booking_id is not null
+                  and status in ('REQUESTED', 'CONFIRMED', 'COMPLETED');
+        ]]></sql>
+        <rollback>
+            <sql dbms="postgresql"><![CDATA[
+                drop index if exists uk_transfer_booking_active_rental_context;
+            ]]></sql>
+            <dropIndex tableName="transfer_booking" indexName="idx_transfer_booking_source_rental"/>
+            <dropForeignKeyConstraint baseTableName="transfer_booking"
+                                      constraintName="fk_transfer_booking_source_rental"/>
+            <dropColumn tableName="transfer_booking" columnName="rental_context_type"/>
+            <dropColumn tableName="transfer_booking" columnName="source_rental_booking_id"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="20260909-02" author="loco-place">
+        <comment>Measure the Rental to Transfer contextual action funnel.</comment>
+        <createTable tableName="rental_transfer_action_event">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"
+                             primaryKeyName="pk_rental_transfer_action_event"
+                             nullable="false"/>
+            </column>
+            <column name="customer_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="rental_booking_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="context_type" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="event_type" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="occurred_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="rental_transfer_action_event"
+                                 baseColumnNames="customer_id"
+                                 constraintName="fk_rental_transfer_action_customer"
+                                 referencedTableName="customer_account"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="rental_transfer_action_event"
+                                 baseColumnNames="rental_booking_id"
+                                 constraintName="fk_rental_transfer_action_booking"
+                                 referencedTableName="rental_booking"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addUniqueConstraint tableName="rental_transfer_action_event"
+                             columnNames="customer_id,rental_booking_id,context_type,event_type"
+                             constraintName="uk_rental_transfer_action_source_type"/>
+        <createIndex tableName="rental_transfer_action_event"
+                     indexName="idx_rental_transfer_action_time">
+            <column name="occurred_at"/>
+            <column name="context_type"/>
+        </createIndex>
+        <sql dbms="postgresql"><![CDATA[
+            alter table rental_transfer_action_event
+                add constraint ck_rental_transfer_action_context check (
+                    context_type in ('ARRIVAL', 'CHECKOUT')
+                ),
+                add constraint ck_rental_transfer_action_type check (
+                    event_type in ('CTA_SHOWN', 'PREFILL_STARTED')
+                );
+        ]]></sql>
+        <rollback>
+            <dropTable tableName="rental_transfer_action_event"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

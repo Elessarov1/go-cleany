@@ -3,7 +3,7 @@ title: Loco Place Current Context
 type: ai-context
 status: active
 scope: platform
-updated: 2026-08-30
+updated: 2026-08-31
 ---
 
 # Loco Place — Current Context
@@ -160,6 +160,8 @@ Unified customer Activity is implemented at `/account/activity`. Its API compose
 
 Same-service repeat is implemented for owned completed Cleaning and Transfer transactions. Their detail pages open safe prefilled forms; the backend rechecks ownership, completed status, service availability and current business configuration at both prefill and creation. Only explicitly reusable fields are copied, current account phone is used, and new scheduling/current price/incentives/assignment/status are never inherited. Typed self-source links preserve attribution without a universal transaction model.
 
+Rental → Transfer contextual flow is implemented through an explicit bridge. A confirmed owned Rental offers arrival (`FROM_AIRPORT`, check-in, property destination) and checkout (`TO_AIRPORT`, checkout, property pickup) independently. Backend-calculated availability can expose an option now or state when its Transfer window opens. Related transfers keep typed source/context fields for deduplication and analytics while both vertical lifecycles remain independent.
+
 ## Identity
 
 Canonical internal identity:
@@ -273,6 +275,8 @@ Admin analytics supports ALL/CLEANING/RENTAL/TRANSFER and calculates new/active 
 Retention uses first-completed-task mature 30/90-day cohorts, cumulative mature second-order conversion and median time to the second task. Initial cross-service funnels count only the immediate next completed task. Empty mature cohorts are reported as insufficient data, not zero retention.
 
 Cleaning/Transfer repeat UX is measured as shown → prefill opened → linked repeat created → linked repeat completed, including median time from source completion to repeat creation. Interaction events are deduplicated; creation/completion come from vertical source links.
+
+Rental → Transfer is additionally measured as shown → prefill opened → related Transfer created → related Transfer completed, both overall and by arrival/checkout context. Its source cohort follows the selected Rental reporting period; median conversion time runs from first contextual display to Transfer creation.
 
 See [cross-functional/analytics.md](cross-functional/analytics.md).
 

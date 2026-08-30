@@ -70,6 +70,13 @@ export interface AnalyticsOverview {
     convertedCustomers: number;
     conversionRate: number | null;
   }>;
+  rentalToTransfer: {
+    total: AnalyticsActionFunnel;
+    byContext: Array<{
+      context: "ARRIVAL" | "CHECKOUT";
+      funnel: AnalyticsActionFunnel;
+    }>;
+  };
   repeatActions: Array<{
     service: "CLEANING" | "TRANSFER";
     shownSources: number;
@@ -95,6 +102,17 @@ export interface AnalyticsOverview {
     newCustomers: number;
     completedTransactions: number;
   }>;
+}
+
+export interface AnalyticsActionFunnel {
+  shownSources: number;
+  startedSources: number;
+  createdSources: number;
+  completedSources: number;
+  startRate: number | null;
+  creationRate: number | null;
+  completionRate: number | null;
+  medianHoursToCreation: number | null;
 }
 
 interface AnalyticsCohortMetric {

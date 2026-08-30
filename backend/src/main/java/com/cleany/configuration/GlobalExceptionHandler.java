@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitNotApplicableException;
+import com.cleany.crossservice.rentaltransfer.RentalTransferAlreadyBookedException;
+import com.cleany.crossservice.rentaltransfer.RentalTransferContextNotEligibleException;
 import com.cleany.analytics.AcquisitionCampaignNotFoundException;
 import com.cleany.analytics.InvalidAcquisitionCampaignException;
 import com.cleany.analytics.InvalidAnalyticsPeriodException;
@@ -453,6 +455,17 @@ public class GlobalExceptionHandler {
                 exception.getMessage(),
                 Collections.emptyMap()
         );
+    }
+
+    @ExceptionHandler({
+            RentalTransferContextNotEligibleException.class,
+            RentalTransferAlreadyBookedException.class
+    })
+    ResponseEntity<ApiError> handleRentalTransferContext(RuntimeException exception) {
+        String code = exception instanceof RentalTransferAlreadyBookedException
+                ? "rental_transfer_already_booked"
+                : "rental_transfer_context_not_eligible";
+        return response(HttpStatus.CONFLICT, code, exception.getMessage(), Collections.emptyMap());
     }
 
     @ExceptionHandler(TransferBookingNotFoundException.class)

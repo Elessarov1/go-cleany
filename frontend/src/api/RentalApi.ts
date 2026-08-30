@@ -6,6 +6,9 @@ import type {
   RentalAvailability,
   RentalBooking,
   RentalCleaningContext,
+  RentalTransferContext,
+  RentalTransferContextType,
+  RentalTransferPrefill,
   RentalBookingQuote,
   RentalBookingQuoteRequest,
   RentalConfiguration,
@@ -26,6 +29,9 @@ export interface RentalApi {
   getBookings(): Promise<RentalBooking[]>;
   getBooking(id: number): Promise<RentalBooking>;
   getCleaningContext(id: number): Promise<RentalCleaningContext>;
+  getTransferContext(id: number): Promise<RentalTransferContext>;
+  recordTransferContextShown(id: number, context: RentalTransferContextType): Promise<void>;
+  getTransferPrefill(id: number, context: RentalTransferContextType): Promise<RentalTransferPrefill>;
   cancelBooking(id: number): Promise<RentalBooking>;
   getAdminProperties(): Promise<RentalProperty[]>;
   createAdminProperty(): Promise<RentalProperty>;

@@ -21,6 +21,11 @@ import type { TransferApi } from "./TransferApi";
 
 const STORAGE_KEY = "cleany.mock.transfer-bookings.v1";
 
+type StoredTransferBooking = TransferBooking & {
+  sourceRentalBookingId?: number;
+  rentalContext?: "ARRIVAL" | "CHECKOUT";
+};
+
 function dateFromToday(days: number): string {
   const value = new Date();
   value.setHours(12, 0, 0, 0);
@@ -71,12 +76,12 @@ let adminPrices: AdminTransferPrice[] = configuration.prices.map((price, index) 
 }));
 let adminDrivers: AdminTransferDriver[] = [];
 
-function readBookings(): TransferBooking[] {
+function readBookings(): StoredTransferBooking[] {
   const raw = localStorage.getItem(STORAGE_KEY);
-  return raw ? JSON.parse(raw) as TransferBooking[] : [];
+  return raw ? JSON.parse(raw) as StoredTransferBooking[] : [];
 }
 
-function writeBookings(bookings: TransferBooking[]): void {
+function writeBookings(bookings: StoredTransferBooking[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings));
 }
 
@@ -93,7 +98,7 @@ export class MockTransferApi implements TransferApi {
     if (!airport || !vehicle || !price) {
       return Promise.reject(new ApiError("Transfer configuration is unavailable", 409));
     }
-    const booking: TransferBooking = {
+    const booking: StoredTransferBooking = {
       id: Date.now(),
       direction: request.direction,
       airportCode: airport.code,
@@ -123,6 +128,8 @@ export class MockTransferApi implements TransferApi {
       cancelledAt: null,
       rejectedAt: null,
       statusReason: null,
+      sourceRentalBookingId: request.rentalSource?.bookingId,
+      rentalContext: request.rentalSource?.context,
     };
     writeBookings([booking, ...readBookings()]);
     return Promise.resolve(booking);
