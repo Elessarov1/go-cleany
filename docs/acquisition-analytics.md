@@ -79,6 +79,11 @@ ALL/CLEANING/RENTAL/TRANSFER dimension.
 - Transfer average check uses completed `price_amount` snapshots;
 - currencies are never summed or averaged together.
 
+The same response now includes `businessHealth`, `retention` and `transitions`. Their canonical
+definitions live in [cross-functional/analytics.md](cross-functional/analytics.md). Acquisition keeps
+its existing first-touch semantics; the service filter for retention and transitions applies to the
+customer's first completed task rather than to acquisition attribution.
+
 Each metric uses its own business event timestamp. Calendar boundaries use `ANALYTICS_ZONE_ID`
 (`Europe/Istanbul` by default). When configured, `COMMERCIAL_LAUNCH_AT` clamps the earliest included
 timestamp.

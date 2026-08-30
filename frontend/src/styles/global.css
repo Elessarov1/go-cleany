@@ -3147,16 +3147,25 @@ h3 {
 .admin-analytics__service, .admin-analytics__custom-range label { display: grid; gap: 6px; color: var(--color-muted); font-size: 12px; font-weight: 750; }
 .admin-analytics__service select, .admin-analytics__custom-range input { width: 100%; min-height: 42px; padding: 9px 11px; color: var(--color-text); border: 1px solid var(--color-line); border-radius: 11px; background: var(--color-surface); font: inherit; }
 .admin-analytics__custom-range { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 220px)); gap: 12px; }
-.admin-analytics__cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 22px; }
+.admin-analytics__section, .admin-analytics__panel--spaced { margin-bottom: 22px; }
+.admin-analytics__cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.admin-analytics__cards--business-health { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.admin-analytics__cards--averages { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .admin-analytics__card { min-width: 0; padding: 20px; border: 1px solid var(--color-line); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: var(--shadow-card); }
 .admin-analytics__card span { display: block; min-height: 34px; color: var(--color-muted); font-size: 12px; font-weight: 750; }
-.admin-analytics__card strong { display: block; overflow: hidden; font-size: clamp(23px, 3vw, 34px); letter-spacing: -0.04em; text-overflow: ellipsis; white-space: nowrap; }
+.admin-analytics__card strong { display: block; overflow-wrap: anywhere; font-size: clamp(21px, 3vw, 34px); letter-spacing: -0.04em; line-height: 1.08; }
 .admin-analytics__card small { display: block; margin-top: 5px; color: var(--color-primary-dark); font-weight: 800; }
 .admin-analytics__panel { overflow: hidden; border: 1px solid var(--color-line); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: var(--shadow-card); }
 .admin-analytics__section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; padding: 20px; border-bottom: 1px solid var(--color-line); }
+.admin-analytics__section-heading--standalone { padding: 0 0 12px; border-bottom: 0; }
 .admin-analytics__section-heading h2 { margin: 0 0 5px; font-size: 21px; }
 .admin-analytics__section-heading p { margin: 0; color: var(--color-muted); font-size: 13px; }
 .admin-analytics__section-heading > span { flex: 0 0 auto; color: var(--color-muted); font-size: 12px; font-weight: 750; }
+.admin-analytics__transition-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 20px; }
+.admin-analytics__transition { min-width: 0; padding: 16px; border: 1px solid var(--color-line); border-radius: 14px; background: color-mix(in srgb, var(--color-canvas) 45%, var(--color-surface)); }
+.admin-analytics__transition > span { display: block; color: var(--color-muted); font-size: 12px; font-weight: 800; }
+.admin-analytics__transition strong { display: block; margin-top: 8px; overflow-wrap: anywhere; font-size: 25px; line-height: 1.1; }
+.admin-analytics__transition small { display: block; margin-top: 6px; color: var(--color-primary-dark); font-weight: 750; }
 .admin-analytics__table-wrap { width: 100%; overflow-x: auto; }
 .admin-analytics__table { width: 100%; min-width: 790px; border-collapse: collapse; }
 .admin-analytics__table th, .admin-analytics__table td { padding: 14px 16px; border-bottom: 1px solid var(--color-line); text-align: left; font-size: 13px; }
@@ -3166,6 +3175,7 @@ h3 {
 .analytics-channel { display: inline-flex; padding: 5px 8px; color: var(--color-primary-dark); border-radius: 9px; background: var(--color-primary-soft); font-size: 11px; font-weight: 800; }
 .analytics-channel--organic { color: var(--color-muted); background: color-mix(in srgb, var(--color-line) 55%, transparent); }
 .admin-analytics__empty { margin: 0; padding: 28px 20px; color: var(--color-muted); text-align: center; }
+.admin-analytics__empty--card { border: 1px solid var(--color-line); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: var(--shadow-card); }
 
 .campaign-dialog {
   width: min(100%, 650px);
@@ -3195,6 +3205,8 @@ h3 {
 
 @media (max-width: 900px) {
   .admin-analytics__cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-analytics__cards--business-health { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .admin-analytics__transition-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 640px) {
@@ -3205,14 +3217,23 @@ h3 {
   .admin-analytics__service { width: 100%; }
   .admin-analytics__custom-range { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .admin-analytics__cards { gap: 9px; }
+  .admin-analytics__cards--business-health { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .admin-analytics__card { padding: 16px; }
   .admin-analytics__card span { min-height: 38px; font-size: 11px; }
   .admin-analytics__section-heading { align-items: flex-start; flex-direction: column; padding: 16px; }
+  .admin-analytics__section-heading--standalone { padding: 0 0 11px; }
+  .admin-analytics__transition-grid { padding: 14px; }
   .admin-analytics-entry { grid-template-columns: 44px minmax(0, 1fr) 18px; padding: 16px; }
   .admin-analytics-entry > span { width: 44px; height: 44px; }
   .campaign-dialog { padding: 20px 16px; border-radius: 24px 24px 0 0; }
   .campaign-dialog__grid { grid-template-columns: minmax(0, 1fr); }
   .campaign-dialog__wide { grid-column: auto; }
+}
+
+@media (max-width: 420px) {
+  .admin-analytics__cards { grid-template-columns: minmax(0, 1fr); }
+  .admin-analytics__card span { min-height: 0; }
+  .admin-analytics__transition-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* The standalone customer header keeps the same controls in the same order on every route. */

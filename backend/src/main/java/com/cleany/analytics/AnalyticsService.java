@@ -25,6 +25,9 @@ public class AnalyticsService {
         return new AnalyticsOverviewResponse(
                 new AnalyticsPeriodResponse(from, to, service),
                 queryRepository.customerMetrics(window),
+                queryRepository.businessHealth(window),
+                queryRepository.retention(window),
+                queryRepository.transitions(window),
                 queryRepository.averageChecks(window),
                 queryRepository.acquisitionMetrics(window)
         );

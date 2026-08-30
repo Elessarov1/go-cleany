@@ -449,12 +449,35 @@
   "analytics": {
     "eyebrow": "platform analytics",
     "title": "Loco Place analytics",
-    "subtitle": "Customer acquisition and key metrics for every Loco Place service in one place.",
-    "entrySubtitle": "Acquisition channels, repeat customers and average checks",
+    "subtitle": "Customer retention, service adoption and acquisition in one place.",
+    "entrySubtitle": "Business health, retention and acquisition channels",
     "loadError": "Analytics for the selected period could not be loaded.",
     "summaryLabel": "Key metrics",
     "activeCustomers": "Active customers: {{count}}",
     "noData": "No data",
+    "insufficientData": "Insufficient data",
+    "days": "{{count}} days",
+    "businessHealth": {
+      "title": "Business Health",
+      "subtitle": "Completed tasks and relationship depth among active customers in the selected period."
+    },
+    "retention": {
+      "title": "Customer retention",
+      "subtitle": "Repeat starts from a customer's first completed task; rates include mature cohorts only.",
+      "noMatureCohort": "No mature cohort",
+      "result": "{{converted}} of {{cohort}} customers"
+    },
+    "transitions": {
+      "title": "Next completed task",
+      "subtitle": "Only the immediate next task after the first completed task is counted.",
+      "result": "{{converted}} of {{cohort}} customers"
+    },
+    "averageChecks": {
+      "title": "Average check",
+      "subtitle": "Services and currencies are shown separately; unlike currencies are never combined.",
+      "empty": "There are no completed tasks in the selected period.",
+      "completed": "Completed tasks: {{count}}"
+    },
     "filters": {
       "label": "Analytics filters",
       "TODAY": "Today",
@@ -470,9 +493,15 @@
     "metrics": {
       "newCustomers": "New customers",
       "repeatCustomers": "Repeat customers",
-      "cleaningAverage": "Cleaning average check",
-      "rentalAverage": "Rental average check",
-      "transferAverage": "Transfer average check"
+      "tasksPerActiveCustomer": "Tasks per active customer",
+      "repeat30Days": "30-day repeat",
+      "repeat90Days": "90-day repeat",
+      "twoPlusTasks": "Customers with 2+ tasks",
+      "twoPlusServices": "Customers with 2+ services",
+      "completedTasks": "Completed tasks",
+      "secondOrderConversion": "Second-task conversion",
+      "timeToSecondTask": "Median time to second task",
+      "averageCheck": "{{service}} average, {{currency}}"
     },
     "acquisition": {
       "title": "Acquisition channels",
@@ -520,7 +549,8 @@
       "targetServices": {
         "PLATFORM": "Loco Place home",
         "CLEANING": "Loco Cleaning",
-        "RENTAL": "Loco Rent"
+        "RENTAL": "Loco Rent",
+        "TRANSFER": "Loco Transfer"
       }
     }
   },

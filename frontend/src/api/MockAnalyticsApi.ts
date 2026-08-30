@@ -6,6 +6,12 @@ export class MockAnalyticsApi implements AnalyticsApi {
 
   getOverview(request: AnalyticsOverviewRequest): Promise<AnalyticsOverview> {
     const all = request.service === "ALL";
+    const transitions: AnalyticsOverview["transitions"] = [
+      { fromService: "CLEANING", toService: "CLEANING", cohortCustomers: 18, convertedCustomers: 6, conversionRate: 0.3333 },
+      { fromService: "RENTAL", toService: "TRANSFER", cohortCustomers: 7, convertedCustomers: 3, conversionRate: 0.4286 },
+      { fromService: "RENTAL", toService: "CLEANING", cohortCustomers: 7, convertedCustomers: 1, conversionRate: 0.1429 },
+      { fromService: "TRANSFER", toService: "TRANSFER", cohortCustomers: 9, convertedCustomers: 2, conversionRate: 0.2222 },
+    ];
     return Promise.resolve({
       period: request,
       customers: {
@@ -14,6 +20,21 @@ export class MockAnalyticsApi implements AnalyticsApi {
         repeatCustomers: 9,
         repeatRate: 0.2903,
       },
+      businessHealth: {
+        completedTasks: 31,
+        activeCustomers: 22,
+        completedTasksPerActiveCustomer: 1.4091,
+        customersWithTwoPlusCompletedTasks: 9,
+        customersUsingTwoPlusServices: 5,
+        crossServiceCustomerRate: 0.2273,
+      },
+      retention: {
+        repeat30Days: { cohortCustomers: 18, convertedCustomers: 6, rate: 0.3333 },
+        repeat90Days: { cohortCustomers: 12, convertedCustomers: 5, rate: 0.4167 },
+        secondOrderConversion: { cohortCustomers: 34, convertedCustomers: 13, rate: 0.3824 },
+        medianDaysToSecondTask: 18.5,
+      },
+      transitions: transitions.filter((transition) => all || transition.fromService === request.service),
       averageChecks: [
         ...(all || request.service === "CLEANING" ? [{ service: "CLEANING" as const, currency: "TRY", amount: 2150, completedTransactions: 19 }] : []),
         ...(all || request.service === "RENTAL" ? [{ service: "RENTAL" as const, currency: "TRY", amount: 27850, completedTransactions: 5 }] : []),

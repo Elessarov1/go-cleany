@@ -264,9 +264,9 @@ Stable campaign entry:
 /a/<publicCode>
 ```
 
-Admin analytics supports ALL/CLEANING/RENTAL/TRANSFER and calculates new/active/repeat customers and average check from completed price snapshots without mixing currencies.
+Admin analytics supports ALL/CLEANING/RENTAL/TRANSFER and calculates new/active customer acquisition, average checks from completed price snapshots without mixing currencies, and Business Health metrics from completed Cleaning, Rental and Transfer tasks.
 
-The next analytics evolution should add business-health metrics from the manifesto rather than merely more operational counters.
+Retention uses first-completed-task mature 30/90-day cohorts, cumulative mature second-order conversion and median time to the second task. Initial cross-service funnels count only the immediate next completed task. Empty mature cohorts are reported as insufficient data, not zero retention.
 
 See [cross-functional/analytics.md](cross-functional/analytics.md).
 

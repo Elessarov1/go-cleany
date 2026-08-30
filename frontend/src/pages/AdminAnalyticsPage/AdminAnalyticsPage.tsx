@@ -46,8 +46,8 @@ export function AdminAnalyticsPage() {
     return <ErrorState message={t("analytics.loadError")} onRetry={() => setReloadKey((key) => key + 1)} />;
   }
 
-  const checks = new Map(overview?.averageChecks.map((item) => [item.service, item]));
   const number = new Intl.NumberFormat(i18n.language);
+  const decimal = new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 });
   const percent = new Intl.NumberFormat(i18n.language, { style: "percent", maximumFractionDigits: 1 });
 
   return (
@@ -107,25 +107,113 @@ export function AdminAnalyticsPage() {
 
       {!overview ? <LoadingState /> : (
         <>
-          <section className="admin-analytics__cards" aria-label={t("analytics.summaryLabel")}>
-            <MetricCard label={t("analytics.metrics.newCustomers")} value={number.format(overview.customers.newCustomers)} />
-            <MetricCard
-              label={t("analytics.metrics.repeatCustomers")}
-              value={number.format(overview.customers.repeatCustomers)}
-              detail={percent.format(overview.customers.repeatRate)}
+          <section className="admin-analytics__section" aria-labelledby="business-health-heading">
+            <SectionHeading
+              id="business-health-heading"
+              title={t("analytics.businessHealth.title")}
+              subtitle={t("analytics.businessHealth.subtitle")}
             />
-            <MetricCard
-              label={t("analytics.metrics.cleaningAverage")}
-              value={formatMoney(checks.get("CLEANING")?.amount, checks.get("CLEANING")?.currency, i18n.language, t("analytics.noData"))}
+            <div className="admin-analytics__cards admin-analytics__cards--business-health">
+              <MetricCard
+                label={t("analytics.metrics.tasksPerActiveCustomer")}
+                value={decimal.format(overview.businessHealth.completedTasksPerActiveCustomer)}
+                detail={t("analytics.activeCustomers", { count: overview.businessHealth.activeCustomers })}
+              />
+              <MetricCard
+                label={t("analytics.metrics.repeat90Days")}
+                value={formatRate(overview.retention.repeat90Days.rate, percent, t("analytics.insufficientData"))}
+                detail={formatCohort(overview.retention.repeat90Days, number, t)}
+              />
+              <MetricCard
+                label={t("analytics.metrics.twoPlusTasks")}
+                value={number.format(overview.businessHealth.customersWithTwoPlusCompletedTasks)}
+              />
+              <MetricCard
+                label={t("analytics.metrics.twoPlusServices")}
+                value={number.format(overview.businessHealth.customersUsingTwoPlusServices)}
+                detail={percent.format(overview.businessHealth.crossServiceCustomerRate)}
+              />
+              <MetricCard
+                label={t("analytics.metrics.completedTasks")}
+                value={number.format(overview.businessHealth.completedTasks)}
+              />
+            </div>
+          </section>
+
+          <section className="admin-analytics__section" aria-labelledby="retention-heading">
+            <SectionHeading
+              id="retention-heading"
+              title={t("analytics.retention.title")}
+              subtitle={t("analytics.retention.subtitle")}
             />
-            <MetricCard
-              label={t("analytics.metrics.rentalAverage")}
-              value={formatMoney(checks.get("RENTAL")?.amount, checks.get("RENTAL")?.currency, i18n.language, t("analytics.noData"))}
+            <div className="admin-analytics__cards admin-analytics__cards--retention">
+              <MetricCard
+                label={t("analytics.metrics.repeat30Days")}
+                value={formatRate(overview.retention.repeat30Days.rate, percent, t("analytics.insufficientData"))}
+                detail={formatCohort(overview.retention.repeat30Days, number, t)}
+              />
+              <MetricCard
+                label={t("analytics.metrics.repeat90Days")}
+                value={formatRate(overview.retention.repeat90Days.rate, percent, t("analytics.insufficientData"))}
+                detail={formatCohort(overview.retention.repeat90Days, number, t)}
+              />
+              <MetricCard
+                label={t("analytics.metrics.secondOrderConversion")}
+                value={formatRate(overview.retention.secondOrderConversion.rate, percent, t("analytics.insufficientData"))}
+                detail={formatCohort(overview.retention.secondOrderConversion, number, t)}
+              />
+              <MetricCard
+                label={t("analytics.metrics.timeToSecondTask")}
+                value={overview.retention.medianDaysToSecondTask === null
+                  ? t("analytics.insufficientData")
+                  : t("analytics.days", { count: decimal.format(overview.retention.medianDaysToSecondTask) })}
+              />
+            </div>
+          </section>
+
+          <section className="admin-analytics__panel admin-analytics__panel--spaced">
+            <SectionHeading
+              contained
+              title={t("analytics.transitions.title")}
+              subtitle={t("analytics.transitions.subtitle")}
             />
-            <MetricCard
-              label={t("analytics.metrics.transferAverage")}
-              value={formatMoney(checks.get("TRANSFER")?.amount, checks.get("TRANSFER")?.currency, i18n.language, t("analytics.noData"))}
+            <div className="admin-analytics__transition-grid">
+              {overview.transitions.map((transition) => (
+                <article className="admin-analytics__transition" key={`${transition.fromService}-${transition.toService}`}>
+                  <span>{t(`analytics.services.${transition.fromService}`)} <span aria-hidden="true">→</span> {t(`analytics.services.${transition.toService}`)}</span>
+                  <strong>{formatRate(transition.conversionRate, percent, t("analytics.insufficientData"))}</strong>
+                  <small>{t("analytics.transitions.result", {
+                    converted: number.format(transition.convertedCustomers),
+                    cohort: number.format(transition.cohortCustomers),
+                  })}</small>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="admin-analytics__section" aria-labelledby="average-checks-heading">
+            <SectionHeading
+              id="average-checks-heading"
+              title={t("analytics.averageChecks.title")}
+              subtitle={t("analytics.averageChecks.subtitle")}
             />
+            {overview.averageChecks.length === 0 ? (
+              <p className="admin-analytics__empty admin-analytics__empty--card">{t("analytics.averageChecks.empty")}</p>
+            ) : (
+              <div className="admin-analytics__cards admin-analytics__cards--averages">
+                {overview.averageChecks.map((check) => (
+                  <MetricCard
+                    key={`${check.service}-${check.currency}`}
+                    label={t("analytics.metrics.averageCheck", {
+                      service: t(`analytics.services.${check.service}`),
+                      currency: check.currency,
+                    })}
+                    value={formatMoney(check.amount, check.currency, i18n.language, t("analytics.noData"))}
+                    detail={t("analytics.averageChecks.completed", { count: number.format(check.completedTransactions) })}
+                  />
+                ))}
+              </div>
+            )}
           </section>
 
           <section className="admin-analytics__panel">
@@ -134,7 +222,7 @@ export function AdminAnalyticsPage() {
                 <h2>{t("analytics.acquisition.title")}</h2>
                 <p>{t("analytics.acquisition.subtitle")}</p>
               </div>
-              <span>{t("analytics.activeCustomers", { count: overview.customers.activeCustomers })}</span>
+              <span>{t("analytics.metrics.newCustomers")}: {number.format(overview.customers.newCustomers)}</span>
             </div>
             {overview.acquisition.length === 0 ? (
               <p className="admin-analytics__empty">{t("analytics.acquisition.empty")}</p>
@@ -173,6 +261,32 @@ export function AdminAnalyticsPage() {
 
 function MetricCard({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return <article className="admin-analytics__card"><span>{label}</span><strong>{value}</strong>{detail ? <small>{detail}</small> : null}</article>;
+}
+
+function SectionHeading({ id, title, subtitle, contained = false }: { id?: string; title: string; subtitle: string; contained?: boolean }) {
+  return <div className={`admin-analytics__section-heading${contained ? "" : " admin-analytics__section-heading--standalone"}`}>
+    <div>
+      <h2 id={id}>{title}</h2>
+      <p>{subtitle}</p>
+    </div>
+  </div>;
+}
+
+function formatRate(rate: number | null, formatter: Intl.NumberFormat, empty: string): string {
+  return rate === null ? empty : formatter.format(rate);
+}
+
+function formatCohort(
+  metric: { cohortCustomers: number; convertedCustomers: number },
+  formatter: Intl.NumberFormat,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  return metric.cohortCustomers === 0
+    ? t("analytics.retention.noMatureCohort")
+    : t("analytics.retention.result", {
+      converted: formatter.format(metric.convertedCustomers),
+      cohort: formatter.format(metric.cohortCustomers),
+    });
 }
 
 function formatMoney(amount: number | undefined, currency: string | undefined, locale: string, empty: string): string {

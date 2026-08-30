@@ -451,12 +451,35 @@
   "analytics": {
     "eyebrow": "аналитика платформы",
     "title": "Аналитика Loco Place",
-    "subtitle": "Привлечение клиентов и показатели всех сервисов Loco Place в одном месте.",
-    "entrySubtitle": "Каналы привлечения, повторные клиенты и средний чек",
+    "subtitle": "Возврат клиентов, использование сервисов и привлечение в одном месте.",
+    "entrySubtitle": "Здоровье бизнеса, удержание и каналы привлечения",
     "loadError": "Не удалось загрузить аналитику за выбранный период.",
     "summaryLabel": "Ключевые показатели",
     "activeCustomers": "Активных клиентов: {{count}}",
     "noData": "Нет данных",
+    "insufficientData": "Недостаточно данных",
+    "days": "{{count}} дн.",
+    "businessHealth": {
+      "title": "Здоровье бизнеса",
+      "subtitle": "Завершённые задачи и глубина отношений с активными клиентами за выбранный период."
+    },
+    "retention": {
+      "title": "Возврат клиентов",
+      "subtitle": "Повтор считается от первой завершённой задачи; в проценты входят только зрелые когорты.",
+      "noMatureCohort": "Нет зрелой когорты",
+      "result": "{{converted}} из {{cohort}} клиентов"
+    },
+    "transitions": {
+      "title": "Следующая завершённая задача",
+      "subtitle": "Учитывается только ближайшая следующая задача после первой завершённой.",
+      "result": "{{converted}} из {{cohort}} клиентов"
+    },
+    "averageChecks": {
+      "title": "Средний чек",
+      "subtitle": "Сервисы и валюты показаны отдельно — значения разных валют не смешиваются.",
+      "empty": "За выбранный период завершённых задач нет.",
+      "completed": "Завершённых задач: {{count}}"
+    },
     "filters": {
       "label": "Фильтры аналитики",
       "TODAY": "Сегодня",
@@ -472,9 +495,15 @@
     "metrics": {
       "newCustomers": "Новые клиенты",
       "repeatCustomers": "Повторные клиенты",
-      "cleaningAverage": "Средний чек Cleaning",
-      "rentalAverage": "Средний чек Rental",
-      "transferAverage": "Средний чек Transfer"
+      "tasksPerActiveCustomer": "Задач на активного клиента",
+      "repeat30Days": "Повтор за 30 дней",
+      "repeat90Days": "Повтор за 90 дней",
+      "twoPlusTasks": "Клиенты с 2+ задачами",
+      "twoPlusServices": "Клиенты с 2+ сервисами",
+      "completedTasks": "Завершённые задачи",
+      "secondOrderConversion": "Конверсия во вторую задачу",
+      "timeToSecondTask": "Медиана до второй задачи",
+      "averageCheck": "Средний чек {{service}}, {{currency}}"
     },
     "acquisition": {
       "title": "Каналы привлечения",
@@ -522,7 +551,8 @@
       "targetServices": {
         "PLATFORM": "Главная Loco Place",
         "CLEANING": "Loco Cleaning",
-        "RENTAL": "Loco Rent"
+        "RENTAL": "Loco Rent",
+        "TRANSFER": "Loco Transfer"
       }
     }
   },

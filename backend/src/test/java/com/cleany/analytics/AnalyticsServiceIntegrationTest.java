@@ -170,6 +170,20 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertEquals(3, result.customers().activeCustomers()),
                 () -> Assertions.assertEquals(2, result.customers().repeatCustomers()),
                 () -> Assertions.assertEquals(new BigDecimal("0.6667"), result.customers().repeatRate()),
+                () -> Assertions.assertEquals(5, result.businessHealth().completedTasks()),
+                () -> Assertions.assertEquals(3, result.businessHealth().activeCustomers()),
+                () -> Assertions.assertEquals(
+                        new BigDecimal("1.6667"),
+                        result.businessHealth().completedTasksPerActiveCustomer()
+                ),
+                () -> Assertions.assertEquals(2, result.businessHealth().customersWithTwoPlusCompletedTasks()),
+                () -> Assertions.assertEquals(1, result.businessHealth().customersUsingTwoPlusServices()),
+                () -> Assertions.assertEquals(
+                        new BigDecimal("0.3333"),
+                        result.businessHealth().crossServiceCustomerRate()
+                ),
+                () -> Assertions.assertNull(result.retention().repeat30Days().rate()),
+                () -> Assertions.assertNull(result.retention().repeat90Days().rate()),
                 () -> Assertions.assertEquals(new BigDecimal("1100.00"), checks.get(PlatformService.CLEANING).amount()),
                 () -> Assertions.assertEquals(4, checks.get(PlatformService.CLEANING).completedTransactions()),
                 () -> Assertions.assertEquals(new BigDecimal("700.00"), checks.get(PlatformService.RENTAL).amount()),
@@ -205,8 +219,135 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertEquals(0, empty.customers().newCustomers()),
                 () -> Assertions.assertEquals(0, empty.customers().activeCustomers()),
                 () -> Assertions.assertEquals(BigDecimal.ZERO.setScale(4), empty.customers().repeatRate()),
+                () -> Assertions.assertEquals(0, empty.businessHealth().completedTasks()),
+                () -> Assertions.assertEquals(BigDecimal.ZERO.setScale(4), empty.businessHealth().completedTasksPerActiveCustomer()),
+                () -> Assertions.assertNull(empty.retention().repeat30Days().rate()),
+                () -> Assertions.assertNull(empty.retention().secondOrderConversion().rate()),
+                () -> Assertions.assertNull(empty.retention().medianDaysToSecondTask()),
                 () -> Assertions.assertTrue(empty.averageChecks().isEmpty()),
                 () -> Assertions.assertTrue(empty.acquisition().isEmpty())
+        );
+    }
+
+    @Test
+    void overview_retentionUsesMatureCohortsAndInclusiveThirtyAndNinetyDayBoundaries() {
+        Instant firstA = Instant.parse("2026-01-02T10:00:00Z");
+        CurrentCustomer exactThirtyDays = customerAt(firstA.minusSeconds(60));
+        completeCleaning(exactThirtyDays, firstA, 1);
+        completeCleaning(exactThirtyDays, firstA.plusSeconds(30L * 86400), 1);
+
+        Instant firstB = Instant.parse("2026-01-03T10:00:00Z");
+        CurrentCustomer afterThirtyDays = customerAt(firstB.minusSeconds(60));
+        completeCleaning(afterThirtyDays, firstB, 1);
+        completeRental(afterThirtyDays, firstB.plusSeconds(30L * 86400 + 1));
+
+        Instant firstC = Instant.parse("2026-01-04T10:00:00Z");
+        CurrentCustomer exactNinetyDays = customerAt(firstC.minusSeconds(60));
+        completeCleaning(exactNinetyDays, firstC, 1);
+        completeRental(exactNinetyDays, firstC.plusSeconds(90L * 86400));
+
+        Instant firstD = Instant.parse("2026-01-05T10:00:00Z");
+        CurrentCustomer afterNinetyDays = customerAt(firstD.minusSeconds(60));
+        completeCleaning(afterNinetyDays, firstD, 1);
+        completeRental(afterNinetyDays, firstD.plusSeconds(90L * 86400 + 1));
+
+        Instant immatureFirst = Instant.parse("2026-04-15T10:00:00Z");
+        completeCleaning(customerAt(immatureFirst.minusSeconds(60)), immatureFirst, 1);
+
+        AnalyticsOverviewResponse result = analyticsService.overview(
+                LocalDate.of(2026, 1, 1),
+                LocalDate.of(2026, 4, 30),
+                AnalyticsServiceDimension.CLEANING
+        );
+
+        Assertions.assertAll(
+                () -> assertCohort(result.retention().repeat30Days(), 4, 1, "0.2500"),
+                () -> assertCohort(result.retention().repeat90Days(), 4, 3, "0.7500"),
+                () -> assertCohort(result.retention().secondOrderConversion(), 4, 3, "0.7500"),
+                () -> Assertions.assertEquals(
+                        new BigDecimal("30.0"),
+                        result.retention().medianDaysToSecondTask()
+                )
+        );
+    }
+
+    @Test
+    void overview_transitionsUseOnlyImmediateSecondTaskAndFilterByFirstService() {
+        Instant rentalFirst = Instant.parse("2026-01-05T10:00:00Z");
+        CurrentCustomer rentalToCleaning = customerAt(rentalFirst.minusSeconds(60));
+        completeRental(rentalToCleaning, rentalFirst);
+        completeCleaning(rentalToCleaning, rentalFirst.plusSeconds(86400), 1);
+        completeTransfer(rentalToCleaning, rentalFirst.plusSeconds(2 * 86400), new BigDecimal("2000.00"));
+
+        Instant secondRentalFirst = Instant.parse("2026-01-06T10:00:00Z");
+        CurrentCustomer rentalToTransfer = customerAt(secondRentalFirst.minusSeconds(60));
+        completeRental(rentalToTransfer, secondRentalFirst);
+        completeTransfer(rentalToTransfer, secondRentalFirst.plusSeconds(86400), new BigDecimal("2000.00"));
+
+        Instant cleaningFirst = Instant.parse("2026-01-07T10:00:00Z");
+        CurrentCustomer cleaningRepeat = customerAt(cleaningFirst.minusSeconds(60));
+        completeCleaning(cleaningRepeat, cleaningFirst, 1);
+        completeCleaning(cleaningRepeat, cleaningFirst.plusSeconds(86400), 1);
+
+        Instant transferFirst = Instant.parse("2026-01-08T10:00:00Z");
+        CurrentCustomer transferRepeat = customerAt(transferFirst.minusSeconds(60));
+        completeTransfer(transferRepeat, transferFirst, new BigDecimal("2000.00"));
+        completeTransfer(transferRepeat, transferFirst.plusSeconds(86400), new BigDecimal("2000.00"));
+
+        AnalyticsOverviewResponse all = analyticsService.overview(
+                LocalDate.of(2026, 1, 1),
+                LocalDate.of(2026, 2, 1),
+                AnalyticsServiceDimension.ALL
+        );
+        AnalyticsOverviewResponse rental = analyticsService.overview(
+                LocalDate.of(2026, 1, 1),
+                LocalDate.of(2026, 2, 1),
+                AnalyticsServiceDimension.RENTAL
+        );
+        Map<String, AnalyticsTransitionMetric> transitions = all.transitions().stream()
+                .collect(Collectors.toMap(this::transitionKey, Function.identity()));
+
+        Assertions.assertAll(
+                () -> assertTransition(transitions.get("CLEANING-CLEANING"), 1, 1, "1.0000"),
+                () -> assertTransition(transitions.get("RENTAL-TRANSFER"), 2, 1, "0.5000"),
+                () -> assertTransition(transitions.get("RENTAL-CLEANING"), 2, 1, "0.5000"),
+                () -> assertTransition(transitions.get("TRANSFER-TRANSFER"), 1, 1, "1.0000"),
+                () -> Assertions.assertEquals(2, rental.transitions().size()),
+                () -> Assertions.assertTrue(rental.transitions().stream()
+                        .allMatch(metric -> metric.fromService() == PlatformService.RENTAL)),
+                () -> Assertions.assertNull(rental.retention().repeat30Days().rate())
+        );
+    }
+
+    @Test
+    void overview_usesIstanbulCalendarBoundariesAndKeepsCurrenciesSeparate() {
+        CurrentCustomer beforeDay = customerAt(Instant.parse("2026-08-27T20:00:00Z"));
+        completeCleaning(beforeDay, Instant.parse("2026-08-27T20:59:59Z"), 1);
+        CurrentCustomer atDayStart = customerAt(Instant.parse("2026-08-27T21:00:00Z"));
+        completeCleaning(atDayStart, Instant.parse("2026-08-27T21:00:00Z"), 1);
+        CurrentCustomer usdCustomer = customerAt(Instant.parse("2026-08-28T09:00:00Z"));
+        completeCleaning(usdCustomer, Instant.parse("2026-08-28T10:00:00Z"), 1);
+        jdbcTemplate.update(
+                "update cleaning_order set currency = 'USD' where customer_id = ?",
+                usdCustomer.customerId()
+        );
+        CurrentCustomer atNextDay = customerAt(Instant.parse("2026-08-28T20:00:00Z"));
+        completeCleaning(atNextDay, Instant.parse("2026-08-28T21:00:00Z"), 1);
+
+        AnalyticsOverviewResponse result = analyticsService.overview(
+                PERIOD_DAY,
+                PERIOD_DAY,
+                AnalyticsServiceDimension.CLEANING
+        );
+        Map<String, AverageCheckMetric> checks = result.averageChecks().stream()
+                .collect(Collectors.toMap(AverageCheckMetric::currency, Function.identity()));
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(2, result.businessHealth().completedTasks()),
+                () -> Assertions.assertEquals(2, result.businessHealth().activeCustomers()),
+                () -> Assertions.assertEquals(2, checks.size()),
+                () -> Assertions.assertEquals(new BigDecimal("1100.00"), checks.get("TRY").amount()),
+                () -> Assertions.assertEquals(new BigDecimal("1100.00"), checks.get("USD").amount())
         );
     }
 
@@ -233,7 +374,9 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
         Assertions.assertAll(
                 () -> Assertions.assertEquals(1, result.customers().newCustomers()),
                 () -> Assertions.assertEquals(1, result.customers().activeCustomers()),
-                () -> Assertions.assertEquals(0, result.customers().repeatCustomers())
+                () -> Assertions.assertEquals(0, result.customers().repeatCustomers()),
+                () -> Assertions.assertEquals(1, result.businessHealth().completedTasks()),
+                () -> Assertions.assertEquals(1, result.businessHealth().activeCustomers())
         );
     }
 
@@ -365,10 +508,14 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
     ) {
         var airport = transferAirportRepository.findAllByOrderBySortOrderAscIdAsc().getFirst();
         var vehicle = transferVehicleRepository.findAllByOrderBySortOrderAscIdAsc().getFirst();
-        transferPriceRepository.saveAndFlush(new TransferPrice(
+        transferPriceRepository.findByAirport_IdAndVehicleType_IdAndDirection(
+                airport.getId(),
+                vehicle.getId(),
+                TransferDirection.TO_AIRPORT
+        ).orElseGet(() -> transferPriceRepository.saveAndFlush(new TransferPrice(
                 airport, vehicle, TransferDirection.TO_AIRPORT,
                 amount, "TRY", true, completedAt.minusSeconds(120)
-        ));
+        )));
         TransferBookingResponse booking = transferBookingService.create(
                 customer,
                 new CreateTransferBookingRequest(
@@ -429,6 +576,37 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
         return metric.campaignName() == null ? metric.channel().name() : metric.campaignName()
                 .toLowerCase()
                 .replace(' ', '-');
+    }
+
+    private String transitionKey(AnalyticsTransitionMetric metric) {
+        return metric.fromService() + "-" + metric.toService();
+    }
+
+    private static void assertCohort(
+            AnalyticsCohortMetric metric,
+            long cohortCustomers,
+            long convertedCustomers,
+            String rate
+    ) {
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(cohortCustomers, metric.cohortCustomers()),
+                () -> Assertions.assertEquals(convertedCustomers, metric.convertedCustomers()),
+                () -> Assertions.assertEquals(new BigDecimal(rate), metric.rate())
+        );
+    }
+
+    private static void assertTransition(
+            AnalyticsTransitionMetric metric,
+            long cohortCustomers,
+            long convertedCustomers,
+            String rate
+    ) {
+        Assertions.assertNotNull(metric);
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(cohortCustomers, metric.cohortCustomers()),
+                () -> Assertions.assertEquals(convertedCustomers, metric.convertedCustomers()),
+                () -> Assertions.assertEquals(new BigDecimal(rate), metric.conversionRate())
+        );
     }
 
     private static void assertMetric(

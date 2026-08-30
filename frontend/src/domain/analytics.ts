@@ -49,6 +49,27 @@ export interface AnalyticsOverview {
     repeatCustomers: number;
     repeatRate: number;
   };
+  businessHealth: {
+    completedTasks: number;
+    activeCustomers: number;
+    completedTasksPerActiveCustomer: number;
+    customersWithTwoPlusCompletedTasks: number;
+    customersUsingTwoPlusServices: number;
+    crossServiceCustomerRate: number;
+  };
+  retention: {
+    repeat30Days: AnalyticsCohortMetric;
+    repeat90Days: AnalyticsCohortMetric;
+    secondOrderConversion: AnalyticsCohortMetric;
+    medianDaysToSecondTask: number | null;
+  };
+  transitions: Array<{
+    fromService: Exclude<AnalyticsService, "ALL">;
+    toService: Exclude<AnalyticsService, "ALL">;
+    cohortCustomers: number;
+    convertedCustomers: number;
+    conversionRate: number | null;
+  }>;
   averageChecks: Array<{
     service: Exclude<AnalyticsService, "ALL">;
     currency: string;
@@ -64,4 +85,10 @@ export interface AnalyticsOverview {
     newCustomers: number;
     completedTransactions: number;
   }>;
+}
+
+interface AnalyticsCohortMetric {
+  cohortCustomers: number;
+  convertedCustomers: number;
+  rate: number | null;
 }
