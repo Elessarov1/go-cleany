@@ -51,3 +51,25 @@ export interface CustomerNotificationPage {
   totalElements: number;
   totalPages: number;
 }
+
+export interface CustomerActivityItem {
+  service: import("./platformService").PlatformService;
+  entityId: number;
+  status: string;
+  titleRu: string;
+  titleEn: string;
+  subtitleRu: string;
+  subtitleEn: string;
+  scheduledDate: string;
+  scheduledEndDate: string | null;
+  scheduledTime: string | null;
+  occurredAt: string;
+  amount: number;
+  currency: string;
+  targetPath: string;
+}
+
+export interface CustomerActivity {
+  activeAndUpcoming: CustomerActivityItem[];
+  history: CustomerActivityItem[];
+}

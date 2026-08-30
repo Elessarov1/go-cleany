@@ -42,10 +42,13 @@ export interface AppServices {
 
 export async function bootstrap(): Promise<AppServices> {
   const preview = import.meta.env.VITE_PREVIEW_MODE === "true";
+  const previewPlatform = new URLSearchParams(window.location.search).get("platform") === "telegram"
+    ? "TELEGRAM"
+    : "PREVIEW";
   const platform: Platform = isTelegramWebAppAvailable()
     ? new TelegramPlatform()
     : preview
-      ? new PreviewPlatform()
+      ? new PreviewPlatform(previewPlatform)
       : new WebPlatform();
 
   await initializeI18n(platform.getLanguage());

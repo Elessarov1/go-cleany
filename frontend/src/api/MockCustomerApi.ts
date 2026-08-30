@@ -1,4 +1,4 @@
-import type { AccountIdentities, AccountLinkInitiated, CustomerNotification, CustomerNotificationPage, CustomerProfile } from "../domain/customer";
+import type { AccountIdentities, AccountLinkInitiated, CustomerActivity, CustomerNotification, CustomerNotificationPage, CustomerProfile } from "../domain/customer";
 import type { CustomerApi } from "./CustomerApi";
 
 export class MockCustomerApi implements CustomerApi {
@@ -14,6 +14,40 @@ export class MockCustomerApi implements CustomerApi {
   async getCurrentProfile(): Promise<CustomerProfile> {
     await new Promise((resolve) => window.setTimeout(resolve, 120));
     return { phone: "+90 555 123 45 67" };
+  }
+
+  async getActivity(): Promise<CustomerActivity> {
+    if (new URLSearchParams(window.location.search).get("scenario") === "empty") {
+      return { activeAndUpcoming: [], history: [] };
+    }
+    return {
+      activeAndUpcoming: [
+        {
+          service: "TRANSFER", entityId: 7, status: "REQUESTED",
+          titleRu: "Трансфер в аэропорт GZP", titleEn: "Transfer to GZP airport",
+          subtitleRu: "Седан", subtitleEn: "Sedan", scheduledDate: "2026-09-02",
+          scheduledEndDate: null, scheduledTime: "08:30:00", occurredAt: new Date().toISOString(),
+          amount: 1800, currency: "TRY", targetPath: "/transfer/bookings/7",
+        },
+        {
+          service: "RENTAL", entityId: 4, status: "CONFIRMED",
+          titleRu: "Квартира у моря", titleEn: "Apartment by the sea",
+          subtitleRu: "Махмутлар", subtitleEn: "Mahmutlar", scheduledDate: "2026-09-05",
+          scheduledEndDate: "2026-09-12", scheduledTime: null, occurredAt: new Date().toISOString(),
+          amount: 14000, currency: "TRY", targetPath: "/rent/bookings/4",
+        },
+      ],
+      history: [
+        {
+          service: "CLEANING", entityId: 12, status: "COMPLETED",
+          titleRu: "Уборка квартиры", titleEn: "Apartment cleaning",
+          subtitleRu: "Кестель · Hrm Residence", subtitleEn: "Kestel · Hrm Residence",
+          scheduledDate: "2026-08-27", scheduledEndDate: null, scheduledTime: null,
+          occurredAt: "2026-08-27T12:20:00Z", amount: 6000, currency: "TRY",
+          targetPath: "/cleaning/orders/12",
+        },
+      ],
+    };
   }
 
   async getAccountIdentities(): Promise<AccountIdentities> {

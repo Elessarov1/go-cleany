@@ -18,9 +18,15 @@ Goal:
 
 ### Unified history
 
-A customer should have a coherent place to see owned Cleaning, Rental and Transfer transactions without merging their domain models.
+A customer has a coherent Activity screen at `/account/activity` for owned Cleaning, Rental and Transfer transactions without merging their domain models.
 
-Use read models/composition, not `UniversalOrder`.
+`GET /api/v1/account/activity` resolves `CustomerAccount.id` from the authenticated identity and composes the response from the three vertical repositories at request time. It returns active/upcoming items separately from terminal history, preserves price/currency snapshots and links each item to its vertical-owned detail page.
+
+The read model remains available when a service is `IN_TEST` or `DISABLED`; service availability limits new customer flows, not owned history. All mutations remain in the vertical services and detail pages.
+
+The shared customer navigation uses Activity as its stable history destination. Activity and the notification inbox form one visually unified customer section with persistent tabs, while remaining separate read models and routes. Legacy vertical history routes remain available for vertical-specific capabilities and compatibility.
+
+Continue to use read models/composition, not `UniversalOrder`.
 
 ### Repeat / Book again
 

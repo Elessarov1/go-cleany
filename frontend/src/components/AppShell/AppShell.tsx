@@ -76,7 +76,10 @@ export function AppShell() {
   const transfer = location.pathname.startsWith("/transfer") || location.pathname.startsWith("/admin/transfer");
   const catalog = location.pathname === "/" || location.pathname === "/admin";
   const publicPlatformPage = location.pathname === "/privacy" || location.pathname === "/terms";
-  const neutralCustomer = location.pathname === "/notifications" || publicPlatformPage;
+  const activity = location.pathname === "/account/activity";
+  const notifications = location.pathname === "/notifications";
+  const customerHub = activity || notifications;
+  const neutralCustomer = customerHub || publicPlatformPage;
   const customerServiceHome = location.pathname === "/cleaning"
     || location.pathname === "/rent"
     || location.pathname === "/rent/properties"
@@ -89,7 +92,7 @@ export function AppShell() {
       ? t("app.navigation.serviceHome")
       : t("app.navigation.main");
   const brandService: BrandService | undefined = catalog || neutralCustomer ? undefined : transfer ? "transfer" : rental ? "rental" : "cleaning";
-  const showLocalNavigation = !catalog && !neutralCustomer && (!admin || rental || transfer);
+  const showLocalNavigation = customerHub || (!catalog && !neutralCustomer && (!admin || rental || transfer));
   const showWebAdminSidebar = standaloneWeb && admin && hasAdminAccess;
   const showSiteFooter = standaloneWeb && !admin;
 
@@ -216,13 +219,13 @@ export function AppShell() {
             className={`bottom-nav${showAdminNavigation && !admin ? " bottom-nav--three-items" : ""}`}
             aria-label={t("app.navigation.label")}
           >
-            <NavLink className={navClassName} to={admin && transfer ? "/admin/transfer/configuration" : admin && rental ? "/admin/rent/properties" : transfer ? "/transfer" : rental ? "/rent" : "/cleaning"} end>
-              <span className="bottom-nav__icon"><Icon name={transfer ? "car" : rental ? "building" : "calendar-plus"} size={21} /></span>
-              <span>{t(admin && transfer ? "app.navigation.settings" : transfer ? "app.navigation.transfer" : rental ? "app.navigation.apartments" : "app.navigation.book")}</span>
+            <NavLink className={navClassName} to={customerHub ? "/" : admin && transfer ? "/admin/transfer/configuration" : admin && rental ? "/admin/rent/properties" : transfer ? "/transfer" : rental ? "/rent" : "/cleaning"} end>
+              <span className="bottom-nav__icon"><Icon name={customerHub ? "services" : transfer ? "car" : rental ? "building" : "calendar-plus"} size={21} /></span>
+              <span>{t(customerHub ? "app.navigation.services" : admin && transfer ? "app.navigation.settings" : transfer ? "app.navigation.transfer" : rental ? "app.navigation.apartments" : "app.navigation.book")}</span>
             </NavLink>
-            <NavLink className={navClassName} to={admin && transfer ? "/admin/transfer/bookings" : admin && rental ? "/admin/rent/bookings" : transfer ? "/transfer/bookings" : rental ? "/rent/bookings" : "/cleaning/orders"}>
+            <NavLink className={navClassName} to={admin && transfer ? "/admin/transfer/bookings" : admin && rental ? "/admin/rent/bookings" : "/account/activity"}>
               <span className="bottom-nav__icon"><Icon name="clipboard" size={21} /></span>
-              <span>{t(rental ? "app.navigation.bookings" : "app.navigation.orders")}</span>
+              <span>{t(admin ? (rental ? "app.navigation.bookings" : "app.navigation.orders") : "app.navigation.activity")}</span>
             </NavLink>
             {showAdminNavigation && !admin ? (
               <NavLink className={navClassName} to="/admin" end>

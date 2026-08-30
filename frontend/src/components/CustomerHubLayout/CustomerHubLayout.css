@@ -1,0 +1,29 @@
+.customer-hub-page {
+  width: min(100%, 940px);
+  margin: 0 auto;
+}
+
+.customer-hub-page__header {
+  margin-bottom: 18px;
+}
+
+.customer-hub-page__content {
+  animation: customer-hub-content-enter 160ms ease-out both;
+}
+
+@keyframes customer-hub-content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .customer-hub-page__content {
+    animation: none;
+  }
+}

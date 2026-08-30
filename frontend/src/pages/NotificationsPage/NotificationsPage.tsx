@@ -60,23 +60,26 @@ export function NotificationsPage() {
     } : current);
   };
 
-  if (loading && !page) return <div className="page-state"><p>{t("common.loading")}</p></div>;
-  if (error) return <div className="page-state"><h1>{t("common.errorTitle")}</h1><button className="button button--secondary" type="button" onClick={() => void load(pageNumber)}>{t("common.retry")}</button></div>;
-
   const notifications = page?.content ?? [];
   const hasUnread = notifications.some((notification) => !notification.readAt);
   return (
-    <div className="page notifications-page">
-      <header className="notifications-page__header">
-        <div>
-          <span className="eyebrow">Loco Place</span>
-          <h1>{t("notifications.title")}</h1>
-          <p>{t("notifications.subtitle")}</p>
-        </div>
-        {hasUnread ? <button className="button button--secondary" type="button" onClick={() => void markAllRead()}>{t("notifications.readAll")}</button> : null}
-      </header>
+    <div className="notifications-page">
+      <div className="notifications-page__toolbar">
+        <button
+          className={`button button--secondary${!loading && !error && hasUnread ? "" : " is-hidden"}`}
+          type="button"
+          disabled={loading || error || !hasUnread}
+          onClick={() => void markAllRead()}
+        >
+          {t("notifications.readAll")}
+        </button>
+      </div>
 
-      {notifications.length === 0 ? (
+      {loading && !page ? (
+        <div className="page-state"><p>{t("common.loading")}</p></div>
+      ) : error ? (
+        <div className="page-state"><h2>{t("common.errorTitle")}</h2><button className="button button--secondary" type="button" onClick={() => void load(pageNumber)}>{t("common.retry")}</button></div>
+      ) : notifications.length === 0 ? (
         <section className="empty-state">
           <div className="empty-state__art"><Icon name="bell" size={42} /></div>
           <h2>{t("notifications.emptyTitle")}</h2>
@@ -103,7 +106,7 @@ export function NotificationsPage() {
         </div>
       )}
 
-      {(page?.totalPages ?? 0) > 1 ? (
+      {!loading && !error && (page?.totalPages ?? 0) > 1 ? (
         <nav className="notifications-pagination" aria-label={t("notifications.pagination")}>
           <button className="button button--secondary" type="button" disabled={pageNumber === 0} onClick={() => void load(pageNumber - 1)}>{t("common.back")}</button>
           <span>{pageNumber + 1} / {page?.totalPages}</span>

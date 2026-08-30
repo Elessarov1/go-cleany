@@ -8,6 +8,7 @@
       "orders": "Заказы",
       "apartments": "Квартиры",
       "bookings": "Брони",
+      "activity": "История",
       "transfer": "Заказать",
       "transfers": "Трансферы",
       "transferSettings": "Настройки трансфера",
@@ -969,6 +970,8 @@
   "account": {
     "title": "Аккаунт",
     "subtitle": "Управляйте способами входа и дополнительными каналами уведомлений.",
+    "activityTitle": "Ваша история в Loco Place",
+    "activityText": "Уборки, аренда и трансферы — активные задачи и завершённые операции в одном месте.",
     "connected": "Подключён",
     "notConnected": "Не подключён",
     "telegramBenefit": "Получайте уведомления в Telegram и используйте тот же аккаунт в Mini App.",
@@ -992,6 +995,34 @@
     "nudgeTitle": "Получайте важные уведомления в Telegram",
     "nudgeText": "Подключите Telegram, чтобы узнавать об изменениях заказов, бронирований и готовности отчётов.",
     "notNow": "Не сейчас"
+  },
+  "customerHub": {
+    "label": "История и уведомления",
+    "title": "Мои дела",
+    "subtitle": "Активные задачи, завершённые операции и важные обновления — в одном месте.",
+    "activity": "История",
+    "notifications": "Уведомления",
+    "unread": "Непрочитанных уведомлений: {{count}}"
+  },
+  "activity": {
+    "title": "История",
+    "subtitle": "Все ваши активные задачи и завершённые операции Loco Place в одном месте.",
+    "activeTitle": "Активные и предстоящие",
+    "historyTitle": "История",
+    "activeEmpty": "Сейчас нет активных или предстоящих задач.",
+    "historyEmpty": "Завершённые и отменённые операции появятся здесь.",
+    "emptyTitle": "История пока пуста",
+    "emptyText": "После первого заказа или бронирования здесь появятся все ваши операции.",
+    "emptyAction": "Выбрать сервис",
+    "loadError": "Не удалось загрузить вашу историю.",
+    "open": "Подробнее",
+    "dateRange": "{{from}} — {{to}}",
+    "updated": "Изменено: {{date}}",
+    "services": {
+      "CLEANING": "Loco Cleaning",
+      "RENTAL": "Loco Rental",
+      "TRANSFER": "Loco Transfer"
+    }
   },
   "notifications": {
     "title": "Уведомления",
@@ -1030,6 +1061,7 @@
     "transfer": "Loco Transfer — трансферы в аэропорты Аланьи | Loco Place",
     "transferPage": "Заявки и поездки | Loco Transfer",
     "account": "Аккаунт | Loco Place",
+    "activity": "История | Loco Place",
     "notifications": "Уведомления | Loco Place",
     "admin": "Админка | Loco Place",
     "adminPage": "Раздел админки | Loco Place"

@@ -180,7 +180,7 @@ export function TransferPage() {
           <section className="transfer-panel">
             <div className="transfer-panel__heading"><span>03</span><h2>{t("transfer.details.title")}</h2></div>
             <div className="transfer-form-grid">
-              <label className="field">
+              <label className="field transfer-form-grid__date">
                 <span>{t("transfer.details.date")}</span>
                 <input type="date" min={configuration.earliestBookingDate} max={configuration.latestBookingDate} value={pickupDate} onChange={(event) => setPickupDate(event.target.value)} required />
               </label>

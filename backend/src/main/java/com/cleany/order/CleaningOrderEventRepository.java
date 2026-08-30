@@ -11,6 +11,8 @@ public interface CleaningOrderEventRepository extends JpaRepository<CleaningOrde
 
     List<CleaningOrderEvent> findAllByOrderIdOrderByOccurredAtAscIdAsc(long orderId);
 
+    List<CleaningOrderEvent> findAllByOrder_IdInOrderByOccurredAtAscIdAsc(List<Long> orderIds);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from CleaningOrderEvent orderEvent where orderEvent.order.id in :orderIds")
     int deleteByOrderIds(@Param("orderIds") List<Long> orderIds);

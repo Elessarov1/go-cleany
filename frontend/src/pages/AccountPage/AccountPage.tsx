@@ -5,6 +5,8 @@ import type { AccountIdentities } from "../../domain/customer";
 import { usePlatform } from "../../platform/PlatformProvider";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import { BrandName } from "../../components/BrandName/BrandName";
+import { Icon } from "../../components/Icon/Icon";
+import { Link } from "react-router-dom";
 import "./AccountPage.css";
 
 const TELEGRAM_LINK_PENDING_UNTIL = "loco-place.telegram-link-pending-until";
@@ -100,6 +102,15 @@ export function AccountPage() {
         <h1>{t("account.title")}</h1>
         <p>{t("account.subtitle")}</p>
       </header>
+
+      <Link className="account-activity-link" to="/account/activity">
+        <span className="account-activity-link__icon"><Icon name="clipboard" size={24} /></span>
+        <span className="account-activity-link__content">
+          <strong>{t("account.activityTitle")}</strong>
+          <span>{t("account.activityText")}</span>
+        </span>
+        <Icon name="arrow-right" size={20} />
+      </Link>
 
       <div className="account-providers">
         <section className="account-provider-card">

@@ -4048,9 +4048,27 @@ h3 {
 .transfer-vehicle__capacity { color: var(--color-muted); font-size: 11px; line-height: 1.5; }
 .transfer-vehicle b { margin-top: auto; font-size: 15px; }
 .transfer-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+.transfer-form-grid,
+.transfer-form-grid > *,
+.transfer-form-grid .field { min-width: 0; max-width: 100%; }
 .transfer-form-grid .field + .field { margin-top: 0; }
 .transfer-form-grid__wide { grid-column: 1 / -1; }
 .transfer-form-grid textarea { min-height: 88px; }
+.transfer-form-grid__date input[type="date"] {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.transfer-form-grid__date input[type="date"]::-webkit-date-and-time-value {
+  min-width: 0;
+  text-align: left;
+}
 .transfer-summary { display: grid; padding: 18px; gap: 12px; }
 .transfer-summary > div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
 .transfer-summary span { color: var(--color-muted); font-size: 12px; }
@@ -4205,10 +4223,9 @@ h3 {
   line-height: 15px;
   text-align: center;
 }
-.notifications-page { width: min(100%, 820px); margin: 0 auto; }
-.notifications-page__header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
-.notifications-page__header h1 { margin: 5px 0 8px; font-size: clamp(30px, 5vw, 44px); letter-spacing: -0.04em; }
-.notifications-page__header p { margin: 0; color: var(--color-text-muted); }
+.notifications-page { width: 100%; }
+.notifications-page__toolbar { display: flex; min-height: 48px; justify-content: flex-end; margin-bottom: 14px; }
+.notifications-page__toolbar .button.is-hidden { visibility: hidden; }
 .notification-list { display: grid; gap: 10px; }
 .notification-card {
   display: flex;
@@ -4235,8 +4252,7 @@ h3 {
 .notifications-pagination span { color: var(--color-text-muted); font-size: 13px; }
 
 @media (max-width: 640px) {
-  .notifications-page__header { align-items: stretch; flex-direction: column; }
-  .notifications-page__header .button { width: 100%; }
+  .notifications-page__toolbar .button { width: 100%; }
   .notification-card { padding: 14px; }
   .account-provider-card { align-items: flex-start; flex-wrap: wrap; padding: 16px; }
   .account-provider-card .button { width: 100%; }

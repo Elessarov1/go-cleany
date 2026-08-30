@@ -7,7 +7,7 @@ const PREVIEW_USER: PlatformUser = {
 };
 
 export class PreviewPlatform implements Platform {
-  readonly kind = "PREVIEW" as const;
+  constructor(readonly kind: "PREVIEW" | "TELEGRAM" = "PREVIEW") {}
 
   getUser(): PlatformUser {
     return PREVIEW_USER;

@@ -8,3 +8,47 @@
   height: 100%;
   object-fit: contain;
 }
+
+.account-activity-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+  padding: 18px;
+  color: var(--color-text);
+  text-decoration: none;
+  background: color-mix(in srgb, var(--color-primary) 7%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 28%, var(--color-line));
+  border-radius: var(--radius-card);
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+
+.account-activity-link:hover,
+.account-activity-link:focus-visible {
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.account-activity-link__icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  place-items: center;
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface));
+  border-radius: 15px;
+}
+
+.account-activity-link__content {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.account-activity-link__content span {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1.45;
+}

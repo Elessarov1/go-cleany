@@ -8,6 +8,7 @@
       "orders": "Orders",
       "apartments": "Apartments",
       "bookings": "Bookings",
+      "activity": "Activity",
       "transfer": "Book",
       "transfers": "Transfers",
       "transferSettings": "Transfer settings",
@@ -961,6 +962,8 @@
   "account": {
     "title": "Account",
     "subtitle": "Manage sign-in methods and optional notification channels.",
+    "activityTitle": "Your Loco Place activity",
+    "activityText": "Cleaning, rentals and transfers — active tasks and past activity in one place.",
     "connected": "Connected",
     "notConnected": "Not connected",
     "telegramBenefit": "Receive Telegram notifications and use the same account in the Mini App.",
@@ -984,6 +987,34 @@
     "nudgeTitle": "Receive important Telegram notifications",
     "nudgeText": "Connect Telegram to receive order, booking and report-ready updates.",
     "notNow": "Not now"
+  },
+  "customerHub": {
+    "label": "Activity and notifications",
+    "title": "My activity",
+    "subtitle": "Active tasks, past activity and important updates — all in one place.",
+    "activity": "Activity",
+    "notifications": "Notifications",
+    "unread": "Unread notifications: {{count}}"
+  },
+  "activity": {
+    "title": "Activity",
+    "subtitle": "All your active tasks and past Loco Place activity in one place.",
+    "activeTitle": "Active and upcoming",
+    "historyTitle": "History",
+    "activeEmpty": "You have no active or upcoming tasks right now.",
+    "historyEmpty": "Completed and cancelled activity will appear here.",
+    "emptyTitle": "No activity yet",
+    "emptyText": "Your orders and bookings will appear here after you use a service.",
+    "emptyAction": "Choose a service",
+    "loadError": "We could not load your activity.",
+    "open": "View details",
+    "dateRange": "{{from}} — {{to}}",
+    "updated": "Updated: {{date}}",
+    "services": {
+      "CLEANING": "Loco Cleaning",
+      "RENTAL": "Loco Rental",
+      "TRANSFER": "Loco Transfer"
+    }
   },
   "notifications": {
     "title": "Notifications",
@@ -1022,6 +1053,7 @@
     "transfer": "Loco Transfer — Alanya airport transfers | Loco Place",
     "transferPage": "Requests and rides | Loco Transfer",
     "account": "Account | Loco Place",
+    "activity": "Activity | Loco Place",
     "notifications": "Notifications | Loco Place",
     "admin": "Admin | Loco Place",
     "adminPage": "Admin section | Loco Place"

@@ -156,6 +156,8 @@ The same business backend is used across channels. Channel-specific behavior bel
 
 The UI should progressively use known context to reduce friction. New users provide required data; returning users get safe prefill; cross-service flows inherit relevant source context; mature flows can expose an explainable next action.
 
+Unified customer Activity is implemented at `/account/activity`. Its API composes customer-owned Cleaning, Rental and Transfer data at request time into active/upcoming and terminal-history sections while keeping each vertical aggregate and detail workflow independent. Activity and `/notifications` form one visually unified customer section with persistent tabs while remaining separate read models and routes. The shared customer navigation uses Activity as its stable history destination; legacy vertical list routes remain available.
+
 ## Identity
 
 Canonical internal identity:
@@ -190,7 +192,7 @@ DISABLED
 
 ## Notifications
 
-The durable in-app notification/inbox is the customer history. External delivery such as Telegram is optional.
+The durable in-app notification inbox records important updates. The separate unified Activity read model is the customer's cross-service transaction history. External delivery such as Telegram is optional.
 
 Preferred boundary:
 

@@ -32,6 +32,8 @@ import { TransferBookingDetailsPage } from "../pages/TransferBookingDetailsPage/
 import { AdminTransferBookingsPage } from "../pages/AdminTransferBookingsPage/AdminTransferBookingsPage";
 import { AdminTransferBookingPage } from "../pages/AdminTransferBookingPage/AdminTransferBookingPage";
 import { AdminTransferConfigurationPage } from "../pages/AdminTransferConfigurationPage/AdminTransferConfigurationPage";
+import { CustomerActivityPage } from "../pages/CustomerActivityPage/CustomerActivityPage";
+import { CustomerHubLayout } from "../components/CustomerHubLayout/CustomerHubLayout";
 
 function LegacyCleaningOrderRedirect({ created = false }: { created?: boolean }) {
   const { id } = useParams();
@@ -63,8 +65,14 @@ export const router = createBrowserRouter([
           { path: "/transfer/bookings", element: <TransferBookingsPage /> },
           { path: "/transfer/bookings/:id", element: <TransferBookingDetailsPage /> },
           { path: "/account", element: <AccountPage /> },
+          {
+            element: <CustomerHubLayout />,
+            children: [
+              { path: "/account/activity", element: <CustomerActivityPage /> },
+              { path: "/notifications", element: <NotificationsPage /> },
+            ],
+          },
           { path: "/account/link/telegram", element: <TelegramAccountLinkPage /> },
-          { path: "/notifications", element: <NotificationsPage /> },
           { path: "/orders", element: <Navigate replace to="/cleaning/orders" /> },
           { path: "/orders/:id", element: <LegacyCleaningOrderRedirect /> },
           { path: "/orders/:id/created", element: <LegacyCleaningOrderRedirect created /> },

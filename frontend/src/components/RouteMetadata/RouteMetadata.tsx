@@ -7,6 +7,7 @@ function titleKey(pathname: string): string {
   if (pathname === "/privacy") return "titles.privacy";
   if (pathname === "/terms") return "titles.terms";
   if (pathname === "/notifications") return "titles.notifications";
+  if (pathname === "/account/activity") return "titles.activity";
   if (pathname === "/account" || pathname.startsWith("/account/")) return "titles.account";
   if (pathname === "/rent" || pathname === "/rent/properties") return "titles.rent";
   if (pathname.startsWith("/rent/")) return "titles.rentPage";
