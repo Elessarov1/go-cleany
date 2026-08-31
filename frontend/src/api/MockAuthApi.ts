@@ -43,6 +43,7 @@ export class MockAuthApi implements AuthApi {
       : normalized === "WEB_UNAUTHENTICATED"
         ? ANONYMOUS
       : normalized === "WEB_CUSTOMER"
+        || normalized?.startsWith("HOME_")
         || normalized === "SERVICE_CATALOG_CLEANING_IN_TEST_CUSTOMER"
         ? CUSTOMER
         : ADMIN;

@@ -1,4 +1,4 @@
-import type { AccountIdentities, AccountLinkInitiated, CustomerActivity, CustomerNotificationPage, CustomerProfile } from "../domain/customer";
+import type { AccountIdentities, AccountLinkInitiated, CustomerActivity, CustomerHome, CustomerNotificationPage, CustomerProfile } from "../domain/customer";
 import type { CustomerApi } from "./CustomerApi";
 import { HttpApiClient } from "./HttpApiClient";
 
@@ -18,6 +18,10 @@ export class HttpCustomerApi implements CustomerApi {
 
   getActivity(): Promise<CustomerActivity> {
     return this.client.request("/api/v1/account/activity");
+  }
+
+  getHome(): Promise<CustomerHome> {
+    return this.client.request("/api/v1/account/home");
   }
 
   getAccountIdentities(): Promise<AccountIdentities> {

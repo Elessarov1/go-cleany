@@ -162,6 +162,8 @@ Same-service repeat is implemented for owned completed Cleaning and Transfer tra
 
 Rental → Transfer contextual flow is implemented through an explicit bridge. A confirmed owned Rental offers arrival (`FROM_AIRPORT`, check-in, property destination) and checkout (`TO_AIRPORT`, checkout, property pickup) independently. Backend-calculated availability can expose an option now or state when its Transfer window opens. Related transfers keep typed source/context fields for deduplication and analytics while both vertical lifecycles remain independent.
 
+The platform home at `/` is contextual for authenticated returning customers and stays a plain catalog for guests/new customers. `GET /api/v1/account/home` composes owned Activity, the nearest currently actionable Rental cross-service context and the latest eligible Cleaning/Transfer repeat without persistence. It exposes no `customerId`, never shows `AVAILABLE_LATER` as a home action, suppresses duplicate target services and continues to show owned active work when a vertical is unavailable for new customer flows. The catalog and personalized context load independently.
+
 ## Identity
 
 Canonical internal identity:

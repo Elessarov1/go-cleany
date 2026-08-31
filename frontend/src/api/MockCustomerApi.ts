@@ -1,4 +1,4 @@
-import type { AccountIdentities, AccountLinkInitiated, CustomerActivity, CustomerNotification, CustomerNotificationPage, CustomerProfile } from "../domain/customer";
+import type { AccountIdentities, AccountLinkInitiated, CustomerActivity, CustomerHome, CustomerNotification, CustomerNotificationPage, CustomerProfile } from "../domain/customer";
 import type { CustomerApi } from "./CustomerApi";
 
 export class MockCustomerApi implements CustomerApi {
@@ -47,6 +47,97 @@ export class MockCustomerApi implements CustomerApi {
           targetPath: "/cleaning/orders/12",
         },
       ],
+    };
+  }
+
+  async getHome(): Promise<CustomerHome> {
+    const scenario = new URLSearchParams(window.location.search).get("scenario")?.toUpperCase();
+    if (scenario === "HOME_ERROR") {
+      throw new Error("Customer home preview failure");
+    }
+    if (scenario === "HOME_NEW") {
+      return {
+        hasActivity: false,
+        activeTransaction: null,
+        activeTransactionCount: 0,
+        primaryAction: null,
+        repeatOpportunity: null,
+      };
+    }
+
+    const activeTransaction = {
+      service: "RENTAL" as const,
+      entityId: 4,
+      status: "CONFIRMED",
+      titleRu: "Квартира у моря",
+      titleEn: "Apartment by the sea",
+      subtitleRu: "Махмутлар",
+      subtitleEn: "Mahmutlar",
+      scheduledDate: "2026-09-05",
+      scheduledEndDate: "2026-09-12",
+      scheduledTime: null,
+      occurredAt: new Date().toISOString(),
+      amount: 14000,
+      currency: "TRY",
+      targetPath: "/rent/bookings/4",
+    };
+    const cleaningRepeat = {
+      service: "CLEANING" as const,
+      sourceEntityId: 12,
+      sourceCompletedAt: "2026-08-27T12:20:00Z",
+      targetPath: "/cleaning?repeatFrom=12",
+    };
+    const transferRepeat = {
+      service: "TRANSFER" as const,
+      sourceEntityId: 7,
+      sourceCompletedAt: "2026-08-29T08:30:00Z",
+      targetPath: "/transfer?repeatFrom=7",
+    };
+    const transferAction = {
+      type: "RENTAL_TRANSFER_CHECKOUT" as const,
+      sourceService: "RENTAL" as const,
+      sourceEntityId: 4,
+      targetService: "TRANSFER" as const,
+      relevantDate: "2026-09-12",
+      eligibleFrom: null,
+      expiresOn: null,
+      targetPath: "/transfer?rentalBooking=4&rentalContext=CHECKOUT",
+    };
+    const cleaningAction = {
+      type: "RENTAL_CLEANING" as const,
+      sourceService: "RENTAL" as const,
+      sourceEntityId: 4,
+      targetService: "CLEANING" as const,
+      relevantDate: "2026-09-10",
+      eligibleFrom: "2026-09-09",
+      expiresOn: "2026-09-12",
+      targetPath: "/cleaning?rentalBooking=4&promo=RC23456789",
+    };
+
+    if (scenario === "HOME_REPEAT") {
+      return {
+        hasActivity: true,
+        activeTransaction: null,
+        activeTransactionCount: 0,
+        primaryAction: null,
+        repeatOpportunity: transferRepeat,
+      };
+    }
+    if (scenario === "HOME_UNAVAILABLE") {
+      return {
+        hasActivity: true,
+        activeTransaction,
+        activeTransactionCount: 1,
+        primaryAction: null,
+        repeatOpportunity: null,
+      };
+    }
+    return {
+      hasActivity: true,
+      activeTransaction,
+      activeTransactionCount: scenario === "HOME_MULTI_ACTIVE" ? 3 : 1,
+      primaryAction: scenario === "HOME_RENTAL_CLEANING" ? cleaningAction : transferAction,
+      repeatOpportunity: scenario === "HOME_RENTAL_CLEANING" ? transferRepeat : cleaningRepeat,
     };
   }
 

@@ -741,8 +741,9 @@
     }
   },
   "catalog": {
-    "title": "What do you need?",
-    "subtitle": "Choose a service — each one has its own flow, history, and team.",
+    "title": "Give the task to Loco",
+    "subtitle": "Loco arranges cleaning, rentals, and transfers without making you search for providers.",
+    "allServices": "All services",
     "testBadge": "TEST",
     "loadError": "Could not load the available services.",
     "unavailable": "This service is currently unavailable for new requests.",
@@ -758,6 +759,35 @@
     "transfer": {
       "title": "Book a transfer",
       "text": "A fixed-price ride between Alanya and the airport"
+    },
+    "home": {
+      "sectionLabel": "Your tasks with Loco",
+      "loading": "Finding what is relevant for you…",
+      "loadError": "We could not load your current tasks. The services below are still available.",
+      "activeTitle": "Next task",
+      "allActivity": "All activity · {{count}}",
+      "activity": "Open activity",
+      "nextTitle": "What to do next",
+      "repeatTitle": "Repeat",
+      "actions": {
+        "RENTAL_TRANSFER_ARRIVAL": {
+          "title": "Arrange your arrival transfer",
+          "text": "We will prepare an airport pickup for {{date}}"
+        },
+        "RENTAL_TRANSFER_CHECKOUT": {
+          "title": "Arrange your checkout transfer",
+          "text": "We will prepare your airport ride for {{date}}"
+        },
+        "RENTAL_CLEANING": {
+          "title": "Book checkout cleaning",
+          "text": "Your rental context and benefit are available for {{date}}"
+        }
+      },
+      "repeat": {
+        "CLEANING": { "title": "Repeat cleaning" },
+        "TRANSFER": { "title": "Repeat transfer" },
+        "completed": "Last completed: {{date}}"
+      }
     },
     "note": "One profile, different services. Your contacts and history stay close."
   },

@@ -73,3 +73,34 @@ export interface CustomerActivity {
   activeAndUpcoming: CustomerActivityItem[];
   history: CustomerActivityItem[];
 }
+
+export type CustomerHomePrimaryActionType =
+  | "RENTAL_TRANSFER_ARRIVAL"
+  | "RENTAL_TRANSFER_CHECKOUT"
+  | "RENTAL_CLEANING";
+
+export interface CustomerHomePrimaryAction {
+  type: CustomerHomePrimaryActionType;
+  sourceService: import("./platformService").PlatformService;
+  sourceEntityId: number;
+  targetService: import("./platformService").PlatformService;
+  relevantDate: string;
+  eligibleFrom: string | null;
+  expiresOn: string | null;
+  targetPath: string;
+}
+
+export interface CustomerHomeRepeatOpportunity {
+  service: import("./platformService").PlatformService;
+  sourceEntityId: number;
+  sourceCompletedAt: string;
+  targetPath: string;
+}
+
+export interface CustomerHome {
+  hasActivity: boolean;
+  activeTransaction: CustomerActivityItem | null;
+  activeTransactionCount: number;
+  primaryAction: CustomerHomePrimaryAction | null;
+  repeatOpportunity: CustomerHomeRepeatOpportunity | null;
+}

@@ -98,7 +98,7 @@ The customer still chooses airport, time, vehicle, passenger/luggage and flight 
 
 ### Contextual next action
 
-The customer home should gradually evolve from static catalog to:
+The customer home at `/` is a contextual read model for an authenticated returning customer while remaining a clear service catalog for guests and new customers:
 
 ```text
 current active task
@@ -107,7 +107,11 @@ repeat opportunity
 service catalog
 ```
 
-Avoid an advertising feed.
+`GET /api/v1/account/home` resolves the current `CustomerAccount`, reuses the first active item from Activity and selects at most one backend-verified contextual action plus one eligible Cleaning/Transfer repeat. Rental → Transfer participates only while immediately bookable; Rental → Cleaning participates only while its existing benefit is available. Repeat is suppressed when the same service is already active or is the primary action target.
+
+The read model is composed at request time and persists nothing. Owned active work remains visible when its service is `IN_TEST` or `DISABLED`, while every new action still follows current customer-flow availability. The frontend records displays through the existing idempotent Rental → Transfer and repeat funnels; HOME and DETAIL are intentionally one funnel.
+
+Avoid an advertising feed, recommendation engine or client-calculated eligibility.
 
 ### Support entry point
 
