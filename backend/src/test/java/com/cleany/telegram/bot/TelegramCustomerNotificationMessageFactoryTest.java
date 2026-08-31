@@ -8,9 +8,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitCustomerNotification;
+import com.cleany.catalog.PlatformService;
 import com.cleany.finance.ReferralFinancialProperties;
 import com.cleany.rental.RentalBookingCustomerNotification;
 import com.cleany.rental.RentalBookingStatus;
+import com.cleany.support.SupportCaseAdminNotification;
+import com.cleany.support.SupportCaseCategory;
 
 class TelegramCustomerNotificationMessageFactoryTest {
 
@@ -116,6 +119,28 @@ class TelegramCustomerNotificationMessageFactoryTest {
                 () -> Assertions.assertTrue(
                         factory.rentalCleaningBenefit(notification, "en").contains("15.09.2026")
                 )
+        );
+    }
+
+    @Test
+    void supportCaseMessage_isLocalizedAndContainsOnlySafeRoutingData() {
+        var notification = new SupportCaseAdminNotification(
+                73L,
+                PlatformService.TRANSFER,
+                91L,
+                SupportCaseCategory.PROVIDER_LATE
+        );
+
+        String russian = factory.supportCaseCreated(notification, "ru");
+        String english = factory.supportCaseCreated(notification, "en-US");
+
+        Assertions.assertAll(
+                () -> Assertions.assertTrue(russian.contains("Новое обращение #73")),
+                () -> Assertions.assertTrue(russian.contains("Трансфер · задача №91")),
+                () -> Assertions.assertTrue(english.contains("New support case #73")),
+                () -> Assertions.assertTrue(english.contains("Transfer · transaction #91")),
+                () -> Assertions.assertTrue(russian.contains("Исполнитель опаздывает")),
+                () -> Assertions.assertTrue(english.contains("Provider is late"))
         );
     }
 }

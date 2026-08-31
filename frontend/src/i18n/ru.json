@@ -14,6 +14,7 @@
       "transferSettings": "Настройки трансфера",
       "settings": "Настройки",
       "analytics": "Аналитика",
+      "support": "Поддержка",
       "admin": "Админ",
       "main": "Главная",
       "serviceHome": "Главная сервиса",
@@ -24,6 +25,7 @@
   },
   "common": {
     "back": "Назад",
+    "next": "Далее",
     "loading": "Загрузка…",
     "retry": "Попробовать снова",
     "close": "Закрыть",
@@ -1133,8 +1135,76 @@
       "TRANSFER_CANCELLED": "Трансфер отменён",
       "TRANSFER_COMPLETED": "Трансфер завершён",
       "TRANSFER_ADMIN_REQUESTED": "Новая заявка на трансфер",
+      "SUPPORT_CASE_CREATED": "Новое обращение в поддержку",
       "REFERRAL_UNLOCKED": "Вам доступен реферальный код",
       "RENTAL_CLEANING_BENEFIT_AVAILABLE": "Доступна скидка на уборку перед выездом"
+    }
+  },
+  "support": {
+    "service": {
+      "CLEANING": "Уборка",
+      "RENTAL": "Аренда",
+      "TRANSFER": "Трансфер"
+    },
+    "status": {
+      "OPEN": "Открыто",
+      "RESOLVED": "Решено"
+    },
+    "category": {
+      "PROVIDER_LATE": "Исполнитель опаздывает",
+      "PROVIDER_NO_SHOW": "Исполнитель не приехал",
+      "QUALITY_PROBLEM": "Проблема с качеством",
+      "BOOKING_PROBLEM": "Проблема с бронированием",
+      "OTHER": "Другое"
+    },
+    "customer": {
+      "title": "Поддержка Loco",
+      "subtitle": "Если что-то не так, сообщите здесь — контекст задачи уже прикреплён.",
+      "error": "Не удалось загрузить информацию поддержки.",
+      "caseTitle": "Обращение №{{id}}",
+      "resolution": "Решение",
+      "feedbackTitle": "Как всё прошло?",
+      "feedbackText": "Короткий ответ помогает нам поддерживать качество сервиса.",
+      "good": "Всё было хорошо",
+      "problem": "Была проблема",
+      "sendFeedback": "Отправить отзыв",
+      "feedbackSaved": "Спасибо — ваш отзыв сохранён.",
+      "needHelp": "Нужна помощь",
+      "needMoreHelp": "Нужна ещё помощь",
+      "openCase": "Открыть обращение",
+      "category": "Что произошло?",
+      "comment": "Комментарий (необязательно)",
+      "sending": "Отправляем…"
+    },
+    "admin": {
+      "title": "Очередь поддержки",
+      "subtitle": "Обращения клиентов по всем сервисам Loco в одном месте.",
+      "entrySubtitle": "Проверяйте и закрывайте обращения клиентов.",
+      "loadError": "Не удалось загрузить обращения.",
+      "actionError": "Не удалось обновить обращение.",
+      "statusFilter": "Статус",
+      "serviceFilter": "Сервис",
+      "all": "Все",
+      "emptyTitle": "В этой очереди нет обращений",
+      "emptyText": "Новые проблемы клиентов появятся здесь.",
+      "case": "Обращение №{{id}}",
+      "customer": "Клиент",
+      "age": "Создано",
+      "page": "Страница {{current}} из {{total}}",
+      "problemTitle": "Проблема клиента",
+      "category": "Категория",
+      "createdAt": "Создано",
+      "description": "Комментарий клиента",
+      "customerTitle": "Клиент и источник",
+      "phone": "Телефон",
+      "customerId": "ID клиента",
+      "openSource": "Открыть исходную задачу",
+      "resolutionTitle": "Решение",
+      "resolveTitle": "Закрыть обращение",
+      "resolutionComment": "Комментарий к решению",
+      "resolve": "Отметить решённым",
+      "resolving": "Закрываем…",
+      "resolvedBy": "администратор №{{id}}"
     }
   },
   "titles": {

@@ -71,6 +71,11 @@ import com.cleany.transfer.TransferConfigurationUnavailableException;
 import com.cleany.transfer.TransferConfigurationNotFoundException;
 import com.cleany.transfer.TransferAssignmentConflictException;
 import com.cleany.transfer.TransferDriverLinkException;
+import com.cleany.support.FeedbackAlreadySubmittedException;
+import com.cleany.support.InvalidSupportRequestException;
+import com.cleany.support.SupportCaseNotFoundException;
+import com.cleany.support.SupportCaseStateException;
+import com.cleany.support.SupportSourceNotFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -529,6 +534,36 @@ public class GlobalExceptionHandler {
                 "rental_cleaning_benefit_not_applicable",
                 exception.getMessage(),
                 Map.of("rentalCleaningPromoCode", exception.getMessage())
+        );
+    }
+
+    @ExceptionHandler({SupportSourceNotFoundException.class, SupportCaseNotFoundException.class})
+    ResponseEntity<ApiError> handleSupportNotFound(RuntimeException exception) {
+        return response(
+                HttpStatus.NOT_FOUND,
+                "support_not_found",
+                exception.getMessage(),
+                Collections.emptyMap()
+        );
+    }
+
+    @ExceptionHandler(InvalidSupportRequestException.class)
+    ResponseEntity<ApiError> handleInvalidSupportRequest(InvalidSupportRequestException exception) {
+        return response(
+                HttpStatus.BAD_REQUEST,
+                "invalid_support_request",
+                exception.getMessage(),
+                Collections.emptyMap()
+        );
+    }
+
+    @ExceptionHandler({FeedbackAlreadySubmittedException.class, SupportCaseStateException.class})
+    ResponseEntity<ApiError> handleSupportConflict(RuntimeException exception) {
+        return response(
+                HttpStatus.CONFLICT,
+                "support_state_conflict",
+                exception.getMessage(),
+                Collections.emptyMap()
         );
     }
 

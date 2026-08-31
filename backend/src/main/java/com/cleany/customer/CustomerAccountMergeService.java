@@ -152,6 +152,21 @@ public class CustomerAccountMergeService {
                 targetId,
                 sourceId
         );
+        jdbcTemplate.update(
+                "update support_case set resolved_by_customer_id = ? where resolved_by_customer_id = ?",
+                targetId,
+                sourceId
+        );
+        jdbcTemplate.update(
+                "update support_case set customer_id = ? where customer_id = ?",
+                targetId,
+                sourceId
+        );
+        jdbcTemplate.update(
+                "update transaction_feedback set customer_id = ? where customer_id = ?",
+                targetId,
+                sourceId
+        );
         jdbcTemplate.update("update cleaning_order set customer_id = ? where customer_id = ?", targetId, sourceId);
         jdbcTemplate.update(
                 "update cleaning_order set referrer_customer_id = ? where referrer_customer_id = ?",
@@ -159,6 +174,7 @@ public class CustomerAccountMergeService {
                 sourceId
         );
         jdbcTemplate.update("update rental_booking set customer_id = ? where customer_id = ?", targetId, sourceId);
+        jdbcTemplate.update("update transfer_booking set customer_id = ? where customer_id = ?", targetId, sourceId);
         jdbcTemplate.update(
                 "update rental_cleaning_benefit set customer_id = ? where customer_id = ?",
                 targetId,

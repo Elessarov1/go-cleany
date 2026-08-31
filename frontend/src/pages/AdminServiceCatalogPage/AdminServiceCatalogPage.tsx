@@ -95,6 +95,14 @@ export function AdminServiceCatalogPage() {
         </div>
         <Icon name="arrow-right" size={20} />
       </Link>
+      <Link className="admin-analytics-entry" to="/admin/support">
+        <span><Icon name="support" size={25} /></span>
+        <div>
+          <strong>{t("support.admin.title")}</strong>
+          <p>{t("support.admin.entrySubtitle")}</p>
+        </div>
+        <Icon name="arrow-right" size={20} />
+      </Link>
       {failed ? <p className="admin-service-state__error" role="alert">{t("adminPlatform.stateSaveError")}</p> : null}
       <div className="admin-service-grid">
         {states.map((state) => (

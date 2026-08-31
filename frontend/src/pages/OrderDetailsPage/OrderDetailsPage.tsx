@@ -10,6 +10,7 @@ import type { CleaningOrder } from "../../domain/order";
 import { formatPrice } from "../../domain/pricing";
 import { formatDate } from "../../utils/format";
 import { BrandName } from "../../components/BrandName/BrandName";
+import { TransactionCarePanel } from "../../components/TransactionCarePanel/TransactionCarePanel";
 
 export function OrderDetailsPage() {
   const { id } = useParams();
@@ -203,6 +204,8 @@ export function OrderDetailsPage() {
         <span><Icon name="wallet" size={17} /></span>
         <div><strong>{t("details.price")}</strong><p>{t("details.payment")}</p></div>
       </div>
+
+      <TransactionCarePanel service="CLEANING" sourceEntityId={order.id} />
 
       {cancelError ? <p className="form-alert" role="alert">{t("details.cancelError")}</p> : null}
       {repeatAvailable ? (

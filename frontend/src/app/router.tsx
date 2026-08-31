@@ -34,6 +34,8 @@ import { AdminTransferBookingPage } from "../pages/AdminTransferBookingPage/Admi
 import { AdminTransferConfigurationPage } from "../pages/AdminTransferConfigurationPage/AdminTransferConfigurationPage";
 import { CustomerActivityPage } from "../pages/CustomerActivityPage/CustomerActivityPage";
 import { CustomerHubLayout } from "../components/CustomerHubLayout/CustomerHubLayout";
+import { AdminSupportCasesPage } from "../pages/AdminSupportCasesPage/AdminSupportCasesPage";
+import { AdminSupportCasePage } from "../pages/AdminSupportCasePage/AdminSupportCasePage";
 
 function LegacyCleaningOrderRedirect({ created = false }: { created?: boolean }) {
   const { id } = useParams();
@@ -87,6 +89,8 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <AdminServiceCatalogPage /> },
           { path: "analytics", element: <AdminAnalyticsPage /> },
+          { path: "support", element: <AdminSupportCasesPage /> },
+          { path: "support/cases/:id", element: <AdminSupportCasePage /> },
           { path: "cleaning", element: <AdminDashboardPage /> },
           { path: "cleaning/orders/:id", element: <AdminOrderPage /> },
           { path: "rent", element: <Navigate replace to="/admin/rent/properties" /> },

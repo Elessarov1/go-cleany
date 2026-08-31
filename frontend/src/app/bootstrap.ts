@@ -20,6 +20,9 @@ import { MockAnalyticsApi } from "../api/MockAnalyticsApi";
 import type { TransferApi } from "../api/TransferApi";
 import { HttpTransferApi } from "../api/HttpTransferApi";
 import { MockTransferApi } from "../api/MockTransferApi";
+import type { SupportApi } from "../api/SupportApi";
+import { HttpSupportApi } from "../api/HttpSupportApi";
+import { MockSupportApi } from "../api/MockSupportApi";
 import { initializeI18n } from "../i18n";
 import { PreviewPlatform } from "../platform/PreviewPlatform";
 import type { Platform } from "../platform/Platform";
@@ -38,6 +41,7 @@ export interface AppServices {
   authApi: AuthApi;
   analyticsApi: AnalyticsApi;
   transferApi: TransferApi;
+  supportApi: SupportApi;
 }
 
 export async function bootstrap(): Promise<AppServices> {
@@ -78,6 +82,13 @@ export async function bootstrap(): Promise<AppServices> {
   const transferApi: TransferApi = preview
     ? new MockTransferApi()
     : new HttpTransferApi(httpClient);
+  const supportApi: SupportApi = preview
+    ? new MockSupportApi(async (service, sourceEntityId) => {
+        if (service === "CLEANING") return (await api.getOrder(sourceEntityId)).status === "COMPLETED";
+        if (service === "RENTAL") return (await rentalApi.getBooking(sourceEntityId)).status === "COMPLETED";
+        return (await transferApi.getBooking(sourceEntityId)).status === "COMPLETED";
+      })
+    : new HttpSupportApi(httpClient);
 
-  return { platform, api, customerApi, rentalApi, platformCatalogApi, authApi, analyticsApi, transferApi };
+  return { platform, api, customerApi, rentalApi, platformCatalogApi, authApi, analyticsApi, transferApi, supportApi };
 }

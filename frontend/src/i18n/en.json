@@ -14,6 +14,7 @@
       "transferSettings": "Transfer settings",
       "settings": "Settings",
       "analytics": "Analytics",
+      "support": "Support",
       "admin": "Admin",
       "main": "Home",
       "serviceHome": "Service home",
@@ -24,6 +25,7 @@
   },
   "common": {
     "back": "Back",
+    "next": "Next",
     "loading": "Loading…",
     "retry": "Try again",
     "close": "Close",
@@ -1125,8 +1127,76 @@
       "TRANSFER_CANCELLED": "Your transfer was cancelled",
       "TRANSFER_COMPLETED": "Your transfer was completed",
       "TRANSFER_ADMIN_REQUESTED": "New transfer request",
+      "SUPPORT_CASE_CREATED": "New support case",
       "REFERRAL_UNLOCKED": "Your referral code is available",
       "RENTAL_CLEANING_BENEFIT_AVAILABLE": "Your pre-checkout cleaning discount is available"
+    }
+  },
+  "support": {
+    "service": {
+      "CLEANING": "Cleaning",
+      "RENTAL": "Rental",
+      "TRANSFER": "Transfer"
+    },
+    "status": {
+      "OPEN": "Open",
+      "RESOLVED": "Resolved"
+    },
+    "category": {
+      "PROVIDER_LATE": "Provider is late",
+      "PROVIDER_NO_SHOW": "Provider did not arrive",
+      "QUALITY_PROBLEM": "Quality problem",
+      "BOOKING_PROBLEM": "Booking problem",
+      "OTHER": "Other"
+    },
+    "customer": {
+      "title": "Loco support",
+      "subtitle": "If something is wrong, tell us here — the task context is already attached.",
+      "error": "Support information could not be loaded.",
+      "caseTitle": "Support case #{{id}}",
+      "resolution": "Resolution",
+      "feedbackTitle": "How did it go?",
+      "feedbackText": "A quick answer helps us keep the service reliable.",
+      "good": "Everything was good",
+      "problem": "There was a problem",
+      "sendFeedback": "Send feedback",
+      "feedbackSaved": "Thank you — your feedback has been saved.",
+      "needHelp": "Need help",
+      "needMoreHelp": "Need more help",
+      "openCase": "Open support case",
+      "category": "What happened?",
+      "comment": "Comment (optional)",
+      "sending": "Sending…"
+    },
+    "admin": {
+      "title": "Support queue",
+      "subtitle": "Customer issues from all Loco services in one place.",
+      "entrySubtitle": "Review and resolve customer support cases.",
+      "loadError": "Support cases could not be loaded.",
+      "actionError": "The support case could not be updated.",
+      "statusFilter": "Status",
+      "serviceFilter": "Service",
+      "all": "All",
+      "emptyTitle": "No cases in this queue",
+      "emptyText": "New customer issues will appear here.",
+      "case": "Support case #{{id}}",
+      "customer": "Customer",
+      "age": "Created",
+      "page": "Page {{current}} of {{total}}",
+      "problemTitle": "Reported problem",
+      "category": "Category",
+      "createdAt": "Created at",
+      "description": "Customer comment",
+      "customerTitle": "Customer and source",
+      "phone": "Phone",
+      "customerId": "Customer ID",
+      "openSource": "Open source transaction",
+      "resolutionTitle": "Resolution",
+      "resolveTitle": "Resolve case",
+      "resolutionComment": "Resolution comment",
+      "resolve": "Mark as resolved",
+      "resolving": "Resolving…",
+      "resolvedBy": "admin #{{id}}"
     }
   },
   "titles": {

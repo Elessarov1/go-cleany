@@ -19,6 +19,7 @@ Telegram identities, роли и настройки административн
 
 - analytics outcomes: `customer_acquisition`, `acquisition_campaign_entry`;
 - customer history: `customer_notification`, `customer_identity_link_request`, Spring Session;
+- platform support history: `transaction_feedback`, then `support_case`, before their source transactions;
 - обычные `customer_account` вместе с identities, roles и preferences по `ON DELETE CASCADE`;
 - customer-owned `referral_code`, все `referral_reward` и `partner_payout`;
 - все Cleaning orders, events, completion photos, onsite issues и их platform media;

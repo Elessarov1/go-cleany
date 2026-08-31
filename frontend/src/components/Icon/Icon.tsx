@@ -20,6 +20,7 @@ export type IconName =
   | "services"
   | "sparkles"
   | "sun"
+  | "support"
   | "user"
   | "wallet";
 
@@ -160,6 +161,13 @@ export function Icon({ name, size = 22, strokeWidth = 1.8 }: IconProps) {
         <>
           <circle cx="12" cy="12" r="9" />
           <path d="M12 11v5M12 8h.01" />
+        </>
+      ) : null}
+      {name === "support" ? (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <circle cx="12" cy="12" r="4" />
+          <path d="m5.6 5.6 3.6 3.6M14.8 14.8l3.6 3.6M18.4 5.6l-3.6 3.6M9.2 14.8l-3.6 3.6" />
         </>
       ) : null}
     </svg>

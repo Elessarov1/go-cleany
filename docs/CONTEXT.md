@@ -164,6 +164,10 @@ Rental → Transfer contextual flow is implemented through an explicit bridge. A
 
 The platform home at `/` is contextual for authenticated returning customers and stays a plain catalog for guests/new customers. `GET /api/v1/account/home` composes owned Activity, the nearest currently actionable Rental cross-service context and the latest eligible Cleaning/Transfer repeat without persistence. It exposes no `customerId`, never shows `AVAILABLE_LATER` as a home action, suppresses duplicate target services and continues to show owned active work when a vertical is unavailable for new customer flows. The catalog and personalized context load independently.
 
+Unified Support & Feedback is implemented without modifying vertical aggregates. Every owned Cleaning, Rental and Transfer detail page embeds the shared panel for opening a categorized case in any source status; completed sources additionally accept one immutable `GOOD` or `PROBLEM` feedback. Negative feedback atomically opens or reuses the single open case for that source. Customer ownership is resolved through the vertical repository and unavailable services do not hide support.
+
+Persisted administrators use the oldest-first queue at `/admin/support`, resolve cases with a required final comment and follow safe links to vertical admin detail pages. The customer sees the result only in the originating transaction. New cases produce deduplicated durable `SUPPORT_CASE_CREATED` notifications for every persisted admin and optional dispatcher-routed Telegram delivery without including the customer description.
+
 ## Identity
 
 Canonical internal identity:
@@ -294,11 +298,13 @@ Future contextual benefits may connect other service pairs, but do not introduce
 
 Benefits must be measurable and must not hide bad unit economics.
 
-## Support direction
+## Support
 
-The platform should evolve toward one obvious support entry point for any Loco transaction and a shared `SupportCase`-style platform record referencing the originating service/entity.
+The platform `support` module owns `SupportCase` and `TransactionFeedback` records keyed by `customerId + service + sourceEntityId`. This polymorphic reference is deliberately not a universal transaction aggregate. There can be one open case per source; resolved cases are final and a later incident creates a new case.
 
-Loco owns the problem in the customer's eyes. Each vertical may still own its own remediation semantics.
+Loco owns the problem in the customer's eyes. Shared support provides intake, feedback, queue and resolution visibility; each vertical still owns its remediation semantics. Attachments, assignment, SLA, compensation, public ratings and support analytics remain deferred.
+
+See [cross-functional/support.md](cross-functional/support.md).
 
 ## Operational rule
 

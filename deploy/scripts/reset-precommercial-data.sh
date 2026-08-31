@@ -53,6 +53,8 @@ select section, table_name, record_count
       ('DELETE', 'acquisition_campaign_entry', (select count(*) from acquisition_campaign_entry)),
       ('DELETE', 'customer_acquisition', (select count(*) from customer_acquisition)),
       ('DELETE', 'customer_notification', (select count(*) from customer_notification)),
+      ('DELETE', 'transaction_feedback', (select count(*) from transaction_feedback)),
+      ('DELETE', 'support_case', (select count(*) from support_case)),
       ('DELETE', 'customer_identity_link_request', (select count(*) from customer_identity_link_request)),
       ('DELETE', 'ordinary_customer_account', (
           select count(*) from customer_account account
@@ -197,6 +199,8 @@ union all select 'cleaning_order', count(*) from cleaning_order
 union all select 'rental_booking', count(*) from rental_booking
 union all select 'transfer_booking', count(*) from transfer_booking
 union all select 'customer_notification', count(*) from customer_notification
+union all select 'transaction_feedback', count(*) from transaction_feedback
+union all select 'support_case', count(*) from support_case
 union all select 'ordinary_customer_account', count(*) from customer_account account
  where not exists (
      select 1 from customer_role role

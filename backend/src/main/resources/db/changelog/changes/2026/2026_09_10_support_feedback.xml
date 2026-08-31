@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260910-01" author="loco-place">
+        <comment>Add platform support cases and immutable transaction feedback.</comment>
+        <createTable tableName="support_case">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_support_case" nullable="false"/>
+            </column>
+            <column name="customer_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="service" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="source_entity_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="category" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="status" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="description" type="VARCHAR(2000)"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="resolved_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="resolved_by_customer_id" type="BIGINT"/>
+            <column name="resolution_comment" type="VARCHAR(2000)"/>
+            <column name="version" type="BIGINT" defaultValueNumeric="0"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="support_case"
+                                 baseColumnNames="customer_id"
+                                 constraintName="fk_support_case_customer"
+                                 referencedTableName="customer_account"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="support_case"
+                                 baseColumnNames="resolved_by_customer_id"
+                                 constraintName="fk_support_case_resolved_by"
+                                 referencedTableName="customer_account"
+                                 referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <createIndex tableName="support_case" indexName="idx_support_case_queue">
+            <column name="status"/>
+            <column name="created_at"/>
+            <column name="id"/>
+        </createIndex>
+        <createIndex tableName="support_case" indexName="idx_support_case_source">
+            <column name="customer_id"/>
+            <column name="service"/>
+            <column name="source_entity_id"/>
+            <column name="created_at" descending="true"/>
+        </createIndex>
+
+        <createTable tableName="transaction_feedback">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_transaction_feedback" nullable="false"/>
+            </column>
+            <column name="customer_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="service" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="source_entity_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="outcome" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="category" type="VARCHAR(32)"/>
+            <column name="comment" type="VARCHAR(2000)"/>
+            <column name="support_case_id" type="BIGINT"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="transaction_feedback"
+                                 baseColumnNames="customer_id"
+                                 constraintName="fk_transaction_feedback_customer"
+                                 referencedTableName="customer_account"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="transaction_feedback"
+                                 baseColumnNames="support_case_id"
+                                 constraintName="fk_transaction_feedback_support_case"
+                                 referencedTableName="support_case"
+                                 referencedColumnNames="id"/>
+        <addUniqueConstraint tableName="transaction_feedback"
+                             columnNames="customer_id,service,source_entity_id"
+                             constraintName="uk_transaction_feedback_source"/>
+
+        <sql dbms="postgresql"><![CDATA[
+            alter table support_case
+                add constraint ck_support_case_service check (
+                    service in ('CLEANING', 'RENTAL', 'TRANSFER')
+                ),
+                add constraint ck_support_case_category check (
+                    category in ('PROVIDER_LATE', 'PROVIDER_NO_SHOW', 'QUALITY_PROBLEM', 'BOOKING_PROBLEM', 'OTHER')
+                ),
+                add constraint ck_support_case_status check (
+                    status in ('OPEN', 'RESOLVED')
+                ),
+                add constraint ck_support_case_resolution check (
+                    (status = 'OPEN' and resolved_at is null and resolved_by_customer_id is null and resolution_comment is null)
+                    or
+                    (status = 'RESOLVED' and resolved_at is not null and resolution_comment is not null)
+                );
+
+            create unique index uk_support_case_open_source
+                on support_case(customer_id, service, source_entity_id)
+                where status = 'OPEN';
+
+            alter table transaction_feedback
+                add constraint ck_transaction_feedback_service check (
+                    service in ('CLEANING', 'RENTAL', 'TRANSFER')
+                ),
+                add constraint ck_transaction_feedback_outcome check (
+                    outcome in ('GOOD', 'PROBLEM')
+                ),
+                add constraint ck_transaction_feedback_category check (
+                    category is null or category in ('PROVIDER_LATE', 'PROVIDER_NO_SHOW', 'QUALITY_PROBLEM', 'BOOKING_PROBLEM', 'OTHER')
+                ),
+                add constraint ck_transaction_feedback_shape check (
+                    (outcome = 'GOOD' and category is null and comment is null and support_case_id is null)
+                    or
+                    (outcome = 'PROBLEM' and category is not null and support_case_id is not null)
+                );
+        ]]></sql>
+        <rollback>
+            <dropTable tableName="transaction_feedback"/>
+            <dropTable tableName="support_case"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="20260910-02" author="loco-place">
+        <comment>Keep Transfer ownership atomic during explicit customer account merge.</comment>
+        <sql dbms="postgresql"><![CDATA[
+            alter table transfer_booking drop constraint fk_transfer_booking_communication_identity;
+            alter table transfer_booking
+                add constraint fk_transfer_booking_communication_identity
+                foreign key (communication_identity_id, customer_id)
+                references customer_external_identity (id, customer_id)
+                deferrable initially deferred;
+        ]]></sql>
+        <rollback>
+            <sql dbms="postgresql"><![CDATA[
+                alter table transfer_booking drop constraint fk_transfer_booking_communication_identity;
+                alter table transfer_booking
+                    add constraint fk_transfer_booking_communication_identity
+                    foreign key (communication_identity_id, customer_id)
+                    references customer_external_identity (id, customer_id);
+            ]]></sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

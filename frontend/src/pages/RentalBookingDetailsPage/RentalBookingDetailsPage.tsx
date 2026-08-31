@@ -13,6 +13,7 @@ import type {
 import { formatPrice } from "../../domain/pricing";
 import { formatDate, todayAsInputValue } from "../../utils/format";
 import { rentalLanguage, rentalPropertyTitle } from "../../utils/rental";
+import { TransactionCarePanel } from "../../components/TransactionCarePanel/TransactionCarePanel";
 
 interface BookingLocationState {
   justCreated?: boolean;
@@ -216,6 +217,8 @@ export function RentalBookingDetailsPage() {
           ) : null}
         </section>
       ) : null}
+
+      <TransactionCarePanel service="RENTAL" sourceEntityId={booking.id} />
 
       {cancelError ? <p className="form-alert" role="alert">{t("rental.bookingDetails.cancelError")}</p> : null}
       {canCancel ? (

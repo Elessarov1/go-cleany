@@ -12,6 +12,8 @@ import com.cleany.rental.RentalBookingCustomerNotification;
 import com.cleany.transfer.TransferAdminNewRequestNotification;
 import com.cleany.transfer.TransferBookingCustomerNotification;
 import com.cleany.transfer.TransferDirection;
+import com.cleany.support.SupportCaseAdminNotification;
+import com.cleany.support.SupportCaseCategory;
 
 @Component
 public class TelegramCustomerNotificationMessageFactory {
@@ -190,6 +192,55 @@ public class TelegramCustomerNotificationMessageFactory {
                 notification.pickupTime(),
                 route(notification.direction(), notification.airportCode(), english)
         ).strip();
+    }
+
+    public String supportCaseCreated(
+            SupportCaseAdminNotification notification,
+            String languageCode
+    ) {
+        boolean english = isEnglish(languageCode);
+        String service = english
+                ? switch (notification.service()) {
+                    case CLEANING -> "Cleaning";
+                    case RENTAL -> "Rental";
+                    case TRANSFER -> "Transfer";
+                }
+                : switch (notification.service()) {
+                    case CLEANING -> "Уборка";
+                    case RENTAL -> "Аренда";
+                    case TRANSFER -> "Трансфер";
+                };
+        return english
+                ? "New support case #%d\n\n%s · transaction #%d\nCategory: %s".formatted(
+                        notification.caseId(),
+                        service,
+                        notification.sourceEntityId(),
+                        supportCategory(notification.category(), true)
+                )
+                : "Новое обращение #%d\n\n%s · задача №%d\nКатегория: %s".formatted(
+                        notification.caseId(),
+                        service,
+                        notification.sourceEntityId(),
+                        supportCategory(notification.category(), false)
+                );
+    }
+
+    private static String supportCategory(SupportCaseCategory category, boolean english) {
+        return english
+                ? switch (category) {
+                    case PROVIDER_LATE -> "Provider is late";
+                    case PROVIDER_NO_SHOW -> "Provider did not arrive";
+                    case QUALITY_PROBLEM -> "Quality problem";
+                    case BOOKING_PROBLEM -> "Booking problem";
+                    case OTHER -> "Other";
+                }
+                : switch (category) {
+                    case PROVIDER_LATE -> "Исполнитель опаздывает";
+                    case PROVIDER_NO_SHOW -> "Исполнитель не приехал";
+                    case QUALITY_PROBLEM -> "Проблема с качеством";
+                    case BOOKING_PROBLEM -> "Проблема с бронированием";
+                    case OTHER -> "Другое";
+                };
     }
 
     private static String route(TransferDirection direction, String airportCode, boolean english) {

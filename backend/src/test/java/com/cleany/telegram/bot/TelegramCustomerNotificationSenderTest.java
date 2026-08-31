@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.cleany.configuration.PublicApplicationProperties;
+import com.cleany.catalog.PlatformService;
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitCustomerNotification;
 import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.media.MediaProvider;
@@ -21,6 +22,8 @@ import com.cleany.order.CleaningOrderCustomerNotification;
 import com.cleany.order.OnsiteIssueReason;
 import com.cleany.order.ServiceArea;
 import com.cleany.rental.RentalBookingCustomerNotification;
+import com.cleany.support.SupportCaseAdminNotification;
+import com.cleany.support.SupportCaseCategory;
 
 class TelegramCustomerNotificationSenderTest {
 
@@ -292,6 +295,38 @@ class TelegramCustomerNotificationSenderTest {
                 900001L,
                 "benefit available",
                 TelegramBotClient.InlineKeyboard.empty()
+        );
+    }
+
+    @Test
+    void supportCase_renderedWithSafeAdminLinkByChannelAdapter() {
+        TelegramCustomerNotificationMessageFactory messageFactory =
+                Mockito.mock(TelegramCustomerNotificationMessageFactory.class);
+        CleaningOrderBotMessageFactory cleaningMessageFactory =
+                Mockito.mock(CleaningOrderBotMessageFactory.class);
+        TelegramBotClient botClient = Mockito.mock(TelegramBotClient.class);
+        var notification = new SupportCaseAdminNotification(
+                73L,
+                PlatformService.CLEANING,
+                43L,
+                SupportCaseCategory.QUALITY_PROBLEM
+        );
+        Mockito.when(messageFactory.supportCaseCreated(notification, "ru"))
+                .thenReturn("new support case");
+        var sender = sender(
+                messageFactory,
+                cleaningMessageFactory,
+                botClient,
+                Mockito.mock(MediaProviderReferenceService.class)
+        );
+
+        sender.send(telegramTarget(), notification);
+
+        Mockito.verify(botClient).sendMessage(
+                Mockito.eq(900001L),
+                Mockito.eq("new support case"),
+                Mockito.argThat(keyboard -> keyboard.rows().stream().flatMap(List::stream)
+                        .anyMatch(button -> "https://loco-place.com/admin/support/cases/73".equals(button.url())))
         );
     }
 

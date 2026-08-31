@@ -7,6 +7,8 @@ update cleaning_order
    set applied_reward_id = null,
        applied_rental_cleaning_benefit_id = null;
 
+delete from transaction_feedback;
+delete from support_case;
 delete from cleaning_order_issue_photo;
 delete from cleaning_order_issue_report;
 delete from cleaning_order_photo;
@@ -64,6 +66,8 @@ select setval(pg_get_serial_sequence('rental_booking', 'id'), 1, false);
 select setval(pg_get_serial_sequence('transfer_booking', 'id'), 1, false);
 select setval(pg_get_serial_sequence('cleaning_order', 'id'), 1, false);
 select setval(pg_get_serial_sequence('customer_notification', 'id'), 1, false);
+select setval(pg_get_serial_sequence('transaction_feedback', 'id'), 1, false);
+select setval(pg_get_serial_sequence('support_case', 'id'), 1, false);
 select setval(pg_get_serial_sequence('customer_identity_link_request', 'id'), 1, false);
 select setval(pg_get_serial_sequence('acquisition_campaign_entry', 'id'), 1, false);
 

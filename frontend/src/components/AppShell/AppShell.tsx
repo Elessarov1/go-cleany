@@ -79,7 +79,8 @@ export function AppShell() {
   const activity = location.pathname === "/account/activity";
   const notifications = location.pathname === "/notifications";
   const customerHub = activity || notifications;
-  const neutralCustomer = customerHub || publicPlatformPage;
+  const adminSupport = location.pathname.startsWith("/admin/support");
+  const neutralCustomer = customerHub || publicPlatformPage || adminSupport;
   const customerServiceHome = location.pathname === "/cleaning"
     || location.pathname === "/rent"
     || location.pathname === "/rent/properties"
@@ -183,6 +184,10 @@ export function AppShell() {
                 <NavLink to="/admin/analytics">
                   <Icon name="chart" size={19} />
                   <span>{t("app.navigation.analytics")}</span>
+                </NavLink>
+                <NavLink to="/admin/support">
+                  <Icon name="support" size={19} />
+                  <span>{t("app.navigation.support")}</span>
                 </NavLink>
                 <NavLink to="/admin/cleaning">
                   <Icon name="calendar-plus" size={19} />

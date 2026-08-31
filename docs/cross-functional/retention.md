@@ -115,11 +115,13 @@ Avoid an advertising feed, recommendation engine or client-calculated eligibilit
 
 ### Support entry point
 
-Every transaction should provide an obvious "Need help" path with source context already attached.
+Every owned Cleaning, Rental and Transfer detail page now provides the shared "Need help" panel with source context already attached. It works for every transaction status and independently of current service availability. The backend verifies source ownership through the vertical repository and exposes the latest case and resolution in the originating transaction.
+
+The platform support queue gives persisted administrators one oldest-first operational inbox while preserving vertical aggregates and vertical admin detail pages. See [support.md](support.md).
 
 ### Simple feedback
 
-Start with useful operational signal, e.g. positive vs problem + issue category. A public five-star marketplace rating is not required to improve supply quality.
+Completed transactions now accept one immutable `GOOD` or `PROBLEM` result. Negative feedback requires an issue category and atomically opens or reuses a support case; positive feedback remains a private quality signal. No public five-star marketplace rating or analytics dashboard is introduced.
 
 ## P1 — use lifecycle context
 

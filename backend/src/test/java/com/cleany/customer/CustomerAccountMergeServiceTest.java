@@ -56,9 +56,13 @@ class CustomerAccountMergeServiceTest {
         Assertions.assertAll(
                 () -> Assertions.assertTrue(statements.contains("customer_role")),
                 () -> Assertions.assertTrue(statements.contains("rental_admin_notification_preference")),
+                () -> Assertions.assertTrue(statements.contains("update support_case set customer_id")),
+                () -> Assertions.assertTrue(statements.contains("resolved_by_customer_id")),
+                () -> Assertions.assertTrue(statements.contains("update transaction_feedback")),
                 () -> Assertions.assertTrue(statements.contains("update cleaning_order set customer_id")),
                 () -> Assertions.assertTrue(statements.contains("referrer_customer_id")),
                 () -> Assertions.assertTrue(statements.contains("update rental_booking")),
+                () -> Assertions.assertTrue(statements.contains("update transfer_booking")),
                 () -> Assertions.assertTrue(statements.contains("update rental_cleaning_benefit")),
                 () -> Assertions.assertTrue(statements.contains("update referral_reward")),
                 () -> Assertions.assertTrue(statements.contains("update referral_code")),

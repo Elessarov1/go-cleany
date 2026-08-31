@@ -20,6 +20,7 @@ import com.cleany.order.CleaningOrderCustomerNotification;
 import com.cleany.rental.RentalBookingCustomerNotification;
 import com.cleany.transfer.TransferAdminNewRequestNotification;
 import com.cleany.transfer.TransferBookingCustomerNotification;
+import com.cleany.support.SupportCaseAdminNotification;
 
 @Component
 @ConditionalOnProperty(prefix = "telegram", name = "bot-enabled", havingValue = "true")
@@ -150,6 +151,19 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
             );
             return;
         }
+        if (notification instanceof SupportCaseAdminNotification supportCase) {
+            botClient.sendMessage(
+                    telegramUserId,
+                    messageFactory.supportCaseCreated(supportCase, target.languageCode()),
+                    TelegramBotClient.InlineKeyboard.ofRows(List.of(
+                            TelegramBotClient.InlineButton.url(
+                                    isEnglish(target.languageCode()) ? "Open case" : "Открыть обращение",
+                                    publicApplicationProperties.baseUrl() + supportCase.targetPath()
+                            )
+                    ))
+            );
+            return;
+        }
         throw new IllegalArgumentException(
                 "Unsupported Telegram customer notification: " + notification.getClass().getName()
         );
@@ -163,5 +177,9 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
         return mediaIds.stream()
                 .map(mediaId -> mediaProviderReferenceService.require(mediaId, MediaProvider.TELEGRAM))
                 .toList();
+    }
+
+    private static boolean isEnglish(String languageCode) {
+        return languageCode != null && languageCode.toLowerCase(java.util.Locale.ROOT).startsWith("en");
     }
 }

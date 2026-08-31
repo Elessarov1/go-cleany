@@ -9,6 +9,7 @@ import { TransferBookingStatus } from "../../components/TransferBookingStatus/Tr
 import type { TransferBooking } from "../../domain/transfer";
 import { formatPrice } from "../../domain/pricing";
 import { formatDate } from "../../utils/format";
+import { TransactionCarePanel } from "../../components/TransactionCarePanel/TransactionCarePanel";
 
 export function TransferBookingDetailsPage() {
   const { id } = useParams();
@@ -94,6 +95,7 @@ export function TransferBookingDetailsPage() {
         {booking.statusReason ? <Detail label={t("transfer.booking.reason")} value={booking.statusReason} wide /> : null}
       </section>
       <p className="transfer-booking-note">{t("transfer.booking.requestNote")}</p>
+      <TransactionCarePanel service="TRANSFER" sourceEntityId={booking.id} />
       <div className="page-actions">
         <Link className="button button--secondary" to="/transfer/bookings">{t("common.back")}</Link>
         {repeatAvailable ? (

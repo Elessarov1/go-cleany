@@ -18,6 +18,8 @@ import com.cleany.order.OnsiteIssueReason;
 import com.cleany.order.ServiceArea;
 import com.cleany.rental.RentalBookingCustomerNotification;
 import com.cleany.rental.RentalBookingStatus;
+import com.cleany.support.SupportCaseAdminNotification;
+import com.cleany.support.SupportCaseCategory;
 import com.cleany.transfer.TransferAdminNewRequestNotification;
 import com.cleany.transfer.TransferBookingCustomerNotification;
 import com.cleany.transfer.TransferBookingStatus;
@@ -84,7 +86,12 @@ class CustomerNotificationMappingTest {
                 Arguments.of(new RentalCleaningBenefitCustomerNotification(
                                 33L, 22L, "CLEAN7", date, date.plusDays(3)),
                         CustomerNotificationType.RENTAL_CLEANING_BENEFIT_AVAILABLE,
-                        "/rent/bookings/22", "rental-cleaning-benefit:33:available")
+                        "/rent/bookings/22", "rental-cleaning-benefit:33:available"),
+                Arguments.of(new SupportCaseAdminNotification(
+                                55L, com.cleany.catalog.PlatformService.CLEANING,
+                                11L, SupportCaseCategory.QUALITY_PROBLEM),
+                        CustomerNotificationType.SUPPORT_CASE_CREATED,
+                        "/admin/support/cases/55", "support-case:55:created")
         );
     }
 }
