@@ -855,6 +855,8 @@ h3 {
 /* Platform support and post-transaction feedback */
 .transaction-care {
   display: grid;
+  width: 100%;
+  min-width: 0;
   gap: 16px;
   padding: 20px;
   border: 1px solid var(--color-line);
@@ -2891,10 +2893,14 @@ h3 {
 .rental-cleaning-cta {
   margin-bottom: 12px;
   padding: 17px;
-  background: linear-gradient(145deg, #f4fbff, #e7f5fd);
-  border: 1px solid #cfe8f5;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, #1685b3 7%, var(--color-surface)),
+    color-mix(in srgb, #1685b3 13%, var(--color-surface))
+  );
+  border: 1px solid color-mix(in srgb, #1685b3 24%, var(--color-line));
   border-radius: 18px;
-  box-shadow: 0 12px 30px rgba(52, 126, 166, 0.08);
+  box-shadow: var(--shadow-small);
 }
 .rental-cleaning-cta__heading { display: flex; align-items: flex-start; gap: 12px; }
 .rental-cleaning-cta__heading > span {
@@ -2904,7 +2910,7 @@ h3 {
   height: 42px;
   place-items: center;
   color: var(--color-primary-dark);
-  background: #fff;
+  background: var(--color-surface-strong);
   border-radius: 13px;
 }
 .rental-cleaning-cta h2 { margin: 1px 0 4px; font-size: 15px; }
@@ -2914,7 +2920,8 @@ h3 {
   margin: 14px 0;
   padding: 12px;
   gap: 3px;
-  background: rgba(255, 255, 255, 0.78);
+  background: color-mix(in srgb, var(--color-surface-strong) 78%, transparent);
+  border: 1px solid color-mix(in srgb, #1685b3 14%, var(--color-line));
   border-radius: 12px;
 }
 .rental-cleaning-cta__benefit span,
@@ -2929,9 +2936,9 @@ h3 {
   padding: 14px;
   align-items: flex-start;
   gap: 11px;
-  color: var(--color-primary-dark);
-  background: #e9f7ff;
-  border: 1px solid #cce8f6;
+  color: var(--color-primary);
+  background: color-mix(in srgb, #1685b3 10%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, #1685b3 22%, var(--color-line));
   border-radius: 15px;
 }
 .rental-cleaning-context > span {
@@ -2940,7 +2947,7 @@ h3 {
   width: 36px;
   height: 36px;
   place-items: center;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--color-surface-strong);
   border-radius: 11px;
 }
 .rental-cleaning-context strong,

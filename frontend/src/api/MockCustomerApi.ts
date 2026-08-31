@@ -8,6 +8,7 @@ export class MockCustomerApi implements CustomerApi {
 
   private linked = false;
   private notifications: CustomerNotification[] = [
+    { id: 3, type: "SUPPORT_CASE_CREATED", targetPath: "/admin/support/cases/701", createdAt: new Date().toISOString(), readAt: null },
     { id: 2, type: "RENTAL_BOOKING_CONFIRMED", targetPath: "/rent/bookings/2", createdAt: new Date().toISOString(), readAt: null },
     { id: 1, type: "CLEANING_ORDER_COMPLETED", targetPath: "/cleaning/orders/1", createdAt: new Date(Date.now() - 86_400_000).toISOString(), readAt: null },
   ];
