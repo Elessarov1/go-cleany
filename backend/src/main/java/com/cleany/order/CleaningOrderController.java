@@ -10,9 +10,14 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.cleany.reminder.CleaningRepeatReminderRequest;
+import com.cleany.reminder.CleaningRepeatReminderResponse;
+import com.cleany.reminder.CleaningRepeatReminderService;
 
 @RestController
 @RequestMapping(CleaningOrderController.BASE_PATH)
@@ -22,13 +27,16 @@ public class CleaningOrderController {
 
     private final CleaningOrderService orderService;
     private final CustomerCleaningReportService reportService;
+    private final CleaningRepeatReminderService repeatReminderService;
 
     public CleaningOrderController(
             CleaningOrderService orderService,
-            CustomerCleaningReportService reportService
+            CustomerCleaningReportService reportService,
+            CleaningRepeatReminderService repeatReminderService
     ) {
         this.orderService = orderService;
         this.reportService = reportService;
+        this.repeatReminderService = repeatReminderService;
     }
 
     @PostMapping
@@ -71,6 +79,19 @@ public class CleaningOrderController {
     @PostMapping("/{id}/repeat-prefill")
     public CleaningRepeatPrefillResponse repeatPrefill(@PathVariable long id) {
         return orderService.repeatPrefill(id);
+    }
+
+    @GetMapping("/{id}/repeat-reminder")
+    public CleaningRepeatReminderResponse repeatReminder(@PathVariable long id) {
+        return repeatReminderService.current(id);
+    }
+
+    @PutMapping("/{id}/repeat-reminder")
+    public CleaningRepeatReminderResponse updateRepeatReminder(
+            @PathVariable long id,
+            @Valid @RequestBody CleaningRepeatReminderRequest request
+    ) {
+        return repeatReminderService.update(id, request.selection());
     }
 
     @PostMapping("/{id}/cancel")

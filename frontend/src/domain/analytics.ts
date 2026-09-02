@@ -87,6 +87,15 @@ export interface AnalyticsOverview {
     completionRate: number | null;
     medianHoursToRepeat: number | null;
   }>;
+  reminders: Array<{
+    type: "CLEANING_REPEAT" | "RENTAL_CHECKOUT_TRANSFER" | "TRANSFER_UPCOMING";
+    sourceService: "CLEANING" | "RENTAL" | "TRANSFER";
+    notificationsCreated: number;
+    targetTasksCreated: number | null;
+    targetTasksCompleted: number;
+    creationRate: number | null;
+    completionRate: number | null;
+  }>;
   averageChecks: Array<{
     service: Exclude<AnalyticsService, "ALL">;
     currency: string;

@@ -2,6 +2,7 @@ package com.cleany.telegram.bot;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,8 +13,10 @@ import com.cleany.catalog.PlatformService;
 import com.cleany.finance.ReferralFinancialProperties;
 import com.cleany.rental.RentalBookingCustomerNotification;
 import com.cleany.rental.RentalBookingStatus;
+import com.cleany.reminder.ReminderCustomerNotification;
 import com.cleany.support.SupportCaseAdminNotification;
 import com.cleany.support.SupportCaseCategory;
+import com.cleany.transfer.TransferDirection;
 
 class TelegramCustomerNotificationMessageFactoryTest {
 
@@ -141,6 +144,34 @@ class TelegramCustomerNotificationMessageFactoryTest {
                 () -> Assertions.assertTrue(english.contains("Transfer · transaction #91")),
                 () -> Assertions.assertTrue(russian.contains("Исполнитель опаздывает")),
                 () -> Assertions.assertTrue(english.contains("Provider is late"))
+        );
+    }
+
+    @Test
+    void reminderMessages_areStableLocalizedAndContainExactScheduling() {
+        var cleaning = new ReminderCustomerNotification.CleaningRepeat(
+                51L,
+                LocalDate.of(2026, 9, 16)
+        );
+        var rental = new ReminderCustomerNotification.RentalCheckoutTransfer(
+                52L,
+                LocalDate.of(2026, 9, 20)
+        );
+        var transfer = new ReminderCustomerNotification.TransferUpcoming(
+                53L,
+                LocalDate.of(2026, 9, 21),
+                LocalTime.of(7, 30),
+                TransferDirection.TO_AIRPORT,
+                "GZP"
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertTrue(factory.reminder(cleaning, "ru").contains("16.09.2026")),
+                () -> Assertions.assertTrue(factory.reminder(cleaning, "en").contains("Cleaning reminder")),
+                () -> Assertions.assertTrue(factory.reminder(rental, "ru").contains("20.09.2026")),
+                () -> Assertions.assertTrue(factory.reminder(rental, "en").contains("rental checkout")),
+                () -> Assertions.assertTrue(factory.reminder(transfer, "ru").contains("07:30")),
+                () -> Assertions.assertTrue(factory.reminder(transfer, "en").contains("21.09.2026"))
         );
     }
 }

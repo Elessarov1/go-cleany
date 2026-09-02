@@ -3,7 +3,7 @@ title: Loco Place Current Context
 type: ai-context
 status: active
 scope: platform
-updated: 2026-08-31
+updated: 2026-09-02
 ---
 
 # Loco Place — Current Context
@@ -165,6 +165,8 @@ Rental → Transfer contextual flow is implemented through an explicit bridge. A
 The platform home at `/` is contextual for authenticated returning customers and stays a plain catalog for guests/new customers. `GET /api/v1/account/home` composes owned Activity, the nearest currently actionable Rental cross-service context and the latest eligible Cleaning/Transfer repeat without persistence. It exposes no `customerId`, never shows `AVAILABLE_LATER` as a home action, suppresses duplicate target services and continues to show owned active work when a vertical is unavailable for new customer flows. The catalog and personalized context load independently.
 
 Unified Support & Feedback is implemented without modifying vertical aggregates. Every owned Cleaning, Rental and Transfer detail page embeds the shared panel for opening a categorized case in any source status; completed sources additionally accept one immutable `GOOD` or `PROBLEM` feedback. Negative feedback atomically opens or reuses the single open case for that source. Customer ownership is resolved through the vertical repository and unavailable services do not hide support.
+
+Smart Reminders v1 is implemented through persisted `customer_reminder` lifecycle state and the durable notification inbox. Customers explicitly choose 14/30/off after a completed Cleaning; Rental checkout reminders reuse the `CHECKOUT` Transfer context three days before checkout; confirmed Transfers receive an operational reminder one day before pickup. The job runs daily at 09:00 Europe/Istanbul by default, is idempotent, suppresses already satisfied needs and treats Telegram as optional secondary delivery. Admin analytics attributes reminder outcomes through existing typed source links.
 
 Persisted administrators use the oldest-first queue at `/admin/support`, resolve cases with a required final comment and follow safe links to vertical admin detail pages. The customer sees the result only in the originating transaction. New cases produce deduplicated durable `SUPPORT_CASE_CREATED` notifications for every persisted admin and optional dispatcher-routed Telegram delivery without including the customer description.
 

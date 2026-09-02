@@ -36,6 +36,20 @@ public interface RentalBookingRepository extends JpaRepository<RentalBooking, Lo
             @Param("batchSize") int batchSize
     );
 
+    @Query(value = """
+            select booking.id
+              from rental_booking booking
+             where booking.status = 'CONFIRMED'
+               and booking.check_out_date between :today and :windowEnd
+             order by booking.check_out_date, booking.id
+             limit :batchSize
+            """, nativeQuery = true)
+    List<Long> findCheckoutReminderCandidates(
+            @Param("today") LocalDate today,
+            @Param("windowEnd") LocalDate windowEnd,
+            @Param("batchSize") int batchSize
+    );
+
     List<RentalBooking> findAllByCustomerIdOrderByCreatedAtDesc(long customerId);
 
     Optional<RentalBooking> findByIdAndCustomerId(long id, long customerId);

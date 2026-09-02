@@ -3,7 +3,7 @@ title: Loco Place Analytics
 type: cross-functional
 status: active
 scope: platform
-updated: 2026-08-31
+updated: 2026-09-02
 ---
 
 # Analytics
@@ -58,6 +58,8 @@ context action shown
 ```
 
 Its cohort is the first deduplicated `CTA_SHOWN` for a Rental booking/context inside the selected period. It is available for `ALL` and source-service `RENTAL` filters. Start rate is opened/shown, creation rate is created/shown, completion rate is completed/created, and conversion time is the median from first shown to first linked Transfer creation. Events live in the explicit Rental/Transfer bridge; this does not introduce a universal cross-service event or transaction model.
+
+The Smart Reminders section uses reminders whose durable notification was created (`notifiedAt`) in the selected period. Service filters apply to the source vertical. Cleaning repeat and Rental checkout reminders attribute created/completed targets through their existing typed source fields; Transfer operational reminders measure whether the reminded source Transfer completed. Empty denominators return `null`, and Telegram delivery is intentionally not a separate metric until durable external delivery checkpoints exist.
 
 ## Business Health semantics
 

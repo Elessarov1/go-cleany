@@ -99,6 +99,15 @@ rental-cleaning-benefit:
   discount-rate: 0.10
   max-discount: 2000
 
+smart-reminders:
+  enabled: false
+  cron: "0 0 9 * * *"
+  zone-id: Europe/Istanbul
+  batch-size: 100
+  cleaning-grace-days: 7
+  rental-transfer-days-before: 3
+  transfer-days-before: 1
+
 data-retention:
   enabled: false
   days: 7

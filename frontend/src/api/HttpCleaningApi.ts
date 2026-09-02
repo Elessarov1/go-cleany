@@ -10,6 +10,8 @@ import type {
   CleaningOrder,
   CleaningOrderQuote,
   CleaningOrderQuoteRequest,
+  CleaningRepeatReminder,
+  CleaningRepeatReminderSelection,
   CleaningRepeatPrefill,
   CreateCleaningOrderRequest,
   ReferralSummary,
@@ -107,6 +109,20 @@ export class HttpCleaningApi implements CleaningApi {
 
   getRepeatPrefill(id: number): Promise<CleaningRepeatPrefill> {
     return this.request(`/api/v1/cleaning/orders/${id}/repeat-prefill`, { method: "POST" });
+  }
+
+  getRepeatReminder(id: number): Promise<CleaningRepeatReminder> {
+    return this.request(`/api/v1/cleaning/orders/${id}/repeat-reminder`);
+  }
+
+  updateRepeatReminder(
+    id: number,
+    selection: CleaningRepeatReminderSelection,
+  ): Promise<CleaningRepeatReminder> {
+    return this.request(`/api/v1/cleaning/orders/${id}/repeat-reminder`, {
+      method: "PUT",
+      body: JSON.stringify({ selection }),
+    });
   }
 
   getReportPhoto(orderId: number, mediaId: number): Promise<Blob> {

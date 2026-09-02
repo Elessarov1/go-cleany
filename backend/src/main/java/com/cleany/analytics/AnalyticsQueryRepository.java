@@ -15,6 +15,7 @@ import org.springframework.stereotype.Repository;
 
 import com.cleany.catalog.PlatformService;
 import com.cleany.crossservice.rentaltransfer.RentalTransferContextType;
+import com.cleany.reminder.CustomerReminderType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -472,6 +473,102 @@ public class AnalyticsQueryRepository {
                     nullableRatio(started, shown),
                     nullableRatio(completed, created),
                     medianHours == null ? null : medianHours.setScale(1, RoundingMode.HALF_UP)
+            );
+        });
+    }
+
+    public List<AnalyticsReminderMetric> reminders(AnalyticsTimeWindow window) {
+        return jdbcTemplate.query("""
+                with definitions(type, source_service, sort_order) as (
+                    values ('CLEANING_REPEAT', 'CLEANING', 1),
+                           ('RENTAL_CHECKOUT_TRANSFER', 'RENTAL', 2),
+                           ('TRANSFER_UPCOMING', 'TRANSFER', 3)
+                ),
+                reminder_cohort as (
+                    select reminder.id,
+                           reminder.type,
+                           reminder.source_service,
+                           reminder.source_entity_id,
+                           reminder.notified_at
+                      from customer_reminder reminder
+                     where reminder.status = 'NOTIFIED'
+                       and reminder.notified_at >= :fromInclusive
+                       and reminder.notified_at < :toExclusive
+                       and (:service = 'ALL' or reminder.source_service = :service)
+                ),
+                reminder_outcomes as (
+                    select reminder.*,
+                           case reminder.type
+                               when 'CLEANING_REPEAT' then exists (
+                                   select 1
+                                     from cleaning_order target
+                                    where target.repeat_source_order_id = reminder.source_entity_id
+                                      and target.created_at >= reminder.notified_at
+                                      and target.created_at < :toExclusive
+                               )
+                               when 'RENTAL_CHECKOUT_TRANSFER' then exists (
+                                   select 1
+                                     from transfer_booking target
+                                    where target.source_rental_booking_id = reminder.source_entity_id
+                                      and target.rental_context_type = 'CHECKOUT'
+                                      and target.created_at >= reminder.notified_at
+                                      and target.created_at < :toExclusive
+                               )
+                               else null
+                           end target_created,
+                           case reminder.type
+                               when 'CLEANING_REPEAT' then exists (
+                                   select 1
+                                     from cleaning_order target
+                                    where target.repeat_source_order_id = reminder.source_entity_id
+                                      and target.status = 'COMPLETED'
+                                      and target.created_at >= reminder.notified_at
+                                      and target.completed_at < :toExclusive
+                               )
+                               when 'RENTAL_CHECKOUT_TRANSFER' then exists (
+                                   select 1
+                                     from transfer_booking target
+                                    where target.source_rental_booking_id = reminder.source_entity_id
+                                      and target.rental_context_type = 'CHECKOUT'
+                                      and target.status = 'COMPLETED'
+                                      and target.created_at >= reminder.notified_at
+                                      and target.completed_at < :toExclusive
+                               )
+                               when 'TRANSFER_UPCOMING' then exists (
+                                   select 1
+                                     from transfer_booking source
+                                    where source.id = reminder.source_entity_id
+                                      and source.status = 'COMPLETED'
+                                      and source.completed_at >= reminder.notified_at
+                                      and source.completed_at < :toExclusive
+                               )
+                           end target_completed
+                      from reminder_cohort reminder
+                )
+                select definition.type,
+                       definition.source_service,
+                       count(outcome.id) notifications_created,
+                       count(outcome.id) filter (where outcome.target_created) target_created,
+                       count(outcome.id) filter (where outcome.target_completed) target_completed
+                  from definitions definition
+                  left join reminder_outcomes outcome on outcome.type = definition.type
+                 where :service = 'ALL' or definition.source_service = :service
+                 group by definition.type, definition.source_service, definition.sort_order
+                 order by definition.sort_order
+                """, parameters(window), (resultSet, rowNumber) -> {
+            CustomerReminderType type = CustomerReminderType.valueOf(resultSet.getString("type"));
+            long notified = resultSet.getLong("notifications_created");
+            long created = resultSet.getLong("target_created");
+            long completed = resultSet.getLong("target_completed");
+            boolean operational = type == CustomerReminderType.TRANSFER_UPCOMING;
+            return new AnalyticsReminderMetric(
+                    type,
+                    PlatformService.valueOf(resultSet.getString("source_service")),
+                    notified,
+                    operational ? null : created,
+                    completed,
+                    operational ? null : nullableRatio(created, notified),
+                    nullableRatio(completed, operational ? notified : created)
             );
         });
     }

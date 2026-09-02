@@ -1,12 +1,10 @@
 package com.cleany.crossservice.rentaltransfer;
 
-import java.text.Normalizer;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
@@ -14,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.catalog.PlatformService;
 import com.cleany.catalog.PlatformServiceAccessService;
+import com.cleany.common.text.AddressNormalizer;
 import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountService;
 import com.cleany.rental.RentalBooking;
@@ -54,10 +53,19 @@ public class RentalTransferContextService {
 
     @Transactional(readOnly = true)
     public RentalTransferContextResponse context(CurrentCustomer customer, long rentalBookingId) {
-        RentalBooking booking = requireOwnedBooking(customer, rentalBookingId);
+        return context(customer.customerId(), rentalBookingId);
+    }
+
+    @Transactional(readOnly = true)
+    public RentalTransferContextResponse contextForCustomer(long customerId, long rentalBookingId) {
+        return context(customerId, rentalBookingId);
+    }
+
+    private RentalTransferContextResponse context(long customerId, long rentalBookingId) {
+        RentalBooking booking = requireOwnedBooking(customerId, rentalBookingId);
         boolean flowAvailable = serviceAccessService.canStartCustomerFlow(
                 PlatformService.TRANSFER,
-                customer.customerId()
+                customerId
         );
         if (!flowAvailable || booking.getStatus() != RentalBookingStatus.CONFIRMED) {
             return new RentalTransferContextResponse(
@@ -69,7 +77,7 @@ public class RentalTransferContextService {
         List<RentalTransferContextOptionResponse> options = Arrays.stream(
                         RentalTransferContextType.values()
                 )
-                .map(context -> visibleOption(customer, booking, context))
+                .map(context -> visibleOption(customerId, booking, context))
                 .filter(java.util.Objects::nonNull)
                 .toList();
         return new RentalTransferContextResponse(booking.getId(), true, options);
@@ -160,12 +168,12 @@ public class RentalTransferContextService {
     }
 
     private RentalTransferContextOptionResponse visibleOption(
-            CurrentCustomer customer,
+            long customerId,
             RentalBooking booking,
             RentalTransferContextType context
     ) {
         LocalDate suggestedDate = context.suggestedDate(booking);
-        if (hasMatchingTransfer(customer.customerId(), booking, context)
+        if (hasMatchingTransfer(customerId, booking, context)
                 || suggestedDate.isBefore(transferBookingPolicy.earliestBookingDate())) {
             return null;
         }
@@ -196,7 +204,7 @@ public class RentalTransferContextService {
             return true;
         }
         LocalDate suggestedDate = context.suggestedDate(rentalBooking);
-        String expectedAddress = comparableAddress(rentalBooking.getProperty().getAddress());
+        String expectedAddress = AddressNormalizer.normalize(rentalBooking.getProperty().getAddress());
         return transferBookingRepository
                 .findAllByCustomerIdAndSourceRentalBookingIdIsNullAndDirectionAndPickupDateAndStatusIn(
                         customerId,
@@ -206,12 +214,16 @@ public class RentalTransferContextService {
                 )
                 .stream()
                 .map(TransferBooking::getAddress)
-                .map(RentalTransferContextService::comparableAddress)
+                .map(AddressNormalizer::normalize)
                 .anyMatch(expectedAddress::equals);
     }
 
     private RentalBooking requireOwnedBooking(CurrentCustomer customer, long rentalBookingId) {
-        return rentalBookingRepository.findByIdAndCustomerId(rentalBookingId, customer.customerId())
+        return requireOwnedBooking(customer.customerId(), rentalBookingId);
+    }
+
+    private RentalBooking requireOwnedBooking(long customerId, long rentalBookingId) {
+        return rentalBookingRepository.findByIdAndCustomerId(rentalBookingId, customerId)
                 .orElseThrow(() -> new RentalBookingNotFoundException(rentalBookingId));
     }
 
@@ -235,9 +247,4 @@ public class RentalTransferContextService {
         return new RentalTransferContextNotEligibleException(booking.getId(), reason);
     }
 
-    private static String comparableAddress(String value) {
-        return Normalizer.normalize(value.strip(), Normalizer.Form.NFKC)
-                .replaceAll("\\s+", " ")
-                .toLowerCase(Locale.ROOT);
-    }
 }

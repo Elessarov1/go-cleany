@@ -115,3 +115,23 @@ export interface ReferralSummary {
   availableRewards: number;
   referralProgramUnlocked: boolean;
 }
+
+export type CleaningRepeatReminderSelection =
+  | "IN_14_DAYS"
+  | "IN_30_DAYS"
+  | "DO_NOT_REMIND";
+
+export type CustomerReminderStatus =
+  | "PENDING"
+  | "NOTIFIED"
+  | "DISABLED"
+  | "SUPERSEDED"
+  | "EXPIRED";
+
+export interface CleaningRepeatReminder {
+  selection: CleaningRepeatReminderSelection | null;
+  status: CustomerReminderStatus | null;
+  scheduledDate: string | null;
+  notifiedAt: string | null;
+  editable: boolean;
+}

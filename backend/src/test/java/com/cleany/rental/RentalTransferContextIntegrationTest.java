@@ -30,6 +30,11 @@ import com.cleany.customer.CustomerAccountService;
 import com.cleany.customer.CustomerExternalIdentityRepository;
 import com.cleany.media.MediaAssetRepository;
 import com.cleany.media.MediaProviderReferenceRepository;
+import com.cleany.reminder.CustomerReminderRepository;
+import com.cleany.reminder.CustomerReminderStatus;
+import com.cleany.reminder.CustomerReminderType;
+import com.cleany.reminder.SmartReminderProcessingResult;
+import com.cleany.reminder.SmartReminderService;
 import com.cleany.transfer.CreateTransferBookingRequest;
 import com.cleany.transfer.TransferAirport;
 import com.cleany.transfer.TransferAirportRepository;
@@ -104,10 +109,17 @@ class RentalTransferContextIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private SmartReminderService smartReminderService;
+
+    @Autowired
+    private CustomerReminderRepository reminderRepository;
+
     @BeforeEach
     @AfterEach
     void cleanDatabase() {
         jdbcTemplate.update("delete from rental_transfer_action_event");
+        reminderRepository.deleteAll();
         transferBookingRepository.deleteAll();
         priceRepository.deleteAll();
         jdbcTemplate.update("delete from rental_cleaning_benefit");
@@ -130,6 +142,51 @@ class RentalTransferContextIntegrationTest extends BaseIntegrationTest {
         jdbcTemplate.update("update transfer_airport set enabled = true, version = version + 1");
         jdbcTemplate.update("update transfer_vehicle_type set enabled = true, version = version + 1");
         clearPlatformServiceStateCache();
+    }
+
+    @Test
+    void confirmedRentalCheckout_createsOneDurableCatchUpReminder() {
+        CurrentCustomer owner = RentalTestFixtures.customer(
+                customerAccountService,
+                "rental-checkout-reminder"
+        );
+        RentalBookingResponse rental = rental(owner, "rental-checkout-reminder-property");
+        LocalDate checkout = transferBookingPolicy.earliestBookingDate().plusDays(2);
+        jdbcTemplate.update(
+                """
+                update rental_booking
+                   set check_in_date = ?, check_out_date = ?, duration_days = 7
+                 where id = ?
+                """,
+                checkout.minusDays(7),
+                checkout,
+                rental.id()
+        );
+
+        SmartReminderProcessingResult first = smartReminderService.process();
+        SmartReminderProcessingResult repeated = smartReminderService.process();
+        var reminder = reminderRepository.findAll().getFirst();
+        long notificationCount = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                  from customer_notification
+                 where customer_id = ?
+                   and type = 'RENTAL_CHECKOUT_TRANSFER_REMINDER'
+                """,
+                Long.class,
+                owner.customerId()
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(1, first.notified()),
+                () -> Assertions.assertEquals(0, repeated.notified()),
+                () -> Assertions.assertEquals(
+                        CustomerReminderType.RENTAL_CHECKOUT_TRANSFER,
+                        reminder.getType()
+                ),
+                () -> Assertions.assertEquals(CustomerReminderStatus.NOTIFIED, reminder.getStatus()),
+                () -> Assertions.assertEquals(1, notificationCount)
+        );
     }
 
     @Test

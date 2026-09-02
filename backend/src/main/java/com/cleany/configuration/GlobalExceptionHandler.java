@@ -36,6 +36,8 @@ import com.cleany.order.OrderNotFoundException;
 import com.cleany.order.CleaningReportExpiredException;
 import com.cleany.referral.ReferralNotApplicableException;
 import com.cleany.repeat.RepeatSourceNotEligibleException;
+import com.cleany.reminder.ReminderFinalStateException;
+import com.cleany.reminder.ReminderSourceNotEligibleException;
 import com.cleany.rental.InvalidRentalBookingException;
 import com.cleany.rental.InvalidRentalDateRangeException;
 import com.cleany.rental.InvalidRentalOccupancyException;
@@ -457,6 +459,16 @@ public class GlobalExceptionHandler {
         return response(
                 HttpStatus.CONFLICT,
                 "repeat_source_not_eligible",
+                exception.getMessage(),
+                Collections.emptyMap()
+        );
+    }
+
+    @ExceptionHandler({ReminderFinalStateException.class, ReminderSourceNotEligibleException.class})
+    ResponseEntity<ApiError> handleReminderConflict(RuntimeException exception) {
+        return response(
+                HttpStatus.CONFLICT,
+                "reminder_state_conflict",
                 exception.getMessage(),
                 Collections.emptyMap()
         );

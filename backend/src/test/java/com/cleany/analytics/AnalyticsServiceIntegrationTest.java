@@ -231,6 +231,90 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void reminderAnalytics_attributesTypedTargetsAndUsesNullableOperationalCreation() {
+        CurrentCustomer cleaningCustomer = customerAt(PERIOD_EVENT.minusSeconds(7200));
+        completeCleaning(cleaningCustomer, PERIOD_EVENT.minusSeconds(3600), 1);
+        long cleaningSourceId = jdbcTemplate.queryForObject(
+                "select max(id) from cleaning_order where customer_id = ?",
+                Long.class,
+                cleaningCustomer.customerId()
+        );
+        insertReminder(
+                cleaningCustomer.customerId(),
+                "CLEANING_REPEAT",
+                "CLEANING",
+                cleaningSourceId,
+                14,
+                PERIOD_EVENT
+        );
+        CleaningOrder repeated = cleaningOrderService.createOrder(
+                cleaningCustomer,
+                new CreateCleaningOrderCommand(
+                        ServiceArea.MAHMUTLAR,
+                        "Reminder analytics repeat",
+                        ApartmentType.ONE_PLUS_ONE,
+                        false,
+                        CleaningType.REGULAR,
+                        LocalDate.now(ZoneId.of("Europe/Istanbul")).plusDays(1),
+                        "+905551112233",
+                        null,
+                        null,
+                        null
+                ),
+                cleaningSourceId
+        );
+        jdbcTemplate.update(
+                "update cleaning_order set status = 'COMPLETED', created_at = ?, completed_at = ? where id = ?",
+                Timestamp.from(PERIOD_EVENT.plusSeconds(60)),
+                Timestamp.from(PERIOD_EVENT.plusSeconds(120)),
+                repeated.getId()
+        );
+
+        CurrentCustomer transferCustomer = customerAt(PERIOD_EVENT.minusSeconds(7200));
+        completeTransfer(transferCustomer, PERIOD_EVENT.plusSeconds(300), new BigDecimal("1900.00"));
+        long transferSourceId = jdbcTemplate.queryForObject(
+                "select max(id) from transfer_booking where customer_id = ?",
+                Long.class,
+                transferCustomer.customerId()
+        );
+        insertReminder(
+                transferCustomer.customerId(),
+                "TRANSFER_UPCOMING",
+                "TRANSFER",
+                transferSourceId,
+                null,
+                PERIOD_EVENT.plusSeconds(180)
+        );
+
+        AnalyticsOverviewResponse all = analyticsService.overview(PERIOD_DAY, PERIOD_DAY, AnalyticsServiceDimension.ALL);
+        AnalyticsOverviewResponse cleaning = analyticsService.overview(
+                PERIOD_DAY,
+                PERIOD_DAY,
+                AnalyticsServiceDimension.CLEANING
+        );
+        AnalyticsOverviewResponse transfer = analyticsService.overview(
+                PERIOD_DAY,
+                PERIOD_DAY,
+                AnalyticsServiceDimension.TRANSFER
+        );
+        AnalyticsReminderMetric cleaningMetric = cleaning.reminders().getFirst();
+        AnalyticsReminderMetric transferMetric = transfer.reminders().getFirst();
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(3, all.reminders().size()),
+                () -> Assertions.assertEquals(1, cleaning.reminders().size()),
+                () -> Assertions.assertEquals(1, cleaningMetric.notificationsCreated()),
+                () -> Assertions.assertEquals(1L, cleaningMetric.targetTasksCreated()),
+                () -> Assertions.assertEquals(1, cleaningMetric.targetTasksCompleted()),
+                () -> Assertions.assertEquals(new BigDecimal("1.0000"), cleaningMetric.creationRate()),
+                () -> Assertions.assertEquals(1, transferMetric.notificationsCreated()),
+                () -> Assertions.assertNull(transferMetric.targetTasksCreated()),
+                () -> Assertions.assertNull(transferMetric.creationRate()),
+                () -> Assertions.assertEquals(new BigDecimal("1.0000"), transferMetric.completionRate())
+        );
+    }
+
+    @Test
     void overview_reportsRepeatActionFunnelBySourceService() {
         CurrentCustomer customer = customerAt(PERIOD_EVENT.minusSeconds(3600));
         CreateCleaningOrderCommand command = new CreateCleaningOrderCommand(
@@ -695,6 +779,32 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
                 "update rental_booking set status = 'COMPLETED', completed_at = ? where id = ?",
                 Timestamp.from(completedAt),
                 booking.id()
+        );
+    }
+
+    private void insertReminder(
+            long customerId,
+            String type,
+            String sourceService,
+            long sourceEntityId,
+            Integer intervalDays,
+            Instant notifiedAt
+    ) {
+        jdbcTemplate.update("""
+                insert into customer_reminder (
+                    customer_id, type, source_service, source_entity_id, scheduled_date,
+                    cleaning_interval_days, status, created_at, updated_at, notified_at
+                ) values (?, ?, ?, ?, ?, ?, 'NOTIFIED', ?, ?, ?)
+                """,
+                customerId,
+                type,
+                sourceService,
+                sourceEntityId,
+                PERIOD_DAY,
+                intervalDays,
+                Timestamp.from(notifiedAt.minusSeconds(60)),
+                Timestamp.from(notifiedAt),
+                Timestamp.from(notifiedAt)
         );
     }
 

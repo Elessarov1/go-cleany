@@ -13,6 +13,8 @@ import type {
   CleaningOrderQuoteRequest,
   CleaningOrderStatus,
   CleaningRepeatPrefill,
+  CleaningRepeatReminder,
+  CleaningRepeatReminderSelection,
   CreateCleaningOrderRequest,
   ReferralSummary,
 } from "../domain/order";
@@ -153,6 +155,8 @@ async function simulateNetwork<T>(value: T): Promise<T> {
 }
 
 export class MockCleaningApi implements CleaningApi {
+  private readonly repeatReminders = new Map<number, CleaningRepeatReminder>();
+
   constructor(private readonly platform: Platform) {}
 
   hasAdminAccess(): Promise<boolean> {
@@ -415,6 +419,46 @@ export class MockCleaningApi implements CleaningApi {
       duplex: order.duplex,
       cleaningType: order.cleaningType,
     });
+  }
+
+  async getRepeatReminder(id: number): Promise<CleaningRepeatReminder> {
+    const order = await this.getOrder(id);
+    if (order.status !== "COMPLETED") {
+      throw new CleaningApiError("Completed cleaning order is required", 409);
+    }
+    return simulateNetwork(this.repeatReminders.get(id) ?? {
+      selection: null,
+      status: null,
+      scheduledDate: null,
+      notifiedAt: null,
+      editable: true,
+    });
+  }
+
+  async updateRepeatReminder(
+    id: number,
+    selection: CleaningRepeatReminderSelection,
+  ): Promise<CleaningRepeatReminder> {
+    const order = await this.getOrder(id);
+    if (order.status !== "COMPLETED") {
+      throw new CleaningApiError("Completed cleaning order is required", 409);
+    }
+    const current = this.repeatReminders.get(id);
+    if (current && !current.editable) {
+      throw new CleaningApiError("Reminder can no longer be changed", 409);
+    }
+    const interval = selection === "IN_14_DAYS" ? 14 : selection === "IN_30_DAYS" ? 30 : null;
+    const completedAt = new Date(order.completedAt ?? order.createdAt);
+    if (interval !== null) completedAt.setDate(completedAt.getDate() + interval);
+    const reminder: CleaningRepeatReminder = {
+      selection,
+      status: interval === null ? "DISABLED" : "PENDING",
+      scheduledDate: interval === null ? null : completedAt.toISOString().slice(0, 10),
+      notifiedAt: null,
+      editable: true,
+    };
+    this.repeatReminders.set(id, reminder);
+    return simulateNetwork(reminder);
   }
 
   async getReportPhoto(): Promise<Blob> {

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitCustomerNotification;
 import com.cleany.finance.ReferralFinancialProperties;
 import com.cleany.rental.RentalBookingCustomerNotification;
+import com.cleany.reminder.ReminderCustomerNotification;
 import com.cleany.transfer.TransferAdminNewRequestNotification;
 import com.cleany.transfer.TransferBookingCustomerNotification;
 import com.cleany.transfer.TransferDirection;
@@ -134,6 +135,41 @@ public class TelegramCustomerNotificationMessageFactory {
                         DATE_FORMAT.format(notification.earliestCleaningDate()),
                         DATE_FORMAT.format(notification.checkOutDate())
                 ).strip();
+    }
+
+    public String reminder(ReminderCustomerNotification notification, String languageCode) {
+        boolean english = isEnglish(languageCode);
+        if (notification instanceof ReminderCustomerNotification.CleaningRepeat cleaning) {
+            return english
+                    ? "🧹 Cleaning reminder\n\nYou chose to repeat your cleaning on %s. Open Loco Place to review the details."
+                            .formatted(DATE_FORMAT.format(cleaning.scheduledDate()))
+                    : "🧹 Напоминание об уборке\n\nВы выбрали повтор уборки на %s. Откройте Loco Place, чтобы проверить детали."
+                            .formatted(DATE_FORMAT.format(cleaning.scheduledDate()));
+        }
+        if (notification instanceof ReminderCustomerNotification.RentalCheckoutTransfer rental) {
+            return english
+                    ? "🚘 Transfer for rental checkout\n\nYour checkout is on %s. You can arrange an airport transfer in Loco Place."
+                            .formatted(DATE_FORMAT.format(rental.checkOutDate()))
+                    : "🚘 Трансфер к выезду из аренды\n\nВыезд запланирован на %s. В Loco Place можно оформить трансфер в аэропорт."
+                            .formatted(DATE_FORMAT.format(rental.checkOutDate()));
+        }
+        if (notification instanceof ReminderCustomerNotification.TransferUpcoming transfer) {
+            String route = route(transfer.direction(), transfer.airportCode(), english);
+            return english
+                    ? "🚘 Upcoming transfer\n\n%s at %s\n%s"
+                            .formatted(
+                                    DATE_FORMAT.format(transfer.pickupDate()),
+                                    transfer.pickupTime(),
+                                    route
+                            )
+                    : "🚘 Скоро ваш трансфер\n\n%s в %s\n%s"
+                            .formatted(
+                                    DATE_FORMAT.format(transfer.pickupDate()),
+                                    transfer.pickupTime(),
+                                    route
+                            );
+        }
+        throw new IllegalArgumentException("Unsupported reminder notification: " + notification);
     }
 
     public String transferCustomer(

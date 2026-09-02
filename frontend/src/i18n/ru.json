@@ -217,7 +217,25 @@
     "reportExpired": "Фотоотчёт больше не хранится.",
     "reportRetention": "Фотографии хранятся в Loco Place в течение {{count}} дней после завершения уборки.",
     "reportPhotoAlt": "Фото выполненной уборки {{index}}",
-    "reportClose": "Закрыть фотографию"
+    "reportClose": "Закрыть фотографию",
+    "reminder": {
+      "title": "Напомнить о следующей уборке",
+      "subtitle": "Выберите срок один раз — мы сохраним напоминание в Loco и продублируем его в Telegram, если он подключён.",
+      "options": {
+        "IN_14_DAYS": "Через 2 недели",
+        "IN_30_DAYS": "Через 1 месяц",
+        "DO_NOT_REMIND": "Не напоминать"
+      },
+      "notConfigured": "Выберите удобный срок.",
+      "scheduled": "Напомним {{date}}.",
+      "status": {
+        "DISABLED": "Напоминание отключено.",
+        "NOTIFIED": "Напоминание уже отправлено.",
+        "SUPERSEDED": "Напоминание больше не нужно: появилась новая уборка по этому адресу.",
+        "EXPIRED": "Срок напоминания истёк."
+      },
+      "error": "Не удалось загрузить или сохранить настройку."
+    }
   },
   "created": {
     "eyebrow": "Заказ отправлен",
@@ -511,6 +529,21 @@
       "startRate": "Конверсия в начало",
       "completionRate": "Завершено из созданных",
       "medianTime": "Медиана до создания"
+    },
+    "reminders": {
+      "title": "Smart Reminders",
+      "subtitle": "Результат напоминаний, доставленных во входящие Loco за выбранный период.",
+      "notified": "Создано уведомлений",
+      "created": "Создано целевых задач",
+      "completed": "Завершено целевых задач",
+      "creationRate": "Создано из уведомлений",
+      "completionRate": "Завершено из созданных",
+      "operationalCompletionRate": "Завершено после уведомления",
+      "type": {
+        "CLEANING_REPEAT": "Повтор уборки",
+        "RENTAL_CHECKOUT_TRANSFER": "Rental → Transfer на выезд",
+        "TRANSFER_UPCOMING": "Предстоящий трансфер"
+      }
     },
     "averageChecks": {
       "title": "Средний чек",
@@ -1137,7 +1170,10 @@
       "TRANSFER_ADMIN_REQUESTED": "Новая заявка на трансфер",
       "SUPPORT_CASE_CREATED": "Новое обращение в поддержку",
       "REFERRAL_UNLOCKED": "Вам доступен реферальный код",
-      "RENTAL_CLEANING_BENEFIT_AVAILABLE": "Доступна скидка на уборку перед выездом"
+      "RENTAL_CLEANING_BENEFIT_AVAILABLE": "Доступна скидка на уборку перед выездом",
+      "CLEANING_REPEAT_REMINDER": "Пора повторить уборку",
+      "RENTAL_CHECKOUT_TRANSFER_REMINDER": "Можно оформить трансфер к выезду",
+      "TRANSFER_UPCOMING_REMINDER": "Скоро ваш трансфер"
     }
   },
   "support": {

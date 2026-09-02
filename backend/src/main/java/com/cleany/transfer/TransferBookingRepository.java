@@ -29,6 +29,14 @@ public interface TransferBookingRepository extends JpaRepository<TransferBooking
     @EntityGraph(attributePaths = {"airport", "vehicleType", "driver"})
     Optional<TransferBooking> findByIdAndCustomerId(long id, long customerId);
 
+    @EntityGraph(attributePaths = {"airport", "vehicleType", "driver"})
+    List<TransferBooking> findAllByStatusAndPickupDateBetweenOrderByPickupDateAscPickupTimeAscIdAsc(
+            TransferBookingStatus status,
+            LocalDate from,
+            LocalDate to,
+            org.springframework.data.domain.Pageable pageable
+    );
+
     boolean existsByCustomerIdAndSourceRentalBookingIdAndRentalContextAndStatusIn(
             long customerId,
             long sourceRentalBookingId,

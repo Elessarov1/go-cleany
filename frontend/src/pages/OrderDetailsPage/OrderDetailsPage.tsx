@@ -6,7 +6,11 @@ import { usePlatformCatalogApi } from "../../api/PlatformCatalogApiProvider";
 import { Icon } from "../../components/Icon/Icon";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import { OrderStatus } from "../../components/OrderStatus/OrderStatus";
-import type { CleaningOrder } from "../../domain/order";
+import type {
+  CleaningOrder,
+  CleaningRepeatReminder,
+  CleaningRepeatReminderSelection,
+} from "../../domain/order";
 import { formatPrice } from "../../domain/pricing";
 import { formatDate } from "../../utils/format";
 import { BrandName } from "../../components/BrandName/BrandName";
@@ -27,6 +31,10 @@ export function OrderDetailsPage() {
   const [reportPhotos, setReportPhotos] = useState<Array<{ id: number; url: string }>>([]);
   const [activePhoto, setActivePhoto] = useState<string | null>(null);
   const [repeatAvailable, setRepeatAvailable] = useState(false);
+  const [repeatReminder, setRepeatReminder] = useState<CleaningRepeatReminder | null>(null);
+  const [repeatReminderError, setRepeatReminderError] = useState(false);
+  const [savingReminder, setSavingReminder] = useState(false);
+  const [reminderReloadKey, setReminderReloadKey] = useState(0);
   const locale = i18n.resolvedLanguage === "ru" ? "ru-RU" : "en-GB";
 
   useEffect(() => {
@@ -79,6 +87,33 @@ export function OrderDetailsPage() {
       .catch(() => undefined);
     return () => { active = false; };
   }, [api, catalogApi, order]);
+
+  useEffect(() => {
+    let active = true;
+    setRepeatReminder(null);
+    setRepeatReminderError(false);
+    if (order?.status !== "COMPLETED") return () => { active = false; };
+    api.getRepeatReminder(order.id)
+      .then((value) => {
+        if (active) setRepeatReminder(value);
+      })
+      .catch(() => {
+        if (active) setRepeatReminderError(true);
+      });
+    return () => { active = false; };
+  }, [api, order, reminderReloadKey]);
+
+  const updateReminder = async (selection: CleaningRepeatReminderSelection) => {
+    try {
+      setSavingReminder(true);
+      setRepeatReminderError(false);
+      setRepeatReminder(await api.updateRepeatReminder(orderId, selection));
+    } catch {
+      setRepeatReminderError(true);
+    } finally {
+      setSavingReminder(false);
+    }
+  };
 
   const cancelOrder = async () => {
     if (!window.confirm(t("details.cancelConfirm"))) return;
@@ -208,6 +243,53 @@ export function OrderDetailsPage() {
       <TransactionCarePanel service="CLEANING" sourceEntityId={order.id} />
 
       {cancelError ? <p className="form-alert" role="alert">{t("details.cancelError")}</p> : null}
+      {order.status === "COMPLETED" ? (
+        <section className="repeat-reminder-card" aria-labelledby="repeat-reminder-title">
+          <div className="repeat-reminder-card__heading">
+            <span><Icon name="bell" size={18} /></span>
+            <div>
+              <h2 id="repeat-reminder-title">{t("details.reminder.title")}</h2>
+              <p>{t("details.reminder.subtitle")}</p>
+            </div>
+          </div>
+          {repeatReminderError ? (
+            <div className="repeat-reminder-card__error" role="alert">
+              <span>{t("details.reminder.error")}</span>
+              <button type="button" onClick={() => setReminderReloadKey((value) => value + 1)}>
+                {t("common.retry")}
+              </button>
+            </div>
+          ) : repeatReminder ? (
+            <>
+              <div className="repeat-reminder-card__choices">
+                {(["IN_14_DAYS", "IN_30_DAYS", "DO_NOT_REMIND"] as const).map((selection) => (
+                  <button
+                    type="button"
+                    key={selection}
+                    className={repeatReminder.selection === selection ? "is-selected" : undefined}
+                    aria-pressed={repeatReminder.selection === selection}
+                    disabled={!repeatReminder.editable || savingReminder}
+                    onClick={() => void updateReminder(selection)}
+                  >
+                    {t(`details.reminder.options.${selection}`)}
+                  </button>
+                ))}
+              </div>
+              <p className="repeat-reminder-card__state">
+                {repeatReminder.status === "PENDING" && repeatReminder.scheduledDate
+                  ? t("details.reminder.scheduled", {
+                    date: formatDate(repeatReminder.scheduledDate, locale),
+                  })
+                  : repeatReminder.status
+                    ? t(`details.reminder.status.${repeatReminder.status}`)
+                    : t("details.reminder.notConfigured")}
+              </p>
+            </>
+          ) : (
+            <p className="repeat-reminder-card__state">{t("common.loading")}</p>
+          )}
+        </section>
+      ) : null}
       {repeatAvailable ? (
         <Link className="button button--primary button--full" to={`/cleaning?repeatFrom=${order.id}`}>
           {t("details.repeat")}

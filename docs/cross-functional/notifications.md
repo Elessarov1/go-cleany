@@ -3,7 +3,7 @@ title: Loco Notifications
 type: cross-functional
 status: active
 scope: platform
-updated: 2026-08-30
+updated: 2026-09-02
 ---
 
 # Notifications
@@ -44,15 +44,19 @@ Transfer self-accept is an example: callback identity is resolved from verified 
 
 ## Smart reminders
 
-Future reminders should be contextual and deduplicated:
+Implemented reminders are contextual and deduplicated:
 
 ```text
 repeat cleaning when due
 return transfer when checkout approaches
-upcoming booking reminder
+confirmed Transfer approaching its pickup
 ```
 
-Do not send a reminder when an equivalent future transaction already exists.
+`customer_reminder` owns scheduling and lifecycle (`PENDING`, `NOTIFIED`, `DISABLED`, `SUPERSEDED`, `EXPIRED`); `customer_notification` remains the durable customer-facing fact. The scheduler writes the inbox first and treats external Telegram delivery as best-effort, so channel failure cannot erase the reminder.
+
+Action reminders obey current `ENABLED`/`IN_TEST`/`DISABLED` customer-flow rules. An operational reminder for an already confirmed Transfer ignores current catalog availability. Deep links never authorize access and are revalidated by their vertical backend.
+
+Do not send a reminder when an equivalent future transaction already exists. Cleaning address comparison and Rental → Transfer matching share the same NFKC/trim/case-fold/whitespace normalization.
 
 Add preferences/rate controls as reminder volume grows.
 

@@ -3,7 +3,7 @@ title: Retention and Progressive Convenience
 type: cross-functional
 status: active
 scope: platform
-updated: 2026-08-31
+updated: 2026-09-02
 ---
 
 # Retention & Progressive Convenience
@@ -145,7 +145,19 @@ Bad reminder:
 We miss you — buy something.
 ```
 
-Start with deterministic scheduled evaluation over domain state + existing notifications.
+Smart Reminders v1 is implemented as deterministic scheduled evaluation over domain state and the existing notification pipeline. A single daily job runs at `09:00 Europe/Istanbul` by default:
+
+```text
+explicit Cleaning choice → repeat after 14 or 30 days
+confirmed Rental → checkout Transfer offer 3 days before checkout
+confirmed Transfer → operational reminder 1 day before pickup
+```
+
+Cleaning is opt-in per completed source order and can be switched between 14/30/off until it is notified, superseded or expired. A later non-cancelled Cleaning for the same customer, area and normalized address supersedes the need. Temporary Cleaning unavailability is retried for seven days.
+
+Rental reminders reuse the explicit checkout bridge and appear only while the checkout Transfer context is currently `BOOKABLE` with no matching active Transfer. Transfer operational reminders describe an already existing confirmed operation and therefore remain valid even when the Transfer service is unavailable for new requests.
+
+Every reminder becomes a durable semantic Loco inbox notification. Telegram is an optional secondary delivery when a linked identity allows writes. Notification and reminder uniqueness make repeated/concurrent evaluations idempotent.
 
 ### Explainable next-best actions
 

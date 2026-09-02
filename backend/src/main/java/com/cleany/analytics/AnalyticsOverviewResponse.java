@@ -10,6 +10,7 @@ public record AnalyticsOverviewResponse(
         List<AnalyticsTransitionMetric> transitions,
         AnalyticsRentalTransferMetrics rentalToTransfer,
         List<AnalyticsRepeatActionMetric> repeatActions,
+        List<AnalyticsReminderMetric> reminders,
         List<AverageCheckMetric> averageChecks,
         List<AcquisitionMetric> acquisition
 ) {

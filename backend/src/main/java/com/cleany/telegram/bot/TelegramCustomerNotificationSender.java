@@ -17,6 +17,7 @@ import com.cleany.notification.CustomerNotification;
 import com.cleany.notification.CustomerNotificationSender;
 import com.cleany.notification.ReferralUnlockedCustomerNotification;
 import com.cleany.order.CleaningOrderCustomerNotification;
+import com.cleany.reminder.ReminderCustomerNotification;
 import com.cleany.rental.RentalBookingCustomerNotification;
 import com.cleany.transfer.TransferAdminNewRequestNotification;
 import com.cleany.transfer.TransferBookingCustomerNotification;
@@ -82,6 +83,19 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
             sendMessage(
                     telegramUserId,
                     messageFactory.rentalCleaningBenefit(benefit, target.languageCode())
+            );
+            return;
+        }
+        if (notification instanceof ReminderCustomerNotification reminder) {
+            botClient.sendMessage(
+                    telegramUserId,
+                    messageFactory.reminder(reminder, target.languageCode()),
+                    TelegramBotClient.InlineKeyboard.ofRows(List.of(
+                            TelegramBotClient.InlineButton.url(
+                                    isEnglish(target.languageCode()) ? "Open" : "Открыть",
+                                    publicApplicationProperties.baseUrl() + reminder.targetPath()
+                            )
+                    ))
             );
             return;
         }

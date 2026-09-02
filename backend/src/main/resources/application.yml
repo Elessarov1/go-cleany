@@ -122,6 +122,15 @@ rental-cleaning-benefit:
   discount-rate: ${RENTAL_CLEANING_DISCOUNT_RATE:0.10}
   max-discount: ${RENTAL_CLEANING_MAX_DISCOUNT:2000}
 
+smart-reminders:
+  enabled: ${SMART_REMINDERS_ENABLED:true}
+  cron: "${SMART_REMINDERS_CRON:0 0 9 * * *}"
+  zone-id: ${SMART_REMINDERS_ZONE_ID:Europe/Istanbul}
+  batch-size: ${SMART_REMINDERS_BATCH_SIZE:100}
+  cleaning-grace-days: ${SMART_REMINDERS_CLEANING_GRACE_DAYS:7}
+  rental-transfer-days-before: ${SMART_REMINDERS_RENTAL_TRANSFER_DAYS_BEFORE:3}
+  transfer-days-before: ${SMART_REMINDERS_TRANSFER_DAYS_BEFORE:1}
+
 data-retention:
   enabled: ${DATA_CLEANUP_ENABLED:true}
   days: ${DATA_RETENTION_DAYS:7}

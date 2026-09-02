@@ -293,6 +293,37 @@ export function AdminAnalyticsPage() {
             )}
           </section>
 
+          <section className="admin-analytics__section" aria-labelledby="reminders-heading">
+            <SectionHeading
+              id="reminders-heading"
+              title={t("analytics.reminders.title")}
+              subtitle={t("analytics.reminders.subtitle")}
+            />
+            <div className="admin-analytics__repeat-grid admin-analytics__repeat-grid--reminders">
+              {overview.reminders.map((metric) => (
+                <article className="admin-analytics__repeat" key={metric.type}>
+                  <h3>{t(`analytics.reminders.type.${metric.type}`)}</h3>
+                  <dl>
+                    <div><dt>{t("analytics.reminders.notified")}</dt><dd>{number.format(metric.notificationsCreated)}</dd></div>
+                    {metric.targetTasksCreated !== null ? (
+                      <div><dt>{t("analytics.reminders.created")}</dt><dd>{number.format(metric.targetTasksCreated)}</dd></div>
+                    ) : null}
+                    <div><dt>{t("analytics.reminders.completed")}</dt><dd>{number.format(metric.targetTasksCompleted)}</dd></div>
+                    {metric.targetTasksCreated !== null ? (
+                      <div><dt>{t("analytics.reminders.creationRate")}</dt><dd>{formatRate(metric.creationRate, percent, t("analytics.insufficientData"))}</dd></div>
+                    ) : null}
+                    <div>
+                      <dt>{t(metric.targetTasksCreated === null
+                        ? "analytics.reminders.operationalCompletionRate"
+                        : "analytics.reminders.completionRate")}</dt>
+                      <dd>{formatRate(metric.completionRate, percent, t("analytics.insufficientData"))}</dd>
+                    </div>
+                  </dl>
+                </article>
+              ))}
+            </div>
+          </section>
+
           <section className="admin-analytics__section" aria-labelledby="average-checks-heading">
             <SectionHeading
               id="average-checks-heading"

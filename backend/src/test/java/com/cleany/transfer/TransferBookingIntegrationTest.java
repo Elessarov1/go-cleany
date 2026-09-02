@@ -24,6 +24,11 @@ import com.cleany.customer.CustomerAccountService;
 import com.cleany.customer.CustomerExternalIdentityRepository;
 import com.cleany.customer.ExternalIdentityProvider;
 import com.cleany.repeat.RepeatSourceNotEligibleException;
+import com.cleany.reminder.CustomerReminderRepository;
+import com.cleany.reminder.CustomerReminderStatus;
+import com.cleany.reminder.CustomerReminderType;
+import com.cleany.reminder.SmartReminderProcessingResult;
+import com.cleany.reminder.SmartReminderService;
 
 class TransferBookingIntegrationTest extends BaseIntegrationTest {
 
@@ -69,12 +74,17 @@ class TransferBookingIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private Clock clock;
 
+    @Autowired private SmartReminderService smartReminderService;
+    @Autowired private CustomerReminderRepository reminderRepository;
+
     @MockitoBean
     private AdminAccessService adminAccessService;
 
     @BeforeEach
     @AfterEach
     void cleanDatabase() {
+        jdbcTemplate.update("delete from customer_notification");
+        reminderRepository.deleteAll();
         bookingRepository.deleteAll();
         driverRepository.deleteAll();
         priceRepository.deleteAll();
@@ -111,6 +121,55 @@ class TransferBookingIntegrationTest extends BaseIntegrationTest {
                 """);
         clearPlatformServiceStateCache();
         Mockito.when(adminAccessService.requireCurrentAdmin()).thenReturn(900001L);
+    }
+
+    @Test
+    void confirmedUpcomingTransfer_isRemindedEvenWhenNewTransferFlowIsDisabled() {
+        CurrentCustomer customer = customer("transfer-upcoming-reminder");
+        TransferAirport airport = airport("GZP");
+        TransferVehicleType vehicle = vehicle("SEDAN");
+        priceRepository.saveAndFlush(new TransferPrice(
+                airport,
+                vehicle,
+                TransferDirection.TO_AIRPORT,
+                new BigDecimal("1800.00"),
+                "TRY",
+                true,
+                clock.instant()
+        ));
+        TransferBookingResponse booking = bookingService.create(
+                customer,
+                request(airport, vehicle, TransferDirection.TO_AIRPORT, null, null)
+        );
+        TransferDriver driver = driverRepository.saveAndFlush(new TransferDriver(
+                "Reminder driver",
+                "+905551117777",
+                true,
+                null,
+                clock.instant()
+        ));
+        adminTransferService.assign(booking.id(), driver.getId());
+        jdbcTemplate.update(
+                "update platform_service_state set status = 'DISABLED', version = version + 1 where service = 'TRANSFER'"
+        );
+        clearPlatformServiceStateCache();
+
+        SmartReminderProcessingResult first = smartReminderService.process();
+        SmartReminderProcessingResult repeated = smartReminderService.process();
+        var reminder = reminderRepository.findAll().getFirst();
+        long notificationCount = jdbcTemplate.queryForObject(
+                "select count(*) from customer_notification where customer_id = ? and type = 'TRANSFER_UPCOMING_REMINDER'",
+                Long.class,
+                customer.customerId()
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(1, first.notified()),
+                () -> Assertions.assertEquals(0, repeated.notified()),
+                () -> Assertions.assertEquals(CustomerReminderType.TRANSFER_UPCOMING, reminder.getType()),
+                () -> Assertions.assertEquals(CustomerReminderStatus.NOTIFIED, reminder.getStatus()),
+                () -> Assertions.assertEquals(1, notificationCount)
+        );
     }
 
     @Test

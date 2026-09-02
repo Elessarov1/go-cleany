@@ -215,7 +215,25 @@
     "reportExpired": "The photo report is no longer retained.",
     "reportRetention": "Photos are stored in Loco Place for {{count}} days after cleaning completion.",
     "reportPhotoAlt": "Completed cleaning photo {{index}}",
-    "reportClose": "Close photo"
+    "reportClose": "Close photo",
+    "reminder": {
+      "title": "Remind me about the next cleaning",
+      "subtitle": "Choose once and Loco will keep the reminder in your inbox and also send it to Telegram when connected.",
+      "options": {
+        "IN_14_DAYS": "In 2 weeks",
+        "IN_30_DAYS": "In 1 month",
+        "DO_NOT_REMIND": "Do not remind"
+      },
+      "notConfigured": "Choose a convenient time.",
+      "scheduled": "We will remind you on {{date}}.",
+      "status": {
+        "DISABLED": "The reminder is off.",
+        "NOTIFIED": "The reminder has already been sent.",
+        "SUPERSEDED": "The reminder is no longer needed because a new cleaning exists for this address.",
+        "EXPIRED": "The reminder window has expired."
+      },
+      "error": "The reminder setting could not be loaded or saved."
+    }
   },
   "created": {
     "eyebrow": "Order sent",
@@ -509,6 +527,21 @@
       "startRate": "Start conversion",
       "completionRate": "Completed from created",
       "medianTime": "Median time to creation"
+    },
+    "reminders": {
+      "title": "Smart Reminders",
+      "subtitle": "Outcomes of reminders delivered to the Loco inbox in the selected period.",
+      "notified": "Notifications created",
+      "created": "Target tasks created",
+      "completed": "Target tasks completed",
+      "creationRate": "Created from notified",
+      "completionRate": "Completed from created",
+      "operationalCompletionRate": "Completed after reminder",
+      "type": {
+        "CLEANING_REPEAT": "Repeat cleaning",
+        "RENTAL_CHECKOUT_TRANSFER": "Rental → checkout transfer",
+        "TRANSFER_UPCOMING": "Upcoming transfer"
+      }
     },
     "averageChecks": {
       "title": "Average check",
@@ -1129,7 +1162,10 @@
       "TRANSFER_ADMIN_REQUESTED": "New transfer request",
       "SUPPORT_CASE_CREATED": "New support case",
       "REFERRAL_UNLOCKED": "Your referral code is available",
-      "RENTAL_CLEANING_BENEFIT_AVAILABLE": "Your pre-checkout cleaning discount is available"
+      "RENTAL_CLEANING_BENEFIT_AVAILABLE": "Your pre-checkout cleaning discount is available",
+      "CLEANING_REPEAT_REMINDER": "Time to repeat your cleaning",
+      "RENTAL_CHECKOUT_TRANSFER_REMINDER": "You can arrange a checkout transfer",
+      "TRANSFER_UPCOMING_REMINDER": "Your transfer is coming up"
     }
   },
   "support": {
