@@ -20,8 +20,9 @@ export const options = shortOr({
 
 export default function () {
   const property = manifest.rentalProperties[__ITER % manifest.rentalProperties.length];
+  const imageUrls = property.imageBurstUrls || property.mediaUrls;
   const responses = http.batch(
-    property.mediaUrls.map((path) => ({
+    imageUrls.map((path) => ({
       method: 'GET',
       url: `${BASE_URL}${path}`,
       params: { tags: { endpoint: 'rental-image' } },

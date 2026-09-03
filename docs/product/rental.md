@@ -3,7 +3,7 @@ title: Loco Rental
 type: vertical-context
 status: active
 scope: rental
-updated: 2026-08-31
+updated: 2026-09-04
 ---
 
 # Loco Rental
@@ -31,6 +31,10 @@ Do not merge RentalBooking with CleaningOrder or TransferBooking.
 Rental has dated occupancy/availability semantics. Pricing and stay rules are backend-authoritative; bookings preserve immutable price snapshots.
 
 Admin owns property publication, occupancies and operational booking management.
+
+## Property media delivery
+
+Rental keeps platform-owned full, card and thumbnail image variants. Upload normalization decodes the source once and creates the three representations; cards use the card URL and galleries use thumbnails until the full asset is opened. Public media responses are immutable because each asset has a stable content identity, while admin reads remain non-cacheable. Public property lists load cover media only instead of hydrating every gallery.
 
 ## Strategic role
 

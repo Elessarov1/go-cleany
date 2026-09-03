@@ -1,8 +1,8 @@
 package com.cleany.rental;
 
 import java.time.Clock;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -11,7 +11,7 @@ import org.mockito.Mockito;
 class RentalPropertyServiceTest {
 
     @Test
-    void propertyLists_loadAllMediaInOneBatch() {
+    void publicPropertyList_loadsOnlyCoverMediaInOneBatch() {
         RentalPropertyRepository propertyRepository = Mockito.mock(RentalPropertyRepository.class);
         RentalPropertyMediaRepository mediaRepository = Mockito.mock(
                 RentalPropertyMediaRepository.class
@@ -24,7 +24,7 @@ class RentalPropertyServiceTest {
                 RentalPropertyStatus.PUBLISHED
         )).thenReturn(List.of(first, second));
         Mockito.when(mediaRepository
-                .findAllByProperty_IdInOrderByProperty_IdAscSortOrderAscIdAsc(List.of(2L, 1L)))
+                .findAllByProperty_IdInAndCoverTrueOrderByProperty_IdAscIdAsc(List.of(2L, 1L)))
                 .thenReturn(List.of(secondMedia, firstMedia));
         RentalPropertyService service = new RentalPropertyService(
                 propertyRepository,
@@ -46,7 +46,9 @@ class RentalPropertyServiceTest {
                 () -> Assertions.assertEquals(11L, result.get(1).media().getFirst().id())
         );
         Mockito.verify(mediaRepository)
-                .findAllByProperty_IdInOrderByProperty_IdAscSortOrderAscIdAsc(List.of(2L, 1L));
+                .findAllByProperty_IdInAndCoverTrueOrderByProperty_IdAscIdAsc(List.of(2L, 1L));
+        Mockito.verify(mediaRepository, Mockito.never())
+                .findAllByProperty_IdInOrderByProperty_IdAscSortOrderAscIdAsc(Mockito.anyList());
         Mockito.verify(mediaRepository, Mockito.never())
                 .findAllByProperty_IdOrderBySortOrderAscIdAsc(Mockito.anyLong());
     }
@@ -55,7 +57,7 @@ class RentalPropertyServiceTest {
         RentalProperty property = Mockito.mock(RentalProperty.class);
         Mockito.when(property.getId()).thenReturn(id);
         Mockito.when(property.getStatus()).thenReturn(RentalPropertyStatus.PUBLISHED);
-        Mockito.when(property.getAmenities()).thenReturn(Set.of());
+        Mockito.when(property.getAmenities()).thenReturn(Collections.emptySet());
         return property;
     }
 

@@ -5,7 +5,9 @@ public record RentalPropertyMediaResponse(
         long mediaAssetId,
         int sortOrder,
         boolean cover,
-        String url
+        String url,
+        String cardUrl,
+        String thumbnailUrl
 ) {
 
     static RentalPropertyMediaResponse from(RentalPropertyMedia media, String url) {
@@ -14,7 +16,9 @@ public record RentalPropertyMediaResponse(
                 media.getMediaAssetId(),
                 media.getSortOrder(),
                 media.isCover(),
-                url
+                url,
+                url + "/card",
+                url + "/thumbnail"
         );
     }
 }

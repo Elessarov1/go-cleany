@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.cleany.customer.CustomerExternalIdentity;
 import com.cleany.customer.CustomerExternalIdentityRepository;
@@ -88,6 +89,32 @@ class CustomerNotificationDispatcherTest {
         Assertions.assertFalse(delivered);
         Mockito.verifyNoInteractions(repository);
         Mockito.verify(sender, Mockito.never()).send(Mockito.any(), Mockito.any());
+    }
+
+    @Test
+    void sendAfterCommit_defersExternalDeliveryUntilDatabaseCommit() {
+        var repository = Mockito.mock(CustomerExternalIdentityRepository.class);
+        var recorder = Mockito.mock(CustomerNotificationRecorder.class);
+        var sender = Mockito.mock(CustomerNotificationSender.class);
+        var identity = telegramIdentity(true);
+        var notification = new ReferralUnlockedCustomerNotification("ALEX7K2");
+        Mockito.when(recorder.record(77L, notification)).thenReturn(true);
+        Mockito.when(sender.provider()).thenReturn(ExternalIdentityProvider.TELEGRAM);
+        Mockito.when(repository.findByIdAndCustomerId(88L, 77L)).thenReturn(Optional.of(identity));
+        Mockito.when(repository.findAllByCustomerIdOrderByProvider(77L)).thenReturn(List.of(identity));
+        var dispatcher = new CustomerNotificationDispatcher(repository, recorder, List.of(sender));
+
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            Assertions.assertTrue(dispatcher.sendAfterCommit(77L, 88L, notification));
+            Mockito.verify(sender, Mockito.never()).send(Mockito.any(), Mockito.any());
+
+            TransactionSynchronizationManager.getSynchronizations().getFirst().afterCommit();
+
+            Mockito.verify(sender).send(Mockito.any(CommunicationTarget.class), Mockito.eq(notification));
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
     }
 
     @Test

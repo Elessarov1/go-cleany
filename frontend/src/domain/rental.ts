@@ -29,6 +29,8 @@ export interface RentalPropertyMedia {
   sortOrder: number;
   cover: boolean;
   url: string;
+  cardUrl?: string;
+  thumbnailUrl?: string;
 }
 
 export interface RentalProperty {

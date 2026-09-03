@@ -147,6 +147,27 @@ public class AdminRentalPropertyController {
                 .body(content);
     }
 
+    @GetMapping("/{propertyId}/media/{mediaId}/{variant:card|thumbnail}")
+    public ResponseEntity<byte[]> getMediaVariant(
+            @PathVariable long propertyId,
+            @PathVariable long mediaId,
+            @PathVariable String variant
+    ) {
+        accessService.requireCurrentAdmin();
+        RentalMediaContent media = mediaService.getAdminContent(
+                propertyId,
+                mediaId,
+                variant.equals("card") ? RentalMediaVariant.CARD : RentalMediaVariant.THUMBNAIL
+        );
+        byte[] content = media.content();
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(media.contentType()))
+                .contentLength(content.length)
+                .cacheControl(CacheControl.noStore())
+                .header("X-Content-Type-Options", "nosniff")
+                .body(content);
+    }
+
     @GetMapping("/{propertyId}/occupancies")
     public List<RentalOccupancyResponse> getOccupancies(
             @PathVariable long propertyId,

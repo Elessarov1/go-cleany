@@ -271,40 +271,53 @@ final class PerformanceDatasetSeeder {
 
         var manifests = new ArrayList<PropertyManifest>(counts.rentalProperties());
         long mediaId = 1;
+        long mediaAssetId = 1;
         for (long propertyId = 1; propertyId <= counts.rentalProperties(); propertyId++) {
             var mediaUrls = new ArrayList<String>(Counts.IMAGES_PER_PROPERTY);
+            var cardUrls = new ArrayList<String>(Counts.IMAGES_PER_PROPERTY);
+            var thumbnailUrls = new ArrayList<String>(Counts.IMAGES_PER_PROPERTY);
             for (int imageIndex = 0; imageIndex < Counts.IMAGES_PER_PROPERTY; imageIndex++) {
-                byte[] content = imageBytes(seed, propertyId, imageIndex, localImages);
-                jdbcTemplate.update("""
-                        insert into media_asset (
-                            id, content, content_type, size_bytes, sha256, created_at
-                        ) values (?, ?, 'image/jpeg', ?, ?, ?::date::timestamptz)
-                        """,
-                        mediaId,
-                        content,
-                        content.length,
-                        sha256(content),
-                        anchorDate.toString()
-                );
+                BufferedImage image = performanceImage(seed, propertyId, imageIndex, localImages);
+                byte[] full = encodeJpeg(image, 0.72f + (imageIndex % 4) * 0.06f);
+                byte[] card = encodeJpeg(resizedToLongSide(image, 960), 0.78f);
+                byte[] thumbnail = encodeJpeg(resizedToLongSide(image, 320), 0.72f);
+                long fullAssetId = mediaAssetId++;
+                long cardAssetId = mediaAssetId++;
+                long thumbnailAssetId = mediaAssetId++;
+                insertMediaAsset(fullAssetId, full, anchorDate);
+                insertMediaAsset(cardAssetId, card, anchorDate);
+                insertMediaAsset(thumbnailAssetId, thumbnail, anchorDate);
                 jdbcTemplate.update("""
                         insert into rental_property_media (
-                            id, property_id, media_asset_id, sort_order, is_cover, created_at
-                        ) values (?, ?, ?, ?, ?, ?::date::timestamptz)
+                            id, property_id, media_asset_id, card_media_asset_id,
+                            thumbnail_media_asset_id, sort_order, is_cover, created_at
+                        ) values (?, ?, ?, ?, ?, ?, ?, ?::date::timestamptz)
                         """,
                         mediaId,
                         propertyId,
-                        mediaId,
+                        fullAssetId,
+                        cardAssetId,
+                        thumbnailAssetId,
                         imageIndex,
                         imageIndex == 0,
                         anchorDate.toString()
                 );
-                mediaUrls.add("/api/v1/rental/properties/" + propertyId + "/media/" + mediaId);
+                String mediaUrl = "/api/v1/rental/properties/" + propertyId + "/media/" + mediaId;
+                mediaUrls.add(mediaUrl);
+                cardUrls.add(mediaUrl + "/card");
+                thumbnailUrls.add(mediaUrl + "/thumbnail");
                 mediaId++;
             }
+            var imageBurstUrls = new ArrayList<String>(Counts.IMAGES_PER_PROPERTY + 1);
+            imageBurstUrls.add(mediaUrls.getFirst());
+            imageBurstUrls.addAll(thumbnailUrls);
             manifests.add(new PropertyManifest(
                     propertyId,
                     "performance-apartment-" + propertyId,
-                    mediaUrls
+                    mediaUrls,
+                    cardUrls,
+                    thumbnailUrls,
+                    imageBurstUrls
             ));
         }
 
@@ -625,7 +638,21 @@ final class PerformanceDatasetSeeder {
         }
     }
 
-    private byte[] imageBytes(
+    private void insertMediaAsset(long mediaAssetId, byte[] content, LocalDate anchorDate) {
+        jdbcTemplate.update("""
+                insert into media_asset (
+                    id, content, content_type, size_bytes, sha256, created_at
+                ) values (?, ?, 'image/jpeg', ?, ?, ?::date::timestamptz)
+                """,
+                mediaAssetId,
+                content,
+                content.length,
+                sha256(content),
+                anchorDate.toString()
+        );
+    }
+
+    private BufferedImage performanceImage(
             long seed,
             long propertyId,
             int imageIndex,
@@ -638,7 +665,7 @@ final class PerformanceDatasetSeeder {
             int sourceIndex = Math.floorMod((int) (propertyId * 7 + imageIndex), localImages.size());
             image = resized(localImages.get(sourceIndex));
         }
-        return encodeJpeg(image, 0.72f + (imageIndex % 4) * 0.06f);
+        return image;
     }
 
     private static BufferedImage generatedImage(long seed, int variant) {
@@ -695,6 +722,25 @@ final class PerformanceDatasetSeeder {
                 1.0,
                 Math.min((double) IMAGE_WIDTH / source.getWidth(), (double) IMAGE_HEIGHT / source.getHeight())
         );
+        int width = Math.max(1, (int) Math.round(source.getWidth() * scale));
+        int height = Math.max(1, (int) Math.round(source.getHeight() * scale));
+        var target = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        Graphics2D graphics = target.createGraphics();
+        try {
+            graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            graphics.drawImage(source, 0, 0, width, height, null);
+        } finally {
+            graphics.dispose();
+        }
+        return target;
+    }
+
+    private static BufferedImage resizedToLongSide(BufferedImage source, int maxLongSide) {
+        int sourceLongSide = Math.max(source.getWidth(), source.getHeight());
+        if (sourceLongSide <= maxLongSide) {
+            return source;
+        }
+        double scale = (double) maxLongSide / sourceLongSide;
         int width = Math.max(1, (int) Math.round(source.getWidth() * scale));
         int height = Math.max(1, (int) Math.round(source.getHeight() * scale));
         var target = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -814,7 +860,14 @@ final class PerformanceDatasetSeeder {
     private record SeedResult(List<PropertyManifest> properties) {
     }
 
-    private record PropertyManifest(long id, String slug, List<String> mediaUrls) {
+    private record PropertyManifest(
+            long id,
+            String slug,
+            List<String> mediaUrls,
+            List<String> cardUrls,
+            List<String> thumbnailUrls,
+            List<String> imageBurstUrls
+    ) {
     }
 
     private record TransferConfiguration(

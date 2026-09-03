@@ -6,6 +6,7 @@ param(
     [long]$Seed = 42,
     [switch]$Reset,
     [switch]$SkipSeed,
+    [switch]$ReuseStack,
     [switch]$Validation,
     [string]$BaseUrl = 'http://frontend',
     [string]$ApiBaseUrl = 'http://backend:8080'
@@ -41,12 +42,18 @@ Assert-LocalTarget 'BaseUrl' $BaseUrl
 Assert-LocalTarget 'ApiBaseUrl' $ApiBaseUrl
 New-Item -ItemType Directory -Force -Path $resultsDirectory | Out-Null
 
+if ($Reset -and $ReuseStack) {
+    throw 'Reset and ReuseStack cannot be used together'
+}
+
 if ($Reset) {
     Write-Host 'Removing only the dedicated loco-perf containers and volume...'
     Invoke-Compose @('down', '--volumes', '--remove-orphans')
 }
 
-Invoke-Compose @('up', '--build', '-d', 'postgres', 'backend', 'frontend')
+if (-not $ReuseStack) {
+    Invoke-Compose @('up', '--build', '-d', 'postgres', 'backend', 'frontend')
+}
 
 $healthUrl = "http://127.0.0.1:$backendPort/actuator/health"
 $healthy = $false

@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 public class LocalSecurityConfiguration {
 
     private final TmaAuthorizationRequestMatcher tmaRequestMatcher;
+    private final CurrentCustomerResolutionFilter currentCustomerResolutionFilter;
 
     @Bean
     SecurityFilterChain localSecurity(HttpSecurity http) throws Exception {
@@ -28,6 +30,10 @@ public class LocalSecurityConfiguration {
                                         request.getRequestURI()
                                 )
                         )
+                )
+                .addFilterBefore(
+                        currentCustomerResolutionFilter,
+                        AnonymousAuthenticationFilter.class
                 )
                 .build();
     }

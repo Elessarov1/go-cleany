@@ -6,7 +6,6 @@ import java.util.Objects;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
@@ -18,7 +17,7 @@ public class CustomerNotificationRecorder {
     private final JdbcTemplate jdbcTemplate;
     private final Clock clock;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public boolean record(long customerId, CustomerNotification notification) {
         Objects.requireNonNull(notification, "notification");
         String targetPath = requireLocalPath(notification.targetPath());

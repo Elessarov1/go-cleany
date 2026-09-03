@@ -45,7 +45,7 @@ export interface RentalApi {
   removeAdminPropertyMedia(id: number, mediaId: number): Promise<RentalProperty>;
   setAdminPropertyMediaCover(id: number, mediaId: number): Promise<RentalProperty>;
   reorderAdminPropertyMedia(id: number, mediaIds: number[]): Promise<RentalProperty>;
-  getAdminPropertyMedia(id: number, mediaId: number): Promise<Blob>;
+  getAdminPropertyMedia(id: number, mediaId: number, variant?: "thumbnail"): Promise<Blob>;
   getAdminOccupancies(id: number, fromDate: string, toDate: string): Promise<RentalOccupancy[]>;
   createAdminOccupancy(id: number, request: UpsertRentalOccupancyRequest): Promise<RentalOccupancy>;
   updateAdminOccupancy(id: number, occupancyId: number, request: UpsertRentalOccupancyRequest): Promise<RentalOccupancy>;

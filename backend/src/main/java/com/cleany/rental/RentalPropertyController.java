@@ -20,6 +20,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class RentalPropertyController {
 
+    private static final Duration PUBLIC_MEDIA_CACHE_DURATION = Duration.ofDays(365);
+
     private final RentalPropertyService propertyService;
     private final RentalPropertyMediaService mediaService;
     private final RentalOccupancyService occupancyService;
@@ -59,7 +61,27 @@ public class RentalPropertyController {
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(media.contentType()))
                 .contentLength(content.length)
-                .cacheControl(CacheControl.maxAge(Duration.ofHours(1)).cachePublic())
+                .cacheControl(CacheControl.maxAge(PUBLIC_MEDIA_CACHE_DURATION).cachePublic().immutable())
+                .header("X-Content-Type-Options", "nosniff")
+                .body(content);
+    }
+
+    @GetMapping("/properties/{propertyId}/media/{mediaId}/{variant:card|thumbnail}")
+    public ResponseEntity<byte[]> getMediaVariant(
+            @PathVariable long propertyId,
+            @PathVariable long mediaId,
+            @PathVariable String variant
+    ) {
+        RentalMediaContent media = mediaService.getPublicContent(
+                propertyId,
+                mediaId,
+                variant.equals("card") ? RentalMediaVariant.CARD : RentalMediaVariant.THUMBNAIL
+        );
+        byte[] content = media.content();
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(media.contentType()))
+                .contentLength(content.length)
+                .cacheControl(CacheControl.maxAge(PUBLIC_MEDIA_CACHE_DURATION).cachePublic().immutable())
                 .header("X-Content-Type-Options", "nosniff")
                 .body(content);
     }

@@ -1,5 +1,6 @@
 package com.cleany.customer;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -15,6 +16,8 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "customer_external_identity")
 public class CustomerExternalIdentity {
+
+    private static final Duration LAST_SEEN_REFRESH_INTERVAL = Duration.ofMinutes(5);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -113,20 +116,36 @@ public class CustomerExternalIdentity {
             boolean emailVerified,
             Instant seenAt
     ) {
+        String requiredDisplayName = Objects.requireNonNull(displayName);
+        Instant requiredSeenAt = Objects.requireNonNull(seenAt);
+        boolean normalizedEmailVerified = email != null && emailVerified;
+        boolean profileChanged = !Objects.equals(this.username, username)
+                || !Objects.equals(this.displayName, requiredDisplayName)
+                || !Objects.equals(this.languageCode, languageCode)
+                || !Objects.equals(this.email, email)
+                || this.emailVerified != normalizedEmailVerified;
+        boolean lastSeenExpired = !requiredSeenAt.isBefore(
+                lastSeenAt.plus(LAST_SEEN_REFRESH_INTERVAL)
+        );
+        if (!profileChanged && !lastSeenExpired) {
+            return;
+        }
         this.username = username;
-        this.displayName = Objects.requireNonNull(displayName);
+        this.displayName = requiredDisplayName;
         this.languageCode = languageCode;
         this.email = email;
-        this.emailVerified = email != null && emailVerified;
-        this.lastSeenAt = Objects.requireNonNull(seenAt);
+        this.emailVerified = normalizedEmailVerified;
+        this.lastSeenAt = requiredSeenAt;
     }
 
     void allowWriteAccess(Instant updatedAt) {
         if (provider != ExternalIdentityProvider.TELEGRAM) {
             throw new IllegalStateException("Write access is only supported for Telegram identities");
         }
-        writeAccessAllowed = true;
-        writeAccessUpdatedAt = Objects.requireNonNull(updatedAt, "updatedAt");
+        if (!writeAccessAllowed) {
+            writeAccessAllowed = true;
+            writeAccessUpdatedAt = Objects.requireNonNull(updatedAt, "updatedAt");
+        }
     }
 
     public long getCustomerId() {

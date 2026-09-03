@@ -17,7 +17,7 @@ export function AdminRentalMediaImage({ propertyId, mediaId, alt, className }: A
     if (mediaId === undefined) return;
     let active = true;
     let objectUrl: string | null = null;
-    api.getAdminPropertyMedia(propertyId, mediaId)
+    api.getAdminPropertyMedia(propertyId, mediaId, "thumbnail")
       .then((blob) => {
         if (!active) return;
         objectUrl = URL.createObjectURL(blob);

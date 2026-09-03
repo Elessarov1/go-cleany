@@ -78,6 +78,9 @@ class RentalPropertyMediaIntegrationTest extends BaseIntegrationTest {
                         "image/jpeg",
                         mediaStorage.get(first.mediaAssetId()).contentType()
                 ),
+                () -> Assertions.assertEquals(6, mediaAssetRepository.count()),
+                () -> Assertions.assertTrue(first.cardUrl().endsWith("/card")),
+                () -> Assertions.assertTrue(first.thumbnailUrl().endsWith("/thumbnail")),
                 () -> Assertions.assertEquals(
                         64,
                         RentalTestImages.read(
@@ -130,7 +133,8 @@ class RentalPropertyMediaIntegrationTest extends BaseIntegrationTest {
         Assertions.assertAll(
                 () -> Assertions.assertEquals(1, afterCoverRemoval.media().size()),
                 () -> Assertions.assertTrue(afterCoverRemoval.media().getFirst().cover()),
-                () -> Assertions.assertFalse(mediaAssetRepository.existsById(second.mediaAssetId()))
+                () -> Assertions.assertFalse(mediaAssetRepository.existsById(second.mediaAssetId())),
+                () -> Assertions.assertEquals(3, mediaAssetRepository.count())
         );
         Assertions.assertThrows(
                 RentalPropertyCannotBePublishedException.class,

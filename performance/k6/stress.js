@@ -2,7 +2,7 @@ import http from 'k6/http';
 
 import { expectOk, loadManifest, localBaseUrl } from './lib/common.js';
 
-const BASE_URL = localBaseUrl('BASE_URL', 'http://frontend');
+const API_BASE_URL = localBaseUrl('API_BASE_URL', 'http://backend:8080');
 const manifest = loadManifest();
 
 export const options = __ENV.PERF_VALIDATION === 'true'
@@ -18,11 +18,12 @@ export const options = __ENV.PERF_VALIDATION === 'true'
       thresholds: {
         http_req_failed: ['rate<0.10'],
       },
+      summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)', 'p(99)'],
     };
 
 export default function () {
   const property = manifest.rentalProperties[__ITER % manifest.rentalProperties.length];
-  const response = http.get(`${BASE_URL}/api/v1/rental/properties/${property.slug}`, {
+  const response = http.get(`${API_BASE_URL}/api/v1/rental/properties/${property.slug}`, {
     tags: { endpoint: 'rental-detail-stress' },
   });
   expectOk(response, 'stress rental detail');

@@ -71,13 +71,16 @@ The seeder refuses to run unless the `performance` profile is active and `DB_URL
 ## Scenarios
 
 ```powershell
-.\performance\scripts\run-local.ps1 -Scenario rental-browse -SkipSeed
-.\performance\scripts\run-local.ps1 -Scenario image-burst -SkipSeed
-.\performance\scripts\run-local.ps1 -Scenario mixed-api -SkipSeed
-.\performance\scripts\run-local.ps1 -Scenario stress -SkipSeed
+.\performance\scripts\run-local.ps1 -Scenario rental-browse -SkipSeed -ReuseStack
+.\performance\scripts\run-local.ps1 -Scenario image-burst -SkipSeed -ReuseStack
+.\performance\scripts\run-local.ps1 -Scenario mixed-api -SkipSeed -ReuseStack
+.\performance\scripts\run-local.ps1 -Scenario stress -SkipSeed -ReuseStack
 ```
 
 Use `-Validation -Scenario all` for three short iterations of every scenario. Without `-Validation`, the scripts use their measurement durations and concurrency profiles. `stress.js` is the only progressive stress scenario.
+`-ReuseStack` (or `REUSE_STACK=true` for the shell runner) skips Compose build/recreation while
+still checking backend health. Use it for warm measurements after the initial reset so every run
+uses the same warmed JVM and connection pool. It cannot be combined with `-Reset`.
 
 Full k6 JSON summaries, CSV output, JFR files and the generated manifest belong in `performance/results/` and are ignored by Git.
 

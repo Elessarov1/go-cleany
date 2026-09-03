@@ -60,6 +60,8 @@ export function RentalGallery({ media, propertyTitle }: RentalGalleryProps) {
           <figure key={item.id} aria-label={t("rental.property.photoPosition", { current: index + 1, total: orderedMedia.length })}>
             <img
               src={item.url}
+              srcSet={item.cardUrl ? `${item.cardUrl} 960w, ${item.url} 1600w` : undefined}
+              sizes="(max-width: 720px) 100vw, 960px"
               alt={t("rental.property.photoAlt", { title: propertyTitle, index: index + 1 })}
               loading={index === 0 ? "eager" : "lazy"}
             />
@@ -110,7 +112,7 @@ export function RentalGallery({ media, propertyTitle }: RentalGalleryProps) {
                 aria-current={index === activeIndex ? "true" : undefined}
                 onClick={() => show(index)}
               >
-                <img src={item.url} alt="" loading="lazy" />
+                <img src={item.thumbnailUrl ?? item.url} alt="" loading="lazy" />
               </button>
             ))}
           </div>

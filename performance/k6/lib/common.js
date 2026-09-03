@@ -27,13 +27,19 @@ export function shortOr(defaultOptions) {
     return {
       vus: 1,
       iterations: 3,
+      summaryTrendStats: summaryTrendStats(),
       thresholds: defaultThresholds(),
     };
   }
   return {
     ...defaultOptions,
+    summaryTrendStats: defaultOptions.summaryTrendStats || summaryTrendStats(),
     thresholds: defaultOptions.thresholds || defaultThresholds(),
   };
+}
+
+function summaryTrendStats() {
+  return ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)', 'p(99)'];
 }
 
 export function defaultThresholds() {

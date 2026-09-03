@@ -22,6 +22,8 @@ class CustomerAccountServiceTest {
     private CustomerAccountRepository accountRepository;
     private CustomerExternalIdentityRepository identityRepository;
     private CustomerRoleBootstrapService roleBootstrapService;
+    private CurrentCustomerRequestCache requestCache;
+    private CustomerAccountResolutionService resolutionService;
     private PhoneNumberNormalizer phoneNumberNormalizer;
     private CustomerAccountService service;
 
@@ -31,14 +33,20 @@ class CustomerAccountServiceTest {
         accountRepository = Mockito.mock(CustomerAccountRepository.class);
         identityRepository = Mockito.mock(CustomerExternalIdentityRepository.class);
         roleBootstrapService = Mockito.mock(CustomerRoleBootstrapService.class);
+        requestCache = Mockito.mock(CurrentCustomerRequestCache.class);
         phoneNumberNormalizer = Mockito.mock(PhoneNumberNormalizer.class);
-        service = new CustomerAccountService(
-                identityProvider,
+        resolutionService = new CustomerAccountResolutionService(
                 accountRepository,
                 identityRepository,
                 roleBootstrapService,
-                phoneNumberNormalizer,
                 Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+        service = new CustomerAccountService(
+                identityProvider,
+                accountRepository,
+                resolutionService,
+                requestCache,
+                phoneNumberNormalizer
         );
     }
 
@@ -177,15 +185,26 @@ class CustomerAccountServiceTest {
                 "Alex",
                 "ru"
         );
-        CustomerAccountService spy = Mockito.spy(service);
+        CustomerAccountResolutionService mockedResolution = Mockito.mock(
+                CustomerAccountResolutionService.class
+        );
+        service = new CustomerAccountService(
+                identityProvider,
+                accountRepository,
+                mockedResolution,
+                requestCache,
+                phoneNumberNormalizer
+        );
+        Mockito.when(requestCache.current()).thenReturn(Optional.empty());
         Mockito.when(identityProvider.currentIdentity()).thenReturn(authenticatedIdentity);
-        Mockito.doReturn(expected).when(spy).resolveCustomer(authenticatedIdentity);
+        Mockito.when(mockedResolution.resolve(authenticatedIdentity)).thenReturn(expected);
 
-        CurrentCustomer customer = spy.currentCustomer();
+        CurrentCustomer customer = service.currentCustomer();
 
         Assertions.assertSame(expected, customer);
         Mockito.verify(identityProvider).currentIdentity();
-        Mockito.verify(spy).resolveCustomer(authenticatedIdentity);
+        Mockito.verify(mockedResolution).resolve(authenticatedIdentity);
+        Mockito.verify(requestCache).store(expected);
         Mockito.verifyNoInteractions(accountRepository, identityRepository);
     }
 

@@ -6,10 +6,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.cleany.customer.CustomerExternalIdentityRepository;
 import com.cleany.customer.ExternalIdentityProvider;
@@ -52,10 +55,47 @@ public class CustomerNotificationDispatcher {
             long communicationIdentityId,
             CustomerNotification notification
     ) {
+        return prepare(customerId, communicationIdentityId, notification)
+                .map(this::deliver)
+                .orElse(false);
+    }
+
+    public boolean sendAfterCommit(
+            long customerId,
+            long communicationIdentityId,
+            CustomerNotification notification
+    ) {
+        Optional<Delivery> prepared = prepare(
+                customerId,
+                communicationIdentityId,
+                notification
+        );
+        if (prepared.isEmpty()) {
+            return false;
+        }
+
+        Delivery delivery = prepared.orElseThrow();
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return deliver(delivery);
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                deliver(delivery);
+            }
+        });
+        return true;
+    }
+
+    private Optional<Delivery> prepare(
+            long customerId,
+            long communicationIdentityId,
+            CustomerNotification notification
+    ) {
         Objects.requireNonNull(notification, "notification");
         if (!recorder.record(customerId, notification)) {
             log.debug("Skipping duplicate notification {} for customer {}", notification.deduplicationKey(), customerId);
-            return false;
+            return Optional.empty();
         }
         var identity = identityRepository.findByIdAndCustomerId(communicationIdentityId, customerId)
                 .orElse(null);
@@ -63,36 +103,49 @@ public class CustomerNotificationDispatcher {
         if (identities == null || identities.isEmpty()) {
             identities = identity == null ? Collections.emptyList() : List.of(identity);
         }
-        boolean delivered = false;
-        var deliveredProviders = new HashSet<ExternalIdentityProvider>();
-        for (var candidate : identities) {
-            CustomerNotificationSender sender = senders.get(candidate.getProvider());
-            if (sender == null || !deliveredProviders.add(candidate.getProvider())) {
-                continue;
-            }
-            if (candidate.getProvider() == ExternalIdentityProvider.TELEGRAM
-                    && !candidate.isWriteAccessAllowed()) {
-                continue;
-            }
-            try {
-                sender.send(new CommunicationTarget(
+        var targets = identities.stream()
+                .filter(candidate -> senders.containsKey(candidate.getProvider()))
+                .filter(candidate -> candidate.getProvider() != ExternalIdentityProvider.TELEGRAM
+                        || candidate.isWriteAccessAllowed())
+                .map(candidate -> new CommunicationTarget(
                         candidate.getCustomerId(),
                         candidate.getId(),
                         candidate.getProvider(),
                         candidate.getExternalSubject(),
                         candidate.getLanguageCode()
-                ), notification);
+                ))
+                .toList();
+        return Optional.of(new Delivery(customerId, notification, targets));
+    }
+
+    private boolean deliver(Delivery delivery) {
+        boolean delivered = false;
+        var deliveredProviders = new HashSet<ExternalIdentityProvider>();
+        for (CommunicationTarget target : delivery.targets()) {
+            CustomerNotificationSender sender = senders.get(target.provider());
+            if (sender == null || !deliveredProviders.add(target.provider())) {
+                continue;
+            }
+            try {
+                sender.send(target, delivery.notification());
                 delivered = true;
             } catch (RuntimeException exception) {
                 log.warn(
                         "Customer notification {} was recorded but {} delivery failed for customer {}",
-                        notification.type(), candidate.getProvider(), customerId, exception
+                        delivery.notification().type(), target.provider(), delivery.customerId(), exception
                 );
             }
         }
         if (!delivered) {
-            log.debug("No enabled notification channel for customer {}", customerId);
+            log.debug("No enabled notification channel for customer {}", delivery.customerId());
         }
         return delivered;
+    }
+
+    private record Delivery(
+            long customerId,
+            CustomerNotification notification,
+            List<CommunicationTarget> targets
+    ) {
     }
 }

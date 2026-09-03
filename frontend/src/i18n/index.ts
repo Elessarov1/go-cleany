@@ -1,12 +1,17 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import en from "./en.json";
-import ru from "./ru.json";
 
 export const SUPPORTED_LANGUAGES = ["ru", "en"] as const;
 export type AppLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 const LANGUAGE_KEY = "cleany.language";
+
+type TranslationMessages = Record<string, unknown>;
+
+const localeLoaders: Record<AppLanguage, () => Promise<{ default: TranslationMessages }>> = {
+  en: () => import("./en.json"),
+  ru: () => import("./ru.json"),
+};
 
 const themeTranslations = {
   en: {
@@ -157,41 +162,50 @@ function resolveLanguage(platformLanguage: string | null): AppLanguage {
   return platformLanguage?.toLowerCase().startsWith("ru") ? "ru" : "en";
 }
 
+async function loadTranslation(language: AppLanguage): Promise<TranslationMessages> {
+  const { default: messages } = await localeLoaders[language]();
+  const legalTitles = language === "ru"
+    ? {
+        privacy: "Конфиденциальность · Loco Place",
+        terms: "Условия использования · Loco Place",
+      }
+    : {
+        privacy: "Privacy · Loco Place",
+        terms: "Terms of Use · Loco Place",
+      };
+
+  return {
+    ...messages,
+    theme: themeTranslations[language],
+    language: languageTranslations[language],
+    footer: footerTranslations[language],
+    legal: legalTranslations[language],
+    titles: {
+      ...(messages.titles as TranslationMessages),
+      ...legalTitles,
+    },
+  };
+}
+
+async function ensureLanguageLoaded(language: AppLanguage): Promise<void> {
+  if (i18n.hasResourceBundle(language, "translation")) {
+    return;
+  }
+
+  i18n.addResourceBundle(language, "translation", await loadTranslation(language), true, true);
+}
+
 export async function initializeI18n(
   platformLanguage: string | null,
 ): Promise<void> {
   const language = resolveLanguage(platformLanguage);
 
   if (!i18n.isInitialized) {
+    const translation = await loadTranslation(language);
     await i18n.use(initReactI18next).init({
       resources: {
-        en: {
-          translation: {
-            ...en,
-            theme: themeTranslations.en,
-            language: languageTranslations.en,
-            footer: footerTranslations.en,
-            legal: legalTranslations.en,
-            titles: {
-              ...en.titles,
-              privacy: "Privacy · Loco Place",
-              terms: "Terms of Use · Loco Place",
-            },
-          },
-        },
-        ru: {
-          translation: {
-            ...ru,
-            theme: themeTranslations.ru,
-            language: languageTranslations.ru,
-            footer: footerTranslations.ru,
-            legal: legalTranslations.ru,
-            titles: {
-              ...ru.titles,
-              privacy: "Конфиденциальность · Loco Place",
-              terms: "Условия использования · Loco Place",
-            },
-          },
+        [language]: {
+          translation,
         },
       },
       lng: language,
@@ -207,6 +221,7 @@ export async function initializeI18n(
 }
 
 export async function changeLanguage(language: AppLanguage): Promise<void> {
+  await ensureLanguageLoaded(language);
   localStorage.setItem(LANGUAGE_KEY, language);
   document.documentElement.lang = language;
   await i18n.changeLanguage(language);

@@ -34,6 +34,12 @@ public class RentalPropertyMedia {
     @Column(name = "media_asset_id", nullable = false)
     private long mediaAssetId;
 
+    @Column(name = "card_media_asset_id")
+    private Long cardMediaAssetId;
+
+    @Column(name = "thumbnail_media_asset_id")
+    private Long thumbnailMediaAssetId;
+
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
 
@@ -46,6 +52,8 @@ public class RentalPropertyMedia {
     public RentalPropertyMedia(
             RentalProperty property,
             long mediaAssetId,
+            long cardMediaAssetId,
+            long thumbnailMediaAssetId,
             int sortOrder,
             boolean cover,
             Instant createdAt
@@ -58,9 +66,22 @@ public class RentalPropertyMedia {
             throw new IllegalArgumentException("sortOrder must not be negative");
         }
         this.mediaAssetId = mediaAssetId;
+        if (cardMediaAssetId <= 0 || thumbnailMediaAssetId <= 0) {
+            throw new IllegalArgumentException("Responsive media asset ids must be positive");
+        }
+        this.cardMediaAssetId = cardMediaAssetId;
+        this.thumbnailMediaAssetId = thumbnailMediaAssetId;
         this.sortOrder = sortOrder;
         this.cover = cover;
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
+    }
+
+    long mediaAssetId(RentalMediaVariant variant) {
+        return switch (Objects.requireNonNull(variant, "variant")) {
+            case FULL -> mediaAssetId;
+            case CARD -> cardMediaAssetId == null ? mediaAssetId : cardMediaAssetId;
+            case THUMBNAIL -> thumbnailMediaAssetId == null ? mediaAssetId : thumbnailMediaAssetId;
+        };
     }
 
     public void setCover(boolean cover) {

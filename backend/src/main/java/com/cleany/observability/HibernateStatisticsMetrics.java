@@ -25,6 +25,9 @@ final class HibernateStatisticsMetrics implements MeterBinder {
         counter(registry, "hibernate.flushes", Statistics::getFlushCount);
         counter(registry, "hibernate.entities.loads", Statistics::getEntityLoadCount);
         counter(registry, "hibernate.entities.fetches", Statistics::getEntityFetchCount);
+        counter(registry, "hibernate.collections.loads", Statistics::getCollectionLoadCount);
+        counter(registry, "hibernate.collections.fetches", Statistics::getCollectionFetchCount);
+        counter(registry, "hibernate.statements.prepared", Statistics::getPrepareStatementCount);
         counter(registry, "hibernate.queries.executions", Statistics::getQueryExecutionCount);
         Gauge.builder("hibernate.queries.max", statistics, Statistics::getQueryExecutionMaxTime)
                 .description("Maximum observed Hibernate query execution time in milliseconds")
