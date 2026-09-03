@@ -13,6 +13,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import com.cleany.catalog.PlatformServiceStateCache;
+import com.cleany.rental.RentalPublicMediaCache;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -24,6 +25,9 @@ public abstract class BaseIntegrationTest {
 
     @Autowired
     private CacheManager cacheManager;
+
+    @Autowired
+    private RentalPublicMediaCache rentalPublicMediaCache;
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
@@ -40,6 +44,7 @@ public abstract class BaseIntegrationTest {
     @BeforeEach
     void clearSharedCachesBeforeTest() {
         clearPlatformServiceStateCache();
+        rentalPublicMediaCache.clear();
     }
 
     protected final void clearPlatformServiceStateCache() {

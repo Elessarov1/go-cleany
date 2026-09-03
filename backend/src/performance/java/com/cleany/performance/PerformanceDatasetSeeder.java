@@ -303,9 +303,9 @@ final class PerformanceDatasetSeeder {
                         anchorDate.toString()
                 );
                 String mediaUrl = "/api/v1/rental/properties/" + propertyId + "/media/" + mediaId;
-                mediaUrls.add(mediaUrl);
-                cardUrls.add(mediaUrl + "/card");
-                thumbnailUrls.add(mediaUrl + "/thumbnail");
+                mediaUrls.add(mediaUrl + "?v=" + fullAssetId);
+                cardUrls.add(mediaUrl + "/card?v=" + cardAssetId);
+                thumbnailUrls.add(mediaUrl + "/thumbnail?v=" + thumbnailAssetId);
                 mediaId++;
             }
             var imageBurstUrls = new ArrayList<String>(Counts.IMAGES_PER_PROPERTY + 1);

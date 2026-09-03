@@ -104,6 +104,12 @@ rental:
   max-active-bookings-per-customer: ${RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER:3}
   zone-id: Europe/Istanbul
 
+rental-media:
+  backfill-enabled: ${RENTAL_MEDIA_BACKFILL_ENABLED:true}
+  backfill-batch-size: ${RENTAL_MEDIA_BACKFILL_BATCH_SIZE:10}
+  cache-enabled: ${RENTAL_MEDIA_CACHE_ENABLED:true}
+  cache-max-size: ${RENTAL_MEDIA_CACHE_MAX_SIZE:64MB}
+
 transfer:
   min-booking-days-ahead: ${TRANSFER_MIN_BOOKING_DAYS_AHEAD:1}
   booking-months-ahead: ${TRANSFER_BOOKING_MONTHS_AHEAD:6}

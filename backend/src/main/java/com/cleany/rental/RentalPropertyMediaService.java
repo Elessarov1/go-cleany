@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,9 @@ public class RentalPropertyMediaService {
     private final RentalPropertyMediaRepository mediaRepository;
     private final MediaStorage mediaStorage;
     private final RentalImageNormalizer imageNormalizer;
+    private final RentalPublicMediaLoader publicMediaLoader;
+    private final RentalPublicMediaCache publicMediaCache;
+    private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     @Transactional
@@ -53,6 +57,7 @@ public class RentalPropertyMediaService {
                 clock.instant()
         ));
         property.touch(clock.instant());
+        publishMediaChanged(propertyId);
     }
 
     @Transactional
@@ -79,6 +84,7 @@ public class RentalPropertyMediaService {
             }
         }
         property.touch(clock.instant());
+        publishMediaChanged(propertyId);
     }
 
     @Transactional
@@ -92,6 +98,7 @@ public class RentalPropertyMediaService {
         mediaRepository.flush();
         selected.setCover(true);
         property.touch(clock.instant());
+        publishMediaChanged(propertyId);
     }
 
     @Transactional
@@ -117,6 +124,7 @@ public class RentalPropertyMediaService {
             media.reorder(index);
         }
         property.touch(clock.instant());
+        publishMediaChanged(propertyId);
     }
 
     @Transactional
@@ -129,6 +137,7 @@ public class RentalPropertyMediaService {
         mediaRepository.deleteAll(propertyMedia);
         mediaRepository.flush();
         assetIds.forEach(this::deleteAssetIfUnreferenced);
+        publishMediaChanged(propertyId);
     }
 
     @Transactional(readOnly = true)
@@ -145,30 +154,27 @@ public class RentalPropertyMediaService {
         return content(requireMedia(propertyId, mediaId), variant);
     }
 
-    @Transactional(readOnly = true)
     public RentalMediaContent getPublicContent(long propertyId, long mediaId) {
         return getPublicContent(propertyId, mediaId, RentalMediaVariant.FULL);
     }
 
-    @Transactional(readOnly = true)
     public RentalMediaContent getPublicContent(
             long propertyId,
             long mediaId,
             RentalMediaVariant variant
     ) {
-        RentalPropertyMedia media = mediaRepository
-                .findByIdAndProperty_IdAndProperty_Status(
-                        mediaId,
-                        propertyId,
-                        RentalPropertyStatus.PUBLISHED
-                )
-                .orElseThrow(() -> new RentalPropertyMediaNotFoundException(propertyId, mediaId));
-        return content(media, variant);
+        return publicMediaCache.get(
+                propertyId,
+                mediaId,
+                variant,
+                () -> publicMediaLoader.load(propertyId, mediaId, variant)
+        );
     }
 
     private RentalMediaContent content(RentalPropertyMedia media, RentalMediaVariant variant) {
-        var content = mediaStorage.get(media.mediaAssetId(variant));
-        return new RentalMediaContent(content.contentType(), content.content());
+        long assetId = media.mediaAssetId(variant);
+        var content = mediaStorage.get(assetId);
+        return new RentalMediaContent(assetId, content.contentType(), content.content());
     }
 
     private void deleteAssetIfUnreferenced(long assetId) {
@@ -205,5 +211,9 @@ public class RentalPropertyMediaService {
 
     private List<RentalPropertyMedia> media(long propertyId) {
         return mediaRepository.findAllByProperty_IdOrderBySortOrderAscIdAsc(propertyId);
+    }
+
+    private void publishMediaChanged(long propertyId) {
+        eventPublisher.publishEvent(new RentalPropertyMediaChangedEvent(propertyId));
     }
 }

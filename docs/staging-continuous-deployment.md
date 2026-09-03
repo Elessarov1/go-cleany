@@ -167,6 +167,10 @@ Repository -> Settings -> Environments -> staging
 | `RENTAL_MAX_STAY_DAYS` | `365` |
 | `RENTAL_BOOKING_START_MONTHS_AHEAD` | `6` |
 | `RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER` | `3` |
+| `RENTAL_MEDIA_BACKFILL_ENABLED` | `true` |
+| `RENTAL_MEDIA_BACKFILL_BATCH_SIZE` | `10` |
+| `RENTAL_MEDIA_CACHE_ENABLED` | `true` |
+| `RENTAL_MEDIA_CACHE_MAX_SIZE` | `64MB` |
 | `RENTAL_CLEANING_DISCOUNT_RATE` | `0.10` |
 | `RENTAL_CLEANING_MAX_DISCOUNT` | `2000` |
 
@@ -192,6 +196,12 @@ fallback-значениями из `.env.production` при Docker Compose inter
 не заданы, используются показанные безопасные defaults. Суточные цены и описания конкретных квартир
 не относятся к deployment configuration: администратор меняет их в `/admin/rent`, и они сохраняются
 в PostgreSQL.
+
+`RENTAL_MEDIA_BACKFILL_*` управляют только startup-миграцией старых Rental-фотографий. Оставьте
+backfill включённым до успешного запуска, после которого оба nullable variant-поля равны нулю во
+всех строках. `RENTAL_MEDIA_CACHE_*` включают локальный для backend-процесса weighted cache; `64MB`
+— безопасный pilot default. Эти GitHub Environment variables передаются в Compose при каждой
+выкладке, но load-тесты по-прежнему выполняются только локально.
 
 `RENTAL_CLEANING_DISCOUNT_RATE` и `RENTAL_CLEANING_MAX_DISCOUNT` управляют персональной выгодой
 Loco Rent на уборку перед выездом. Значения берутся из GitHub Environment при каждой выкладке и имеют

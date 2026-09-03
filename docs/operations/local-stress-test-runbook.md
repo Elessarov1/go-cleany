@@ -116,6 +116,38 @@ JFR полезен, если stress показывает рост CPU, allocatio
 
 Запись сохраняется в `performance/results/` и игнорируется Git.
 
+## Cold/warm проверка Rental media cache
+
+После изменений в выдаче Rental-фотографий достаточно одного cold и одного warm `image-burst`;
+полный stress повторять не нужно. Первая команда пересоздаёт только локальный performance-контур,
+загружает seed `42` и запускает сценарий с пустым in-process media cache:
+
+```powershell
+$env:PERF_ANCHOR_DATE = '2026-09-04'
+.\performance\scripts\run-local.ps1 -Reset -Scenario image-burst
+```
+
+Снимите cache/Hibernate metrics, не перезапуская backend:
+
+```powershell
+Invoke-RestMethod 'http://127.0.0.1:18080/actuator/metrics/cache.gets?tag=cache:rental-public-media&tag=result:hit'
+Invoke-RestMethod 'http://127.0.0.1:18080/actuator/metrics/cache.gets?tag=cache:rental-public-media&tag=result:miss'
+Invoke-RestMethod 'http://127.0.0.1:18080/actuator/metrics/cache.evictions?tag=cache:rental-public-media'
+Invoke-RestMethod http://127.0.0.1:18080/actuator/metrics/cache.size
+Invoke-RestMethod http://127.0.0.1:18080/actuator/metrics/loco.rental.media.cache.bytes
+Invoke-RestMethod http://127.0.0.1:18080/actuator/metrics/hibernate.queries.executions
+```
+
+Затем выполните тот же сценарий на уже прогретом процессе и снова снимите метрики:
+
+```powershell
+.\performance\scripts\run-local.ps1 -ReuseStack -SkipSeed -Scenario image-burst
+```
+
+Во втором запуске число cache misses и Hibernate queries не должно расти, пока hits продолжают
+увеличиваться. Сравнивайте p50/p95/p99, ошибки и RPS из двух k6 summary. k6 не моделирует browser
+HTTP cache, поэтому эта проверка намеренно измеряет именно общий backend cache между запросами.
+
 ## Завершение и очистка
 
 Остановить контейнеры, сохранив synthetic database для следующего запуска:

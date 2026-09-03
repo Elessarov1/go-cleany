@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,7 @@ public class RentalPropertyService {
     private final RentalBookingRepository bookingRepository;
     private final RentalOccupancyRepository occupancyRepository;
     private final RentalPropertyMediaService mediaService;
+    private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     @Transactional
@@ -51,6 +53,7 @@ public class RentalPropertyService {
             media.getFirst().setCover(true);
         }
         property.publish(!media.isEmpty(), clock.instant());
+        publishMediaChanged(propertyId);
         return adminResponse(property, media);
     }
 
@@ -58,6 +61,7 @@ public class RentalPropertyService {
     public RentalPropertyResponse archive(long propertyId) {
         RentalProperty property = requireProperty(propertyId);
         property.archive(clock.instant());
+        publishMediaChanged(propertyId);
         return adminResponse(property);
     }
 
@@ -65,6 +69,7 @@ public class RentalPropertyService {
     public RentalPropertyResponse unpublish(long propertyId) {
         RentalProperty property = requirePropertyForUpdate(propertyId);
         property.unpublish(clock.instant());
+        publishMediaChanged(propertyId);
         return adminResponse(property);
     }
 
@@ -87,6 +92,7 @@ public class RentalPropertyService {
         occupancyRepository.deleteManualByPropertyId(propertyId);
         mediaService.deleteAllForProperty(propertyId);
         propertyRepository.delete(property);
+        publishMediaChanged(propertyId);
     }
 
     @Transactional(readOnly = true)
@@ -198,5 +204,9 @@ public class RentalPropertyService {
 
     private List<RentalPropertyMedia> media(long propertyId) {
         return mediaRepository.findAllByProperty_IdOrderBySortOrderAscIdAsc(propertyId);
+    }
+
+    private void publishMediaChanged(long propertyId) {
+        eventPublisher.publishEvent(new RentalPropertyMediaChangedEvent(propertyId));
     }
 }

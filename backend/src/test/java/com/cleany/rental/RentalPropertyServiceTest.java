@@ -33,6 +33,7 @@ class RentalPropertyServiceTest {
                 Mockito.mock(RentalBookingRepository.class),
                 Mockito.mock(RentalOccupancyRepository.class),
                 Mockito.mock(RentalPropertyMediaService.class),
+                Mockito.mock(org.springframework.context.ApplicationEventPublisher.class),
                 Clock.systemUTC()
         );
 

@@ -54,34 +54,46 @@ public class RentalPropertyController {
     @GetMapping("/properties/{propertyId}/media/{mediaId}")
     public ResponseEntity<byte[]> getMedia(
             @PathVariable long propertyId,
-            @PathVariable long mediaId
+            @PathVariable long mediaId,
+            @RequestParam(name = "v", required = false) Long version
     ) {
         RentalMediaContent media = mediaService.getPublicContent(propertyId, mediaId);
-        byte[] content = media.content();
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(media.contentType()))
-                .contentLength(content.length)
-                .cacheControl(CacheControl.maxAge(PUBLIC_MEDIA_CACHE_DURATION).cachePublic().immutable())
-                .header("X-Content-Type-Options", "nosniff")
-                .body(content);
+        return mediaResponse(propertyId, mediaId, version, media);
     }
 
     @GetMapping("/properties/{propertyId}/media/{mediaId}/{variant:card|thumbnail}")
     public ResponseEntity<byte[]> getMediaVariant(
             @PathVariable long propertyId,
             @PathVariable long mediaId,
-            @PathVariable String variant
+            @PathVariable String variant,
+            @RequestParam(name = "v", required = false) Long version
     ) {
         RentalMediaContent media = mediaService.getPublicContent(
                 propertyId,
                 mediaId,
                 variant.equals("card") ? RentalMediaVariant.CARD : RentalMediaVariant.THUMBNAIL
         );
+        return mediaResponse(propertyId, mediaId, version, media);
+    }
+
+    private static ResponseEntity<byte[]> mediaResponse(
+            long propertyId,
+            long mediaId,
+            Long version,
+            RentalMediaContent media
+    ) {
+        if (version != null && version != media.mediaAssetId()) {
+            throw new RentalPropertyMediaNotFoundException(propertyId, mediaId);
+        }
         byte[] content = media.content();
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(media.contentType()))
                 .contentLength(content.length)
-                .cacheControl(CacheControl.maxAge(PUBLIC_MEDIA_CACHE_DURATION).cachePublic().immutable())
+                .cacheControl(version == null
+                        ? CacheControl.noCache()
+                        : CacheControl.maxAge(PUBLIC_MEDIA_CACHE_DURATION)
+                                .cachePublic()
+                                .immutable())
                 .header("X-Content-Type-Options", "nosniff")
                 .body(content);
     }

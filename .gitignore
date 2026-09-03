@@ -26,3 +26,5 @@ performance/local-images/
 *.log
 .DS_Store
 Thumbs.db
+
+docs/.obsidian
