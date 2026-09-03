@@ -9,7 +9,7 @@ param(
     [switch]$ReuseStack,
     [switch]$Validation,
     [string]$BaseUrl = 'http://frontend',
-    [string]$ApiBaseUrl = 'http://backend:8080'
+    [string]$ApiBaseUrl = 'http://frontend'
 )
 
 $ErrorActionPreference = 'Stop'

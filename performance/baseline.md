@@ -67,6 +67,11 @@ Record each measured run, not only an average.
 | post-fix image-burst 2 | 128.03 | 2.58 ms | 3.09 ms | 3.72 ms | 0% | 65,000,000 | 681,000 |
 | post-fix mixed-api | 215.59 | 4.32 ms | 9.26 ms | 15.00 ms | 0% | 29,000,000 | 1,300,000 |
 | post-fix direct-backend stress | 5,022.91 | 3.49 ms | 26.76 ms | not captured | 0% | 2,300,000,000 | 123,000,000 |
+| final Caddy smoke | 38.34 | 1.25 ms | 5.23 ms | 6.37 ms | 0% | 3,700,000 | 62,000 |
+| final Caddy rental-browse | 73.48 | 3.38 ms | 5.14 ms | 7.09 ms | 0% | 21,000,000 | 397,000 |
+| final Caddy image-burst | 127.73 | 2.78 ms | 3.43 ms | 4.11 ms | 0% | 65,000,000 | 681,000 |
+| final Caddy mixed-api | 215.48 | 3.91 ms | 9.17 ms | 17.43 ms | 0% | 29,000,000 | 1,300,000 |
+| final Caddy stress | 4,163.10 | 4.63 ms | 31.24 ms | 55.06 ms | 0% | 1,956,919,257 | 98,412,472 |
 
 ## Runtime and database observations
 
@@ -112,9 +117,18 @@ Record each measured run, not only an average.
   reached inside the configured 100-VU envelope on this workstation.
 - An earlier stress attempt through the performance frontend proxy produced 72.43% nginx
   `502 Address not available` responses after exhausting proxy-side ephemeral ports. It is
-  excluded from application results: production Caddy routes `/api/*` directly to the
-  backend. The harness stress scenario now uses `API_BASE_URL` for the equivalent measured
-  segment; no nginx tuning was retained.
+  retained only as the evidence that exposed an inaccurate two-proxy test topology; no nginx
+  tuning was retained.
+- The final contour uses the same single Caddy runtime as production: it serves Vite assets and
+  proxies API/OAuth routes directly to backend. One end-to-end control run of every scenario
+  completed with zero errors. The 100-VU stress run processed 874,391 requests at 4,163.10 RPS,
+  31.24 ms p95 and 55.06 ms p99. The lower throughput than the direct-backend diagnostic is the
+  expected cost of compression/proxy handling; it does not expose a pilot-relevant saturation
+  point.
+- The closure persistence audit confirmed that Liquibase change set `20260912-01` was applied.
+  All 120 seeded Rental media rows had card and thumbnail variants, and all 360 full/card/thumbnail
+  reference slots resolved to existing `media_asset` rows. Existing integration coverage verifies
+  variant cleanup on property/media deletion; no additional persistence repair was justified.
 
 For each representative steady-state window record:
 
@@ -158,7 +172,7 @@ and reminder state first, then performs optional channel delivery after commit.
   Rental image over-delivery and list overfetch; eager routes/locales; external Telegram
   calls inside the Smart Reminder transaction.
 - No pool-size increase, cache tier, storage migration, JVM flag tuning or speculative index
-  was justified. The post-fix stress envelope is already far beyond pilot traffic on the
+  was justified. The final Caddy stress envelope is already far beyond pilot traffic on the
   development workstation, so further runtime tuning should wait for production-shaped
   telemetry and real usage.
 - Evidence quality / caveats: before measurements contain three warm-JVM runs for steady

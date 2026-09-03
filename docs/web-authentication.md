@@ -33,7 +33,8 @@ https://loco-place.com/login/oauth2/code/google
 
 Для staging добавьте его HTTPS-host и такой же callback отдельно. Значения должны в точности
 совпадать с внешним URL, включая схему, host и отсутствие лишнего завершающего `/`. Frontend,
-OAuth callback и `/api` работают на одном origin; nginx проксирует OAuth-маршруты в backend.
+OAuth callback и `/api` работают на одном origin; Caddy обслуживает Vite SPA и проксирует
+OAuth/API-маршруты напрямую в backend.
 
 ## Runtime-конфигурация
 
@@ -105,7 +106,7 @@ display name, provider, platform roles и признак доступности 
 До покупки домена оставляйте `GOOGLE_AUTH_ENABLED=false`: backend запускается без Google credentials,
 `GET /api/v1/auth/me` сообщает `loginProviders.google.available=false`, а frontend не показывает
 неработающую кнопку входа. Значение `APP_HOST` остаётся единственной настройкой публичного hostname;
-маршруты `/api/**`, `/oauth2/**` и `/login/oauth2/**` уже направляются nginx в backend до SPA fallback.
+маршруты `/api/**`, `/oauth2/**` и `/login/oauth2/**` уже направляются Caddy в backend до SPA fallback.
 
 После покупки домена выполните этот чек-лист:
 

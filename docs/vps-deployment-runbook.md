@@ -1,8 +1,9 @@
 # Деплой go-cleany на VPS
 
-Этот сценарий рассчитан на один Ubuntu VPS, Docker Compose и Telegram long polling. Снаружи доступны
-только Caddy на портах `80/443`; PostgreSQL, backend и frontend не публикуют свои порты. Liquibase
-применяет миграции при старте backend.
+Этот сценарий рассчитан на один Ubuntu VPS, Docker Compose и Telegram long polling. Снаружи доступен
+только Caddy на портах `80/443`; PostgreSQL и backend не публикуют свои порты. Caddy одновременно
+отдаёт собранный Vite frontend и напрямую проксирует API/OAuth в backend. Liquibase применяет
+миграции при старте backend.
 
 ## 1. Что понадобится
 
@@ -147,7 +148,7 @@ cd /opt/go-cleany
 
 1. проверяет `.env.production` и Compose;
 2. удаляет неиспользуемый BuildKit cache старше настроенного срока;
-3. собирает свежие backend/frontend images;
+3. собирает свежие backend и Caddy/Vite application images;
 4. перед обновлением существующего контура делает PostgreSQL backup;
 5. запускает контейнеры и ждёт их health checks;
 6. проверяет `https://<APP_HOST>/healthz`;

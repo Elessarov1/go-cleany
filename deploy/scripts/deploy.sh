@@ -140,6 +140,8 @@ if ! "${COMPOSE[@]}" up -d --remove-orphans --wait --wait-timeout 240; then
   "${COMPOSE[@]}" ps >&2 || true
   echo "Recent backend logs:" >&2
   "${COMPOSE[@]}" logs --no-color --tail=250 backend >&2 || true
+  echo "Recent Caddy logs:" >&2
+  "${COMPOSE[@]}" logs --no-color --tail=250 caddy >&2 || true
   exit 1
 fi
 
@@ -151,6 +153,8 @@ if ! curl --fail --silent --show-error \
   "${COMPOSE[@]}" ps >&2 || true
   echo "Recent backend logs:" >&2
   "${COMPOSE[@]}" logs --no-color --tail=250 backend >&2 || true
+  echo "Recent Caddy logs:" >&2
+  "${COMPOSE[@]}" logs --no-color --tail=250 caddy >&2 || true
   exit 1
 fi
 

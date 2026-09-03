@@ -2,7 +2,7 @@ import http from 'k6/http';
 
 import { expectOk, loadManifest, localBaseUrl } from './lib/common.js';
 
-const API_BASE_URL = localBaseUrl('API_BASE_URL', 'http://backend:8080');
+const API_BASE_URL = localBaseUrl('API_BASE_URL', 'http://frontend');
 const manifest = loadManifest();
 
 export const options = __ENV.PERF_VALIDATION === 'true'
