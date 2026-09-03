@@ -133,6 +133,10 @@ Read:
 - [staging-continuous-deployment.md](staging-continuous-deployment.md)
 - [vps-deployment-runbook.md](vps-deployment-runbook.md)
 
+For local performance baselines and scheduler observability, also read:
+
+- [operations/performance.md](operations/performance.md)
+
 ## Data cleanup / commercial launch
 
 Read:

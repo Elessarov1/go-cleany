@@ -8,6 +8,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import com.cleany.observability.SchedulerJobTelemetry;
+
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+
 class DataRetentionCleanupJobTest {
 
     private static final Instant NOW = Instant.parse("2026-08-21T12:00:00Z");
@@ -47,7 +51,8 @@ class DataRetentionCleanupJobTest {
         var job = new DataRetentionCleanupJob(
                 new DataRetentionProperties(true, 7, "0 30 3 * * *", 25, 2),
                 service,
-                Clock.fixed(NOW, ZoneOffset.UTC)
+                Clock.fixed(NOW, ZoneOffset.UTC),
+                telemetry()
         );
 
         job.run();
@@ -75,8 +80,13 @@ class DataRetentionCleanupJobTest {
         return new DataRetentionCleanupJob(
                 new DataRetentionProperties(true, 7, "0 30 3 * * *", 100, 10),
                 service,
-                Clock.fixed(NOW, ZoneOffset.UTC)
+                Clock.fixed(NOW, ZoneOffset.UTC),
+                telemetry()
         );
+    }
+
+    private static SchedulerJobTelemetry telemetry() {
+        return new SchedulerJobTelemetry(new SimpleMeterRegistry());
     }
 
     private static DataRetentionCleanupResult result(Instant cutoff, boolean hasMoreWork) {

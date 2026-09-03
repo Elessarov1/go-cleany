@@ -13,6 +13,7 @@ Use existing runbooks rather than duplicating deployment/cleanup instructions.
 ## Local
 
 - [../local-docker-runbook.md](../local-docker-runbook.md)
+- [performance.md](performance.md) — isolated local k6/JFR performance measurement.
 
 ## Staging / production operations
 

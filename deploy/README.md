@@ -25,7 +25,12 @@ The operational entry points are deliberately small:
 
 `deploy.sh` validates configuration, builds images, creates a database backup when PostgreSQL is
 already running, starts the stack, waits for container health checks, and verifies the public HTTPS
-endpoint. A rollback never reverses Liquibase changes; migrations must remain backward-compatible.
+endpoint. To keep a small actively developed VPS from filling up, it prunes unused BuildKit cache
+older than 24 hours before the build and dangling images only after a successful health check. It
+never prunes containers, volumes, PostgreSQL data, or backups. Cleanup can be configured in
+`.env.production` with `GO_CLEANY_DOCKER_PRUNE_ENABLED` and
+`GO_CLEANY_DOCKER_BUILD_CACHE_RETENTION`. A rollback never reverses Liquibase changes; migrations
+must remain backward-compatible.
 The backend cleans old terminal-order audit/photo payloads on its configured schedule. `backup.sh`
 prunes only `go-cleany-*.dump` files after a new non-empty backup succeeds; both retention windows
 default to seven days and can be changed in `.env.production`.

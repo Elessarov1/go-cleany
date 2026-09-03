@@ -125,7 +125,11 @@ nano .env.production
 - `DATA_CLEANUP_ENABLED` — аварийный выключатель scheduled cleanup;
 - `DATA_CLEANUP_BATCH_SIZE` — максимум записей одного типа в одной cleanup-транзакции;
 - `DATA_CLEANUP_MAX_BATCHES_PER_RUN` — максимум отдельных cleanup-транзакций за один запуск;
-- `GO_CLEANY_BACKUP_RETENTION_DAYS` — срок хранения завершённых PostgreSQL dump-файлов, по умолчанию 7 дней.
+- `GO_CLEANY_BACKUP_RETENTION_DAYS` — срок хранения завершённых PostgreSQL dump-файлов, по умолчанию 7 дней;
+- `GO_CLEANY_DOCKER_PRUNE_ENABLED` — автоматическая очистка неиспользуемого build-кэша и dangling
+  images во время деплоя, по умолчанию `true`;
+- `GO_CLEANY_DOCKER_BUILD_CACHE_RETENTION` — минимальный возраст неиспользуемого BuildKit cache для
+  удаления перед сборкой, по умолчанию `24h`.
 
 Production Compose намеренно не включает профиль `local`, `LOCAL_TELEGRAM_USER_ID` и тестовое имя
 `Alex`. Клиент определяется только по проверенному Telegram `initData` или Google OIDC session.
@@ -142,10 +146,17 @@ cd /opt/go-cleany
 Скрипт последовательно:
 
 1. проверяет `.env.production` и Compose;
-2. собирает свежие backend/frontend images;
-3. перед обновлением существующего контура делает PostgreSQL backup;
-4. запускает контейнеры и ждёт их health checks;
-5. проверяет `https://<APP_HOST>/healthz`.
+2. удаляет неиспользуемый BuildKit cache старше настроенного срока;
+3. собирает свежие backend/frontend images;
+4. перед обновлением существующего контура делает PostgreSQL backup;
+5. запускает контейнеры и ждёт их health checks;
+6. проверяет `https://<APP_HOST>/healthz`;
+7. после успешной проверки удаляет только dangling Docker images.
+
+Автоматическая очистка не вызывает `docker system prune`, не передаёт `--volumes` и не удаляет
+работающие контейнеры, PostgreSQL volume или dump-файлы. Ошибка cleanup выводится как предупреждение
+и не превращает успешный релиз в неуспешный. Откат по-прежнему возможен: `rollback.sh` собирает
+выбранную Git-ревизию заново.
 
 Проверить состояние и логи:
 

@@ -22,6 +22,15 @@ java {
     }
 }
 
+sourceSets {
+    performance {
+        java.srcDir 'src/performance/java'
+        resources.srcDir 'src/performance/resources'
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
 repositories {
     mavenCentral()
 }
@@ -58,6 +67,22 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+configurations.named('performanceImplementation') {
+    extendsFrom configurations.implementation
+}
+
+configurations.named('performanceRuntimeOnly') {
+    extendsFrom configurations.runtimeOnly
+}
+
+configurations.named('performanceCompileOnly') {
+    extendsFrom configurations.compileOnly
+}
+
+configurations.named('performanceAnnotationProcessor') {
+    extendsFrom configurations.annotationProcessor
+}
+
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs.add('-parameters')
     options.encoding = 'UTF-8'
@@ -65,4 +90,24 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+tasks.register('performanceSeed', JavaExec) {
+    group = 'performance'
+    description = 'Recreates the deterministic dataset in the guarded local performance database.'
+    dependsOn tasks.named('performanceClasses')
+    classpath = sourceSets.performance.runtimeClasspath
+    mainClass = 'com.cleany.performance.PerformanceDatasetApplication'
+    environment 'SPRING_PROFILES_ACTIVE', 'local,performance'
+    environment 'SMART_REMINDERS_ENABLED', 'false'
+    environment 'DATA_CLEANUP_ENABLED', 'false'
+    environment 'RENTAL_CLEANING_BENEFIT_ENABLED', 'false'
+    environment 'TELEGRAM_BOT_ENABLED', 'false'
+    environment 'TELEGRAM_BOT_TOKEN', 'performance-disabled'
+    environment 'DB_URL', System.getenv('DB_URL')
+            ?: 'jdbc:postgresql://127.0.0.1:15432/loco_performance?ApplicationName=loco-performance-seed'
+    environment 'DB_USERNAME', System.getenv('DB_USERNAME') ?: 'loco_performance'
+    environment 'DB_PASSWORD', System.getenv('DB_PASSWORD') ?: 'loco-performance-local-only'
+    environment 'PERF_MANIFEST', System.getenv('PERF_MANIFEST')
+            ?: file('../performance/results/manifest.json').absolutePath
 }
