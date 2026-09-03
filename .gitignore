@@ -19,6 +19,10 @@ backups/
 backend/.gradle/
 backend/build/
 
+performance/results/*
+!performance/results/.gitkeep
+performance/local-images/
+
 *.log
 .DS_Store
 Thumbs.db

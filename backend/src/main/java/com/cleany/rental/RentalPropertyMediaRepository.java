@@ -13,6 +13,10 @@ public interface RentalPropertyMediaRepository extends JpaRepository<RentalPrope
             List<Long> propertyIds
     );
 
+    List<RentalPropertyMedia> findAllByProperty_IdInAndCoverTrueOrderByProperty_IdAscIdAsc(
+            List<Long> propertyIds
+    );
+
     Optional<RentalPropertyMedia> findByIdAndProperty_Id(long id, long propertyId);
 
     Optional<RentalPropertyMedia> findByIdAndProperty_IdAndProperty_Status(
@@ -23,5 +27,9 @@ public interface RentalPropertyMediaRepository extends JpaRepository<RentalPrope
 
     boolean existsByProperty_Id(long propertyId);
 
-    boolean existsByMediaAssetId(long mediaAssetId);
+    boolean existsByMediaAssetIdOrCardMediaAssetIdOrThumbnailMediaAssetId(
+            long mediaAssetId,
+            long cardMediaAssetId,
+            long thumbnailMediaAssetId
+    );
 }

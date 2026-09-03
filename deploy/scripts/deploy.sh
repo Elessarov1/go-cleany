@@ -73,8 +73,56 @@ if [[ -n ${web_session_timeout} && ! ${web_session_timeout} =~ ^[1-9][0-9]*(ms|s
   exit 1
 fi
 
+docker_prune_enabled=${GO_CLEANY_DOCKER_PRUNE_ENABLED:-}
+if [[ -z ${docker_prune_enabled} ]]; then
+  docker_prune_enabled=$(read_env_value "${env_file}" GO_CLEANY_DOCKER_PRUNE_ENABLED)
+fi
+docker_prune_enabled=${docker_prune_enabled:-true}
+if [[ ${docker_prune_enabled} != true && ${docker_prune_enabled} != false ]]; then
+  echo "GO_CLEANY_DOCKER_PRUNE_ENABLED must be true or false." >&2
+  exit 1
+fi
+
+docker_build_cache_retention=${GO_CLEANY_DOCKER_BUILD_CACHE_RETENTION:-}
+if [[ -z ${docker_build_cache_retention} ]]; then
+  docker_build_cache_retention=$(read_env_value "${env_file}" GO_CLEANY_DOCKER_BUILD_CACHE_RETENTION)
+fi
+docker_build_cache_retention=${docker_build_cache_retention:-24h}
+if [[ ! ${docker_build_cache_retention} =~ ^[1-9][0-9]*(m|h)$ ]]; then
+  echo "GO_CLEANY_DOCKER_BUILD_CACHE_RETENTION must be a positive duration such as 30m or 24h." >&2
+  exit 1
+fi
+
+prune_old_build_cache() {
+  if [[ ${docker_prune_enabled} != true ]]; then
+    echo "Docker build cache cleanup is disabled."
+    return
+  fi
+
+  echo "Pruning unused Docker build cache older than ${docker_build_cache_retention}..."
+  if ! docker builder prune \
+    --all \
+    --force \
+    --filter "until=${docker_build_cache_retention}" | tail -n 1; then
+    echo "Warning: Docker build cache cleanup failed; deployment will continue." >&2
+  fi
+}
+
+prune_dangling_images() {
+  if [[ ${docker_prune_enabled} != true ]]; then
+    return
+  fi
+
+  echo "Pruning dangling Docker images after successful deployment..."
+  if ! docker image prune --force | tail -n 1; then
+    echo "Warning: dangling Docker image cleanup failed; deployed services remain available." >&2
+  fi
+}
+
 echo "Validating production configuration..."
 "${COMPOSE[@]}" config --quiet
+
+prune_old_build_cache
 
 echo "Building application images..."
 "${COMPOSE[@]}" build --pull
@@ -111,5 +159,7 @@ if [[ -s ${state_dir}/current-revision ]]; then
   cp -- "${state_dir}/current-revision" "${state_dir}/previous-revision"
 fi
 printf '%s\n' "${revision}" > "${state_dir}/current-revision"
+
+prune_dangling_images
 
 echo "go-cleany ${revision} is available at https://${app_host}"

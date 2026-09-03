@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260912-01" author="loco-place">
+        <comment>Add responsive Rental image assets while retaining the canonical full image.</comment>
+        <addColumn tableName="rental_property_media">
+            <column name="card_media_asset_id" type="BIGINT"/>
+            <column name="thumbnail_media_asset_id" type="BIGINT"/>
+        </addColumn>
+        <addForeignKeyConstraint
+                baseTableName="rental_property_media"
+                baseColumnNames="card_media_asset_id"
+                constraintName="fk_rental_property_media_card_asset"
+                referencedTableName="media_asset"
+                referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+                baseTableName="rental_property_media"
+                baseColumnNames="thumbnail_media_asset_id"
+                constraintName="fk_rental_property_media_thumbnail_asset"
+                referencedTableName="media_asset"
+                referencedColumnNames="id"/>
+        <createIndex tableName="rental_property_media" indexName="idx_rental_property_media_card_asset">
+            <column name="card_media_asset_id"/>
+        </createIndex>
+        <createIndex tableName="rental_property_media" indexName="idx_rental_property_media_thumbnail_asset">
+            <column name="thumbnail_media_asset_id"/>
+        </createIndex>
+        <rollback>
+            <dropForeignKeyConstraint
+                    baseTableName="rental_property_media"
+                    constraintName="fk_rental_property_media_thumbnail_asset"/>
+            <dropForeignKeyConstraint
+                    baseTableName="rental_property_media"
+                    constraintName="fk_rental_property_media_card_asset"/>
+            <dropColumn tableName="rental_property_media" columnName="thumbnail_media_asset_id"/>
+            <dropColumn tableName="rental_property_media" columnName="card_media_asset_id"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

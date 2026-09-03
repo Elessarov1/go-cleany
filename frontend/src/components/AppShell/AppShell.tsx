@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthentication } from "../../api/AuthApiProvider";
@@ -15,6 +15,7 @@ import { ThemeSwitcher } from "../ThemeSwitcher/ThemeSwitcher";
 import { SiteFooter } from "../SiteFooter/SiteFooter";
 import { useCustomerApi } from "../../api/CustomerApiProvider";
 import { ServiceSelector } from "../ServiceSelector/ServiceSelector";
+import { LoadingState } from "../PageState/PageState";
 
 const ACQUISITION_START_PREFIX = "acq_";
 
@@ -213,7 +214,9 @@ export function AppShell() {
             </aside>
           ) : null}
           <main className="app-content">
-            <Outlet />
+            <Suspense fallback={<LoadingState />}>
+              <Outlet />
+            </Suspense>
           </main>
         </div>
 

@@ -26,20 +26,30 @@ import net.coobird.thumbnailator.Thumbnails;
 @Component
 class RentalImageNormalizer {
 
-    static final int MAX_LONG_SIDE = 1920;
+    static final int FULL_MAX_LONG_SIDE = 1600;
+    static final int CARD_MAX_LONG_SIDE = 960;
+    static final int THUMBNAIL_MAX_LONG_SIDE = 320;
     private static final long MAX_DECODED_PIXELS = 40_000_000L;
-    private static final float JPEG_QUALITY = 0.85F;
+    private static final float FULL_JPEG_QUALITY = 0.82F;
+    private static final float CARD_JPEG_QUALITY = 0.78F;
+    private static final float THUMBNAIL_JPEG_QUALITY = 0.72F;
     private static final String CANONICAL_CONTENT_TYPE = "image/jpeg";
 
-    MediaUpload normalize(byte[] content) {
+    RentalImageVariants normalize(byte[] content) {
         String detectedType = ImageMediaTypeDetector.detect(content)
                 .filter(type -> "image/jpeg".equals(type) || "image/png".equals(type))
                 .orElseThrow(() -> invalid("Property image must be JPEG or PNG"));
         Dimensions dimensions = validateDimensions(content, detectedType);
         try {
             BufferedImage normalized = resizeAndOrient(content, dimensions);
-            BufferedImage rgb = onWhiteBackground(normalized);
-            return new MediaUpload(writeJpeg(rgb), CANONICAL_CONTENT_TYPE);
+            BufferedImage full = onWhiteBackground(normalized);
+            BufferedImage card = resize(full, CARD_MAX_LONG_SIDE);
+            BufferedImage thumbnail = resize(full, THUMBNAIL_MAX_LONG_SIDE);
+            return new RentalImageVariants(
+                    upload(full, FULL_JPEG_QUALITY),
+                    upload(card, CARD_JPEG_QUALITY),
+                    upload(thumbnail, THUMBNAIL_JPEG_QUALITY)
+            );
         } catch (IOException | RuntimeException exception) {
             if (exception instanceof InvalidRentalPropertyMediaException invalid) {
                 throw invalid;
@@ -88,12 +98,26 @@ class RentalImageNormalizer {
     ) throws IOException {
         var builder = Thumbnails.of(new ByteArrayInputStream(content))
                 .useExifOrientation(true);
-        if (Math.max(dimensions.width(), dimensions.height()) > MAX_LONG_SIDE) {
-            builder.size(MAX_LONG_SIDE, MAX_LONG_SIDE).keepAspectRatio(true);
+        if (Math.max(dimensions.width(), dimensions.height()) > FULL_MAX_LONG_SIDE) {
+            builder.size(FULL_MAX_LONG_SIDE, FULL_MAX_LONG_SIDE).keepAspectRatio(true);
         } else {
             builder.scale(1.0);
         }
         return builder.asBufferedImage();
+    }
+
+    private static BufferedImage resize(BufferedImage source, int maxLongSide) throws IOException {
+        if (Math.max(source.getWidth(), source.getHeight()) <= maxLongSide) {
+            return source;
+        }
+        return Thumbnails.of(source)
+                .size(maxLongSide, maxLongSide)
+                .keepAspectRatio(true)
+                .asBufferedImage();
+    }
+
+    private static MediaUpload upload(BufferedImage image, float quality) throws IOException {
+        return new MediaUpload(writeJpeg(image, quality), CANONICAL_CONTENT_TYPE);
     }
 
     private static BufferedImage onWhiteBackground(BufferedImage source) {
@@ -113,14 +137,14 @@ class RentalImageNormalizer {
         return rgb;
     }
 
-    private static byte[] writeJpeg(BufferedImage image) throws IOException {
+    private static byte[] writeJpeg(BufferedImage image, float quality) throws IOException {
         ImageWriter writer = ImageIO.getImageWritersByFormatName("jpeg").next();
         try (var output = new ByteArrayOutputStream();
              ImageOutputStream imageOutput = ImageIO.createImageOutputStream(output)) {
             writer.setOutput(imageOutput);
             ImageWriteParam parameters = writer.getDefaultWriteParam();
             parameters.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-            parameters.setCompressionQuality(JPEG_QUALITY);
+            parameters.setCompressionQuality(quality);
             writer.write(null, new IIOImage(image, null, null), parameters);
             imageOutput.flush();
             return output.toByteArray();

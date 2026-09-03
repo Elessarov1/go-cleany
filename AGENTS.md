@@ -244,6 +244,34 @@ All schema changes use Liquibase. Application rollback does not automatically ro
 
 Current pilot retention is configurable and defaults to approximately seven days for heavy operational payloads. Reuse existing cleanup infrastructure; do not create duplicates.
 
+## Performance and reliability guardrails
+
+The reproducible performance harness is kept under `performance/`. Use [docs/operations/local-stress-test-runbook.md](docs/operations/local-stress-test-runbook.md) when a change affects a hot API path, database concurrency, media delivery, scheduler throughput or frontend startup weight.
+
+Never run k6/JFR load scenarios against the VPS, staging, production, a public domain or a CI/GitHub Actions worker. Use only the dedicated local `loco-perf` Compose project and keep its remote-target rejection in place. Performance jobs must not be added to CI or deployment workflows.
+
+Do not optimize from intuition alone. Record a reproducible before measurement, change one relevant cause, then run the same local scenario once after the change. Repeat only when results are noisy. Keep aggregate evidence in `performance/baseline.md`; keep raw k6/JFR output ignored.
+
+When writing backend code:
+
+- do not routinely call a `REQUIRES_NEW` identity/helper method from inside an already active transaction; account for simultaneous connection demand and avoid holding one Hikari connection while waiting for another;
+- reuse the request-resolved `CurrentCustomer`; do not re-resolve the same external identity from nested customer-owned services;
+- never keep a database transaction open while calling Telegram, HTTP APIs or another slow external channel; persist authoritative state first and deliver after a successful commit through the existing notification/communication boundary;
+- do not treat a larger Hikari pool as a fix for nested connection acquisition;
+- add a concurrent integration scenario when changing claims, booking conflicts, identity resolution, scheduler processing or another first-wins/locking flow;
+- avoid loading whole child collections or binary payloads when an endpoint needs only a cover, count, projection or metadata;
+- do not copy large `byte[]` values without need, and use fit-for-purpose full/card/thumbnail media variants rather than sending a full image to every consumer;
+- apply immutable public caching only to stable asset URLs. Verify the actual serving path before changing proxy settings: public ingress is Caddy, while the existing frontend container's static server is an internal implementation detail.
+
+When writing frontend code:
+
+- new top-level routes should remain lazy-loaded unless eager loading is measured to be better;
+- locale data should load only for the active language;
+- after adding a large dependency, route or locale payload, inspect `npm run build` chunk sizes and compare initial-route gzip size rather than only the total emitted assets;
+- Rental lists/cards use card images, gallery selectors use thumbnails and full media is reserved for the main/opened image.
+
+Do not run the full stress suite for ordinary isolated business-rule edits. Relevant integration tests remain the primary safety net; use the performance contour when the change can plausibly affect resource use or a previously measured bottleneck.
+
 ## Known intentionally deferred issues
 
 Do not repeatedly rediscover these as urgent unless a task touches them:

@@ -33,17 +33,21 @@ public class RentalPropertyMediaService {
         if (content.length > MAX_IMAGE_BYTES) {
             throw new InvalidRentalPropertyMediaException("Property image exceeds 10 MB");
         }
-        var normalized = imageNormalizer.normalize(content);
+        RentalImageVariants variants = imageNormalizer.normalize(content);
         List<RentalPropertyMedia> existing = media(propertyId);
         boolean cover = requestedCover || existing.isEmpty();
         if (cover) {
             existing.forEach(item -> item.setCover(false));
             mediaRepository.flush();
         }
-        var stored = mediaStorage.store(normalized);
+        var full = mediaStorage.store(variants.full());
+        var card = mediaStorage.store(variants.card());
+        var thumbnail = mediaStorage.store(variants.thumbnail());
         mediaRepository.save(new RentalPropertyMedia(
                 property,
-                stored.mediaId(),
+                full.mediaId(),
+                card.mediaId(),
+                thumbnail.mediaId(),
                 existing.size(),
                 cover,
                 clock.instant()
@@ -62,10 +66,10 @@ public class RentalPropertyMediaService {
             );
         }
         boolean cover = media.isCover();
-        long assetId = media.getMediaAssetId();
+        List<Long> assetIds = mediaAssetIds(media);
         mediaRepository.delete(media);
         mediaRepository.flush();
-        mediaStorage.delete(assetId);
+        assetIds.forEach(this::deleteAssetIfUnreferenced);
         List<RentalPropertyMedia> remaining = media(propertyId);
         for (int index = 0; index < remaining.size(); index++) {
             RentalPropertyMedia item = remaining.get(index);
@@ -119,22 +123,39 @@ public class RentalPropertyMediaService {
     public void deleteAllForProperty(long propertyId) {
         List<RentalPropertyMedia> propertyMedia = media(propertyId);
         List<Long> assetIds = propertyMedia.stream()
-                .map(RentalPropertyMedia::getMediaAssetId)
+                .flatMap(item -> mediaAssetIds(item).stream())
+                .distinct()
                 .toList();
         mediaRepository.deleteAll(propertyMedia);
         mediaRepository.flush();
-        assetIds.stream()
-                .filter(assetId -> !mediaRepository.existsByMediaAssetId(assetId))
-                .forEach(mediaStorage::delete);
+        assetIds.forEach(this::deleteAssetIfUnreferenced);
     }
 
     @Transactional(readOnly = true)
     public RentalMediaContent getAdminContent(long propertyId, long mediaId) {
-        return content(requireMedia(propertyId, mediaId));
+        return getAdminContent(propertyId, mediaId, RentalMediaVariant.FULL);
+    }
+
+    @Transactional(readOnly = true)
+    public RentalMediaContent getAdminContent(
+            long propertyId,
+            long mediaId,
+            RentalMediaVariant variant
+    ) {
+        return content(requireMedia(propertyId, mediaId), variant);
     }
 
     @Transactional(readOnly = true)
     public RentalMediaContent getPublicContent(long propertyId, long mediaId) {
+        return getPublicContent(propertyId, mediaId, RentalMediaVariant.FULL);
+    }
+
+    @Transactional(readOnly = true)
+    public RentalMediaContent getPublicContent(
+            long propertyId,
+            long mediaId,
+            RentalMediaVariant variant
+    ) {
         RentalPropertyMedia media = mediaRepository
                 .findByIdAndProperty_IdAndProperty_Status(
                         mediaId,
@@ -142,12 +163,34 @@ public class RentalPropertyMediaService {
                         RentalPropertyStatus.PUBLISHED
                 )
                 .orElseThrow(() -> new RentalPropertyMediaNotFoundException(propertyId, mediaId));
-        return content(media);
+        return content(media, variant);
     }
 
-    private RentalMediaContent content(RentalPropertyMedia media) {
-        var content = mediaStorage.get(media.getMediaAssetId());
+    private RentalMediaContent content(RentalPropertyMedia media, RentalMediaVariant variant) {
+        var content = mediaStorage.get(media.mediaAssetId(variant));
         return new RentalMediaContent(content.contentType(), content.content());
+    }
+
+    private void deleteAssetIfUnreferenced(long assetId) {
+        if (!mediaRepository.existsByMediaAssetIdOrCardMediaAssetIdOrThumbnailMediaAssetId(
+                assetId,
+                assetId,
+                assetId
+        )) {
+            mediaStorage.delete(assetId);
+        }
+    }
+
+    private static List<Long> mediaAssetIds(RentalPropertyMedia media) {
+        var assetIds = new java.util.ArrayList<Long>(3);
+        assetIds.add(media.getMediaAssetId());
+        if (media.getCardMediaAssetId() != null) {
+            assetIds.add(media.getCardMediaAssetId());
+        }
+        if (media.getThumbnailMediaAssetId() != null) {
+            assetIds.add(media.getThumbnailMediaAssetId());
+        }
+        return assetIds;
     }
 
     private RentalProperty requireProperty(long propertyId) {

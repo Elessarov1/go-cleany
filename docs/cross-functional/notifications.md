@@ -3,7 +3,7 @@ title: Loco Notifications
 type: cross-functional
 status: active
 scope: platform
-updated: 2026-09-02
+updated: 2026-09-04
 ---
 
 # Notifications
@@ -52,7 +52,7 @@ return transfer when checkout approaches
 confirmed Transfer approaching its pickup
 ```
 
-`customer_reminder` owns scheduling and lifecycle (`PENDING`, `NOTIFIED`, `DISABLED`, `SUPERSEDED`, `EXPIRED`); `customer_notification` remains the durable customer-facing fact. The scheduler writes the inbox first and treats external Telegram delivery as best-effort, so channel failure cannot erase the reminder.
+`customer_reminder` owns scheduling and lifecycle (`PENDING`, `NOTIFIED`, `DISABLED`, `SUPERSEDED`, `EXPIRED`); `customer_notification` remains the durable customer-facing fact. The scheduler writes the inbox in its database transaction and registers optional Telegram delivery only after a successful commit. External I/O therefore does not hold the scheduler transaction or erase the durable reminder when a channel fails.
 
 Action reminders obey current `ENABLED`/`IN_TEST`/`DISABLED` customer-flow rules. An operational reminder for an already confirmed Transfer ignores current catalog availability. Deep links never authorize access and are revalidated by their vertical backend.
 

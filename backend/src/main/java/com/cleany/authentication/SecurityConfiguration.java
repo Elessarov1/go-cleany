@@ -26,6 +26,7 @@ public class SecurityConfiguration {
 
     private final GoogleOidcProperties googleProperties;
     private final TmaAuthenticationFilter tmaAuthenticationFilter;
+    private final CurrentCustomerResolutionFilter currentCustomerResolutionFilter;
     private final TmaAuthorizationRequestMatcher tmaRequestMatcher;
     private final SecurityErrorWriter errorWriter;
     private final GoogleOidcUserService googleOidcUserService;
@@ -86,7 +87,8 @@ public class SecurityConfiguration {
                                 HttpStatus.NO_CONTENT
                         ))
                 )
-                .addFilterBefore(tmaAuthenticationFilter, AnonymousAuthenticationFilter.class);
+                .addFilterBefore(tmaAuthenticationFilter, AnonymousAuthenticationFilter.class)
+                .addFilterAfter(currentCustomerResolutionFilter, TmaAuthenticationFilter.class);
 
         if (googleProperties.enabled()) {
             if (registrations.getIfAvailable() == null) {

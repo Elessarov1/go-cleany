@@ -33,6 +33,8 @@ public interface MediaAssetRepository extends JpaRepository<MediaAsset, Long> {
                        select 1
                          from rental_property_media rental_media
                         where rental_media.media_asset_id = asset.id
+                           or rental_media.card_media_asset_id = asset.id
+                           or rental_media.thumbnail_media_asset_id = asset.id
                    )
              order by asset.id
              limit :batchSize

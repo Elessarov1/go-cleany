@@ -1,0 +1,85 @@
+name: loco-perf
+
+services:
+  postgres:
+    image: postgres:16.14-alpine3.24
+    environment:
+      POSTGRES_DB: loco_performance
+      POSTGRES_USER: loco_performance
+      POSTGRES_PASSWORD: loco-performance-local-only
+    ports:
+      - "127.0.0.1:${PERF_POSTGRES_PORT:-15432}:5432"
+    volumes:
+      - perf_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U loco_performance -d loco_performance"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build:
+      context: ../backend
+    environment:
+      SPRING_PROFILES_ACTIVE: local,performance
+      DB_URL: jdbc:postgresql://postgres:5432/loco_performance?ApplicationName=loco-performance
+      DB_USERNAME: loco_performance
+      DB_PASSWORD: loco-performance-local-only
+      TELEGRAM_BOT_TOKEN: performance-disabled
+      TELEGRAM_BOT_ENABLED: "false"
+      SMART_REMINDERS_ENABLED: ${PERF_SMART_REMINDERS_ENABLED:-false}
+      SMART_REMINDERS_CRON: "${PERF_SMART_REMINDERS_CRON:-0 0 9 * * *}"
+      DATA_CLEANUP_ENABLED: ${PERF_DATA_CLEANUP_ENABLED:-false}
+      DATA_CLEANUP_CRON: "${PERF_DATA_CLEANUP_CRON:-0 30 3 * * *}"
+      RENTAL_CLEANING_BENEFIT_ENABLED: ${PERF_RENTAL_CLEANING_BENEFIT_ENABLED:-false}
+      RENTAL_CLEANING_BENEFIT_CRON: "${PERF_RENTAL_CLEANING_BENEFIT_CRON:-0 15 4 * * *}"
+      LOCAL_TELEGRAM_USER_ID: "990000001"
+      LOCAL_TELEGRAM_USERNAME: performance_customer
+      LOCAL_TELEGRAM_FIRST_NAME: Performance
+      LOCAL_TELEGRAM_LAST_NAME: Customer
+      LOCAL_TELEGRAM_LANGUAGE_CODE: en
+      PUBLIC_APP_BASE_URL: http://127.0.0.1:${PERF_FRONTEND_PORT:-15173}
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75.0
+    ports:
+      - "127.0.0.1:${PERF_BACKEND_PORT:-18080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+  frontend:
+    build:
+      context: ../frontend
+      args:
+        VITE_API_BASE_URL: /
+    ports:
+      - "127.0.0.1:${PERF_FRONTEND_PORT:-15173}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health | grep -q ok"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  k6:
+    image: grafana/k6:2.1.0
+    profiles: ["tools"]
+    environment:
+      BASE_URL: http://frontend
+      API_BASE_URL: http://backend:8080
+      PERF_MANIFEST: /results/manifest.json
+    volumes:
+      - ./k6:/scripts:ro
+      - ./results:/results
+    depends_on:
+      frontend:
+        condition: service_healthy
+
+volumes:
+  perf_postgres_data:

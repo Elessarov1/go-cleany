@@ -548,7 +548,7 @@ export class MockRentalApi implements RentalApi {
     return simulateNetwork(updated);
   }
 
-  async getAdminPropertyMedia(id: number, mediaId: number): Promise<Blob> {
+  async getAdminPropertyMedia(id: number, mediaId: number, _variant?: "thumbnail"): Promise<Blob> {
     const property = await this.getAdminProperty(id);
     const media = property.media.find((item) => item.id === mediaId);
     if (!media) throw new ApiError("Rental property media not found", 404);

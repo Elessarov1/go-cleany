@@ -133,6 +133,11 @@ Read:
 - [staging-continuous-deployment.md](staging-continuous-deployment.md)
 - [vps-deployment-runbook.md](vps-deployment-runbook.md)
 
+For local performance baselines and scheduler observability, also read:
+
+- [operations/performance.md](operations/performance.md)
+- [operations/local-stress-test-runbook.md](operations/local-stress-test-runbook.md) for an executable local smoke/stress procedure.
+
 ## Data cleanup / commercial launch
 
 Read:

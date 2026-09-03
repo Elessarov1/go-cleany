@@ -53,6 +53,10 @@ public class SmartReminderService {
         processRentalCheckout(today, counters);
         processUpcomingTransfers(today, counters);
         return new SmartReminderProcessingResult(
+                counters.candidates,
+                counters.processed,
+                counters.skipped,
+                counters.failed,
                 counters.notified,
                 counters.superseded,
                 counters.expired
@@ -67,28 +71,33 @@ public class SmartReminderService {
                         today,
                         PageRequest.of(0, properties.batchSize())
                 );
+        counters.candidates += due.size();
         for (CustomerReminder reminder : due) {
             CleaningOrder order = cleaningOrderRepository.findById(reminder.getSourceEntityId())
                     .orElse(null);
             if (order == null || order.getStatus() != CleaningOrderStatus.COMPLETED) {
                 reminder.markExpired(clock.instant());
                 counters.expired++;
+                counters.processed++;
                 continue;
             }
             if (cleaningReminderService.hasLaterMatchingOrder(order)) {
                 reminder.markSuperseded(clock.instant());
                 counters.superseded++;
+                counters.processed++;
                 continue;
             }
             if (today.isAfter(reminder.getScheduledDate().plusDays(properties.cleaningGraceDays()))) {
                 reminder.markExpired(clock.instant());
                 counters.expired++;
+                counters.processed++;
                 continue;
             }
             if (!serviceAccessService.canStartCustomerFlow(
                     PlatformService.CLEANING,
                     reminder.getCustomerId()
             )) {
+                counters.skipped++;
                 continue;
             }
             notify(
@@ -100,20 +109,24 @@ public class SmartReminderService {
                     )
             );
             counters.notified++;
+            counters.processed++;
         }
     }
 
     private void processRentalCheckout(LocalDate today, Counters counters) {
         LocalDate windowEnd = today.plusDays(properties.rentalTransferDaysBefore());
-        for (long bookingId : rentalBookingRepository.findCheckoutReminderCandidates(
+        var candidates = rentalBookingRepository.findCheckoutReminderCandidates(
                 today,
                 windowEnd,
                 properties.batchSize()
-        )) {
+        );
+        counters.candidates += candidates.size();
+        for (long bookingId : candidates) {
             RentalBooking booking = rentalBookingRepository.findById(bookingId).orElse(null);
             if (booking == null || booking.getCheckOutDate()
                     .minusDays(properties.rentalTransferDaysBefore())
                     .isAfter(today)) {
+                counters.skipped++;
                 continue;
             }
             boolean bookable = rentalTransferContextService
@@ -123,6 +136,7 @@ public class SmartReminderService {
                     .anyMatch(option -> option.context() == RentalTransferContextType.CHECKOUT
                             && option.availability() == RentalTransferContextAvailability.BOOKABLE);
             if (!bookable) {
+                counters.skipped++;
                 continue;
             }
             CustomerReminder reminder = ensureAutomatic(
@@ -132,6 +146,7 @@ public class SmartReminderService {
                     booking.getCheckOutDate().minusDays(properties.rentalTransferDaysBefore())
             );
             if (reminder.getStatus() != CustomerReminderStatus.PENDING) {
+                counters.skipped++;
                 continue;
             }
             notify(
@@ -143,6 +158,7 @@ public class SmartReminderService {
                     )
             );
             counters.notified++;
+            counters.processed++;
         }
     }
 
@@ -154,15 +170,18 @@ public class SmartReminderService {
                         today.plusDays(properties.transferDaysBefore()),
                         PageRequest.of(0, properties.batchSize())
                 );
+        counters.candidates += candidates.size();
         for (TransferBooking booking : candidates) {
             if (!clock.instant().isBefore(transferBookingPolicy.pickupInstant(
                     booking.getPickupDate(),
                     booking.getPickupTime()
             ))) {
+                counters.skipped++;
                 continue;
             }
             LocalDate scheduledDate = booking.getPickupDate().minusDays(properties.transferDaysBefore());
             if (scheduledDate.isAfter(today)) {
+                counters.skipped++;
                 continue;
             }
             CustomerReminder reminder = ensureAutomatic(
@@ -172,6 +191,7 @@ public class SmartReminderService {
                     scheduledDate
             );
             if (reminder.getStatus() != CustomerReminderStatus.PENDING) {
+                counters.skipped++;
                 continue;
             }
             notify(
@@ -186,6 +206,7 @@ public class SmartReminderService {
                     )
             );
             counters.notified++;
+            counters.processed++;
         }
     }
 
@@ -248,7 +269,7 @@ public class SmartReminderService {
             ReminderCustomerNotification notification
     ) {
         Objects.requireNonNull(notification, "notification");
-        notificationDispatcher.send(
+        notificationDispatcher.sendAfterCommit(
                 reminder.getCustomerId(),
                 communicationIdentityId,
                 notification
@@ -257,6 +278,10 @@ public class SmartReminderService {
     }
 
     private static final class Counters {
+        private int candidates;
+        private int processed;
+        private int skipped;
+        private int failed;
         private int notified;
         private int superseded;
         private int expired;

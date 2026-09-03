@@ -1,11 +1,15 @@
 package com.cleany.crossservice.rentalcleaning;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.cleany.observability.SchedulerJobTelemetry;
+import com.cleany.observability.SchedulerRunSummary;
 import com.cleany.rental.RentalStayPolicy;
 
 import lombok.RequiredArgsConstructor;
@@ -20,33 +24,51 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class RentalCleaningBenefitIssuanceJob {
 
-    private static final Logger log = LoggerFactory.getLogger(
-            RentalCleaningBenefitIssuanceJob.class
-    );
+    private static final String JOB_NAME = "rental-cleaning-benefit";
 
     private final RentalCleaningBenefitProperties properties;
     private final RentalCleaningBenefitIssuanceService issuanceService;
     private final RentalStayPolicy stayPolicy;
+    private final SchedulerJobTelemetry telemetry;
+    private final Clock clock;
 
     @Scheduled(
             cron = "${rental-cleaning-benefit.issuance-cron}",
             zone = "${rental.zone-id}"
     )
     public void run() {
-        RentalCleaningBenefitIssuanceResult result = issuanceService.issueEligible(
-                stayPolicy.today(),
-                properties.issuanceBatchSize()
-        );
-        if (result.candidates() > 0 || result.failed() > 0) {
-            log.info(
-                    "Rental cleaning benefit issuance completed: candidates={}, issued={}, "
-                            + "alreadyExists={}, ineligible={}, failed={}",
-                    result.candidates(),
-                    result.issued(),
-                    result.alreadyExists(),
-                    result.ineligible(),
-                    result.failed()
+        Instant startedAt = clock.instant();
+        long startedNanos = System.nanoTime();
+        try {
+            RentalCleaningBenefitIssuanceResult result = issuanceService.issueEligible(
+                    stayPolicy.today(),
+                    properties.issuanceBatchSize()
             );
+            long skipped = (long) result.alreadyExists() + result.ineligible();
+            telemetry.completed(
+                    JOB_NAME,
+                    startedAt,
+                    elapsed(startedNanos),
+                    new SchedulerRunSummary(
+                            result.candidates(),
+                            result.issued(),
+                            skipped,
+                            result.failed()
+                    )
+            );
+        } catch (RuntimeException exception) {
+            telemetry.failed(
+                    JOB_NAME,
+                    startedAt,
+                    elapsed(startedNanos),
+                    SchedulerRunSummary.failedRun(),
+                    exception
+            );
+            throw exception;
         }
+    }
+
+    private static Duration elapsed(long startedNanos) {
+        return Duration.ofNanos(System.nanoTime() - startedNanos);
     }
 }

@@ -160,8 +160,9 @@ export class HttpRentalApi implements RentalApi {
     }));
   }
 
-  getAdminPropertyMedia(id: number, mediaId: number): Promise<Blob> {
-    return this.client.requestBlob(`/api/v1/admin/rental/properties/${id}/media/${mediaId}`);
+  getAdminPropertyMedia(id: number, mediaId: number, variant?: "thumbnail"): Promise<Blob> {
+    const suffix = variant ? `/${variant}` : "";
+    return this.client.requestBlob(`/api/v1/admin/rental/properties/${id}/media/${mediaId}${suffix}`);
   }
 
   getAdminOccupancies(id: number, fromDate: string, toDate: string): Promise<RentalOccupancy[]> {
@@ -227,6 +228,8 @@ export class HttpRentalApi implements RentalApi {
       media: property.media.map((media) => ({
         ...media,
         url: this.client.resolveUrl(media.url),
+        cardUrl: media.cardUrl ? this.client.resolveUrl(media.cardUrl) : undefined,
+        thumbnailUrl: media.thumbnailUrl ? this.client.resolveUrl(media.thumbnailUrl) : undefined,
       })),
     };
   }

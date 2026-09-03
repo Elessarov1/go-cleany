@@ -3,7 +3,7 @@ title: Customer Identity
 type: architecture
 status: active
 scope: platform
-updated: 2026-08-30
+updated: 2026-09-04
 ---
 
 # Identity
@@ -69,3 +69,9 @@ Do not make reusable customer logic depend on Telegram user/chat IDs.
 ## Cross-service context
 
 When a cross-service flow starts from an existing booking/order, backend must resolve the authenticated customer and verify ownership of the source entity. Query parameters or promo codes are context hints, not identity authorization.
+
+## Request resolution
+
+Authenticated HTTP requests resolve their canonical `CustomerAccount` once before customer-owned application transactions begin and reuse that result for the request. This avoids nested independent identity transactions holding one database connection while waiting for another under concurrency. Non-HTTP jobs and adapters keep an explicit resolution boundary.
+
+External-identity activity timestamps are observational metadata, not a reason to write on every request. Their refresh is throttled and must not change ownership or linking semantics.

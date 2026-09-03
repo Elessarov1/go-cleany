@@ -95,7 +95,8 @@ public class RentalPropertyService {
                 propertyRepository.findAllByStatusOrderByCreatedAtDesc(
                         RentalPropertyStatus.PUBLISHED
                 ),
-                false
+                false,
+                true
         );
     }
 
@@ -109,7 +110,7 @@ public class RentalPropertyService {
 
     @Transactional(readOnly = true)
     public List<RentalPropertyResponse> getAdminProperties() {
-        return responses(propertyRepository.findAllByOrderByCreatedAtDesc(), true);
+        return responses(propertyRepository.findAllByOrderByCreatedAtDesc(), true, false);
     }
 
     @Transactional(readOnly = true)
@@ -144,16 +145,19 @@ public class RentalPropertyService {
 
     private List<RentalPropertyResponse> responses(
             List<RentalProperty> properties,
-            boolean admin
+            boolean admin,
+            boolean coverOnly
     ) {
         if (properties.isEmpty()) {
             return Collections.emptyList();
         }
         List<Long> propertyIds = properties.stream().map(RentalProperty::getId).toList();
-        Map<Long, List<RentalPropertyMedia>> mediaByPropertyId = mediaRepository
-                .findAllByProperty_IdInOrderByProperty_IdAscSortOrderAscIdAsc(propertyIds)
+        List<RentalPropertyMedia> media = coverOnly
+                ? mediaRepository.findAllByProperty_IdInAndCoverTrueOrderByProperty_IdAscIdAsc(propertyIds)
+                : mediaRepository.findAllByProperty_IdInOrderByProperty_IdAscSortOrderAscIdAsc(propertyIds);
+        Map<Long, List<RentalPropertyMedia>> mediaByPropertyId = media
                 .stream()
-                .collect(Collectors.groupingBy(media -> media.getProperty().getId()));
+                .collect(Collectors.groupingBy(item -> item.getProperty().getId()));
         return properties.stream()
                 .map(property -> response(
                         property,

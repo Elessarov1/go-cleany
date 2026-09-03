@@ -23,5 +23,6 @@ export function rentalPropertyDescription(
 }
 
 export function rentalCoverUrl(property: RentalProperty): string | undefined {
-  return property.media.find((item) => item.cover)?.url ?? property.media[0]?.url;
+  const cover = property.media.find((item) => item.cover) ?? property.media[0];
+  return cover?.cardUrl ?? cover?.url;
 }

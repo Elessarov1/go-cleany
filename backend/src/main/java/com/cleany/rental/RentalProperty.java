@@ -20,6 +20,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 
+import org.hibernate.annotations.BatchSize;
+
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -87,6 +89,7 @@ public class RentalProperty {
     )
     @Enumerated(EnumType.STRING)
     @Column(name = "amenity", nullable = false, length = 64)
+    @BatchSize(size = 50)
     private Set<RentalAmenity> amenities = new HashSet<>();
 
     @Column(name = "created_at", nullable = false)
