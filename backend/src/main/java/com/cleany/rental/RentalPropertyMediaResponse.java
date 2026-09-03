@@ -16,9 +16,16 @@ public record RentalPropertyMediaResponse(
                 media.getMediaAssetId(),
                 media.getSortOrder(),
                 media.isCover(),
-                url,
-                url + "/card",
-                url + "/thumbnail"
+                versioned(url, media.mediaAssetId(RentalMediaVariant.FULL)),
+                versioned(url + "/card", media.mediaAssetId(RentalMediaVariant.CARD)),
+                versioned(
+                        url + "/thumbnail",
+                        media.mediaAssetId(RentalMediaVariant.THUMBNAIL)
+                )
         );
+    }
+
+    private static String versioned(String url, long mediaAssetId) {
+        return url + "?v=" + mediaAssetId;
     }
 }

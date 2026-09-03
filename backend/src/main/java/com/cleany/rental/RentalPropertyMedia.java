@@ -84,6 +84,27 @@ public class RentalPropertyMedia {
         };
     }
 
+    void attachMissingVariants(Long cardAssetId, Long thumbnailAssetId) {
+        if (cardAssetId != null) {
+            if (cardAssetId <= 0) {
+                throw new IllegalArgumentException("cardAssetId must be positive");
+            }
+            if (cardMediaAssetId != null) {
+                throw new IllegalStateException("Card media variant is already assigned");
+            }
+            cardMediaAssetId = cardAssetId;
+        }
+        if (thumbnailAssetId != null) {
+            if (thumbnailAssetId <= 0) {
+                throw new IllegalArgumentException("thumbnailAssetId must be positive");
+            }
+            if (thumbnailMediaAssetId != null) {
+                throw new IllegalStateException("Thumbnail media variant is already assigned");
+            }
+            thumbnailMediaAssetId = thumbnailAssetId;
+        }
+    }
+
     public void setCover(boolean cover) {
         this.cover = cover;
     }

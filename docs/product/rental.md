@@ -34,7 +34,9 @@ Admin owns property publication, occupancies and operational booking management.
 
 ## Property media delivery
 
-Rental keeps platform-owned full, card and thumbnail image variants. Upload normalization decodes the source once and creates the three representations; cards use the card URL and galleries use thumbnails until the full asset is opened. Public media responses are immutable because each asset has a stable content identity, while admin reads remain non-cacheable. Public property lists load cover media only instead of hydrating every gallery.
+Rental keeps platform-owned full, card and thumbnail image variants. Upload normalization decodes the source once and creates the three representations; cards use the card URL and galleries use thumbnails until the full asset is opened. An idempotent startup backfill creates only missing responsive variants for media uploaded before this pipeline existed and deliberately preserves the canonical full asset. Backend readiness stays down until this bounded-batch repair finishes; an undecodable legacy image fails startup with its property/media identity instead of silently preserving an oversized fallback.
+
+Public media URLs carry the selected asset ID as a version token and are immutable for one year. A dedicated weighted Caffeine cache retains up to 64 MiB of public full/card/thumbnail bytes per backend process, so a cache hit performs no PostgreSQL media or ownership query. Media and property lifecycle changes invalidate only the affected property after commit; generation keys prevent an in-flight pre-invalidation read from repopulating a reachable stale entry. Admin reads remain non-cacheable, and public property lists load cover media only instead of hydrating every gallery. The cache is intentionally local and cold after a backend restart; Caddy, Redis and CDN caching are not part of this design.
 
 ## Strategic role
 

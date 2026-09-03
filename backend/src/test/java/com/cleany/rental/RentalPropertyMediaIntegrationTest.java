@@ -79,8 +79,8 @@ class RentalPropertyMediaIntegrationTest extends BaseIntegrationTest {
                         mediaStorage.get(first.mediaAssetId()).contentType()
                 ),
                 () -> Assertions.assertEquals(6, mediaAssetRepository.count()),
-                () -> Assertions.assertTrue(first.cardUrl().endsWith("/card")),
-                () -> Assertions.assertTrue(first.thumbnailUrl().endsWith("/thumbnail")),
+                () -> Assertions.assertTrue(first.cardUrl().contains("/card?v=")),
+                () -> Assertions.assertTrue(first.thumbnailUrl().contains("/thumbnail?v=")),
                 () -> Assertions.assertEquals(
                         64,
                         RentalTestImages.read(

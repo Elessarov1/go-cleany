@@ -4,7 +4,7 @@ This directory is the reproducible, local-only measurement environment for Stage
 
 - Compose project: `loco-perf`;
 - database: `loco_performance` in its own Docker volume;
-- loopback-only host ports: PostgreSQL `15432`, backend `18080`, frontend `15173`;
+- loopback-only host ports: PostgreSQL `15432`, backend `18080`, Caddy frontend `15173`;
 - Telegram, Smart Reminders, data retention and Rental Cleaning Benefit schedulers are disabled by default;
 - k6 runs from the pinned `grafana/k6:2.1.0` image;
 - both the runner and every k6 script reject non-local targets.
@@ -81,6 +81,14 @@ Use `-Validation -Scenario all` for three short iterations of every scenario. Wi
 `-ReuseStack` (or `REUSE_STACK=true` for the shell runner) skips Compose build/recreation while
 still checking backend health. Use it for warm measurements after the initial reset so every run
 uses the same warmed JVM and connection pool. It cannot be combined with `-Reset`.
+
+All scenarios use `http://frontend` by default. Despite the retained Compose service name, this is
+the Caddy runtime used to serve the Vite build and proxy API requests, so the default measurement is
+end-to-end and production-shaped. A direct component diagnostic can be requested explicitly with
+`-ApiBaseUrl http://backend:8080` (or `API_BASE_URL=http://backend:8080`), but label it as such and do
+not use it as the only baseline. The smoke scenario checks the performance-only Actuator health
+endpoint separately through the internal backend address; its catalog requests still pass through
+Caddy.
 
 Full k6 JSON summaries, CSV output, JFR files and the generated manifest belong in `performance/results/` and are ignored by Git.
 

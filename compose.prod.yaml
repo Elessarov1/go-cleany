@@ -92,6 +92,10 @@ services:
       RENTAL_MAX_STAY_DAYS: ${RENTAL_MAX_STAY_DAYS:-365}
       RENTAL_BOOKING_START_MONTHS_AHEAD: ${RENTAL_BOOKING_START_MONTHS_AHEAD:-6}
       RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER: ${RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER:-3}
+      RENTAL_MEDIA_BACKFILL_ENABLED: ${RENTAL_MEDIA_BACKFILL_ENABLED:-true}
+      RENTAL_MEDIA_BACKFILL_BATCH_SIZE: ${RENTAL_MEDIA_BACKFILL_BATCH_SIZE:-10}
+      RENTAL_MEDIA_CACHE_ENABLED: ${RENTAL_MEDIA_CACHE_ENABLED:-true}
+      RENTAL_MEDIA_CACHE_MAX_SIZE: ${RENTAL_MEDIA_CACHE_MAX_SIZE:-64MB}
       RENTAL_CLEANING_BENEFIT_ENABLED: ${RENTAL_CLEANING_BENEFIT_ENABLED:-true}
       RENTAL_CLEANING_BENEFIT_CRON: "${RENTAL_CLEANING_BENEFIT_CRON:-0 15 4 * * *}"
       RENTAL_CLEANING_BENEFIT_BATCH_SIZE: ${RENTAL_CLEANING_BENEFIT_BATCH_SIZE:-100}
@@ -133,30 +137,12 @@ services:
     restart: unless-stopped
     logging: *default-logging
 
-  frontend:
+  caddy:
     build:
       context: ./frontend
       args:
         VITE_API_BASE_URL: /
         VITE_PREVIEW_MODE: "false"
-    expose:
-      - "80"
-    networks:
-      - edge
-      - app
-    depends_on:
-      backend:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health | grep -q ok"]
-      interval: 10s
-      timeout: 3s
-      retries: 6
-    restart: unless-stopped
-    logging: *default-logging
-
-  caddy:
-    image: caddy:2.11.4-alpine
     environment:
       APP_HOST: ${APP_HOST:?Set APP_HOST in .env.production}
       ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env.production}
@@ -172,7 +158,7 @@ services:
       - edge
       - app
     depends_on:
-      frontend:
+      backend:
         condition: service_healthy
     restart: unless-stopped
     logging: *default-logging

@@ -261,7 +261,9 @@ When writing backend code:
 - add a concurrent integration scenario when changing claims, booking conflicts, identity resolution, scheduler processing or another first-wins/locking flow;
 - avoid loading whole child collections or binary payloads when an endpoint needs only a cover, count, projection or metadata;
 - do not copy large `byte[]` values without need, and use fit-for-purpose full/card/thumbnail media variants rather than sending a full image to every consumer;
-- apply immutable public caching only to stable asset URLs. Verify the actual serving path before changing proxy settings: public ingress is Caddy, while the existing frontend container's static server is an internal implementation detail.
+- apply immutable public caching only to stable fingerprinted asset URLs; HTML and SPA fallbacks must remain non-cacheable;
+- Caddy is the only runtime web server. In production the Caddy container serves the Vite build and proxies API/OAuth routes directly to backend. Local/performance Compose keeps the service name `frontend`, but that image also runs Caddy. Do not add Nginx or another proxy layer without a measured requirement;
+- performance checks that are meant to represent the deployed path must use the Caddy service. Direct-backend runs are allowed only as an explicitly labelled component diagnostic, never as the sole end-to-end baseline.
 
 When writing frontend code:
 

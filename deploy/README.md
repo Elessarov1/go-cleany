@@ -1,8 +1,9 @@
 # Deployment
 
 The production deployment targets a single Ubuntu VPS and keeps Telegram updates on long polling.
-Only Caddy ports `80` and `443` are published; PostgreSQL, backend, and frontend stay on Docker
-networks. Caddy provides automatic HTTPS, while Liquibase runs as part of backend startup.
+Only Caddy ports `80` and `443` are published; PostgreSQL and backend stay on private Docker
+networks. The single Caddy runtime serves the built Vite application, proxies API/OAuth routes
+directly to backend and provides automatic HTTPS. Liquibase runs as part of backend startup.
 
 The operational entry points are deliberately small:
 

@@ -89,7 +89,8 @@ Invoke-WebRequest http://localhost:5173/health -UseBasicParsing
 
 Ожидаемый статус backend — `UP`, а все три контейнера в `docker compose ps` должны стать
 `healthy`. Ответы обоих configuration endpoints через порт frontend дополнительно подтверждают,
-что Nginx правильно проксирует backend.
+что Caddy правильно отдаёт Vite SPA и напрямую проксирует backend. Имя Compose-сервиса
+`frontend` сохранено для локальной совместимости; внутри образа работает Caddy, а не Nginx.
 
 Откройте приложение в браузере: <http://localhost:5173>. Контейнерный frontend использует реальный
 HTTP API, а backend с профилем `local` подставляет пользователя из `LOCAL_TELEGRAM_USER_ID`.

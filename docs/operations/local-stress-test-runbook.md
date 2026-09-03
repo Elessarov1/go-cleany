@@ -44,7 +44,7 @@ $env:PERF_ANCHOR_DATE = '2026-09-04'
 .\performance\scripts\run-local.ps1 -ReuseStack -SkipSeed -Scenario stress
 ```
 
-Обычный stress-профиль постепенно поднимает нагрузку до 100 VU и занимает примерно 3 минуты 15 секунд. Он обращается непосредственно к backend внутри `loco-perf`, что соответствует измеряемому API-сегменту за публичным Caddy. Не перенаправляйте его через frontend-контейнер.
+Обычный stress-профиль постепенно поднимает нагрузку до 100 VU и занимает примерно 3 минуты 15 секунд. По умолчанию он обращается к Compose-сервису `frontend`: это Caddy, который отдаёт Vite SPA и проксирует API напрямую в backend. Такой маршрут воспроизводит production topology. Прямой `API_BASE_URL=http://backend:8080` используйте только как явно подписанную компонентную диагностику.
 
 Если нужна одна команда с полной пересборкой, пересозданием данных и stress-тестом:
 
@@ -116,6 +116,38 @@ JFR полезен, если stress показывает рост CPU, allocatio
 
 Запись сохраняется в `performance/results/` и игнорируется Git.
 
+## Cold/warm проверка Rental media cache
+
+После изменений в выдаче Rental-фотографий достаточно одного cold и одного warm `image-burst`;
+полный stress повторять не нужно. Первая команда пересоздаёт только локальный performance-контур,
+загружает seed `42` и запускает сценарий с пустым in-process media cache:
+
+```powershell
+$env:PERF_ANCHOR_DATE = '2026-09-04'
+.\performance\scripts\run-local.ps1 -Reset -Scenario image-burst
+```
+
+Снимите cache/Hibernate metrics, не перезапуская backend:
+
+```powershell
+Invoke-RestMethod 'http://127.0.0.1:18080/actuator/metrics/cache.gets?tag=cache:rental-public-media&tag=result:hit'
+Invoke-RestMethod 'http://127.0.0.1:18080/actuator/metrics/cache.gets?tag=cache:rental-public-media&tag=result:miss'
+Invoke-RestMethod 'http://127.0.0.1:18080/actuator/metrics/cache.evictions?tag=cache:rental-public-media'
+Invoke-RestMethod http://127.0.0.1:18080/actuator/metrics/cache.size
+Invoke-RestMethod http://127.0.0.1:18080/actuator/metrics/loco.rental.media.cache.bytes
+Invoke-RestMethod http://127.0.0.1:18080/actuator/metrics/hibernate.queries.executions
+```
+
+Затем выполните тот же сценарий на уже прогретом процессе и снова снимите метрики:
+
+```powershell
+.\performance\scripts\run-local.ps1 -ReuseStack -SkipSeed -Scenario image-burst
+```
+
+Во втором запуске число cache misses и Hibernate queries не должно расти, пока hits продолжают
+увеличиваться. Сравнивайте p50/p95/p99, ошибки и RPS из двух k6 summary. k6 не моделирует browser
+HTTP cache, поэтому эта проверка намеренно измеряет именно общий backend cache между запросами.
+
 ## Завершение и очистка
 
 Остановить контейнеры, сохранив synthetic database для следующего запуска:
@@ -150,6 +182,6 @@ docker compose -p loco-perf -f performance/compose.perf.yaml logs --tail=200 bac
 
 Это штатная защита. Скрипты принимают только localhost и внутренние имена `loco-perf`. Не ослабляйте allowlist и не подставляйте адрес VPS или домен.
 
-### Через frontend появляются массовые 502
+### Через Caddy появляются массовые 502
 
-Не настраивайте Nginx по этому симптому. Публичный ingress проекта — Caddy, а stress-сценарий должен измерять backend через стандартный `API_BASE_URL=http://backend:8080`. Прогон через frontend-контейнер является другим сетевым сегментом и не используется как production baseline.
+Сначала проверьте `docker compose ... logs frontend backend` и повторите короткий `smoke -Validation`. Не обходите проблему переключением baseline на прямой backend: production-shaped сценарий должен проходить через Caddy. Direct-backend запуск допустим только для локализации причины. Не добавляйте второй proxy/web-server и не увеличивайте системные лимиты без измеренного подтверждения.

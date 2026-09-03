@@ -33,6 +33,10 @@ services:
       DATA_CLEANUP_CRON: "${PERF_DATA_CLEANUP_CRON:-0 30 3 * * *}"
       RENTAL_CLEANING_BENEFIT_ENABLED: ${PERF_RENTAL_CLEANING_BENEFIT_ENABLED:-false}
       RENTAL_CLEANING_BENEFIT_CRON: "${PERF_RENTAL_CLEANING_BENEFIT_CRON:-0 15 4 * * *}"
+      RENTAL_MEDIA_BACKFILL_ENABLED: "true"
+      RENTAL_MEDIA_BACKFILL_BATCH_SIZE: "10"
+      RENTAL_MEDIA_CACHE_ENABLED: "true"
+      RENTAL_MEDIA_CACHE_MAX_SIZE: "64MB"
       LOCAL_TELEGRAM_USER_ID: "990000001"
       LOCAL_TELEGRAM_USERNAME: performance_customer
       LOCAL_TELEGRAM_FIRST_NAME: Performance
@@ -72,7 +76,8 @@ services:
     profiles: ["tools"]
     environment:
       BASE_URL: http://frontend
-      API_BASE_URL: http://backend:8080
+      API_BASE_URL: http://frontend
+      BACKEND_BASE_URL: http://backend:8080
       PERF_MANIFEST: /results/manifest.json
     volumes:
       - ./k6:/scripts:ro
