@@ -3,7 +3,7 @@ title: Loco Place Operations Index
 type: operations-index
 status: active
 scope: platform
-updated: 2026-08-30
+updated: 2026-09-04
 ---
 
 # Operations
@@ -14,6 +14,7 @@ Use existing runbooks rather than duplicating deployment/cleanup instructions.
 
 - [../local-docker-runbook.md](../local-docker-runbook.md)
 - [performance.md](performance.md) — isolated local k6/JFR performance measurement.
+- [local-stress-test-runbook.md](local-stress-test-runbook.md) — пошаговый локальный smoke/stress запуск и разбор результата.
 
 ## Staging / production operations
 
