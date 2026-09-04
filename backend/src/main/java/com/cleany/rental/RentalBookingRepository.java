@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import jakarta.persistence.LockModeType;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -50,10 +51,13 @@ public interface RentalBookingRepository extends JpaRepository<RentalBooking, Lo
             @Param("batchSize") int batchSize
     );
 
+    @EntityGraph(attributePaths = "property")
     List<RentalBooking> findAllByCustomerIdOrderByCreatedAtDesc(long customerId);
 
+    @EntityGraph(attributePaths = "property")
     Optional<RentalBooking> findByIdAndCustomerId(long id, long customerId);
 
+    @EntityGraph(attributePaths = "property")
     List<RentalBooking> findAllByOrderByCreatedAtDesc();
 
     boolean existsByProperty_Id(long propertyId);

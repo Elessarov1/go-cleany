@@ -104,7 +104,6 @@ samp {
 
 .service-shell .topbar__global-link,
 .service-shell .topbar__auth-action,
-.service-shell .language-switcher,
 .service-shell .bottom-nav__link,
 .service-shell .button,
 .service-shell .choice-card,
@@ -321,19 +320,6 @@ samp {
 
 .service-shell[data-service="cleaning"] .cleaning-card.is-selected .cleaning-card__radio {
   box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--color-primary-soft) 54%, white);
-}
-
-.service-shell .language-switcher {
-  padding: 3px;
-  background: var(--color-surface-strong);
-  border-color: var(--color-line);
-  box-shadow: var(--shadow-small);
-}
-
-.service-shell[data-service="platform"] .language-switcher button.is-active,
-.service-shell[data-service="rent"] .language-switcher button.is-active {
-  color: #000;
-  background: var(--color-primary);
 }
 
 .service-shell .bottom-nav__link.is-active {

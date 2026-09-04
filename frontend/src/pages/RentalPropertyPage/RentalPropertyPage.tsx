@@ -16,7 +16,6 @@ import type {
   RentalTermType,
 } from "../../domain/rental";
 import { formatPrice } from "../../domain/pricing";
-import { usePlatform } from "../../platform/PlatformProvider";
 import {
   addDaysToInputValue,
   addMonthsToInputValue,
@@ -57,7 +56,6 @@ export function RentalPropertyPage() {
   const { t, i18n } = useTranslation();
   const api = useRentalApi();
   const customerApi = useCustomerApi();
-  const platform = usePlatform();
   const authentication = useAuthentication();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

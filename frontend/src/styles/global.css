@@ -212,33 +212,6 @@ h3 {
   font-weight: inherit;
 }
 
-.language-switcher {
-  display: flex;
-  gap: 3px;
-  padding: 3px;
-  background: rgba(255, 255, 255, 0.65);
-  border: 1px solid var(--color-line);
-  border-radius: 999px;
-}
-
-.language-switcher button {
-  min-width: 38px;
-  padding: 7px 9px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--color-muted);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-}
-
-.language-switcher button.is-active {
-  background: var(--color-primary-dark);
-  color: #fff;
-}
-
 .app-content {
   min-height: calc(100vh - 70px);
   padding-bottom: calc(94px + var(--safe-bottom));
@@ -629,6 +602,33 @@ h3 {
   color: var(--color-muted);
   font-size: 11px;
   font-weight: 500;
+}
+
+/* Form controls must be allowed to shrink inside narrow iOS WebView layouts. */
+.service-shell :where(form, .field, .field > label) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.service-shell :where(input, textarea, select) {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* iOS gives date inputs an intrinsic inline size that may exceed their container. */
+.service-shell input[type="date"] {
+  display: block;
+  width: 100%;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.service-shell input[type="date"]::-webkit-date-and-time-value {
+  min-width: 0;
 }
 
 .field input,
@@ -1055,25 +1055,6 @@ h3 {
   padding-inline: 16px;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-}
-
-@media (max-width: 389px) {
-  .topbar { padding-inline: 14px; }
-  .topbar__global-link { width: 38px; padding-inline: 9px; justify-content: center; }
-  .topbar__global-link span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-  .service-shell[data-platform="web"][data-layout="customer"] .topbar__auth-action {
-    width: 38px;
-    padding-inline: 9px;
-    justify-content: center;
-  }
-  .service-shell[data-platform="web"][data-layout="customer"] .topbar__auth-action span {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-  }
-  .brand__word { font-size: 19px; }
 }
 
 .bottom-nav__link {
@@ -3534,60 +3515,6 @@ h3 {
   .admin-analytics__repeat dl { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* The standalone customer header keeps the same controls in the same order on every route. */
-.service-shell[data-platform="web"][data-layout="customer"] .topbar {
-  min-height: 0;
-}
-
-.service-shell[data-platform="web"][data-layout="customer"] .topbar__inner {
-  display: grid;
-  grid-template-areas:
-    "brand"
-    "actions"
-    "navigation";
-  grid-template-columns: minmax(0, 1fr);
-  gap: 9px;
-}
-
-.service-shell[data-platform="web"][data-layout="customer"] .brand {
-  min-width: 0;
-  grid-area: brand;
-}
-
-.service-shell[data-platform="web"][data-layout="customer"] .topbar__actions {
-  width: 100%;
-  grid-area: actions;
-}
-
-.service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav {
-  display: block;
-  width: 100%;
-  margin: 0;
-  grid-area: navigation;
-}
-
-.service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav > a {
-  display: flex;
-  min-width: 0;
-  min-height: 38px;
-  padding: 9px 7px;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  color: var(--color-muted);
-  border-radius: 10px;
-  font-size: 10px;
-  font-weight: 750;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav > a:hover,
-.service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav > a.active {
-  color: var(--color-primary-dark);
-  background: var(--color-primary-soft);
-}
-
 @media (max-width: 767px) {
   .service-shell[data-platform="web"][data-layout="admin"] .topbar {
     min-height: 0;
@@ -3649,20 +3576,6 @@ h3 {
     margin-inline: auto;
   }
 
-  .service-shell[data-platform="web"][data-layout="customer"] .topbar {
-    min-height: 0;
-    padding-block: 10px;
-  }
-
-  .service-shell[data-platform="web"][data-layout="customer"] .topbar__inner {
-    min-height: 0;
-    grid-template-areas:
-      "brand actions"
-      "navigation navigation";
-    grid-template-columns: minmax(0, 1fr) auto;
-    column-gap: 20px;
-  }
-
   .service-shell[data-platform="web"] .app-content {
     min-width: 0;
     min-height: calc(100vh - 72px);
@@ -3671,18 +3584,6 @@ h3 {
 
   .service-shell[data-platform="web"] .bottom-nav {
     display: none;
-  }
-
-  .service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav {
-    width: auto;
-    justify-self: start;
-  }
-
-  .service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav > a {
-    min-height: 42px;
-    padding: 11px 13px;
-    border-radius: 11px;
-    font-size: 14px;
   }
 
   .service-shell[data-platform="web"] .page--service-catalog {
@@ -3915,18 +3816,6 @@ h3 {
   }
 }
 
-@media (min-width: 1100px) {
-  .service-shell[data-platform="web"][data-layout="customer"] .topbar__inner {
-    grid-template-areas: "brand navigation actions";
-    grid-template-columns: 200px minmax(0, 1fr) auto;
-    gap: 24px;
-  }
-
-  .service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav {
-    align-self: center;
-  }
-}
-
 @media (min-width: 768px) and (max-width: 1020px) {
   .service-shell[data-platform="web"] .rental-property-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3981,12 +3870,6 @@ h3 {
     min-height: 42px;
     padding: 10px 12px;
     font-size: 13px;
-  }
-
-  .service-shell[data-platform="web"] .language-switcher button {
-    min-width: 42px;
-    min-height: 36px;
-    font-size: 12px;
   }
 
   .service-shell[data-platform="web"] .service-catalog__header p,
@@ -4357,21 +4240,6 @@ h3 {
 .transfer-form-grid .field + .field { margin-top: 0; }
 .transfer-form-grid__wide { grid-column: 1 / -1; }
 .transfer-form-grid textarea { min-height: 88px; }
-.transfer-form-grid__date input[type="date"] {
-  display: block;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  inline-size: 100%;
-  min-inline-size: 0;
-  max-inline-size: 100%;
-  -webkit-appearance: none;
-  appearance: none;
-}
-.transfer-form-grid__date input[type="date"]::-webkit-date-and-time-value {
-  min-width: 0;
-  text-align: left;
-}
 .transfer-summary { display: grid; padding: 18px; gap: 12px; }
 .transfer-summary > div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
 .transfer-summary span { color: var(--color-muted); font-size: 12px; }
