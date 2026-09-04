@@ -3,7 +3,7 @@ title: Loco Place Current Context
 type: ai-context
 status: active
 scope: platform
-updated: 2026-09-04
+updated: 2026-09-05
 ---
 
 # Loco Place — Current Context
@@ -170,7 +170,7 @@ Smart Reminders v1 is implemented through persisted `customer_reminder` lifecycl
 
 Stage 7.5 provides a local-only reproducible measurement contour with deterministic data, pinned Docker k6 scenarios, JFR capture and performance-only Actuator/Hibernate metrics; it is not run in CI, staging or on the VPS. Its measured pass removed nested customer-identity connection starvation, added right-sized Rental image variants and cover-only list reads, lazy-loaded frontend routes/locales, moved optional Smart Reminder Telegram I/O after the database commit and consolidated runtime web serving on Caddy. Production now uses one Caddy application image to serve fingerprinted Vite assets with immutable caching and proxy API/OAuth directly to backend; local/performance Compose retains the service name `frontend` but runs the same Caddy server. The final end-to-end contour verified zero-error mixed traffic, approximately 89% lower UI-shaped Rental image transfer and no saturation through 100 VU on the development workstation. Smart Reminders, data retention and Rental Cleaning Benefit issuance expose tagged counters and structured per-run logs. Further performance work requires a measured regression or real telemetry rather than speculative infrastructure. Frequent source builds on the small VPS remain bounded operationally by pruning unused BuildKit cache older than a configurable retention window before a deploy and dangling images after a successful health check; runtime containers, volumes, database data and backups are never part of that cleanup.
 
-Rental media uploaded before responsive variants existed is repaired automatically at backend startup in small idempotent transactions; readiness stays down until the repair completes and corrupted legacy input fails startup with an actionable property/media ID. Public Rental full/card/thumbnail bytes are shared across users through a bounded 64 MiB in-process cache. Versioned immutable URLs prevent browsers from retaining a previous full-size fallback under a responsive path, while per-property after-commit invalidation and generation keys keep lifecycle changes from serving stale media. This remains a single-instance local cache, not new infrastructure.
+The one-off repair of legacy Rental media without responsive variants has completed, so its startup runner, readiness gate and deployment switches are no longer part of the application. New uploads always create full/card/thumbnail assets. Nullable legacy columns and read fallback remain for rollback/old-backup compatibility, but restoring data with missing variants requires an explicit repair before it is considered fully optimized. Public Rental bytes are shared across users through a bounded 64 MiB in-process cache. Versioned immutable URLs and per-property after-commit generation invalidation prevent stale media delivery. This remains a single-instance local cache, not new infrastructure.
 
 Persisted administrators use the oldest-first queue at `/admin/support`, resolve cases with a required final comment and follow safe links to vertical admin detail pages. The customer sees the result only in the originating transaction. New cases produce deduplicated durable `SUPPORT_CASE_CREATED` notifications for every persisted admin and optional dispatcher-routed Telegram delivery without including the customer description.
 

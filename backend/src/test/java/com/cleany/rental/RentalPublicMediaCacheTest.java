@@ -54,7 +54,7 @@ class RentalPublicMediaCacheTest {
     @Test
     void byteWeightBoundsRetainedWorkingSet() {
         RentalPublicMediaCache cache = new RentalPublicMediaCache(
-                new RentalMediaProperties(true, 10, true, DataSize.ofBytes(5)),
+                new RentalMediaProperties(true, DataSize.ofBytes(5)),
                 new SimpleMeterRegistry()
         );
 
@@ -71,7 +71,7 @@ class RentalPublicMediaCacheTest {
 
     private static RentalPublicMediaCache cache() {
         return new RentalPublicMediaCache(
-                new RentalMediaProperties(true, 10, true, DataSize.ofMegabytes(64)),
+                new RentalMediaProperties(true, DataSize.ofMegabytes(64)),
                 new SimpleMeterRegistry()
         );
     }

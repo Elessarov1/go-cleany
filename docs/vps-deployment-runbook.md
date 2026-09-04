@@ -120,8 +120,6 @@ nano .env.production
   в `.env.production.example`.
 - `RENTAL_*` — минимальный/максимальный срок, long-term скидка, горизонт начала бронирования и
   лимит активных броней клиента. Суточные цены квартир задаются в `/admin/rent`, а не в `.env`;
-- `RENTAL_MEDIA_BACKFILL_ENABLED` и `RENTAL_MEDIA_BACKFILL_BATCH_SIZE` — автоматическое создание
-  отсутствующих card/thumbnail вариантов при запуске (по умолчанию `true`, партия `10`);
 - `RENTAL_MEDIA_CACHE_ENABLED` и `RENTAL_MEDIA_CACHE_MAX_SIZE` — общий для пользователей
   in-process кэш публичных Rental-фотографий (по умолчанию `true`, `64MB`);
 - `RENTAL_CLEANING_*` — ежедневная выдача персональной выгоды на checkout-уборку, допустимое окно
@@ -148,33 +146,20 @@ cd /opt/go-cleany
 ./deploy/scripts/deploy.sh
 ```
 
-### Деплой миграции старых Rental-фотографий
+### Восстановление старого backup с Rental-фотографиями
 
-Перед первым деплоем версии с media backfill создайте обычный backup (повторный deploy делает это
-сам, если PostgreSQL уже запущен) и зафиксируйте исходное состояние:
+Одноразовая миграция существующих Rental-фотографий завершена, и startup-backfill удалён из
+приложения. Новые загрузки всегда создают full/card/thumbnail варианты. После восстановления старого
+backup проверьте nullable variant-поля до открытия сервиса клиентам:
 
 ```bash
-./deploy/scripts/backup.sh
 docker compose --env-file .env.production -f compose.prod.yaml exec -T postgres \
   sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT count(*) AS total, count(*) FILTER (WHERE card_media_asset_id IS NULL) AS without_card, count(*) FILTER (WHERE thumbnail_media_asset_id IS NULL) AS without_thumbnail FROM rental_property_media;"'
 ```
 
-Backfill выполняется backend при старте партиями по 10. Контейнер не станет healthy, пока работа
-не завершится. При повреждённом исходнике startup остановится, а backend log укажет ID квартиры и
-media; уже завершённые партии сохранятся, поэтому после исправления данных следующий запуск
-продолжит работу. Не отключайте backfill до первой успешной миграции.
-
-После успешного деплоя повторите запрос выше: `without_card` и `without_thumbnail` должны быть `0`.
-Проверьте итоговый объём и completion log:
-
-```bash
-docker compose --env-file .env.production -f compose.prod.yaml exec -T postgres \
-  sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT count(*) AS assets, pg_size_pretty(sum(size_bytes)::bigint) AS payload_size FROM media_asset;"'
-docker compose --env-file .env.production -f compose.prod.yaml logs backend | \
-  grep 'Rental media responsive-variant backfill'
-```
-
-Эти SQL-команды только измеряют миграцию; нагрузочные сценарии на VPS не запускаются.
+Ненулевой результат не ломает fallback на исходный asset, но такие карточки снова будут отдавать
+полноразмерное изображение. Перед полноценным использованием восстановленной базы потребуется
+отдельный контролируемый repair responsive-вариантов; обычный запуск backend его больше не выполняет.
 
 Скрипт последовательно:
 

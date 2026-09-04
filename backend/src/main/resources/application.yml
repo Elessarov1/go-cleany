@@ -105,8 +105,6 @@ rental:
   zone-id: Europe/Istanbul
 
 rental-media:
-  backfill-enabled: ${RENTAL_MEDIA_BACKFILL_ENABLED:true}
-  backfill-batch-size: ${RENTAL_MEDIA_BACKFILL_BATCH_SIZE:10}
   cache-enabled: ${RENTAL_MEDIA_CACHE_ENABLED:true}
   cache-max-size: ${RENTAL_MEDIA_CACHE_MAX_SIZE:64MB}
 
