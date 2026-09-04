@@ -3,7 +3,7 @@ title: Loco Place Local Performance Measurement
 type: operations-runbook
 status: active
 scope: platform
-updated: 2026-09-04
+updated: 2026-09-05
 ---
 
 # Local performance measurement
@@ -29,6 +29,6 @@ The post-fix mixed profile completed at 215.59 requests/second with zero errors 
 
 The Stage 7.5 closure audit found no evidence for another database/index/runtime optimization. Responsive Rental media keeps the canonical full asset plus card/thumbnail variants, removal deletes all unreferenced variant assets, and existing nullable variant columns safely fall back to the canonical asset. The obsolete Nginx runtime was removed instead of tuned, production Compose now has PostgreSQL, backend and a single Caddy application image, and fingerprinted `/assets/*` responses have immutable caching while HTML/SPA fallbacks remain non-cacheable.
 
-The subsequent Rental media migration closes the nullable-variant rollout gap for real data. Backend startup repairs missing card/thumbnail assets in ten-row transactions before readiness becomes healthy. Public media bytes use a dedicated 64 MiB weighted in-process Caffeine cache with per-property after-commit invalidation and generation protection. Standard Micrometer cache meters expose hits, misses, evictions and entry count under cache name `rental-public-media`; `loco.rental.media.cache.bytes` reports the current weighted byte size. These meters are reachable through Actuator only in the local `performance` profile, like the other Stage 7.5 diagnostics.
+The one-off Rental media repair closed the nullable-variant rollout gap for deployed data and was then removed from the runtime. New uploads always create all three variants; an old backup with missing variants must be repaired explicitly rather than during every startup. Public media bytes use a dedicated 64 MiB weighted in-process Caffeine cache with per-property after-commit invalidation and generation protection. Standard Micrometer cache meters expose hits, misses, evictions and entry count under cache name `rental-public-media`; `loco.rental.media.cache.bytes` reports the current weighted byte size. These meters are reachable through Actuator only in the local `performance` profile, like the other Stage 7.5 diagnostics.
 
 Do not run this harness from CI, a pipeline worker, staging or the VPS. Later optimizations require a new measured regression or production telemetry; the baseline does not justify a larger connection pool, Redis/CDN, storage migration or speculative JVM/index tuning.
