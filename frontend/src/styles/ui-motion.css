@@ -85,7 +85,6 @@
 .notification-bell,
 .topbar__global-link,
 .topbar__auth-action,
-.language-switcher button,
 .choice-card,
 .rental-term-selector button,
 .rental-gallery__arrow,
@@ -207,11 +206,6 @@
     transform: translateX(-4px);
   }
 
-  .language-switcher button:hover:not(.is-active),
-  .language-switcher button:focus-visible:not(.is-active) {
-    transform: translateY(-1px);
-  }
-
   .rental-gallery__thumbnails button:hover:not(.is-active),
   .rental-gallery__thumbnails button:focus-visible:not(.is-active) {
     transform: translateY(-2px);
@@ -293,7 +287,6 @@
   .notification-bell,
   .topbar__global-link,
   .topbar__auth-action,
-  .language-switcher button,
   .choice-card,
   .rental-term-selector button,
   .rental-gallery__arrow,

@@ -1,11 +1,10 @@
-import { Suspense, useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthentication } from "../../api/AuthApiProvider";
 import { usePlatform } from "../../platform/PlatformProvider";
 import { Icon } from "../Icon/Icon";
 import { LanguageSwitcher } from "../LanguageSwitcher/LanguageSwitcher";
-import { PreviewPanel } from "../PreviewPanel/PreviewPanel";
 import { BrandName } from "../BrandName/BrandName";
 import type { BrandService } from "../../brand/productBrand";
 import { TelegramLinkNudge } from "../TelegramLinkNudge/TelegramLinkNudge";
@@ -18,6 +17,9 @@ import { ServiceSelector } from "../ServiceSelector/ServiceSelector";
 import { LoadingState } from "../PageState/PageState";
 
 const ACQUISITION_START_PREFIX = "acq_";
+const PreviewPanel = import.meta.env.VITE_PREVIEW_MODE === "true"
+  ? lazy(() => import("../PreviewPanel/PreviewPanel").then((module) => ({ default: module.PreviewPanel })))
+  : null;
 
 function navClassName({ isActive }: { isActive: boolean }): string {
   return `bottom-nav__link${isActive ? " is-active" : ""}`;
@@ -245,7 +247,7 @@ export function AppShell() {
         ) : null}
       </div>
       <TelegramLinkNudge />
-      <PreviewPanel />
+      {PreviewPanel ? <Suspense fallback={null}><PreviewPanel /></Suspense> : null}
     </div>
     </>
   );

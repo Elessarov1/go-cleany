@@ -1,58 +1,4 @@
-/* Theme switcher and dark palette. Brand primary/accent colors stay unchanged. */
-
-.theme-switcher {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 2px;
-  padding: 3px;
-  background: var(--color-surface-strong);
-  border: 1px solid var(--color-line);
-  border-radius: 999px;
-  box-shadow: var(--shadow-small);
-}
-
-.theme-switcher button {
-  display: grid;
-  width: 31px;
-  height: 31px;
-  padding: 0;
-  place-items: center;
-  color: var(--color-muted);
-  background: transparent;
-  border: 0;
-  border-radius: 999px;
-  cursor: pointer;
-  transition:
-    color 180ms ease,
-    background 180ms ease,
-    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.theme-switcher button:hover,
-.theme-switcher button:focus-visible {
-  color: var(--color-primary);
-  background: var(--color-primary-soft);
-}
-
-.theme-switcher button:active {
-  transform: scale(0.9);
-}
-
-.theme-switcher button.is-active {
-  background: var(--color-primary);
-  color: #fff;
-}
-
-.service-shell[data-service="platform"] .theme-switcher button.is-active,
-.service-shell[data-service="rent"] .theme-switcher button.is-active {
-  color: #000;
-}
-
-.topbar__actions {
-  margin-left: auto;
-  gap: 5px;
-}
+/* Dark palette. Header control geometry lives in header-controls.css. */
 
 .service-shell[data-service="transfer"] {
   --color-canvas: oklch(0.9195 0.0169 88.003);
@@ -166,7 +112,6 @@
   color: var(--color-primary);
 }
 
-:root[data-theme="dark"] .service-shell .language-switcher,
 :root[data-theme="dark"] .service-shell .theme-switcher {
   background: var(--color-surface-strong);
   border-color: var(--color-line);
@@ -267,77 +212,4 @@
 
 :root[data-theme="dark"] .service-shell .rental-gallery__dots button:not(.is-active) {
   background: var(--color-line);
-}
-
-@media (max-width: 480px) {
-  .topbar__actions {
-    gap: 4px;
-  }
-
-  .theme-switcher button {
-    width: 29px;
-    height: 29px;
-  }
-}
-
-@media (max-width: 389px) {
-  .topbar {
-    padding-inline: 10px;
-  }
-
-  .topbar__actions {
-    gap: 3px;
-  }
-
-  .language-switcher {
-    padding: 2px;
-  }
-
-  .language-switcher button {
-    min-width: 28px;
-    padding: 6px 5px;
-  }
-
-  .theme-switcher {
-    padding: 2px;
-  }
-
-  .theme-switcher button {
-    width: 25px;
-    height: 29px;
-  }
-
-  .notification-bell {
-    flex-basis: 34px;
-    min-width: 34px;
-    max-width: 34px;
-    width: 34px;
-    height: 34px;
-  }
-
-  .topbar__global-link,
-  .service-shell[data-platform="web"][data-layout="customer"] .topbar__auth-action {
-    width: 34px;
-    min-height: 34px;
-    padding-inline: 7px;
-  }
-
-  .brand {
-    gap: 7px;
-  }
-
-  .brand__mark {
-    width: 30px;
-    height: 30px;
-  }
-
-  .brand__word {
-    font-size: 19px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .theme-switcher button {
-    transition: none;
-  }
 }

@@ -155,4 +155,6 @@ Remove the dedicated dataset as well:
 docker compose -f performance/compose.perf.yaml down --volumes
 ```
 
-The measurement protocol and results template for MR P1B are in [baseline.md](baseline.md).
+The measured P1–P4 evidence is in [baseline.md](baseline.md). The P5 source/duplication audit is in
+[codebase-baseline.md](codebase-baseline.md), and [after-hardening.md](after-hardening.md) records the
+Stage 7.5 closure decision and remaining evidence boundaries.

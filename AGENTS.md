@@ -270,7 +270,9 @@ When writing frontend code:
 - new top-level routes should remain lazy-loaded unless eager loading is measured to be better;
 - locale data should load only for the active language;
 - after adding a large dependency, route or locale payload, inspect `npm run build` chunk sizes and compare initial-route gzip size rather than only the total emitted assets;
+- production bundle audits must explicitly set `VITE_PREVIEW_MODE=false`; the local `.env.local` enables preview tooling and is not a production-sized build;
 - Rental lists/cards use card images, gallery selectors use thumbnails and full media is reserved for the main/opened image.
+- all date inputs rely on the shared `.service-shell input[type="date"]` iOS overflow guard; keep containing grid/flex items shrinkable with `min-width: 0` and do not add page-specific date-width fixes.
 
 Do not run the full stress suite for ordinary isolated business-rule edits. Relevant integration tests remain the primary safety net; use the performance contour when the change can plausibly affect resource use or a previously measured bottleneck.
 

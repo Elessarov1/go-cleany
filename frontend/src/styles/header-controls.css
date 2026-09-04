@@ -31,17 +31,13 @@
   flex: 0 0 auto;
   flex-wrap: nowrap;
   gap: 6px;
+  margin-left: auto;
 }
 
-.topbar__services-action {
-  display: grid;
-  flex: 0 0 40px;
-  width: 40px;
-  min-width: 40px;
-  height: 40px;
-  min-height: 40px;
-  padding: 0;
-  place-items: center;
+.notification-bell {
+  flex: 0 0 38px;
+  min-width: 38px;
+  max-width: 38px;
 }
 
 .language-selector {
@@ -114,7 +110,12 @@
  * brand + compact utility controls on the first row and a balanced service
  * navigation row below. Wide desktop can promote all three areas into one row.
  */
+.service-shell[data-platform="web"][data-layout="customer"] .topbar {
+  min-height: 0;
+}
+
 .service-shell[data-platform="web"][data-layout="customer"] .topbar__inner {
+  display: grid;
   align-items: center;
   grid-template-areas:
     "brand actions"
@@ -124,8 +125,13 @@
   row-gap: 8px;
 }
 
+.service-shell[data-platform="web"][data-layout="customer"] .brand {
+  grid-area: brand;
+}
+
 .service-shell[data-platform="web"][data-layout="customer"] .topbar__actions {
   width: auto;
+  grid-area: actions;
   justify-self: end;
 }
 
@@ -149,7 +155,10 @@
 
 /* One stable selector scales without adding another permanent header item per vertical. */
 .service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav {
+  display: block;
   width: 100%;
+  margin: 0;
+  grid-area: navigation;
 }
 
 .service-selector {
@@ -284,6 +293,17 @@
   left: auto;
 }
 
+@media (min-width: 768px) {
+  .service-shell[data-platform="web"][data-layout="customer"] .topbar {
+    min-height: 0;
+    padding-block: 10px;
+  }
+
+  .service-shell[data-platform="web"][data-layout="customer"] .topbar__inner {
+    min-height: 0;
+  }
+}
+
 @media (min-width: 1100px) {
   .service-shell[data-platform="web"][data-layout="customer"] .topbar__inner {
     grid-template-areas: "brand navigation actions";
@@ -293,6 +313,7 @@
 
   .service-shell[data-platform="web"][data-layout="customer"] .web-primary-nav {
     width: auto;
+    align-self: center;
     justify-self: start;
   }
 
@@ -315,7 +336,6 @@
     gap: 3px;
   }
 
-  .topbar__services-action,
   .service-selector--compact .service-selector__trigger,
   .language-selector,
   .theme-switcher,
@@ -329,10 +349,32 @@
 
   .language-selector select,
   .theme-switcher,
-  .topbar__services-action,
   .service-selector--compact .service-selector__trigger,
   .service-shell[data-platform="web"][data-layout="customer"] .topbar__auth-action {
     border-radius: 10px;
+  }
+
+  .notification-bell {
+    flex-basis: 34px;
+    width: 34px;
+    min-width: 34px;
+    max-width: 34px;
+    height: 34px;
+  }
+
+  .topbar__global-link {
+    width: 34px;
+    min-height: 34px;
+    padding-inline: 7px;
+    justify-content: center;
+  }
+
+  .topbar__global-link span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
   }
 
   .brand {

@@ -1,11 +1,5 @@
 /* Focused responsive fixes for customer-facing screens. */
 
-.notification-bell {
-  flex: 0 0 38px;
-  min-width: 38px;
-  max-width: 38px;
-}
-
 .service-shell[data-platform="telegram"] .brand {
   min-width: 0;
 }
@@ -55,23 +49,6 @@
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
-}
-
-/* iOS gives date inputs an intrinsic inline size that may exceed their grid cell. */
-.form-grid--cleaning-details .field--date input[type="date"] {
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  inline-size: 100%;
-  min-inline-size: 0;
-  max-inline-size: 100%;
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-.form-grid--cleaning-details .field--date input[type="date"]::-webkit-date-and-time-value {
-  min-width: 0;
-  text-align: center;
 }
 
 .service-shell[data-service="cleaning"] .details-card__price .details-card__price-value strong {
