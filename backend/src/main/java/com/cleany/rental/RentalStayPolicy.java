@@ -2,7 +2,6 @@ package com.cleany.rental;
 
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 
 import org.springframework.stereotype.Component;
 
@@ -43,7 +42,7 @@ public class RentalStayPolicy {
             );
         }
         validateStartDate(checkInDate);
-        int durationDays = durationDays(checkInDate, checkOutDate);
+        int durationDays = RentalDateRange.inclusiveDuration(checkInDate, checkOutDate);
         if (durationDays < properties.minStayDays()) {
             throw new RentalMinimumStayNotMetException(properties.minStayDays());
         }
@@ -73,11 +72,11 @@ public class RentalStayPolicy {
         validateStartDate(checkInDate);
         LocalDate checkOut;
         try {
-            checkOut = checkInDate.plusMonths(months);
+            checkOut = checkInDate.plusMonths(months).minusDays(1);
         } catch (RuntimeException exception) {
             throw new InvalidRentalBookingException("MONTHLY duration is invalid");
         }
-        int durationDays = durationDays(checkInDate, checkOut);
+        int durationDays = RentalDateRange.inclusiveDuration(checkInDate, checkOut);
         if (durationDays > properties.maxStayDays()) {
             throw new RentalMaximumStayExceededException(properties.maxStayDays());
         }
@@ -99,13 +98,6 @@ public class RentalStayPolicy {
         if (checkIn.isAfter(lastCheckInDate)) {
             throw new RentalBookingHorizonExceededException(lastCheckInDate);
         }
-    }
-
-    private static int durationDays(LocalDate checkIn, LocalDate checkOut) {
-        if (!checkOut.isAfter(checkIn)) {
-            throw new InvalidRentalDateRangeException();
-        }
-        return Math.toIntExact(ChronoUnit.DAYS.between(checkIn, checkOut));
     }
 
     public LocalDate today() {

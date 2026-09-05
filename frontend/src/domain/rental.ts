@@ -41,6 +41,7 @@ export interface RentalProperty {
   descriptionEn: string | null;
   area: string | null;
   address: string | null;
+  apartmentNumber: string | null;
   bedrooms: number | null;
   beds: number | null;
   bathrooms: number | null;
@@ -49,6 +50,7 @@ export interface RentalProperty {
   floor: number | null;
   baseDailyPrice: number | null;
   currency: string | null;
+  displayOrder: number;
   status: RentalPropertyStatus;
   amenities: RentalAmenity[];
   media: RentalPropertyMedia[];
@@ -208,6 +210,7 @@ export interface UpdateRentalPropertyRequest {
   descriptionEn: string | null;
   area: string | null;
   address: string | null;
+  apartmentNumber: string | null;
   bedrooms: number | null;
   beds: number | null;
   bathrooms: number | null;

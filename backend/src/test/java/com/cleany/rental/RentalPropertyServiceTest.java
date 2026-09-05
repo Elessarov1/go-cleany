@@ -20,7 +20,7 @@ class RentalPropertyServiceTest {
         RentalProperty second = property(1L);
         RentalPropertyMedia firstMedia = media(first, 21L);
         RentalPropertyMedia secondMedia = media(second, 11L);
-        Mockito.when(propertyRepository.findAllByStatusOrderByCreatedAtDesc(
+        Mockito.when(propertyRepository.findAllByStatusOrderByDisplayOrderAscIdAsc(
                 RentalPropertyStatus.PUBLISHED
         )).thenReturn(List.of(first, second));
         Mockito.when(mediaRepository

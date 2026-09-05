@@ -222,7 +222,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
         CurrentCustomer quoteCustomer = RentalTestFixtures.customer(customerAccountService, "910011");
         RentalPropertyResponse property = publishedProperty("occupancy-types", "100.00");
         LocalDate start = stayPolicy.today().plusDays(10);
-        LocalDate end = start.plusDays(7);
+        LocalDate end = start.plusDays(6);
 
         for (RentalOccupancyType type : RentalOccupancyType.values()) {
             if (type == RentalOccupancyType.BOOKING) {
@@ -291,7 +291,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
                 ),
                 () -> Assertions.assertDoesNotThrow(() -> bookingService.create(
                         secondCustomer,
-                        request(property.id(), end, end.plusDays(7))
+                        request(property.id(), end.plusDays(1), end.plusDays(7))
                 )),
                 () -> Assertions.assertEquals(
                         RentalBookingStatus.CONFIRMED,
@@ -305,7 +305,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
         CurrentCustomer customer = RentalTestFixtures.customer(customerAccountService, "910012");
         RentalPropertyResponse property = publishedProperty("monthly-overlap", "100.00");
         LocalDate start = stayPolicy.today().plusDays(10);
-        LocalDate expectedEnd = start.plusMonths(2);
+        LocalDate expectedEnd = start.plusMonths(2).minusDays(1);
         occupancyService.createManual(
                 property.id(),
                 new UpsertRentalOccupancyRequest(
@@ -330,6 +330,55 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void monthlyBooking_occupiesInclusiveLastDayAndReleasesFollowingDay() {
+        RentalPropertyResponse property = publishedProperty("monthly-boundary", "100.00");
+        LocalDate checkIn = stayPolicy.today().plusMonths(1).withDayOfMonth(1);
+        CurrentCustomer firstCustomer = RentalTestFixtures.customer(
+                customerAccountService,
+                "910014"
+        );
+        CurrentCustomer secondCustomer = RentalTestFixtures.customer(
+                customerAccountService,
+                "910015"
+        );
+
+        RentalBookingResponse monthly = bookingService.create(
+                firstCustomer,
+                monthlyRequest(property.id(), checkIn, 1)
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(
+                        checkIn.plusMonths(1).minusDays(1),
+                        monthly.checkOutDate()
+                ),
+                () -> Assertions.assertEquals(
+                        RentalDateRange.inclusiveDuration(checkIn, monthly.checkOutDate()),
+                        monthly.durationDays()
+                ),
+                () -> Assertions.assertThrows(
+                        RentalDatesNotAvailableException.class,
+                        () -> bookingService.create(
+                                secondCustomer,
+                                request(
+                                        property.id(),
+                                        monthly.checkOutDate(),
+                                        monthly.checkOutDate().plusDays(6)
+                                )
+                        )
+                ),
+                () -> Assertions.assertDoesNotThrow(() -> bookingService.create(
+                        secondCustomer,
+                        request(
+                                property.id(),
+                                monthly.checkOutDate().plusDays(1),
+                                monthly.checkOutDate().plusDays(7)
+                        )
+                ))
+        );
+    }
+
+    @Test
     void customerActiveBookingLimit_enforced() {
         CurrentCustomer customer = RentalTestFixtures.customer(customerAccountService, "910004");
         RentalPropertyResponse property = publishedProperty("booking-limit", "100.00");
@@ -337,7 +386,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
 
         for (int index = 0; index < 3; index++) {
             LocalDate checkIn = firstCheckIn.plusDays(index * 7L);
-            bookingService.create(customer, request(property.id(), checkIn, checkIn.plusDays(7)));
+            bookingService.create(customer, request(property.id(), checkIn, checkIn.plusDays(6)));
         }
         LocalDate fourthCheckIn = firstCheckIn.plusDays(21);
 
@@ -345,7 +394,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
                 RentalActiveBookingLimitExceededException.class,
                 () -> bookingService.create(
                         customer,
-                        request(property.id(), fourthCheckIn, fourthCheckIn.plusDays(7))
+                        request(property.id(), fourthCheckIn, fourthCheckIn.plusDays(6))
                 )
         );
         Assertions.assertEquals(3, bookingRepository.findAll().size());
@@ -404,7 +453,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
                 new AdminCancelRentalBookingRequest("Changed plans", false)
         );
 
-        LocalDate secondStart = firstEnd;
+        LocalDate secondStart = firstEnd.plusDays(1);
         LocalDate secondEnd = secondStart.plusDays(7);
         RentalBookingResponse retained = bookingService.create(
                 customer,

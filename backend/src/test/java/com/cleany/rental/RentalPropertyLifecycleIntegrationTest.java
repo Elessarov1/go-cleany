@@ -3,6 +3,7 @@ package com.cleany.rental;
 import java.awt.Color;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -198,6 +199,121 @@ class RentalPropertyLifecycleIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertTrue(propertyRepository.existsById(published.id())),
                 () -> Assertions.assertTrue(bookingRepository.existsById(booking.id())),
                 () -> Assertions.assertTrue(propertyService.getPublishedProperties().isEmpty())
+        );
+    }
+
+    @Test
+    void oneDayManualOccupancy_blocksOnlyItsInclusiveDate() {
+        RentalPropertyResponse property = RentalTestFixtures.publishedProperty(
+                propertyService,
+                mediaService,
+                "single-day-block",
+                new BigDecimal("100.00")
+        );
+        LocalDate blockedDate = stayPolicy.today().plusDays(12);
+
+        RentalOccupancyResponse occupancy = occupancyService.createManual(
+                property.id(),
+                new UpsertRentalOccupancyRequest(
+                        blockedDate,
+                        blockedDate,
+                        RentalOccupancyType.OWNER_BLOCK,
+                        "One day"
+                ),
+                ADMIN_ID
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(blockedDate, occupancy.startDate()),
+                () -> Assertions.assertEquals(blockedDate, occupancy.endDate()),
+                () -> Assertions.assertTrue(occupancyRepository.overlaps(
+                        property.id(),
+                        blockedDate,
+                        blockedDate
+                )),
+                () -> Assertions.assertFalse(occupancyRepository.overlaps(
+                        property.id(),
+                        blockedDate.plusDays(1),
+                        blockedDate.plusDays(1)
+                ))
+        );
+    }
+
+    @Test
+    void globalDisplayOrder_controlsAdminAndPublishedListsAndCompactsAfterDelete() {
+        RentalPropertyResponse first = RentalTestFixtures.publishedProperty(
+                propertyService,
+                mediaService,
+                "order-first",
+                new BigDecimal("100.00")
+        );
+        RentalPropertyResponse second = RentalTestFixtures.publishedProperty(
+                propertyService,
+                mediaService,
+                "order-second",
+                new BigDecimal("110.00")
+        );
+        RentalPropertyResponse archived = RentalTestFixtures.publishedProperty(
+                propertyService,
+                mediaService,
+                "order-archived",
+                new BigDecimal("120.00")
+        );
+        propertyService.archive(archived.id());
+        RentalPropertyResponse draft = propertyService.createDraft();
+        RentalPropertyResponse numberedDraft = propertyService.update(
+                draft.id(),
+                RentalTestFixtures.details("order-draft", new BigDecimal("130.00"))
+        );
+
+        List<RentalPropertyResponse> reordered = propertyService.reorder(List.of(
+                draft.id(),
+                second.id(),
+                archived.id(),
+                first.id()
+        ));
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(
+                        List.of(draft.id(), second.id(), archived.id(), first.id()),
+                        reordered.stream().map(RentalPropertyResponse::id).toList()
+                ),
+                () -> Assertions.assertEquals(
+                        List.of(0, 1, 2, 3),
+                        reordered.stream().map(RentalPropertyResponse::displayOrder).toList()
+                ),
+                () -> Assertions.assertEquals("12A", numberedDraft.apartmentNumber()),
+                () -> Assertions.assertEquals(
+                        List.of(second.id(), first.id()),
+                        propertyService.getPublishedProperties().stream()
+                                .map(RentalPropertyResponse::id)
+                                .toList()
+                ),
+                () -> Assertions.assertThrows(
+                        InvalidRentalPropertyOrderException.class,
+                        () -> propertyService.reorder(List.of(first.id()))
+                ),
+                () -> Assertions.assertThrows(
+                        InvalidRentalPropertyOrderException.class,
+                        () -> propertyService.reorder(List.of(
+                                first.id(), first.id(), archived.id(), draft.id()
+                        ))
+                ),
+                () -> Assertions.assertThrows(
+                        InvalidRentalPropertyOrderException.class,
+                        () -> propertyService.reorder(List.of(
+                                first.id(), second.id(), archived.id(), Long.MAX_VALUE
+                        ))
+                )
+        );
+
+        propertyService.deleteProperty(draft.id());
+
+        Assertions.assertEquals(
+                List.of(0, 1, 2),
+                propertyService.getAdminProperties().stream()
+                        .map(RentalPropertyResponse::displayOrder)
+                        .toList()
         );
     }
 }

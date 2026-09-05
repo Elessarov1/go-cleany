@@ -38,7 +38,7 @@ class RentalStayPolicyTest {
                         () -> policy.resolve(
                                 RentalTermType.DATE_RANGE,
                                 TODAY,
-                                TODAY.plusDays(6),
+                                TODAY.plusDays(5),
                                 null
                         )
                 ),
@@ -47,7 +47,7 @@ class RentalStayPolicyTest {
                         policy.resolve(
                                 RentalTermType.DATE_RANGE,
                                 TODAY,
-                                TODAY.plusDays(7),
+                                TODAY.plusDays(6),
                                 null
                         ).durationDays()
                 ),
@@ -56,7 +56,7 @@ class RentalStayPolicyTest {
                         policy.resolve(
                                 RentalTermType.DATE_RANGE,
                                 TODAY,
-                                TODAY.plusDays(29),
+                                TODAY.plusDays(28),
                                 null
                         ).durationDays()
                 ),
@@ -65,7 +65,7 @@ class RentalStayPolicyTest {
                         () -> policy.resolve(
                                 RentalTermType.DATE_RANGE,
                                 TODAY,
-                                TODAY.plusDays(30),
+                                TODAY.plusDays(29),
                                 null
                         )
                 )
@@ -119,9 +119,37 @@ class RentalStayPolicyTest {
         );
 
         Assertions.assertAll(
-                () -> Assertions.assertEquals(LocalDate.of(2026, 2, 28), term.checkOutDate()),
+                () -> Assertions.assertEquals(LocalDate.of(2026, 2, 27), term.checkOutDate()),
                 () -> Assertions.assertEquals(28, term.durationDays()),
                 () -> Assertions.assertEquals(1, term.rentalMonths())
+        );
+    }
+
+    @Test
+    void septemberMonthlyTerm_occupiesSeptemberFirstThroughThirtieth() {
+        RentalStayPolicy septemberPolicy = policyAt(
+                new RentalProperties(
+                        7,
+                        30,
+                        new BigDecimal("0.10"),
+                        365,
+                        6,
+                        3,
+                        ZoneId.of("Europe/Istanbul")
+                ),
+                LocalDate.of(2026, 8, 1)
+        );
+
+        ResolvedRentalTerm term = septemberPolicy.resolve(
+                RentalTermType.MONTHLY,
+                LocalDate.of(2026, 9, 1),
+                null,
+                1
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(LocalDate.of(2026, 9, 30), term.checkOutDate()),
+                () -> Assertions.assertEquals(30, term.durationDays())
         );
     }
 
@@ -138,7 +166,7 @@ class RentalStayPolicyTest {
                         )
                 ),
                 () -> Assertions.assertThrows(
-                        InvalidRentalDateRangeException.class,
+                        RentalMinimumStayNotMetException.class,
                         () -> policy.resolve(
                                 RentalTermType.DATE_RANGE,
                                 TODAY,

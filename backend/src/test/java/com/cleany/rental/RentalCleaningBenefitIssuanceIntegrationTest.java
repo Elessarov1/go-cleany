@@ -329,7 +329,7 @@ class RentalCleaningBenefitIssuanceIntegrationTest extends BaseIntegrationTest {
                 """,
                 checkIn,
                 checkOut,
-                Math.toIntExact(checkOut.toEpochDay() - checkIn.toEpochDay()),
+                RentalDateRange.inclusiveDuration(checkIn, checkOut),
                 bookingId
         );
     }

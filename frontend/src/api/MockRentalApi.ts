@@ -53,7 +53,7 @@ function addDays(value: string, offset: number): string {
 }
 
 function durationDays(start: string, end: string): number {
-  return Math.round((Date.parse(`${end}T12:00:00Z`) - Date.parse(`${start}T12:00:00Z`)) / DAY_MS);
+  return Math.round((Date.parse(`${end}T12:00:00Z`) - Date.parse(`${start}T12:00:00Z`)) / DAY_MS) + 1;
 }
 
 function roundMoney(value: number): number {
@@ -73,6 +73,7 @@ const properties: RentalProperty[] = [
     descriptionEn: "A bright apartment near the sea with a spacious living room and a balcony for relaxed short or extended stays.",
     area: "Кестель",
     address: "Isa Küçülmez Cd., Kestel",
+    apartmentNumber: "12A",
     bedrooms: 2,
     beds: 3,
     bathrooms: 2,
@@ -81,6 +82,7 @@ const properties: RentalProperty[] = [
     floor: 5,
     baseDailyPrice: 2100,
     currency: "TRY",
+    displayOrder: 0,
     status: "PUBLISHED",
     amenities: ["WIFI", "AIR_CONDITIONING", "BALCONY", "SEA_VIEW", "POOL", "ELEVATOR", "KITCHEN", "WASHING_MACHINE"],
     media: [
@@ -99,6 +101,7 @@ const properties: RentalProperty[] = [
     descriptionEn: "A calm apartment with a workspace and everything needed for stays from one week to several months.",
     area: "Махмутлар",
     address: "Barbaros Cd., Mahmutlar",
+    apartmentNumber: "34",
     bedrooms: 1,
     beds: 2,
     bathrooms: 1,
@@ -107,6 +110,7 @@ const properties: RentalProperty[] = [
     floor: 3,
     baseDailyPrice: 1600,
     currency: "TRY",
+    displayOrder: 1,
     status: "PUBLISHED",
     amenities: ["WIFI", "AIR_CONDITIONING", "BALCONY", "ELEVATOR", "WORKSPACE", "TV", "KITCHEN", "WASHING_MACHINE"],
     media: [
@@ -199,7 +203,7 @@ async function simulateNetwork<T>(value: T): Promise<T> {
 }
 
 function overlaps(range: RentalAvailabilityRange, start: string, end: string): boolean {
-  return range.startDate < end && range.endDate > start;
+  return range.startDate <= end && range.endDate >= start;
 }
 
 export class MockRentalApi implements RentalApi {
@@ -217,7 +221,9 @@ export class MockRentalApi implements RentalApi {
   }
 
   getProperties(): Promise<RentalProperty[]> {
-    return simulateNetwork(properties.filter((property) => property.status === "PUBLISHED"));
+    return simulateNetwork(properties
+      .filter((property) => property.status === "PUBLISHED")
+      .sort((left, right) => left.displayOrder - right.displayOrder || left.id - right.id));
   }
 
   getProperty(slug: string): Promise<RentalProperty> {
@@ -250,7 +256,7 @@ export class MockRentalApi implements RentalApi {
       throw new ApiError("Rental property is unavailable", 404, "rental_property_not_available");
     }
     const checkOutDate = request.termType === "MONTHLY"
-      ? addMonthsToInputValue(request.checkInDate, request.months)
+      ? addDays(addMonthsToInputValue(request.checkInDate, request.months), -1)
       : request.checkOutDate;
     const duration = durationDays(request.checkInDate, checkOutDate);
     if (request.termType === "DATE_RANGE") {
@@ -307,7 +313,7 @@ export class MockRentalApi implements RentalApi {
       throw new ApiError("Invalid phone", 400, "invalid_phone_number", { phone: "invalid" });
     }
     const activeBookings = readBookings().filter(
-      (booking) => booking.status === "CONFIRMED" && booking.checkOutDate > dateFromToday(0),
+      (booking) => booking.status === "CONFIRMED" && booking.checkOutDate >= dateFromToday(0),
     );
     if (activeBookings.length >= mockRentalConfiguration.maxActiveBookingsPerCustomer) {
       throw new ApiError("Active booking limit exceeded", 409, "rental_active_booking_limit_exceeded");
@@ -444,19 +450,36 @@ export class MockRentalApi implements RentalApi {
   }
 
   getAdminProperties(): Promise<RentalProperty[]> {
-    return simulateNetwork([...properties]);
+    return simulateNetwork([...properties]
+      .sort((left, right) => left.displayOrder - right.displayOrder || left.id - right.id));
+  }
+
+  reorderAdminProperties(propertyIds: number[]): Promise<RentalProperty[]> {
+    if (propertyIds.length !== properties.length || new Set(propertyIds).size !== properties.length) {
+      throw new ApiError("Invalid rental property order", 400, "invalid_rental_property_order");
+    }
+    const byId = new Map(properties.map((property) => [property.id, property]));
+    if (propertyIds.some((propertyId) => !byId.has(propertyId))) {
+      throw new ApiError("Invalid rental property order", 400, "invalid_rental_property_order");
+    }
+    propertyIds.forEach((propertyId, displayOrder) => {
+      const property = byId.get(propertyId)!;
+      this.replaceProperty({ ...property, displayOrder });
+    });
+    return this.getAdminProperties();
   }
 
   createAdminProperty(): Promise<RentalProperty> {
     const timestamp = new Date().toISOString();
     const property: RentalProperty = {
       id: Date.now(), slug: null, titleRu: null, titleEn: null,
-      descriptionEn: null, area: null, address: null,
+      descriptionEn: null, area: null, address: null, apartmentNumber: null,
       bedrooms: null, beds: null, bathrooms: null, maxGuests: null,
       areaSqm: null, floor: null, baseDailyPrice: null, currency: "TRY",
+      displayOrder: properties.length,
       status: "DRAFT", amenities: [], media: [], createdAt: timestamp, updatedAt: timestamp,
     };
-    properties.unshift(property);
+    properties.push(property);
     return simulateNetwork(property);
   }
 
@@ -609,8 +632,8 @@ export class MockRentalApi implements RentalApi {
     const bookings = readBookings().filter((booking) => {
       if (filters.status && booking.status !== filters.status) return false;
       if (filters.propertyId && booking.property.id !== filters.propertyId) return false;
-      if (filters.time === "FUTURE" && booking.checkOutDate <= today) return false;
-      if (filters.time === "PAST" && booking.checkOutDate > today) return false;
+      if (filters.time === "FUTURE" && booking.checkOutDate < today) return false;
+      if (filters.time === "PAST" && booking.checkOutDate >= today) return false;
       return true;
     });
     return simulateNetwork(bookings.map((booking) => this.adminBooking(booking)));
@@ -713,6 +736,9 @@ export class MockRentalApi implements RentalApi {
     });
     const index = properties.findIndex((item) => item.id === id);
     if (index >= 0) properties.splice(index, 1);
+    [...properties]
+      .sort((left, right) => left.displayOrder - right.displayOrder || left.id - right.id)
+      .forEach((item, displayOrder) => this.replaceProperty({ ...item, displayOrder }));
     manualOccupancies = manualOccupancies.filter((item) => item.propertyId !== id);
     await simulateNetwork(undefined);
   }

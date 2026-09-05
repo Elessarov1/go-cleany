@@ -111,7 +111,7 @@ nano .env.production
 - `WEB_SESSION_TIMEOUT` — срок server-side web-сессии, по умолчанию `12h`;
 - `ANALYTICS_ZONE_ID` — календарная зона аналитики, по умолчанию `Europe/Istanbul`;
 - `COMMERCIAL_LAUNCH_AT` — точная коммерческая точка отсчёта после одноразовой очистки;
-- `TELEGRAM_BOT_USERNAME` — username общего бота без `@`, используемый в одноразовых ссылках водителей;
+- `TELEGRAM_BOT_USERNAME` — username общего бота без `@`, используемый в одноразовых ссылках водителей и в Telegram-контакте web-футера;
 - `TRANSFER_ASSIGNMENT_MODE` — `ADMIN_ASSIGNMENT` (безопасный default) или `DRIVER_SELF_ACCEPT`;
 - `TRANSFER_*` — горизонт, 30-минутный шаг, зона расписания и TTL одноразовой ссылки. Аэропорты,
   машины, тарифы и водители настраиваются в `/admin/transfer/configuration`;
@@ -143,6 +143,12 @@ Production Compose намеренно не включает профиль `loca
 [web authentication guide](web-authentication.md).
 
 ## 6. Первый деплой
+
+Релиз с миграцией `2026_09_14_rental_inclusive_dates_and_property_order.xml` одноразово удаляет
+все предкоммерческие Rental-бронирования, занятость и полный граф связанных тестовых данных,
+включая созданные из Rental операции Cleaning/Transfer. Не связанные с Rental операции других
+сервисов, квартиры и их фотографии остаются. Скрипт деплоя создаёт backup автоматически, но перед
+этим релизом отдельно убедитесь, что последний dump завершился успешно и доступен для восстановления.
 
 ```bash
 cd /opt/go-cleany

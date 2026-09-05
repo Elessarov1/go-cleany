@@ -105,6 +105,17 @@
   transform-origin: left;
 }
 
+.site-footer__group .site-footer__contact-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.site-footer__contact-link img {
+  width: 16px;
+  height: 16px;
+}
+
 .site-footer__bottom {
   display: flex;
   grid-column: 1 / -1;
@@ -181,7 +192,7 @@
 @media (min-width: 768px) {
   .site-footer__inner {
     padding: 38px 32px 30px;
-    grid-template-columns: minmax(280px, 1.8fr) minmax(140px, 0.7fr) minmax(170px, 0.7fr);
+    grid-template-columns: minmax(260px, 1.7fr) repeat(3, minmax(130px, 0.7fr));
     gap: 32px 48px;
   }
 

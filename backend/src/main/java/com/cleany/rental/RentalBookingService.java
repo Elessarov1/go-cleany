@@ -197,7 +197,7 @@ public class RentalBookingService {
     }
 
     private void enforceActiveBookingLimit(long customerId, LocalDate today) {
-        long activeBookings = bookingRepository.countByCustomerIdAndStatusAndCheckOutDateAfter(
+        long activeBookings = bookingRepository.countByCustomerIdAndStatusAndCheckOutDateGreaterThanEqual(
                 customerId,
                 RentalBookingStatus.CONFIRMED,
                 today

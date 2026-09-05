@@ -14,6 +14,7 @@ public record RentalPropertyDetails(
         String descriptionEn,
         String area,
         String address,
+        String apartmentNumber,
         Integer bedrooms,
         Integer beds,
         Integer bathrooms,
@@ -33,6 +34,7 @@ public record RentalPropertyDetails(
         descriptionEn = normalizeOptional(descriptionEn);
         area = normalizeOptional(area);
         address = normalizeOptional(address);
+        apartmentNumber = normalizeOptional(apartmentNumber);
         currency = normalizeCurrency(currency);
         amenities = amenities == null ? Collections.emptySet() : Set.copyOf(amenities);
 

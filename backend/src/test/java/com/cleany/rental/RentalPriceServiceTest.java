@@ -26,7 +26,7 @@ class RentalPriceServiceTest {
                 ZoneId.of("Europe/Istanbul")
         );
         priceService = new RentalPriceService(properties);
-        property = new RentalProperty(Instant.parse("2026-08-23T09:00:00Z"));
+        property = new RentalProperty(Instant.parse("2026-08-23T09:00:00Z"), 0);
         property.updateDetails(
                 RentalPropertyTest.completeDetails(new BigDecimal("100.00")),
                 Instant.parse("2026-08-23T09:01:00Z")
@@ -45,6 +45,20 @@ class RentalPriceServiceTest {
                 () -> Assertions.assertEquals("2900.00", quote.baseAmount().toPlainString()),
                 () -> Assertions.assertEquals("0.00", quote.discountAmount().toPlainString()),
                 () -> Assertions.assertEquals("2900.00", quote.totalPrice().toPlainString())
+        );
+    }
+
+    @Test
+    void inclusiveDateRange_chargesBothBoundaryDates() {
+        RentalPriceQuote quote = priceService.calculate(
+                property,
+                dateRange(LocalDate.of(2026, 9, 1), 5)
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(5, quote.durationDays()),
+                () -> Assertions.assertEquals("500.00", quote.baseAmount().toPlainString()),
+                () -> Assertions.assertEquals("500.00", quote.totalPrice().toPlainString())
         );
     }
 
@@ -89,15 +103,15 @@ class RentalPriceServiceTest {
         return new ResolvedRentalTerm(
                 RentalTermType.DATE_RANGE,
                 start,
-                start.plusDays(days),
+                start.plusDays(days - 1L),
                 days,
                 null
         );
     }
 
     private static ResolvedRentalTerm monthly(LocalDate start, int months) {
-        LocalDate end = start.plusMonths(months);
-        int days = Math.toIntExact(java.time.temporal.ChronoUnit.DAYS.between(start, end));
+        LocalDate end = start.plusMonths(months).minusDays(1);
+        int days = RentalDateRange.inclusiveDuration(start, end);
         return new ResolvedRentalTerm(
                 RentalTermType.MONTHLY,
                 start,

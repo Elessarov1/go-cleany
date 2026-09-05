@@ -5,6 +5,10 @@ import { BrandName } from "../BrandName/BrandName";
 export function SiteFooter() {
   const { t } = useTranslation();
   const year = new Date().getFullYear();
+  const configuredUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME?.trim().replace(/^@/, "");
+  const telegramUsername = configuredUsername && /^[A-Za-z0-9_]{5,32}$/.test(configuredUsername)
+    ? configuredUsername
+    : "go_cleany_bot";
 
   return (
     <footer className="site-footer">
@@ -25,6 +29,19 @@ export function SiteFooter() {
           <strong>{t("footer.legal")}</strong>
           <Link to="/privacy">{t("footer.privacy")}</Link>
           <Link to="/terms">{t("footer.terms")}</Link>
+        </nav>
+
+        <nav className="site-footer__group" aria-label={t("footer.contacts")}>
+          <strong>{t("footer.contacts")}</strong>
+          <a
+            className="site-footer__contact-link"
+            href={`https://t.me/${telegramUsername}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <img src="/assets/icons/telegram.svg" alt="" />
+            {t("footer.telegram")}
+          </a>
         </nav>
 
         <div className="site-footer__bottom">

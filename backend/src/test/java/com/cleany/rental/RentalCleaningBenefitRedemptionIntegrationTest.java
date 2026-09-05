@@ -352,11 +352,12 @@ class RentalCleaningBenefitRedemptionIntegrationTest extends BaseIntegrationTest
         jdbcTemplate.update(
                 """
                 update rental_booking
-                set check_in_date = ?, check_out_date = ?, duration_days = 7
+                set check_in_date = ?, check_out_date = ?, duration_days = ?
                 where id = ?
                 """,
                 today.minusDays(4),
                 checkOut,
+                RentalDateRange.inclusiveDuration(today.minusDays(4), checkOut),
                 booking.id()
         );
         issuanceService.issueEligible(today, 100);

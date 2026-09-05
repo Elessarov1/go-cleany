@@ -12,9 +12,13 @@ import org.springframework.data.repository.query.Param;
 
 public interface RentalPropertyRepository extends JpaRepository<RentalProperty, Long> {
 
-    List<RentalProperty> findAllByOrderByCreatedAtDesc();
+    List<RentalProperty> findAllByOrderByDisplayOrderAscIdAsc();
 
-    List<RentalProperty> findAllByStatusOrderByCreatedAtDesc(RentalPropertyStatus status);
+    List<RentalProperty> findAllByStatusOrderByDisplayOrderAscIdAsc(RentalPropertyStatus status);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select property from RentalProperty property order by property.displayOrder, property.id")
+    List<RentalProperty> findAllForDisplayOrderUpdate();
 
     Optional<RentalProperty> findBySlugAndStatus(String slug, RentalPropertyStatus status);
 

@@ -58,6 +58,7 @@ services:
       context: ../frontend
       args:
         VITE_API_BASE_URL: /
+        VITE_TELEGRAM_BOT_USERNAME: go_cleany_bot
     ports:
       - "127.0.0.1:${PERF_FRONTEND_PORT:-15173}:80"
     depends_on:

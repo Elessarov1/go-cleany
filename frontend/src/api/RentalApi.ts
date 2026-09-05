@@ -34,6 +34,7 @@ export interface RentalApi {
   getTransferPrefill(id: number, context: RentalTransferContextType): Promise<RentalTransferPrefill>;
   cancelBooking(id: number): Promise<RentalBooking>;
   getAdminProperties(): Promise<RentalProperty[]>;
+  reorderAdminProperties(propertyIds: number[]): Promise<RentalProperty[]>;
   createAdminProperty(): Promise<RentalProperty>;
   getAdminProperty(id: number): Promise<RentalProperty>;
   updateAdminProperty(id: number, request: UpdateRentalPropertyRequest): Promise<RentalProperty>;

@@ -45,7 +45,7 @@ public class RentalOccupancyRepository {
                 Boolean.class,
                 propertyId,
                 startDate,
-                endDate
+                RentalDateRange.exclusiveEnd(endDate)
         );
         return Boolean.TRUE.equals(result);
     }
@@ -76,7 +76,7 @@ public class RentalOccupancyRepository {
                 RentalOccupancyRepository::map,
                 propertyId,
                 startDate,
-                endDate,
+                RentalDateRange.exclusiveEnd(endDate),
                 type.name(),
                 bookingId,
                 note,
@@ -106,7 +106,7 @@ public class RentalOccupancyRepository {
                 """ + SELECT_COLUMNS.replace("occupancy.", ""),
                 RentalOccupancyRepository::map,
                 startDate,
-                endDate,
+                RentalDateRange.exclusiveEnd(endDate),
                 type.name(),
                 note,
                 occupancyId,
@@ -131,7 +131,7 @@ public class RentalOccupancyRepository {
                 RentalOccupancyRepository::map,
                 propertyId,
                 startDate,
-                endDate
+                RentalDateRange.exclusiveEnd(endDate)
         );
     }
 
@@ -180,7 +180,7 @@ public class RentalOccupancyRepository {
                 resultSet.getLong("id"),
                 resultSet.getLong("property_id"),
                 resultSet.getObject("start_date", LocalDate.class),
-                resultSet.getObject("end_date", LocalDate.class),
+                RentalDateRange.inclusiveEnd(resultSet.getObject("end_date", LocalDate.class)),
                 RentalOccupancyType.valueOf(resultSet.getString("type")),
                 nullableLong(resultSet, "booking_id"),
                 resultSet.getString("note"),

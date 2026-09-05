@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type DragEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useRentalApi } from "../../api/RentalApiProvider";
@@ -28,6 +28,8 @@ export function AdminRentalPropertiesPage() {
   const [actionPending, setActionPending] = useState(false);
   const [publishingPropertyId, setPublishingPropertyId] = useState<number | null>(null);
   const [actionError, setActionError] = useState(false);
+  const [orderPending, setOrderPending] = useState(false);
+  const [draggedPropertyId, setDraggedPropertyId] = useState<number | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const language = rentalLanguage(i18n.resolvedLanguage);
   const locale = language === "ru" ? "ru-RU" : "en-GB";
@@ -89,6 +91,46 @@ export function AdminRentalPropertiesPage() {
     }
   };
 
+  const persistOrder = async (next: RentalProperty[], previous: RentalProperty[]) => {
+    try {
+      setOrderPending(true);
+      setActionError(false);
+      setProperties(next);
+      setProperties(await api.reorderAdminProperties(next.map((property) => property.id)));
+    } catch {
+      setProperties(previous);
+      setActionError(true);
+    } finally {
+      setOrderPending(false);
+    }
+  };
+
+  const moveProperty = (propertyId: number, direction: -1 | 1) => {
+    if (!properties || orderPending) return;
+    const index = properties.findIndex((property) => property.id === propertyId);
+    const targetIndex = index + direction;
+    if (index < 0 || targetIndex < 0 || targetIndex >= properties.length) return;
+    const next = [...properties];
+    [next[index], next[targetIndex]] = [next[targetIndex]!, next[index]!];
+    void persistOrder(next, properties);
+  };
+
+  const dropProperty = (event: DragEvent<HTMLElement>, targetPropertyId: number) => {
+    event.preventDefault();
+    if (!properties || orderPending || draggedPropertyId === null || draggedPropertyId === targetPropertyId) {
+      setDraggedPropertyId(null);
+      return;
+    }
+    const next = [...properties];
+    const sourceIndex = next.findIndex((property) => property.id === draggedPropertyId);
+    if (sourceIndex < 0) return;
+    const [moved] = next.splice(sourceIndex, 1);
+    const targetIndex = next.findIndex((property) => property.id === targetPropertyId);
+    next.splice(targetIndex, 0, moved!);
+    setDraggedPropertyId(null);
+    void persistOrder(next, properties);
+  };
+
   if (error) return <ErrorState message={t("adminRental.properties.loadError")} onRetry={() => setReloadKey((key) => key + 1)} />;
   if (!properties) return <LoadingState />;
 
@@ -105,21 +147,47 @@ export function AdminRentalPropertiesPage() {
         <Link className="admin-rental-toolbar__link" to="/admin/rent/bookings"><Icon name="clipboard" size={18} />{t("adminRental.nav.bookings")}</Link>
       </div>
       <RentalAdminNotificationPreference />
+      {properties.length > 1 ? <p className="admin-rental-order-hint">{t("adminRental.properties.orderHint")}</p> : null}
       {actionError ? <p className="form-alert" role="alert">{t("adminRental.properties.actionError")}</p> : null}
       {properties.length === 0 ? <p className="admin-orders__empty">{t("adminRental.properties.empty")}</p> : (
         <div className="admin-rental-property-grid">
-          {properties.map((property) => {
+          {properties.map((property, index) => {
             const cover = property.media.find((item) => item.cover) ?? property.media[0];
             return (
-              <article className="admin-rental-property-card" key={property.id}>
+              <article
+                className={`admin-rental-property-card${draggedPropertyId === property.id ? " is-dragging" : ""}`}
+                key={property.id}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => dropProperty(event, property.id)}
+              >
                 <div className="admin-rental-property-card__image">
                   <AdminRentalMediaImage propertyId={property.id} mediaId={cover?.id} alt="" />
                   <span className={`admin-rental-status admin-rental-status--${property.status.toLowerCase()}`}>{t(`adminRental.propertyStatus.${property.status}`)}</span>
+                  <button
+                    className="admin-rental-property-card__drag"
+                    type="button"
+                    draggable={!orderPending}
+                    disabled={orderPending}
+                    aria-label={t("adminRental.properties.drag", { title: rentalPropertyTitle(property, language) || property.id })}
+                    title={t("adminRental.properties.drag", { title: rentalPropertyTitle(property, language) || property.id })}
+                    onDragStart={(event) => {
+                      event.dataTransfer.effectAllowed = "move";
+                      setDraggedPropertyId(property.id);
+                    }}
+                    onDragEnd={() => setDraggedPropertyId(null)}
+                  >
+                    <Icon name="reorder" size={20} />
+                  </button>
                 </div>
                 <div className="admin-rental-property-card__body">
                   <small>#{property.id} · {property.area || t("common.notProvided")}</small>
                   <h2>{rentalPropertyTitle(property, language) || t("adminRental.properties.untitled")}</h2>
                   <strong>{property.baseDailyPrice && property.currency ? formatPrice(property.baseDailyPrice, property.currency, locale) : "—"}</strong>
+                  <div className="admin-rental-property-card__order">
+                    <button type="button" disabled={orderPending || index === 0} aria-label={t("adminRental.properties.moveUp")} onClick={() => moveProperty(property.id, -1)}>↑</button>
+                    <span>{t("adminRental.properties.position", { position: index + 1 })}</span>
+                    <button type="button" disabled={orderPending || index === properties.length - 1} aria-label={t("adminRental.properties.moveDown")} onClick={() => moveProperty(property.id, 1)}>↓</button>
+                  </div>
                   <div>
                     <Link className="button button--secondary" to={`/admin/rent/properties/${property.id}`}>{t("adminRental.properties.edit")}</Link>
                     {property.status === "ARCHIVED" ? (

@@ -19,8 +19,8 @@ import { formatPrice } from "../../domain/pricing";
 import {
   addDaysToInputValue,
   addMonthsToInputValue,
-  daysBetween,
   formatDate,
+  inclusiveDaysBetween,
   todayAsInputValue,
 } from "../../utils/format";
 import { rentalLanguage, rentalPropertyDescription, rentalPropertyTitle } from "../../utils/rental";
@@ -89,7 +89,7 @@ export function RentalPropertyPage() {
           fromDate,
           loadedConfiguration.bookingStartMonthsAhead,
         );
-        const toDate = addDaysToInputValue(horizon, loadedConfiguration.maxStayDays);
+        const toDate = addDaysToInputValue(horizon, loadedConfiguration.maxStayDays - 1);
         const loadedAvailability = await api.getAvailability(loadedProperty.id, fromDate, toDate);
         if (!active) return;
         setProperty(loadedProperty);
@@ -199,10 +199,10 @@ export function RentalPropertyPage() {
   }, [api, authentication.current.authenticated, checkInDate, checkOutDate, months, property, t, termType]);
 
   const expectedCheckOutDate = termType === "MONTHLY" && checkInDate
-    ? addMonthsToInputValue(checkInDate, months)
+    ? addDaysToInputValue(addMonthsToInputValue(checkInDate, months), -1)
     : checkOutDate;
   const selectedDays = termType === "DATE_RANGE" && checkInDate && checkOutDate
-    ? daysBetween(checkInDate, checkOutDate)
+    ? inclusiveDaysBetween(checkInDate, checkOutDate)
     : null;
   const maxRentalStartDate = addMonthsToInputValue(
     todayAsInputValue(),
@@ -299,6 +299,7 @@ export function RentalPropertyPage() {
               <div><dt>{t("rental.property.beds")}</dt><dd>{property.beds}</dd></div>
               <div><dt>{t("rental.property.bathrooms")}</dt><dd>{property.bathrooms}</dd></div>
               <div><dt>{t("rental.property.floor")}</dt><dd>{property.floor}</dd></div>
+              {property.apartmentNumber ? <div><dt>{t("rental.property.apartmentNumber")}</dt><dd>{property.apartmentNumber}</dd></div> : null}
               <div><dt>{t("rental.property.address")}</dt><dd>{property.address}</dd></div>
             </dl>
             <div className="rental-amenities">

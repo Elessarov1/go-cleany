@@ -43,6 +43,7 @@ import com.cleany.rental.InvalidRentalBookingException;
 import com.cleany.rental.InvalidRentalDateRangeException;
 import com.cleany.rental.InvalidRentalOccupancyException;
 import com.cleany.rental.InvalidRentalPropertyMediaException;
+import com.cleany.rental.InvalidRentalPropertyOrderException;
 import com.cleany.rental.RentalActiveBookingLimitExceededException;
 import com.cleany.rental.RentalBookingCannotBeCancelledException;
 import com.cleany.rental.RentalBookingCannotBeCompletedException;
@@ -176,6 +177,17 @@ public class GlobalExceptionHandler {
         return response(
                 HttpStatus.BAD_REQUEST,
                 "invalid_rental_property_media",
+                exception.getMessage()
+        );
+    }
+
+    @ExceptionHandler(InvalidRentalPropertyOrderException.class)
+    ResponseEntity<ApiError> handleInvalidRentalPropertyOrder(
+            InvalidRentalPropertyOrderException exception
+    ) {
+        return response(
+                HttpStatus.BAD_REQUEST,
+                "invalid_rental_property_order",
                 exception.getMessage()
         );
     }

@@ -19,6 +19,7 @@ export type IconName =
   | "location"
   | "logout"
   | "moon"
+  | "reorder"
   | "services"
   | "sparkles"
   | "sun"
@@ -113,6 +114,16 @@ const iconContents = {
     </>
   ),
   moon: <path d="M20 15.5A8.5 8.5 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5Z" />,
+  reorder: (
+    <>
+      <circle cx="8" cy="6" r="1" fill="currentColor" stroke="none" />
+      <circle cx="16" cy="6" r="1" fill="currentColor" stroke="none" />
+      <circle cx="8" cy="12" r="1" fill="currentColor" stroke="none" />
+      <circle cx="16" cy="12" r="1" fill="currentColor" stroke="none" />
+      <circle cx="8" cy="18" r="1" fill="currentColor" stroke="none" />
+      <circle cx="16" cy="18" r="1" fill="currentColor" stroke="none" />
+    </>
+  ),
   services: (
     <>
       <rect x="3" y="3" width="7" height="7" rx="1.5" />

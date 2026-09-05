@@ -39,3 +39,7 @@ export function daysBetween(start: string, end: string): number {
   const endDate = new Date(`${end}T12:00:00`);
   return Math.round((endDate.getTime() - startDate.getTime()) / 86_400_000);
 }
+
+export function inclusiveDaysBetween(start: string, end: string): number {
+  return daysBetween(start, end) + 1;
+}

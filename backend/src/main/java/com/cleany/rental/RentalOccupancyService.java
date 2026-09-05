@@ -127,9 +127,7 @@ public class RentalOccupancyService {
     }
 
     private static void validateRange(LocalDate startDate, LocalDate endDate) {
-        if (startDate == null || endDate == null || !endDate.isAfter(startDate)) {
-            throw new InvalidRentalDateRangeException();
-        }
+        RentalDateRange.requireValid(startDate, endDate);
     }
 
 }

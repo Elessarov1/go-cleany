@@ -62,7 +62,7 @@ public interface RentalBookingRepository extends JpaRepository<RentalBooking, Lo
 
     boolean existsByProperty_Id(long propertyId);
 
-    long countByCustomerIdAndStatusAndCheckOutDateAfter(
+    long countByCustomerIdAndStatusAndCheckOutDateGreaterThanEqual(
             long customerId,
             RentalBookingStatus status,
             LocalDate date

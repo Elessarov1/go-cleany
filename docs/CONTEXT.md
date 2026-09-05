@@ -239,7 +239,7 @@ Referral financial semantics are currently Cleaning-specific. Do not globalize t
 
 ## Loco Rental
 
-Rental owns `RentalProperty`, `RentalBooking`, `RentalOccupancy`, availability, rental pricing/stay rules and rental administration.
+Rental owns `RentalProperty`, `RentalBooking`, `RentalOccupancy`, availability, rental pricing/stay rules and rental administration. Rental ranges are public-inclusive: both `checkInDate` and `checkOutDate` are occupied and billable, while PostgreSQL translates the end to an exclusive `daterange` upper bound. Properties have one global admin-managed display order across all lifecycle statuses and an optional public apartment number.
 
 Bookings use explicit occupancy/availability rules and immutable price snapshots.
 

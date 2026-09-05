@@ -37,7 +37,7 @@ export function AdminRentalCalendarPage() {
   const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12));
   const [editingId, setEditingId] = useState<number | null>(null);
   const [startDate, setStartDate] = useState(todayAsInputValue());
-  const [endDate, setEndDate] = useState(addDaysToInputValue(todayAsInputValue(), 7));
+  const [endDate, setEndDate] = useState(addDaysToInputValue(todayAsInputValue(), 6));
   const [type, setType] = useState<Exclude<RentalOccupancyType, "BOOKING">>("OWNER_BLOCK");
   const [note, setNote] = useState("");
   const [error, setError] = useState(false);
@@ -46,7 +46,7 @@ export function AdminRentalCalendarPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const dates = useMemo(() => calendarDates(month), [month]);
   const fromDate = dates[0]!;
-  const toDate = addDaysToInputValue(dates[dates.length - 1]!, 1);
+  const toDate = dates[dates.length - 1]!;
   const language = i18n.resolvedLanguage === "ru" ? "ru" : "en";
   const locale = language === "ru" ? "ru-RU" : "en-GB";
 
@@ -70,7 +70,7 @@ export function AdminRentalCalendarPage() {
   const resetForm = () => {
     setEditingId(null);
     setStartDate(todayAsInputValue());
-    setEndDate(addDaysToInputValue(todayAsInputValue(), 7));
+    setEndDate(addDaysToInputValue(todayAsInputValue(), 6));
     setType("OWNER_BLOCK");
     setNote("");
   };
@@ -87,7 +87,7 @@ export function AdminRentalCalendarPage() {
     window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
   };
   const save = async () => {
-    if (startDate >= endDate) {
+    if (startDate > endDate) {
       setActionError(true);
       return;
     }
@@ -144,7 +144,7 @@ export function AdminRentalCalendarPage() {
         <div className="admin-rental-calendar-grid">
           {dates.map((date) => {
             const dateMonth = Number(date.slice(5, 7)) - 1;
-            const dayOccupancies = occupancies.filter((item) => item.startDate <= date && item.endDate > date);
+            const dayOccupancies = occupancies.filter((item) => item.startDate <= date && item.endDate >= date);
             const occupancy = dayOccupancies[0];
             return (
               <button
@@ -169,7 +169,7 @@ export function AdminRentalCalendarPage() {
         <div className="admin-rental-section-heading"><div><h2>{t(editingId ? "adminRental.calendar.editTitle" : "adminRental.calendar.createTitle")}</h2><p>{t("adminRental.calendar.formText")}</p></div>{editingId ? <button className="admin-rental-text-button" type="button" onClick={resetForm}>{t("adminRental.calendar.newBlock")}</button> : null}</div>
         <div className="admin-rental-form-grid">
           <div className="field"><label><span>{t("adminRental.calendar.startDate")}</span><input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label></div>
-          <div className="field"><label><span>{t("adminRental.calendar.endDate")}</span><input type="date" min={addDaysToInputValue(startDate, 1)} value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label></div>
+          <div className="field"><label><span>{t("adminRental.calendar.endDate")}</span><input type="date" min={startDate} value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label></div>
           <div className="field"><label><span>{t("adminRental.calendar.type")}</span><select value={type} onChange={(event) => setType(event.target.value as Exclude<RentalOccupancyType, "BOOKING">)}>{manualTypes.map((item) => <option key={item} value={item}>{t(`adminRental.occupancy.${item}`)}</option>)}</select></label></div>
           <div className="field"><label><span>{t("adminRental.calendar.note")}</span><input maxLength={1000} value={note} onChange={(event) => setNote(event.target.value)} /></label></div>
         </div>

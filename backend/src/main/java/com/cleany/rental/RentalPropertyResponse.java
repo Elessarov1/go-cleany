@@ -13,6 +13,7 @@ public record RentalPropertyResponse(
         String descriptionEn,
         String area,
         String address,
+        String apartmentNumber,
         Integer bedrooms,
         Integer beds,
         Integer bathrooms,
@@ -21,6 +22,7 @@ public record RentalPropertyResponse(
         Integer floor,
         BigDecimal baseDailyPrice,
         String currency,
+        int displayOrder,
         RentalPropertyStatus status,
         List<RentalAmenity> amenities,
         List<RentalPropertyMediaResponse> media,
@@ -40,6 +42,7 @@ public record RentalPropertyResponse(
                 property.getDescriptionEn(),
                 property.getArea(),
                 property.getAddress(),
+                property.getApartmentNumber(),
                 property.getBedrooms(),
                 property.getBeds(),
                 property.getBathrooms(),
@@ -48,6 +51,7 @@ public record RentalPropertyResponse(
                 property.getFloor(),
                 property.getBaseDailyPrice(),
                 property.getCurrency(),
+                property.getDisplayOrder(),
                 property.getStatus(),
                 property.getAmenities().stream()
                         .sorted(Comparator.comparing(RentalAmenity::name))
