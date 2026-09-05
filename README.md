@@ -1,23 +1,107 @@
 # Loco Place
 
-This repository contains the mobile-first Loco Place platform for customers in Alanya with two independent verticals:
+Loco Place is a mobile-first local-service platform for Alanya.
 
-- **Loco Cleaning** — apartment cleaning with Telegram cleaner dispatch and platform-owned photo reports;
-- **Loco Rent** — apartment catalog, date-range and monthly pricing, immediate booking and rental administration.
+> **Loco Place is a local service to which a customer delegates a household or local task instead of searching for and coordinating providers alone.**
 
-Both verticals share customer identity, communication, media, retention and the React application shell. Their aggregates and business rules remain separate: `CleaningOrder` is not reused as a rental booking.
+Strategic direction:
 
-Public names are Loco Place, Loco Cleaning and Loco Rent. Existing technical namespaces intentionally
-remain `/cleaning`, `/rent`, `/api/v1/rental`, `Cleaning*` and `Rental*`.
+> **From catalog to habit.**
+
+The platform currently contains three implemented verticals:
+
+- **Loco Cleaning** — apartment cleaning with Telegram cleaner dispatch, first-accept concurrency and platform-owned completion/issue media;
+- **Loco Rental** — apartment catalog, date-range and monthly pricing, availability, booking administration and responsive property media;
+- **Loco Transfer** — scheduled fixed-price airport transfers with configurable airports, vehicle classes, driver assignment and optional Telegram self-accept.
+
+Their aggregates and business rules remain separate:
+
+```text
+CleaningOrder
+RentalBooking / RentalOccupancy
+TransferBooking / TransferDriver
+```
+
+Loco Place does not use a universal order aggregate. Cross-service behavior is implemented through explicit bridges and read models.
+
+## Current cross-functional product layer
+
+Implemented platform capabilities include:
+
+```text
+canonical CustomerAccount identity
+Google and Telegram account access/linking
+service availability controls
+unified customer Activity
+same-service Cleaning/Transfer repeat
+safe reusable customer context
+Rental → Transfer contextual prefill
+contextual customer home
+support cases and transaction feedback
+smart lifecycle reminders
+first-touch acquisition analytics
+business-health, retention and funnel analytics
+Rental → Cleaning and Rental → first-Transfer benefits
+```
+
+The canonical project context and product constraints are maintained under [`docs/`](docs/):
+
+- [current AI/human context](docs/CONTEXT.md);
+- [knowledge routing index](docs/INDEX.md);
+- [product manifesto](docs/strategy/manifesto.md);
+- [product roadmap](docs/strategy/roadmap.md).
+
+## Architecture
+
+```text
+Standalone web / Telegram Mini App
+                 │
+                 ▼
+      Caddy application runtime
+       ├── serves Vite assets
+       └── proxies API / OAuth
+                 │
+                 ▼
+     Spring Boot modular monolith
+                 │
+                 ▼
+             PostgreSQL
+```
+
+Backend:
+
+```text
+Java 25
+Spring Boot 4
+Gradle
+PostgreSQL
+Liquibase
+JPA/Hibernate + JDBC/native SQL
+Testcontainers
+```
+
+Frontend:
+
+```text
+React 19
+TypeScript
+Vite
+RU / EN
+mobile-first
+standalone web + Telegram Mini App
+```
+
+Persistence is intentionally hybrid: JPA owns aggregate mutation and locking, while JDBC/native SQL owns analytics and specialized atomic or batch operations. Liquibase is the only schema-change mechanism.
 
 ## Repository layout
 
 ```text
 cleany/
-├── frontend/  React + TypeScript + Vite application
-├── backend/   Spring Boot application
-├── deploy/    Deployment and operations tooling
-└── docs/      Product and engineering notes
+├── frontend/      React, Vite and the Caddy application image
+├── backend/       Spring Boot modular monolith
+├── deploy/        VPS release, backup and operational tooling
+├── performance/   local-only k6/JFR measurement contour
+└── docs/          canonical product, architecture and operations knowledge base
 ```
 
 ## Frontend preview
@@ -28,64 +112,93 @@ npm install
 npm run dev
 ```
 
-Copy `frontend/.env.example` to `frontend/.env.local` and keep `VITE_PREVIEW_MODE=true` to use
-`PreviewPlatform` and mock APIs without Telegram or PostgreSQL. Production browser mode uses
-`WebPlatform`, has no hardcoded identity and talks to the same-origin backend even when
-`VITE_API_BASE_URL` is empty.
+Copy `frontend/.env.example` to `frontend/.env.local` and keep `VITE_PREVIEW_MODE=true` to use preview adapters and mock APIs without Telegram or PostgreSQL.
 
-Developer scenarios are available at `http://localhost:5173/?preview=true`.
-
-To connect the frontend to a locally running backend, use:
+To connect the Vite development server to a locally running backend:
 
 ```env
 VITE_PREVIEW_MODE=false
 VITE_API_BASE_URL=
 ```
 
-The Vite dev server proxies `/api`, `/oauth2` and the Google callback to `localhost:8080`.
-
-## Backend foundation
-
-The backend is a single Spring Boot application. It owns customer identity, canonical media, cleaning and rental configuration, server-side pricing, customer-scoped access and lifecycle validation. PostgreSQL protects both first-cleaner-wins claiming and non-overlapping rental occupancy under concurrency. Rental customers explicitly choose a date range or a monthly term; monthly checkout and pricing are derived by the backend.
-
-Local backend startup uses the isolated `local` profile. See [`backend/README.md`](backend/README.md) for environment and PostgreSQL setup. The default profile validates Telegram Mini App `initData`; browser-preview identity remains available only in the `local` profile.
+The development server proxies `/api`, `/oauth2` and Google OAuth callbacks to `localhost:8080`.
 
 ## Full local stack
 
-PostgreSQL, backend, frontend, Liquibase, and the Telegram bot long-polling flow can be run together
-through Docker Compose. See the [local Docker runbook](docs/local-docker-runbook.md).
+The complete PostgreSQL, backend, Caddy/frontend and Telegram long-polling stack can be started with Docker Compose.
 
-## VPS deployment
+See the [local Docker runbook](docs/local-docker-runbook.md).
 
-A production Compose stack, automatic HTTPS through Caddy, pre-deployment PostgreSQL backups, and
-small release/rollback scripts are included under `deploy/`. Follow the
-[VPS deployment runbook](docs/vps-deployment-runbook.md). Telegram remains on long polling, so one
-backend instance must own the bot token.
+## Performance contour
 
-Standalone web login and Google OAuth Console setup are described in
-[the web authentication guide](docs/web-authentication.md).
+Stage 7.5 added a reproducible local-only performance environment with deterministic synthetic data, k6 scenarios, JFR capture and performance-profile JVM/Hikari/Hibernate/scheduler metrics.
 
-After the first manual launch, [staging continuous deployment](docs/staging-continuous-deployment.md)
-can deploy each tested `main` revision automatically through GitHub Actions and SSH.
+See:
 
-## Main routes
+- [performance harness](performance/README.md);
+- [measured baseline](performance/baseline.md);
+- [codebase audit](performance/codebase-baseline.md);
+- [after-hardening report](performance/after-hardening.md).
+
+Do not run the stress harness against staging, production, the public domain or a CI worker.
+
+## Deployment and CI
+
+Production/staging deployment uses Docker Compose, a single Caddy application image, automatic HTTPS, pre-deployment PostgreSQL backups and exact-revision releases over SSH.
+
+See the [VPS deployment runbook](docs/vps-deployment-runbook.md) and [staging continuous-deployment guide](docs/staging-continuous-deployment.md).
+
+The GitHub Actions workflow intentionally runs automatically **only after a push to `main`**. Creating or updating a pull request does not start the workflow, so the same backend/frontend checks are not executed both before and after merge. A pre-merge full validation remains available through manual `workflow_dispatch` on the feature branch; deployment is still restricted to `main`.
+
+Change detection is path-aware:
+
+| Changed area | Backend tests | Frontend build | Staging deploy |
+| --- | --- | --- | --- |
+| `backend/**` | run | skip unless frontend also changed | eligible after successful checks |
+| `frontend/**` | skip unless backend also changed | run | eligible after successful checks |
+| `deploy/**` or `compose.prod.yaml` | skip | skip | eligible |
+| documentation/other non-runtime files only | skip | skip | skip |
+| manual workflow on `main` | run | run | eligible |
+
+This means deployment-only changes are no longer ignored, while documentation-only commits remain cheap.
+
+## Main customer routes
 
 ```text
-/                         service catalog
-/cleaning                 Loco Cleaning customer flow
-/cleaning/orders          cleaning history
-/rent                     published rental catalog
-/rent/bookings            customer rental bookings
-/admin                    service-aware admin entry
-/admin/cleaning           cleaning administration
-/admin/rent               rental administration
+/                         contextual home / service catalog
+/cleaning                 Cleaning order flow
+/cleaning/orders/:id      Cleaning order detail
+/rent                     published Rental catalog
+/rent/properties/:slug    Rental property detail
+/rent/bookings/:id        Rental booking detail
+/transfer                 Transfer booking flow
+/transfer/bookings/:id    Transfer booking detail
+/account/activity         unified customer activity
+/notifications            durable notification inbox
+/account                  customer account
 ```
 
-## Product constraints
+Main administration routes:
 
-- Frontend UI remains independent from Telegram.
-- Prices, availability and customer identity are never trusted from the frontend in production.
-- Backend order acceptance must be concurrency-safe: the first successful claim wins.
-- Rental bookings and cleaning orders are separate domain aggregates.
-- Rental property slugs, prices, availability and normalized catalog images are backend-owned data.
-- The pilot intentionally excludes online payments, rental marketplace integrations, cleaner registration, ratings, and object storage.
+```text
+/admin
+/admin/analytics
+/admin/support
+/admin/cleaning
+/admin/rent/properties
+/admin/rent/bookings
+/admin/transfer/bookings
+/admin/transfer/configuration
+```
+
+## Product and engineering constraints
+
+- Loco solves the task; it does not expose a provider catalog as the product.
+- The customer must not become the dispatcher after placing an order.
+- Known safe customer context should reduce actions in later orders.
+- Prices, discounts, identity, ownership, availability and lifecycle transitions are backend-authoritative.
+- Cleaning, Rental and Transfer remain separate business aggregates.
+- Cross-service features use explicit bridges/read models rather than a universal transaction model.
+- Performance work starts from a measured regression or real telemetry.
+- Do not introduce microservices, Kafka, S3/MinIO, another database or a generic benefit engine without a concrete measured need.
+- The pilot still excludes online payments and external rental marketplace integrations.

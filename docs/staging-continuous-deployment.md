@@ -1,22 +1,25 @@
 # Автоматический деплой go-cleany на staging
 
-Этот runbook дополняет [основную инструкцию по VPS](vps-deployment-runbook.md). Он настраивает
-автоматическую цепочку:
+Этот runbook дополняет [основную инструкцию по VPS](vps-deployment-runbook.md) и описывает актуальную GitHub Actions цепочку.
 
 ```text
 push в main ИЛИ ручной Run workflow
-  -> backend и frontend CI выполняются параллельно
-  -> deploy_staging запускается только после двух успешных jobs
-  -> GitHub Actions подключается к VPS по SSH
-  -> GitHub staging variables передают роли, rental policy и экономику checkout-уборки
-  -> release.sh разворачивает точный commit SHA
-  -> backup, Docker build, health checks
+        ↓
+определение изменённых областей
+        ↓
+backend tests — только если менялся backend
+frontend build — только если менялся frontend
+        ↓
+deploy_staging — если менялось приложение или production deployment configuration
+        ↓
+SSH на VPS → release.sh → backup → Docker build → health checks
 ```
 
-Долгоживущие infrastructure secrets (`TELEGRAM_BOT_TOKEN`, пароль PostgreSQL и т.д.) остаются в
-`.env.production` только на VPS. Google OIDC credentials и web-admin allowlist передаются из GitHub
-Environment Secrets только в runtime конкретной выкладки. Списки Telegram ID клинеров и
-администраторов управляются через Environment variables.
+Автоматический workflow **не запускается при создании или обновлении pull request**. Это сознательное решение: одни и те же backend/frontend проверки не выполняются автоматически сначала на PR, а затем повторно после merge. Обычная автоматическая проверка выполняется один раз — на результирующем push в `main`.
+
+Когда нужна проверка до merge, запустите `Actions → CI → Run workflow` вручную на feature branch. Такой запуск проверит backend и frontend полностью, но не выполнит staging deploy, потому что deploy разрешён только для `main`.
+
+Долгоживущие infrastructure secrets (`TELEGRAM_BOT_TOKEN`, пароль PostgreSQL и т. д.) остаются в `.env.production` только на VPS. Google OIDC credentials и web-admin allowlist передаются из GitHub Environment Secrets только в runtime конкретной выкладки.
 
 ## 1. Предварительные условия
 
@@ -28,10 +31,9 @@ git fetch origin
 ./deploy/scripts/status.sh
 ```
 
-Пользователь, которому принадлежит `/opt/go-cleany`, должен иметь доступ к Docker и возможность
-читать репозиторий `Elessarov1/go-cleany`. Скрипт `release.sh` не использует `sudo`.
+Пользователь-владелец `/opt/go-cleany` должен иметь доступ к Docker и возможность читать репозиторий `Elessarov1/go-cleany`. Скрипты деплоя не используют `sudo`.
 
-Проверьте путь проекта:
+Проверьте рабочую копию:
 
 ```bash
 cd /opt/go-cleany
@@ -39,14 +41,11 @@ git remote -v
 git status --short --branch
 ```
 
-Если проект установлен в другом каталоге, измените `/opt/go-cleany` в job `deploy_staging` файла
-`.github/workflows/ci.yml` до первого автоматического запуска.
+Если проект установлен не в `/opt/go-cleany`, измените путь в job `deploy_staging` файла `.github/workflows/ci.yml`.
 
 ## 2. Доступ VPS к GitHub
 
-`release.sh` выполняет `git fetch origin`, поэтому VPS должен самостоятельно читать репозиторий.
-Для публичного репозитория достаточно HTTPS remote. Для приватного репозитория создайте на VPS
-отдельный read-only deploy key от имени пользователя деплоя:
+`release.sh` выполняет `git fetch origin`. Для публичного репозитория достаточно HTTPS remote. Для приватного репозитория создайте на VPS отдельный read-only deploy key:
 
 ```bash
 install -m 700 -d ~/.ssh
@@ -54,14 +53,15 @@ ssh-keygen -t ed25519 -C "go-cleany-vps-readonly" -f ~/.ssh/go-cleany-github -N 
 cat ~/.ssh/go-cleany-github.pub
 ```
 
-В GitHub откройте:
+В GitHub:
 
 ```text
-Repository -> Settings -> Deploy keys -> Add deploy key
+Repository → Settings → Deploy keys → Add deploy key
 ```
 
-Добавьте показанный публичный ключ и **не включайте** `Allow write access`. Затем настройте на VPS
-`~/.ssh/config`:
+Не включайте `Allow write access`.
+
+Пример `~/.ssh/config` на VPS:
 
 ```sshconfig
 Host github.com
@@ -78,11 +78,11 @@ git remote set-url origin git@github.com:Elessarov1/go-cleany.git
 git fetch origin
 ```
 
-Не копируйте на VPS личный SSH-ключ от основного GitHub-аккаунта.
+Не копируйте на VPS личный SSH-ключ основного GitHub-аккаунта.
 
-## 3. Отдельный ключ GitHub Actions для входа на VPS
+## 3. Ключ GitHub Actions для входа на VPS
 
-Создайте ключ на доверенном компьютере вне каталога репозитория. В PowerShell:
+Создайте отдельный ключ на доверенном компьютере вне репозитория. В PowerShell:
 
 ```powershell
 $keyPath = "$env:USERPROFILE\.ssh\go-cleany-staging-actions"
@@ -90,29 +90,26 @@ ssh-keygen -t ed25519 -C "go-cleany-staging-actions" -f $keyPath
 Get-Content "$keyPath.pub"
 ```
 
-Для automation-ключа оставьте passphrase пустой. Приватный файл никогда не помещайте в репозиторий.
+Для automation-ключа passphrase должна быть пустой. Приватный файл никогда не помещайте в репозиторий.
 
-На VPS добавьте публичную строку в `~/.ssh/authorized_keys` пользователя деплоя:
+На VPS добавьте public key в `~/.ssh/authorized_keys` пользователя деплоя:
 
 ```text
 restrict ssh-ed25519 AAAA... go-cleany-staging-actions
 ```
-
-Затем:
 
 ```bash
 chmod 700 ~/.ssh
 chmod 600 ~/.ssh/authorized_keys
 ```
 
-Пользователь из группы `docker` фактически имеет root-level возможности, поэтому этот ключ является
-deployment credential.
+Пользователь из группы `docker` фактически имеет root-level возможности, поэтому этот ключ является полноценным deployment credential.
 
-## 4. Получить и проверить SSH host key VPS
+## 4. Проверка SSH host key
 
 Workflow использует `StrictHostKeyChecking=yes`.
 
-На VPS покажите fingerprint:
+На VPS:
 
 ```bash
 sudo ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
@@ -125,14 +122,14 @@ ssh-keyscan -H -p 22 YOUR_VPS_HOST > go-cleany-staging-known-hosts
 ssh-keygen -lf go-cleany-staging-known-hosts
 ```
 
-Сравните fingerprint и только после совпадения используйте содержимое файла как GitHub secret.
+Сравните fingerprint и только после совпадения сохраните содержимое файла в GitHub secret.
 
 ## 5. GitHub Environment `staging`
 
-В GitHub:
+Откройте:
 
 ```text
-Repository -> Settings -> Environments -> staging
+Repository → Settings → Environments → staging
 ```
 
 ### Environment secrets
@@ -140,16 +137,16 @@ Repository -> Settings -> Environments -> staging
 | Secret | Значение |
 | --- | --- |
 | `STAGING_SSH_PRIVATE_KEY` | приватный `go-cleany-staging-actions` |
-| `STAGING_SSH_KNOWN_HOSTS` | проверенный SSH host key VPS |
+| `STAGING_SSH_KNOWN_HOSTS` | проверенная строка SSH host key VPS |
 | `GOOGLE_CLIENT_ID` | Google OAuth web client ID для staging |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth web client secret для staging |
-| `ADMIN_GOOGLE_EMAILS` | bootstrap allowlist verified Google emails через запятую |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth web client secret |
+| `ADMIN_GOOGLE_EMAILS` | allowlist verified Google emails через запятую |
 
 ### Environment variables
 
-| Variable | Пример |
+| Variable | Пример / default |
 | --- | --- |
-| `STAGING_SSH_HOST` | `203.0.113.10` или hostname VPS |
+| `STAGING_SSH_HOST` | VPS IP или hostname |
 | `STAGING_SSH_PORT` | `22` |
 | `STAGING_SSH_USER` | пользователь-владелец `/opt/go-cleany` |
 | `APP_HOST` | `loco-place.com` |
@@ -157,10 +154,10 @@ Repository -> Settings -> Environments -> staging
 | `TELEGRAM_MINI_APP_LINK_BASE` | `https://t.me/<bot>/<mini-app>` |
 | `TELEGRAM_BOT_USERNAME` | `go_cleany_bot` без `@` |
 | `TRANSFER_ASSIGNMENT_MODE` | `ADMIN_ASSIGNMENT` или `DRIVER_SELF_ACCEPT` |
-| `GOOGLE_AUTH_ENABLED` | `true` |
+| `GOOGLE_AUTH_ENABLED` | `true` / `false` |
 | `WEB_SESSION_TIMEOUT` | `12h` |
 | `ANALYTICS_ZONE_ID` | `Europe/Istanbul` |
-| `COMMERCIAL_LAUNCH_AT` | `2026-10-01T00:00:00+03:00` после предкоммерческой очистки |
+| `COMMERCIAL_LAUNCH_AT` | ISO-8601 timestamp после предкоммерческой очистки |
 | `RENTAL_MIN_STAY_DAYS` | `7` |
 | `RENTAL_LONG_TERM_MIN_DAYS` | `30` |
 | `RENTAL_LONG_TERM_DISCOUNT_RATE` | `0.10` |
@@ -174,133 +171,109 @@ Repository -> Settings -> Environments -> staging
 | `RENTAL_CLEANING_DISCOUNT_RATE` | `0.10` |
 | `RENTAL_CLEANING_MAX_DISCOUNT` | `2000` |
 
-`CLEANER_TELEGRAM_IDS` должен содержать только numeric Telegram IDs через
-запятую, без пробелов. Workflow валидирует этот формат до SSH/deploy. `TELEGRAM_MINI_APP_LINK_BASE`
-задаёт deep link без bot token. `TELEGRAM_BOT_USERNAME` нужен для одноразовых driver-link URL, а
-`TRANSFER_ASSIGNMENT_MODE` переключает ручное назначение и атомарный self-accept.
+`CLEANER_TELEGRAM_IDS` содержит numeric Telegram IDs через запятую без пробелов. `TELEGRAM_MINI_APP_LINK_BASE` задаёт deep link без bot token. `TELEGRAM_BOT_USERNAME` используется для одноразовых driver-link URL.
 
-Google provider values и email allowlist хранятся именно в Environment **Secrets**, не Variables.
-При `GOOGLE_AUTH_ENABLED=true` workflow проверяет их наличие и передаёт только в runtime backend;
-frontend build их не получает. Для текущего canonical host добавьте callback
-`https://loco-place.com/login/oauth2/code/google` в Google OAuth Console.
-
-Google-настройки передаются `release.sh` как process environment и имеют приоритет над одноимёнными
-fallback-значениями из `.env.production` при Docker Compose interpolation. `APP_HOST` синхронизируется
-отдельным deployment-скриптом: перед атомарной заменой он создаёт копию `.env.production` с режимом
-`600`; остальные значения файла не меняются.
-
-Такой подход позволяет менять демо-роли непосредственно в GitHub и затем передеплоить staging.
-
-`RENTAL_*` определяют общую политику бронирования стенда. Workflow проверяет целочисленные значения,
-взаимное соотношение минимального/долгосрочного/максимального срока и диапазон скидки. Если variables
-не заданы, используются показанные безопасные defaults. Суточные цены и описания конкретных квартир
-не относятся к deployment configuration: администратор меняет их в `/admin/rent`, и они сохраняются
-в PostgreSQL.
-
-`RENTAL_MEDIA_CACHE_*` включают локальный для backend-процесса weighted cache; `64MB`
-— безопасный pilot default. Эти GitHub Environment variables передаются в Compose при каждой
-выкладке, но load-тесты по-прежнему выполняются только локально.
-
-`RENTAL_TRANSFER_BENEFIT_ENABLED` включает одну выгоду для первого связанного трансфера по
-подтверждённой аренде. `RENTAL_TRANSFER_BENEFIT_DISCOUNT_RATE` задаёт долю скидки строго больше 0 и
-меньше 1; default `0.10` означает 10% в валюте текущего Transfer-тарифа без денежного cap. Workflow
-проверяет оба значения и передаёт их в runtime при каждой выкладке.
-
-`RENTAL_CLEANING_DISCOUNT_RATE` и `RENTAL_CLEANING_MAX_DISCOUNT` управляют персональной выгодой
-Loco Rent на уборку перед выездом. Значения берутся из GitHub Environment при каждой выкладке и имеют
-приоритет над `.env.production`. Backend дополнительно не позволит запуститься, если ставка выгоды
-превышает доступную комиссионную ставку: это защищает заказ от отрицательной экономики.
-
-`ANALYTICS_ZONE_ID` определяет календарные границы отчётов. `COMMERCIAL_LAUNCH_AT` остаётся пустым до
-финальной предкоммерческой очистки, затем отсекает любые более ранние timestamps. Порядок очистки и
-закрытия destructive lock описан в [pre-commercial reset runbook](precommercial-data-reset.md).
-
-Отдельно в:
+Google credentials и admin allowlist должны храниться в Environment **Secrets**, не Variables. При `GOOGLE_AUTH_ENABLED=true` workflow проверяет их наличие и передаёт только в backend runtime. Для canonical host callback должен быть зарегистрирован как:
 
 ```text
-Repository -> Settings -> Secrets and variables -> Actions -> Variables
+https://loco-place.com/login/oauth2/code/google
 ```
 
-хранятся repository variables:
+`RENTAL_MEDIA_CACHE_*` управляют общим для backend-instance weighted cache публичных Rental-фотографий. `64MB` — pilot default.
+
+`RENTAL_TRANSFER_BENEFIT_*` управляют скидкой первого связанного трансфера по подтверждённой аренде. Default `0.10` означает 10% в валюте текущего Transfer-тарифа без денежного cap.
+
+`RENTAL_CLEANING_*` управляют checkout Cleaning benefit Loco Rental. Backend дополнительно защищает экономические ограничения.
+
+`ANALYTICS_ZONE_ID` определяет календарные границы отчётов. `COMMERCIAL_LAUNCH_AT` остаётся пустым до финальной предкоммерческой очистки. См. [pre-commercial reset runbook](precommercial-data-reset.md).
+
+Repository variables:
+
+```text
+Repository → Settings → Secrets and variables → Actions → Variables
+```
 
 | Variable | Значение |
 | --- | --- |
 | `STAGING_URL` | `https://loco-place.com` |
 | `STAGING_DEPLOY_ENABLED` | `true` включает staging deploy job |
 
-`STAGING_DEPLOY_ENABLED` остаётся repository variable, поскольку условие job вычисляется до загрузки
-staging environment.
+`STAGING_DEPLOY_ENABLED` остаётся repository variable, потому что условие job вычисляется до загрузки environment `staging`.
 
-## 6. Как работает workflow
+## 6. Как работает change detection
+
+Workflow запускается автоматически только на `push` в `main`; также доступен ручной `workflow_dispatch`.
+
+| Изменения | Backend tests | Frontend build | Deploy staging |
+| --- | --- | --- | --- |
+| `backend/**` | запускаются | пропускается, если frontend не менялся | запускается после успешной проверки |
+| `frontend/**` | пропускаются, если backend не менялся | запускается | запускается после успешной проверки |
+| `deploy/**` | пропускаются | пропускается | запускается |
+| `compose.prod.yaml` | пропускаются | пропускается | запускается |
+| только `docs/**`, README или другие non-runtime файлы | пропускаются | пропускается | пропускается |
+| ручной workflow | запускаются обе проверки | запускаются обе проверки | только если выбран `main` |
+
+Deployment-only изменения раньше могли быть ошибочно классифицированы как `app=false`. Теперь у них отдельный признак `deployment`, а итоговый `deploy` становится true для любого изменения backend, frontend или production deployment configuration.
+
+Изменения `.github/workflows/ci.yml` сами по себе не требуют выкладки runtime. Они применяются в GitHub Actions после push.
+
+## 7. Как работает `deploy_staging`
 
 `deploy_staging`:
 
-1. запускается для `push` в `main` или ручного `workflow_dispatch` на `main`;
-2. ждёт успешные `backend` и `frontend` jobs;
-3. загружает `staging` environment;
-4. валидирует SSH credentials;
-5. валидирует `APP_HOST`, Telegram role lists, Google auth secrets при включённом OIDC, session
-   timeout, rental policy и экономику checkout-уборки;
-6. подключается к VPS через проверенный host key и безопасно синхронизирует `APP_HOST`;
-7. передаёт списки ID, Google OIDC secrets, session timeout и `RENTAL_*` в process environment
-   remote command;
-8. вызывает `./deploy/scripts/release.sh "$GITHUB_SHA"`.
+1. допускается только для ref `main`;
+2. требует `STAGING_DEPLOY_ENABLED=true`;
+3. запускается, когда detector установил `deploy=true`;
+4. ждёт успеха изменённых application jobs, а неизменённые jobs принимает как `skipped`;
+5. загружает environment `staging`;
+6. валидирует SSH credentials и runtime variables;
+7. подключается к VPS через проверенный host key;
+8. передаёт deployment/runtime configuration в remote process environment;
+9. вызывает `./deploy/scripts/release.sh "$GITHUB_SHA"`.
 
-В Docker Compose shell/process environment имеет приоритет над `--env-file`, поэтому backend
-контейнер получает именно значения, заданные в GitHub для этого deploy.
+На VPS release разворачивает точный commit SHA, создаёт pre-deployment PostgreSQL backup, пересобирает Compose images, ждёт health checks и проверяет публичный HTTPS endpoint.
 
-Передаётся точный SHA, прошедший CI. `concurrency` разрешает только одну staging-выкладку одновременно.
+`concurrency` допускает только одну staging-выкладку одновременно.
 
-## 7. Изменить роли перед демо
+## 8. Проверка feature branch до merge
 
-Откройте:
+Pull request сам по себе workflow не запускает.
 
-```text
-Repository -> Settings -> Environments -> staging
-```
-
-Измените, например:
+Для ручной проверки:
 
 ```text
-CLEANER_TELEGRAM_IDS=111111111,222222222
-ADMIN_GOOGLE_EMAILS=admin@example.com
+Repository → Actions → CI → Run workflow
 ```
 
-Затем откройте:
+Выберите feature branch. `workflow_dispatch` намеренно прогонит backend и frontend полностью. `deploy_staging` останется skipped, потому что ref не равен `main`.
+
+Это полезно перед рискованным merge, но не создаёт обязательный двойной прогон для каждого PR.
+
+## 9. Изменить runtime variables без нового commit
+
+Измените значения в environment `staging`, затем запустите `Actions → CI → Run workflow` на ветке `main`.
+
+Ручной запуск на `main`:
 
 ```text
-Repository -> Actions -> CI -> Run workflow
+backend tests
++
+frontend build
++
+deploy текущего main
 ```
 
-Выберите ветку:
+Новый пустой commit не нужен.
 
-```text
-main
-```
+## 10. Первый автоматический запуск
 
-и запустите workflow.
-
-Новый commit для изменения ролей не нужен. Workflow снова прогонит backend/frontend проверки и
-передеплоит текущий `main` с новым набором staging access IDs.
-
-После deploy участникам демо достаточно заново открыть Mini App/бот. Backend уже будет работать с
-новыми списками ролей.
-
-## 8. Первый автоматический запуск
-
-Убедитесь, что существует repository variable:
+Убедитесь, что существует:
 
 ```text
 STAGING_DEPLOY_ENABLED=true
 ```
 
-После этого push в `main` автоматически выполняет:
-
-```text
-backend  --\
-           -> deploy_staging
-frontend --/
-```
+После merge/push в `main` workflow проверит только затронутые application areas и выполнит deploy, если commit влияет на backend, frontend или production deployment configuration.
 
 Проверка на VPS:
 
@@ -311,7 +284,7 @@ cat .deploy-state/current-revision
 git rev-parse HEAD
 ```
 
-## 9. Откат и повторный запуск
+## 11. Откат и повторный запуск
 
 Application rollback:
 
@@ -324,26 +297,23 @@ cd /opt/go-cleany
 
 При временной CI/SSH ошибке используйте `Re-run failed jobs`.
 
-Если нужно только применить новые cleaner/admin IDs, используйте `Run workflow` вместо пустого
-коммита.
-
-## 10. Диагностика
+## 12. Диагностика
 
 | Ошибка | Что проверить |
 | --- | --- |
 | `Missing CLEANER_TELEGRAM_IDS staging variable` | variable в environment `staging` |
-| `Missing ADMIN_GOOGLE_EMAILS staging secret` | secret в environment `staging` при включённом Google login |
+| `Missing ADMIN_GOOGLE_EMAILS staging secret` | secret в environment при включённом Google login |
 | `must be comma-separated numeric Telegram IDs` | убрать пробелы и посторонние символы |
 | `Host key verification failed` | `STAGING_SSH_KNOWN_HOSTS`, host и SSH port |
-| `Permission denied (publickey)` | Actions private key, authorized_keys, SSH user |
+| `Permission denied (publickey)` | Actions private key, `authorized_keys`, SSH user |
 | `git fetch` запрашивает пароль | HTTPS credentials или read-only VPS deploy key |
 | `Tracked files ... contain local changes` | не редактировать tracked files на VPS |
 | `Another go-cleany deployment is already running` | дождаться текущего deploy и повторить workflow |
 | Telegram long polling конфликтует | один bot token должен обслуживаться одним backend instance |
+| deployment-only commit не запускает deploy | путь должен находиться в `deploy/**` или быть `compose.prod.yaml` |
 
-## 11. Security note
+## 13. Security note
 
-Telegram numeric user IDs сами по себе не являются authentication secrets: backend всё равно
-доверяет только подписанному Telegram `initData`/Telegram Bot updates. Однако role lists влияют на
-authorization, поэтому изменять GitHub Environment variables должны только пользователи с правами на
-настройку staging environment.
+Telegram numeric user IDs не являются authentication secrets: backend доверяет только подписанному Telegram `initData` и Telegram Bot updates. Но role lists влияют на authorization, поэтому environment settings должны изменять только пользователи с соответствующими правами.
+
+SSH deployment key, Google secrets и доступ пользователя VPS к Docker являются привилегированными credentials и не должны попадать в репозиторий или логи.
