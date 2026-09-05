@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { RentalAvailabilityRange, RentalConfiguration } from "../../domain/rental";
-import { addDaysToInputValue, addMonthsToInputValue, daysBetween, todayAsInputValue } from "../../utils/format";
+import { addDaysToInputValue, addMonthsToInputValue, inclusiveDaysBetween, todayAsInputValue } from "../../utils/format";
 import { Icon } from "../Icon/Icon";
 
 interface RentalCalendarProps {
@@ -35,7 +35,7 @@ function overlaps(
   startDate: string,
   endDate: string,
 ): boolean {
-  return range.startDate < endDate && range.endDate > startDate;
+  return range.startDate <= endDate && range.endDate >= startDate;
 }
 
 export function RentalCalendar({
@@ -51,7 +51,7 @@ export function RentalCalendar({
   const [visibleMonth, setVisibleMonth] = useState(() => startOfMonth(today));
   const locale = i18n.resolvedLanguage === "ru" ? "ru-RU" : "en-GB";
   const maxCheckIn = addMonthsToInputValue(today, configuration.bookingStartMonthsAhead);
-  const maxCalendarDate = addDaysToInputValue(maxCheckIn, configuration.maxStayDays);
+  const maxCalendarDate = addDaysToInputValue(maxCheckIn, configuration.maxStayDays - 1);
   const calendarDays = useMemo(() => {
     const first = new Date(visibleMonth);
     const mondayOffset = (first.getDay() + 6) % 7;
@@ -73,7 +73,7 @@ export function RentalCalendar({
   });
 
   const isUnavailableDay = (value: string): boolean => unavailableRanges.some(
-    (range) => range.startDate <= value && value < range.endDate,
+    (range) => range.startDate <= value && value <= range.endDate,
   );
 
   const selectDate = (value: string) => {
@@ -85,14 +85,14 @@ export function RentalCalendar({
       return;
     }
 
-    if (value <= checkInDate) {
+    if (value < checkInDate) {
       if (value >= today && value <= maxCheckIn && !isUnavailableDay(value)) {
         onChange(value, "");
       }
       return;
     }
 
-    const duration = daysBetween(checkInDate, value);
+    const duration = inclusiveDaysBetween(checkInDate, value);
     if (duration < configuration.minStayDays) {
       onValidationError(t("rental.calendar.minimum", { count: configuration.minStayDays }));
       return;
@@ -151,20 +151,19 @@ export function RentalCalendar({
           const outsideMonth = date.getMonth() !== visibleMonth.getMonth();
           const unavailable = isUnavailableDay(value);
           const inSelection = Boolean(checkInDate && checkOutDate)
-            && checkInDate <= value && value < checkOutDate;
+            && checkInDate <= value && value <= checkOutDate;
           const isCheckIn = value === checkInDate;
           const isCheckOut = value === checkOutDate;
-          const selectingCheckout = Boolean(checkInDate && !checkOutDate && value > checkInDate);
+          const selectingCheckout = Boolean(checkInDate && !checkOutDate && value >= checkInDate);
           const checkoutOverlaps = selectingCheckout && unavailableRanges.some(
             (range) => overlaps(range, checkInDate, value),
           );
-          const disabled = outsideMonth
-            || value < today
+          const disabled = value < today
             || (!checkInDate || checkOutDate
               ? value > maxCheckIn || unavailable
               : false)
             || (selectingCheckout && (
-              daysBetween(checkInDate, value) > configuration.longTermMinDays - 1
+              inclusiveDaysBetween(checkInDate, value) > configuration.longTermMinDays - 1
                 || checkoutOverlaps
             ));
           const classNames = [

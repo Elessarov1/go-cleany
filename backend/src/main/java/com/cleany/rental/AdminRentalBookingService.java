@@ -140,8 +140,8 @@ public class AdminRentalBookingService {
     ) {
         return switch (timeFilter) {
             case ALL -> true;
-            case FUTURE -> booking.getCheckOutDate().isAfter(today);
-            case PAST -> !booking.getCheckOutDate().isAfter(today);
+            case FUTURE -> !booking.getCheckOutDate().isBefore(today);
+            case PAST -> booking.getCheckOutDate().isBefore(today);
         };
     }
 

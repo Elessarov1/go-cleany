@@ -333,6 +333,7 @@ class CustomerHomeIntegrationTest extends BaseIntegrationTest {
                 "Customer home test property",
                 "Махмутлар",
                 address,
+                "12A",
                 1,
                 1,
                 1,

@@ -13,7 +13,7 @@ class RentalPropertyTest {
 
     @Test
     void newDraft_mayRemainIncompleteAndDefaultsToTry() {
-        RentalProperty property = new RentalProperty(NOW);
+        RentalProperty property = new RentalProperty(NOW, 0);
 
         Assertions.assertAll(
                 () -> Assertions.assertEquals(RentalPropertyStatus.DRAFT, property.getStatus()),
@@ -25,7 +25,7 @@ class RentalPropertyTest {
 
     @Test
     void incompleteDraft_publishRejectedWithMissingFields() {
-        RentalProperty property = new RentalProperty(NOW);
+        RentalProperty property = new RentalProperty(NOW, 0);
 
         RentalPropertyCannotBePublishedException exception = Assertions.assertThrows(
                 RentalPropertyCannotBePublishedException.class,
@@ -42,7 +42,7 @@ class RentalPropertyTest {
 
     @Test
     void completeDraft_withImage_publishedAndCanBeArchived() {
-        RentalProperty property = new RentalProperty(NOW);
+        RentalProperty property = new RentalProperty(NOW, 0);
         property.updateDetails(completeDetails(new BigDecimal("2500.00")), NOW.plusSeconds(1));
         property.assignSlug("orange-residence");
 
@@ -62,7 +62,7 @@ class RentalPropertyTest {
 
     @Test
     void changingEnglishTitle_doesNotChangeAssignedSlug() {
-        RentalProperty property = new RentalProperty(NOW);
+        RentalProperty property = new RentalProperty(NOW, 0);
         property.assignSlug("stable-public-url");
         property.updateDetails(completeDetails(new BigDecimal("2500.00")), NOW.plusSeconds(1));
 
@@ -73,6 +73,7 @@ class RentalPropertyTest {
                         "Updated English description",
                         "Кестель",
                         "New address",
+                        "12A",
                         1,
                         2,
                         1,
@@ -100,6 +101,7 @@ class RentalPropertyTest {
                 "Bright apartment near the sea",
                 "Махмутлар",
                 "Barbaros Cd. 24",
+                "12A",
                 2,
                 3,
                 1,

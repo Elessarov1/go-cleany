@@ -41,6 +41,14 @@ public class AdminRentalPropertyController {
         return propertyService.getAdminProperties();
     }
 
+    @PutMapping("/order")
+    public List<RentalPropertyResponse> reorderProperties(
+            @Valid @RequestBody ReorderRentalPropertiesRequest request
+    ) {
+        accessService.requireCurrentAdmin();
+        return propertyService.reorder(request.propertyIds());
+    }
+
     @PostMapping
     public ResponseEntity<RentalPropertyResponse> createDraft() {
         accessService.requireCurrentAdmin();

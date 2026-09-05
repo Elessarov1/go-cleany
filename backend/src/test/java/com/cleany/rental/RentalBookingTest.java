@@ -64,22 +64,24 @@ class RentalBookingTest {
     }
 
     private static RentalBooking booking(LocalDate checkIn, LocalDate checkOut) {
-        RentalProperty property = new RentalProperty(NOW);
+        RentalProperty property = new RentalProperty(NOW, 0);
         property.updateDetails(
                 RentalPropertyTest.completeDetails(new BigDecimal("100.00")),
                 NOW
         );
+        int durationDays = RentalDateRange.inclusiveDuration(checkIn, checkOut);
+        BigDecimal total = new BigDecimal("100.00").multiply(BigDecimal.valueOf(durationDays));
         var quote = new RentalPriceQuote(
                 RentalTermType.DATE_RANGE,
                 null,
-                Math.toIntExact(java.time.temporal.ChronoUnit.DAYS.between(checkIn, checkOut)),
+                durationDays,
                 new BigDecimal("100.00"),
                 null,
-                new BigDecimal("700.00"),
+                total,
                 false,
                 BigDecimal.ZERO,
                 new BigDecimal("0.00"),
-                new BigDecimal("700.00"),
+                total,
                 "TRY"
         );
         return new RentalBooking(
@@ -90,7 +92,7 @@ class RentalBookingTest {
                         RentalTermType.DATE_RANGE,
                         checkIn,
                         checkOut,
-                        Math.toIntExact(java.time.temporal.ChronoUnit.DAYS.between(checkIn, checkOut)),
+                        durationDays,
                         null
                 ),
                 "Alex",

@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260914-01" author="loco-place">
+        <comment>Reset pre-commercial Rental operations and switch booking dates to inclusive semantics.</comment>
+        <sql dbms="postgresql"><![CDATA[
+            -- All Rental data is pre-commercial test data. Capture cross-service operations that
+            -- were created from Rental so the complete test-data graph can be removed as well.
+            create temporary table rental_reset_cleaning_order (
+                id bigint primary key
+            ) on commit drop;
+            insert into rental_reset_cleaning_order (id)
+            select reserved_cleaning_order_id
+              from rental_cleaning_benefit
+             where reserved_cleaning_order_id is not null
+            on conflict do nothing;
+            insert into rental_reset_cleaning_order (id)
+            select id
+              from cleaning_order
+             where applied_rental_cleaning_benefit_id is not null
+            on conflict do nothing;
+
+            create temporary table rental_reset_transfer_booking (
+                id bigint primary key
+            ) on commit drop;
+            insert into rental_reset_transfer_booking (id)
+            select id
+              from transfer_booking
+             where source_rental_booking_id is not null
+            on conflict do nothing;
+            insert into rental_reset_transfer_booking (id)
+            select transfer_booking_id
+              from rental_transfer_benefit
+             where transfer_booking_id is not null
+            on conflict do nothing;
+
+            create temporary table rental_reset_media_asset (
+                id bigint primary key
+            ) on commit drop;
+            insert into rental_reset_media_asset (id)
+            select photo.media_asset_id
+              from cleaning_order_photo photo
+              join rental_reset_cleaning_order reset_order on reset_order.id = photo.order_id
+            on conflict do nothing;
+            insert into rental_reset_media_asset (id)
+            select photo.media_asset_id
+              from cleaning_order_issue_photo photo
+              join cleaning_order_issue_report report on report.id = photo.issue_report_id
+              join rental_reset_cleaning_order reset_order on reset_order.id = report.order_id
+            on conflict do nothing;
+
+            delete from customer_notification notification
+             where notification.type in (
+                       'RENTAL_BOOKING_CONFIRMED',
+                       'RENTAL_BOOKING_CANCELLED',
+                       'RENTAL_CLEANING_BENEFIT_AVAILABLE',
+                       'RENTAL_CHECKOUT_TRANSFER_REMINDER'
+                   )
+                or notification.target_path like '/rent/bookings/%'
+                or exists (
+                    select 1
+                      from rental_reset_cleaning_order reset_order
+                     where notification.target_path in (
+                         '/cleaning/orders/' || reset_order.id,
+                         '/admin/cleaning/orders/' || reset_order.id
+                     )
+                        or notification.dedup_key = 'reminder:cleaning-repeat:' || reset_order.id
+                )
+                or exists (
+                    select 1
+                      from rental_reset_transfer_booking reset_booking
+                     where notification.target_path in (
+                         '/transfer/bookings/' || reset_booking.id,
+                         '/admin/transfer/bookings/' || reset_booking.id
+                     )
+                        or notification.dedup_key = 'reminder:transfer-upcoming:' || reset_booking.id
+                );
+
+            delete from customer_notification notification
+             using support_case support
+             where (
+                       support.service = 'RENTAL'
+                       or (support.service = 'CLEANING' and exists (
+                           select 1 from rental_reset_cleaning_order reset_order
+                            where reset_order.id = support.source_entity_id
+                       ))
+                       or (support.service = 'TRANSFER' and exists (
+                           select 1 from rental_reset_transfer_booking reset_booking
+                            where reset_booking.id = support.source_entity_id
+                       ))
+                   )
+               and notification.dedup_key = 'support-case:' || support.id || ':created';
+
+            delete from transaction_feedback feedback
+             where feedback.service = 'RENTAL'
+                or (feedback.service = 'CLEANING' and exists (
+                    select 1 from rental_reset_cleaning_order reset_order
+                     where reset_order.id = feedback.source_entity_id
+                ))
+                or (feedback.service = 'TRANSFER' and exists (
+                    select 1 from rental_reset_transfer_booking reset_booking
+                     where reset_booking.id = feedback.source_entity_id
+                ));
+            delete from support_case support
+             where support.service = 'RENTAL'
+                or (support.service = 'CLEANING' and exists (
+                    select 1 from rental_reset_cleaning_order reset_order
+                     where reset_order.id = support.source_entity_id
+                ))
+                or (support.service = 'TRANSFER' and exists (
+                    select 1 from rental_reset_transfer_booking reset_booking
+                     where reset_booking.id = support.source_entity_id
+                ));
+            delete from customer_reminder reminder
+             where reminder.source_service = 'RENTAL'
+                or (reminder.source_service = 'CLEANING' and exists (
+                    select 1 from rental_reset_cleaning_order reset_order
+                     where reset_order.id = reminder.source_entity_id
+                ))
+                or (reminder.source_service = 'TRANSFER' and exists (
+                    select 1 from rental_reset_transfer_booking reset_booking
+                     where reset_booking.id = reminder.source_entity_id
+                ));
+            delete from repeat_action_event action_event
+             where (action_event.service = 'CLEANING' and exists (
+                       select 1 from rental_reset_cleaning_order reset_order
+                        where reset_order.id = action_event.source_entity_id
+                   ))
+                or (action_event.service = 'TRANSFER' and exists (
+                       select 1 from rental_reset_transfer_booking reset_booking
+                        where reset_booking.id = action_event.source_entity_id
+                   ));
+            delete from rental_transfer_action_event;
+
+            update cleaning_order
+               set applied_rental_cleaning_benefit_id = null
+             where exists (
+                 select 1 from rental_reset_cleaning_order reset_order
+                  where reset_order.id = cleaning_order.id
+             );
+            delete from rental_cleaning_benefit;
+
+            delete from rental_transfer_benefit;
+
+            delete from partner_payout payout
+             where exists (
+                 select 1 from rental_reset_cleaning_order reset_order
+                  where reset_order.id = payout.source_order_id
+             );
+            update cleaning_order cleaning
+               set applied_reward_id = null,
+                   customer_discount = 0,
+                   customer_discount_type = 'NONE',
+                   final_customer_price = base_price,
+                   price = base_price,
+                   platform_net = base_commission - partner_payout
+             where exists (
+                 select 1
+                   from referral_reward reward
+                   join rental_reset_cleaning_order reset_order
+                     on reset_order.id = reward.source_order_id
+                  where reward.id = cleaning.applied_reward_id
+             );
+            delete from referral_reward reward
+             where exists (
+                 select 1 from rental_reset_cleaning_order reset_order
+                  where reset_order.id = reward.source_order_id
+             );
+
+            delete from cleaning_order cleaning
+             where exists (
+                 select 1 from rental_reset_cleaning_order reset_order
+                  where reset_order.id = cleaning.id
+             );
+            delete from transfer_booking booking
+             where exists (
+                 select 1 from rental_reset_transfer_booking reset_booking
+                  where reset_booking.id = booking.id
+             );
+
+            -- Completion and issue-photo rows are removed by the order cascades. Remove their
+            -- now-unreferenced provider metadata and binary assets as part of the same reset.
+            delete from media_provider_reference provider_ref
+             where exists (
+                       select 1 from rental_reset_media_asset reset_asset
+                        where reset_asset.id = provider_ref.media_asset_id
+                   )
+               and not exists (
+                       select 1 from cleaning_order_photo photo
+                        where photo.media_asset_id = provider_ref.media_asset_id
+                   )
+               and not exists (
+                       select 1 from cleaning_order_issue_photo photo
+                        where photo.media_asset_id = provider_ref.media_asset_id
+                   )
+               and not exists (
+                       select 1 from rental_property_media media
+                        where media.media_asset_id = provider_ref.media_asset_id
+                           or media.card_media_asset_id = provider_ref.media_asset_id
+                           or media.thumbnail_media_asset_id = provider_ref.media_asset_id
+                   );
+            delete from media_asset asset
+             where exists (
+                       select 1 from rental_reset_media_asset reset_asset
+                        where reset_asset.id = asset.id
+                   )
+               and not exists (
+                       select 1 from media_provider_reference provider_ref
+                        where provider_ref.media_asset_id = asset.id
+                   )
+               and not exists (
+                       select 1 from cleaning_order_photo photo
+                        where photo.media_asset_id = asset.id
+                   )
+               and not exists (
+                       select 1 from cleaning_order_issue_photo photo
+                        where photo.media_asset_id = asset.id
+                   )
+               and not exists (
+                       select 1 from rental_property_media media
+                        where media.media_asset_id = asset.id
+                           or media.card_media_asset_id = asset.id
+                           or media.thumbnail_media_asset_id = asset.id
+                   );
+
+            delete from rental_occupancy;
+            delete from rental_booking;
+
+            alter table rental_booking
+                drop constraint ck_rental_booking_dates,
+                drop constraint ck_rental_booking_duration,
+                add constraint ck_rental_booking_dates check (
+                    check_out_date >= check_in_date
+                ),
+                add constraint ck_rental_booking_duration check (
+                    duration_days > 0
+                    and duration_days = check_out_date - check_in_date + 1
+                );
+        ]]></sql>
+        <rollback>
+            <sql dbms="postgresql"><![CDATA[
+                alter table rental_booking
+                    drop constraint ck_rental_booking_duration,
+                    drop constraint ck_rental_booking_dates,
+                    add constraint ck_rental_booking_dates check (
+                        check_out_date > check_in_date
+                    ),
+                    add constraint ck_rental_booking_duration check (
+                        duration_days > 0
+                        and duration_days = check_out_date - check_in_date
+                    );
+            ]]></sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="20260914-02" author="loco-place">
+        <comment>Add optional apartment number and one global Rental property display order.</comment>
+        <addColumn tableName="rental_property">
+            <column name="apartment_number" type="VARCHAR(64)"/>
+            <column name="display_order" type="INTEGER"/>
+        </addColumn>
+        <sql dbms="postgresql"><![CDATA[
+            with ordered as (
+                select id,
+                       row_number() over (order by created_at desc, id desc) - 1 as position
+                  from rental_property
+            )
+            update rental_property property
+               set display_order = ordered.position
+              from ordered
+             where property.id = ordered.id;
+        ]]></sql>
+        <addNotNullConstraint tableName="rental_property"
+                              columnName="display_order"
+                              columnDataType="INTEGER"/>
+        <sql dbms="postgresql"><![CDATA[
+            alter table rental_property
+                add constraint ck_rental_property_display_order
+                check (display_order >= 0);
+        ]]></sql>
+        <createIndex tableName="rental_property" indexName="idx_rental_property_status_order">
+            <column name="status"/>
+            <column name="display_order"/>
+            <column name="id"/>
+        </createIndex>
+        <rollback>
+            <dropIndex tableName="rental_property" indexName="idx_rental_property_status_order"/>
+            <sql dbms="postgresql"><![CDATA[
+                alter table rental_property
+                    drop constraint ck_rental_property_display_order;
+            ]]></sql>
+            <dropColumn tableName="rental_property" columnName="display_order"/>
+            <dropColumn tableName="rental_property" columnName="apartment_number"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

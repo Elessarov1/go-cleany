@@ -39,6 +39,8 @@ const footerTranslations = {
   en: {
     tagline: "Everyday services in Alanya, in one place.",
     services: "Services",
+    contacts: "Contacts",
+    telegram: "Telegram",
     legal: "Legal",
     privacy: "Privacy",
     terms: "Terms of Use",
@@ -46,6 +48,8 @@ const footerTranslations = {
   ru: {
     tagline: "Повседневные сервисы в Аланье — в одном месте.",
     services: "Сервисы",
+    contacts: "Контакты",
+    telegram: "Telegram",
     legal: "Правовая информация",
     privacy: "Конфиденциальность",
     terms: "Условия использования",

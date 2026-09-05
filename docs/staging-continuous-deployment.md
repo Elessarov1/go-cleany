@@ -171,7 +171,7 @@ Repository → Settings → Environments → staging
 | `RENTAL_CLEANING_DISCOUNT_RATE` | `0.10` |
 | `RENTAL_CLEANING_MAX_DISCOUNT` | `2000` |
 
-`CLEANER_TELEGRAM_IDS` содержит numeric Telegram IDs через запятую без пробелов. `TELEGRAM_MINI_APP_LINK_BASE` задаёт deep link без bot token. `TELEGRAM_BOT_USERNAME` используется для одноразовых driver-link URL.
+`CLEANER_TELEGRAM_IDS` содержит numeric Telegram IDs через запятую без пробелов. `TELEGRAM_MINI_APP_LINK_BASE` задаёт deep link без bot token. `TELEGRAM_BOT_USERNAME` используется для одноразовых driver-link URL и передаётся в production Vite build как адрес Telegram-контакта web-футера; отдельная GitHub variable для frontend не нужна.
 
 Google credentials и admin allowlist должны храниться в Environment **Secrets**, не Variables. При `GOOGLE_AUTH_ENABLED=true` workflow проверяет их наличие и передаёт только в backend runtime. Для canonical host callback должен быть зарегистрирован как:
 

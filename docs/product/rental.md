@@ -30,7 +30,26 @@ Do not merge RentalBooking with CleaningOrder or TransferBooking.
 
 Rental has dated occupancy/availability semantics. Pricing and stay rules are backend-authoritative; bookings preserve immutable price snapshots.
 
+`checkInDate` and `checkOutDate` are both occupied and billable calendar dates. A stay from 1 through
+5 September therefore lasts five days; 5 September conflicts with another occupancy and the next
+stay may begin on 6 September. Internally PostgreSQL keeps the exclusion range half-open as
+`[checkInDate, checkOutDate + 1 day)`, while every public availability and occupancy range exposes
+an inclusive `endDate`. A one-month term beginning 1 September ends on 30 September and frees the
+property on 1 October.
+
 Admin owns property publication, occupancies and operational booking management.
+
+Property administration uses one explicit global `displayOrder` across drafts, published and
+archived properties. Public catalog filtering keeps the relative order of published properties.
+New drafts are appended, deletion compacts positions, and the admin can reorder cards by drag and
+drop or accessible up/down controls. `apartmentNumber` is optional, trimmed, and appears in public
+characteristics only when configured.
+
+The migration introducing inclusive dates deliberately clears pre-commercial Rental bookings,
+occupancies and their Rental-specific benefits, reminders, tracking, support/feedback and inbox
+events. Cleaning and Transfer test operations created from those Rental bookings are removed with
+their dependent state; unrelated operations in those verticals remain. Rental properties and media
+are retained. A PostgreSQL backup is required before deploying that migration.
 
 ## Property media delivery
 

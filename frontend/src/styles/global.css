@@ -2716,6 +2716,7 @@ h3 {
 }
 .rental-calendar__grid button:disabled { cursor: default; opacity: 0.35; }
 .rental-calendar__grid button.is-unavailable:disabled { opacity: 1; }
+.rental-calendar__grid button.is-outside-month:not(:disabled) { opacity: 0.56; }
 .rental-calendar__grid button.is-outside-month:disabled { opacity: 0.18; }
 .rental-calendar__legend { display: flex; margin-top: 10px; flex-wrap: wrap; gap: 10px; color: var(--color-muted); font-size: 8px; }
 .rental-calendar__legend span { display: inline-flex; align-items: center; gap: 4px; }
@@ -3195,6 +3196,13 @@ h3 {
   gap: 14px;
 }
 
+.admin-rental-order-hint {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .admin-rental-property-card {
   min-width: 0;
   overflow: hidden;
@@ -3202,7 +3210,10 @@ h3 {
   border: 1px solid var(--color-line);
   border-radius: 20px;
   box-shadow: var(--shadow-small);
+  transition: border-color 160ms ease, opacity 160ms ease, transform 160ms ease;
 }
+
+.admin-rental-property-card.is-dragging { opacity: 0.55; transform: scale(0.985); }
 
 .admin-rental-property-card__image {
   position: relative;
@@ -3218,11 +3229,55 @@ h3 {
 .admin-rental-property-card__image img { object-fit: cover; }
 .admin-rental-media-placeholder { display: grid; place-items: center; color: var(--color-primary); background: var(--color-primary-soft); }
 .admin-rental-property-card__image .admin-rental-status { position: absolute; top: 11px; left: 11px; }
+.admin-rental-property-card__drag {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  place-items: center;
+  color: var(--color-ink);
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-line) 78%, transparent);
+  border-radius: 11px;
+  box-shadow: var(--shadow-small);
+  cursor: grab;
+  backdrop-filter: blur(8px);
+}
+.admin-rental-property-card__drag:active { cursor: grabbing; }
+.admin-rental-property-card__drag:disabled { cursor: wait; opacity: 0.55; }
 .admin-rental-property-card__body { display: grid; padding: 16px; gap: 8px; }
 .admin-rental-property-card__body small { color: var(--color-muted); font-size: 9px; }
 .admin-rental-property-card__body h2 { min-height: 42px; margin: 0; font-size: 18px; letter-spacing: -0.025em; }
 .admin-rental-property-card__body > strong { color: var(--color-primary-dark); font-size: 15px; }
 .admin-rental-property-card__body > div { display: flex; margin-top: 4px; flex-wrap: wrap; gap: 7px; }
+.admin-rental-property-card__body > .admin-rental-property-card__order {
+  display: grid;
+  margin-top: 2px;
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 8px;
+}
+.admin-rental-property-card__order button {
+  min-width: 34px;
+  min-height: 32px;
+  padding: 0;
+  color: var(--color-primary-dark);
+  background: var(--color-primary-soft);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-line));
+  border-radius: 9px;
+  cursor: pointer;
+}
+.admin-rental-property-card__order button:disabled { cursor: default; opacity: 0.35; }
+.admin-rental-property-card__order span {
+  min-width: 0;
+  color: var(--color-muted);
+  text-align: center;
+  font-size: 10px;
+  font-weight: 750;
+}
 .admin-rental-property-card__body .button { min-height: 37px; padding: 8px 11px; font-size: 10px; }
 
 .admin-rental-status {

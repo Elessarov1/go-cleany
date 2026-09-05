@@ -259,6 +259,7 @@ class CustomerActivityIntegrationTest extends BaseIntegrationTest {
                 "Activity test property",
                 "Махмутлар",
                 "Rental activity address",
+                "12A",
                 1,
                 1,
                 1,

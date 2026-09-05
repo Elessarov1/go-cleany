@@ -54,6 +54,9 @@ public class RentalProperty {
     @Column(name = "address", length = 1000)
     private String address;
 
+    @Column(name = "apartment_number", length = 64)
+    private String apartmentNumber;
+
     @Column(name = "bedrooms")
     private Integer bedrooms;
 
@@ -78,6 +81,9 @@ public class RentalProperty {
     @Column(name = "currency", length = 3)
     private String currency;
 
+    @Column(name = "display_order", nullable = false)
+    private int displayOrder;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 32)
     private RentalPropertyStatus status;
@@ -98,11 +104,12 @@ public class RentalProperty {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public RentalProperty(Instant createdAt) {
+    public RentalProperty(Instant createdAt, int displayOrder) {
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
         this.updatedAt = createdAt;
         this.status = RentalPropertyStatus.DRAFT;
         this.currency = "TRY";
+        changeDisplayOrder(displayOrder);
     }
 
     public void updateDetails(RentalPropertyDetails details, Instant updatedAt) {
@@ -112,6 +119,7 @@ public class RentalProperty {
         this.descriptionEn = required.descriptionEn();
         this.area = required.area();
         this.address = required.address();
+        this.apartmentNumber = required.apartmentNumber();
         this.bedrooms = required.bedrooms();
         this.beds = required.beds();
         this.bathrooms = required.bathrooms();
@@ -173,6 +181,13 @@ public class RentalProperty {
             throw new IllegalStateException("Rental property slug is already assigned");
         }
         slug = Objects.requireNonNull(generatedSlug, "generatedSlug");
+    }
+
+    public void changeDisplayOrder(int newDisplayOrder) {
+        if (newDisplayOrder < 0) {
+            throw new IllegalArgumentException("displayOrder must be non-negative");
+        }
+        displayOrder = newDisplayOrder;
     }
 
     private static void requirePresent(ArrayList<String> missing, Object value, String field) {

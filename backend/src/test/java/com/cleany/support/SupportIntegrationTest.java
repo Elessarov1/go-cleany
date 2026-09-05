@@ -509,6 +509,7 @@ class SupportIntegrationTest extends BaseIntegrationTest {
                 "Support test property",
                 "Махмутлар",
                 "Support rental address",
+                "12A",
                 1,
                 1,
                 1,

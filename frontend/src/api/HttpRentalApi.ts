@@ -104,6 +104,17 @@ export class HttpRentalApi implements RentalApi {
       .map((property) => this.resolveMedia(property));
   }
 
+  async reorderAdminProperties(propertyIds: number[]): Promise<RentalProperty[]> {
+    const properties = await this.client.request<RentalProperty[]>(
+      "/api/v1/admin/rental/properties/order",
+      {
+        method: "PUT",
+        body: JSON.stringify({ propertyIds }),
+      },
+    );
+    return properties.map((property) => this.resolveMedia(property));
+  }
+
   async createAdminProperty(): Promise<RentalProperty> {
     return this.resolveMedia(await this.client.request("/api/v1/admin/rental/properties", { method: "POST" }));
   }

@@ -2,6 +2,8 @@ package com.cleany.rental;
 
 import java.time.Clock;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -27,7 +29,14 @@ public class RentalPropertyService {
 
     @Transactional
     public RentalPropertyResponse createDraft() {
-        RentalProperty property = propertyRepository.save(new RentalProperty(clock.instant()));
+        List<RentalProperty> properties = propertyRepository.findAllForDisplayOrderUpdate();
+        int displayOrder = properties.stream()
+                .mapToInt(RentalProperty::getDisplayOrder)
+                .max()
+                .orElse(-1) + 1;
+        RentalProperty property = propertyRepository.save(
+                new RentalProperty(clock.instant(), displayOrder)
+        );
         return adminResponse(property);
     }
 
@@ -92,13 +101,40 @@ public class RentalPropertyService {
         occupancyRepository.deleteManualByPropertyId(propertyId);
         mediaService.deleteAllForProperty(propertyId);
         propertyRepository.delete(property);
+        propertyRepository.flush();
+        compactDisplayOrder(propertyRepository.findAllForDisplayOrderUpdate());
         publishMediaChanged(propertyId);
+    }
+
+    @Transactional
+    public List<RentalPropertyResponse> reorder(List<Long> propertyIds) {
+        List<RentalProperty> properties = propertyRepository.findAllForDisplayOrderUpdate();
+        if (propertyIds == null
+                || propertyIds.size() != properties.size()
+                || new HashSet<>(propertyIds).size() != propertyIds.size()) {
+            throw new InvalidRentalPropertyOrderException();
+        }
+        Map<Long, RentalProperty> byId = new HashMap<>();
+        properties.forEach(property -> byId.put(property.getId(), property));
+        for (int index = 0; index < propertyIds.size(); index++) {
+            RentalProperty property = byId.get(propertyIds.get(index));
+            if (property == null) {
+                throw new InvalidRentalPropertyOrderException();
+            }
+            property.changeDisplayOrder(index);
+        }
+        propertyRepository.flush();
+        return responses(
+                propertyRepository.findAllByOrderByDisplayOrderAscIdAsc(),
+                true,
+                false
+        );
     }
 
     @Transactional(readOnly = true)
     public List<RentalPropertyResponse> getPublishedProperties() {
         return responses(
-                propertyRepository.findAllByStatusOrderByCreatedAtDesc(
+                propertyRepository.findAllByStatusOrderByDisplayOrderAscIdAsc(
                         RentalPropertyStatus.PUBLISHED
                 ),
                 false,
@@ -116,7 +152,7 @@ public class RentalPropertyService {
 
     @Transactional(readOnly = true)
     public List<RentalPropertyResponse> getAdminProperties() {
-        return responses(propertyRepository.findAllByOrderByCreatedAtDesc(), true, false);
+        return responses(propertyRepository.findAllByOrderByDisplayOrderAscIdAsc(), true, false);
     }
 
     @Transactional(readOnly = true)
@@ -208,5 +244,11 @@ public class RentalPropertyService {
 
     private void publishMediaChanged(long propertyId) {
         eventPublisher.publishEvent(new RentalPropertyMediaChangedEvent(propertyId));
+    }
+
+    private static void compactDisplayOrder(List<RentalProperty> properties) {
+        for (int index = 0; index < properties.size(); index++) {
+            properties.get(index).changeDisplayOrder(index);
+        }
     }
 }

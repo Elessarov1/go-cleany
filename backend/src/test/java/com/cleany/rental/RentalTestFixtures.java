@@ -35,6 +35,7 @@ final class RentalTestFixtures {
                 "Bright apartment near the sea",
                 "Махмутлар",
                 "Barbaros Cd. 24",
+                "12A",
                 2,
                 3,
                 1,

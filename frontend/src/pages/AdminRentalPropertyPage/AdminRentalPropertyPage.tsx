@@ -13,14 +13,15 @@ const amenities: RentalAmenity[] = [
   "POOL", "PARKING", "ELEVATOR", "WORKSPACE", "TV", "KITCHEN",
 ];
 
-type NullableTextKey = "titleRu" | "titleEn" | "descriptionEn" | "area" | "address" | "currency";
+type NullableTextKey = "titleRu" | "titleEn" | "descriptionEn" | "area" | "address" | "apartmentNumber" | "currency";
 type NullableNumberKey = "bedrooms" | "beds" | "bathrooms" | "maxGuests" | "areaSqm" | "floor" | "baseDailyPrice";
 
 function toUpdateRequest(property: RentalProperty): UpdateRentalPropertyRequest {
   return {
     titleRu: property.titleRu, titleEn: property.titleEn,
     descriptionEn: property.descriptionEn,
-    area: property.area, address: property.address, bedrooms: property.bedrooms,
+    area: property.area, address: property.address, apartmentNumber: property.apartmentNumber,
+    bedrooms: property.bedrooms,
     beds: property.beds, bathrooms: property.bathrooms, maxGuests: property.maxGuests,
     areaSqm: property.areaSqm, floor: property.floor, baseDailyPrice: property.baseDailyPrice,
     currency: property.currency?.toUpperCase() ?? null, amenities: property.amenities,
@@ -136,7 +137,7 @@ export function AdminRentalPropertyPage() {
       <section className="admin-rental-panel">
         <div className="admin-rental-section-heading"><div><h2>{t("adminRental.editor.mainTitle")}</h2><p>{t("adminRental.editor.mainText")}</p></div></div>
         <div className="admin-rental-form-grid">
-          {textField("titleEn")}{textField("titleRu")}{textField("area")}
+          {textField("titleEn")}{textField("titleRu")}{textField("area")}{textField("apartmentNumber")}
           <div className="admin-rental-form-grid__wide">{textField("address")}</div>
           {numberField("baseDailyPrice", "0.01")}{numberField("areaSqm", "0.01")}
           {numberField("bedrooms")}{numberField("maxGuests")}
