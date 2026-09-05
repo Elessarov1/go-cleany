@@ -71,6 +71,55 @@ export class MockAnalyticsApi implements AnalyticsApi {
         },
         byContext: [],
       },
+      rentalTransferBenefit: all || request.service === "RENTAL" ? {
+        total: {
+          funnel: {
+            shownSources: 9, startedSources: 6, createdSources: 4, completedSources: 3,
+            startRate: 0.6667, creationRate: 0.4444, completionRate: 0.75,
+            medianHoursToCreation: 4.5,
+          },
+          completedAmounts: [
+            { currency: "TRY", completedTransfers: 3, baseAmount: 7200, discountAmount: 720, payableAmount: 6480 },
+          ],
+        },
+        byContext: [
+          {
+            context: "ARRIVAL" as const,
+            metric: {
+              funnel: {
+                shownSources: 6, startedSources: 4, createdSources: 3, completedSources: 2,
+                startRate: 0.6667, creationRate: 0.5, completionRate: 0.6667,
+                medianHoursToCreation: 3,
+              },
+              completedAmounts: [
+                { currency: "TRY", completedTransfers: 2, baseAmount: 4800, discountAmount: 480, payableAmount: 4320 },
+              ],
+            },
+          },
+          {
+            context: "CHECKOUT" as const,
+            metric: {
+              funnel: {
+                shownSources: 4, startedSources: 2, createdSources: 1, completedSources: 1,
+                startRate: 0.5, creationRate: 0.25, completionRate: 1,
+                medianHoursToCreation: 8,
+              },
+              completedAmounts: [
+                { currency: "TRY", completedTransfers: 1, baseAmount: 2400, discountAmount: 240, payableAmount: 2160 },
+              ],
+            },
+          },
+        ],
+      } : {
+        total: {
+          funnel: {
+            shownSources: 0, startedSources: 0, createdSources: 0, completedSources: 0,
+            startRate: null, creationRate: null, completionRate: null, medianHoursToCreation: null,
+          },
+          completedAmounts: [],
+        },
+        byContext: [],
+      },
       repeatActions: [
         {
           service: "CLEANING" as const,

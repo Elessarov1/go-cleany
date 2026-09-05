@@ -18,7 +18,9 @@ import com.cleany.customer.CustomerAccountService;
 import com.cleany.repeat.RepeatSourceNotEligibleException;
 import com.cleany.order.PhoneNumberNormalizer;
 import com.cleany.crossservice.rentaltransfer.RentalTransferAlreadyBookedException;
+import com.cleany.crossservice.rentaltransfer.RentalTransferBenefitService;
 import com.cleany.crossservice.rentaltransfer.RentalTransferContextService;
+import com.cleany.crossservice.rentaltransfer.RentalTransferSourceRequest;
 import com.cleany.crossservice.rentaltransfer.ResolvedRentalTransferSource;
 
 import lombok.RequiredArgsConstructor;
@@ -38,6 +40,7 @@ public class TransferBookingService {
     private final CustomerAttributionService customerAttributionService;
     private final RepeatActionTrackingService repeatActionTrackingService;
     private final RentalTransferContextService rentalTransferContextService;
+    private final RentalTransferBenefitService rentalTransferBenefitService;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
@@ -77,11 +80,7 @@ public class TransferBookingService {
             CreateTransferBookingRequest request
     ) {
         requireCustomerFlow(customer);
-        if (request.repeatFromBookingId() != null && request.rentalSource() != null) {
-            throw new InvalidTransferBookingException(
-                    "Repeat and rental transfer sources cannot be used together"
-            );
-        }
+        validateSources(request.repeatFromBookingId(), request.rentalSource(), request.benefit());
         TransferBooking repeatSource = request.repeatFromBookingId() == null
                 ? null
                 : requireRepeatSource(customer, request.repeatFromBookingId());
@@ -93,19 +92,19 @@ public class TransferBookingService {
                         request.direction()
                 );
         bookingPolicy.requireBookable(request.pickupDate(), request.pickupTime());
-        TransferAirport airport = airportRepository.findByIdAndEnabledTrue(request.airportId())
-                .orElseThrow(() -> new TransferConfigurationUnavailableException("airport"));
-        TransferVehicleType vehicle = vehicleRepository.findByIdAndEnabledTrue(request.vehicleTypeId())
-                .orElseThrow(() -> new TransferConfigurationUnavailableException("vehicle type"));
-        TransferPrice price = priceRepository
-                .findByAirport_IdAndVehicleType_IdAndDirectionAndEnabledTrue(
-                        airport.getId(),
-                        vehicle.getId(),
-                        request.direction()
-                )
-                .filter(candidate -> candidate.getAirport().isEnabled())
-                .filter(candidate -> candidate.getVehicleType().isEnabled())
-                .orElseThrow(() -> new TransferConfigurationUnavailableException("price"));
+        TransferPrice price = requirePrice(
+                request.direction(),
+                request.airportId(),
+                request.vehicleTypeId()
+        );
+        TransferAirport airport = price.getAirport();
+        TransferVehicleType vehicle = price.getVehicleType();
+        TransferPriceQuote priceQuote = rentalTransferBenefitService.quote(
+                customer.customerId(),
+                rentalSource,
+                price,
+                request.benefit()
+        );
 
         String normalizedPhone = phoneNumberNormalizer.normalize(request.phone());
         customerAccountService.updateNormalizedPhone(customer.customerId(), normalizedPhone);
@@ -128,6 +127,7 @@ public class TransferBookingService {
                         request.scheduledArrivalTime(),
                         request.comment(),
                         price,
+                        priceQuote,
                         createdAt
                 )
         );
@@ -151,6 +151,9 @@ public class TransferBookingService {
             }
             throw exception;
         }
+        if (rentalSource != null) {
+            rentalTransferBenefitService.reserve(rentalSource, booking);
+        }
         customerAttributionService.attachOrganicFallback(
                 customer.customerId(),
                 createdAt,
@@ -163,6 +166,35 @@ public class TransferBookingService {
                 booking.getCommunicationIdentityId()
         ));
         return response;
+    }
+
+    @Transactional(readOnly = true)
+    public TransferQuoteResponse quote(TransferQuoteRequest request) {
+        return quote(customerAccountService.currentCustomer(), request);
+    }
+
+    @Transactional(readOnly = true)
+    public TransferQuoteResponse quote(CurrentCustomer customer, TransferQuoteRequest request) {
+        requireCustomerFlow(customer);
+        validateSources(null, request.rentalSource(), request.benefit());
+        ResolvedRentalTransferSource rentalSource = request.rentalSource() == null
+                ? null
+                : rentalTransferContextService.resolveForQuote(
+                        customer,
+                        request.rentalSource(),
+                        request.direction()
+                );
+        TransferPrice price = requirePrice(
+                request.direction(),
+                request.airportId(),
+                request.vehicleTypeId()
+        );
+        return TransferQuoteResponse.from(rentalTransferBenefitService.quote(
+                customer.customerId(),
+                rentalSource,
+                price,
+                request.benefit()
+        ));
     }
 
     @Transactional
@@ -283,5 +315,47 @@ public class TransferBookingService {
                 PlatformService.TRANSFER,
                 customer.customerId()
         );
+    }
+
+    private TransferPrice requirePrice(
+            TransferDirection direction,
+            long airportId,
+            long vehicleTypeId
+    ) {
+        TransferAirport airport = airportRepository.findByIdAndEnabledTrue(airportId)
+                .orElseThrow(() -> new TransferConfigurationUnavailableException("airport"));
+        TransferVehicleType vehicle = vehicleRepository.findByIdAndEnabledTrue(vehicleTypeId)
+                .orElseThrow(() -> new TransferConfigurationUnavailableException("vehicle type"));
+        return priceRepository
+                .findByAirport_IdAndVehicleType_IdAndDirectionAndEnabledTrue(
+                        airport.getId(),
+                        vehicle.getId(),
+                        direction
+                )
+                .filter(candidate -> candidate.getAirport().isEnabled())
+                .filter(candidate -> candidate.getVehicleType().isEnabled())
+                .orElseThrow(() -> new TransferConfigurationUnavailableException("price"));
+    }
+
+    private static void validateSources(
+            Long repeatFromBookingId,
+            RentalTransferSourceRequest rentalSource,
+            TransferBenefitType benefit
+    ) {
+        if (repeatFromBookingId != null && rentalSource != null) {
+            throw new InvalidTransferBookingException(
+                    "Repeat and rental transfer sources cannot be used together"
+            );
+        }
+        if (benefit != null && rentalSource == null) {
+            throw new InvalidTransferBookingException(
+                    "Rental transfer benefit requires a rental source"
+            );
+        }
+        if (repeatFromBookingId != null && benefit != null) {
+            throw new InvalidTransferBookingException(
+                    "Repeat and rental transfer benefit cannot be used together"
+            );
+        }
     }
 }

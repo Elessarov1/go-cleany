@@ -172,6 +172,11 @@ export interface RentalCleaningContext {
 export type RentalTransferContextType = "ARRIVAL" | "CHECKOUT";
 export type RentalTransferContextAvailability = "BOOKABLE" | "AVAILABLE_LATER";
 
+export interface RentalTransferBenefit {
+  type: "RENTAL_FIRST_TRANSFER";
+  discountRate: number;
+}
+
 export interface RentalTransferContextOption {
   context: RentalTransferContextType;
   availability: RentalTransferContextAvailability;
@@ -179,6 +184,7 @@ export interface RentalTransferContextOption {
   suggestedDate: string;
   address: string;
   availableFromDate: string | null;
+  benefit: RentalTransferBenefit | null;
 }
 
 export interface RentalTransferContext {
@@ -193,6 +199,7 @@ export interface RentalTransferPrefill {
   direction: "TO_AIRPORT" | "FROM_AIRPORT";
   suggestedDate: string;
   address: string;
+  benefit: RentalTransferBenefit | null;
 }
 
 export interface UpdateRentalPropertyRequest {

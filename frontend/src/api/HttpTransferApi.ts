@@ -11,6 +11,8 @@ import type {
   TransferConfiguration,
   TransferDriverLink,
   TransferRepeatPrefill,
+  TransferQuote,
+  TransferQuoteRequest,
   UpdateTransferAirportRequest,
   UpdateTransferVehicleRequest,
   UpsertTransferDriverRequest,
@@ -24,6 +26,13 @@ export class HttpTransferApi implements TransferApi {
 
   getConfiguration(): Promise<TransferConfiguration> {
     return this.client.request("/api/v1/transfer/configuration");
+  }
+
+  quote(request: TransferQuoteRequest): Promise<TransferQuote> {
+    return this.client.request("/api/v1/transfer/quote", {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
   }
 
   createBooking(request: CreateTransferBookingRequest): Promise<TransferBooking> {

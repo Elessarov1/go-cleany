@@ -20,6 +20,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitNotApplicableException;
 import com.cleany.crossservice.rentaltransfer.RentalTransferAlreadyBookedException;
+import com.cleany.crossservice.rentaltransfer.RentalTransferBenefitUnavailableException;
 import com.cleany.crossservice.rentaltransfer.RentalTransferContextNotEligibleException;
 import com.cleany.analytics.AcquisitionCampaignNotFoundException;
 import com.cleany.analytics.InvalidAcquisitionCampaignException;
@@ -454,12 +455,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({
             RentalTransferContextNotEligibleException.class,
-            RentalTransferAlreadyBookedException.class
+            RentalTransferAlreadyBookedException.class,
+            RentalTransferBenefitUnavailableException.class
     })
     ResponseEntity<ApiError> handleRentalTransferContext(RuntimeException exception) {
-        String code = exception instanceof RentalTransferAlreadyBookedException
-                ? "rental_transfer_already_booked"
-                : "rental_transfer_context_not_eligible";
+        String code = switch (exception) {
+            case RentalTransferAlreadyBookedException ignored -> "rental_transfer_already_booked";
+            case RentalTransferBenefitUnavailableException ignored -> "rental_transfer_benefit_unavailable";
+            default -> "rental_transfer_context_not_eligible";
+        };
         return response(HttpStatus.CONFLICT, code, exception.getMessage());
     }
 

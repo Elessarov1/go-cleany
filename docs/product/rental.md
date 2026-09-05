@@ -76,6 +76,13 @@ The owned booking detail presents arrival and checkout in one contextual card. T
 
 A matching active/completed Transfer suppresses the corresponding action. Cancelled/rejected transfers permit another attempt. Rental cancellation does not cascade into Transfer cancellation.
 
+One confirmed Rental grants a backend-owned 10% default benefit to the first linked ARRIVAL or
+CHECKOUT Transfer. It is shown only for a context that is bookable now. A requested Transfer reserves
+the benefit; confirmation consumes it, while cancellation/rejection before confirmation releases it.
+An already active/completed matching Transfer closes the opportunity even without a discount. The
+other linked trip can still be booked at the ordinary current tariff. See
+[../cross-functional/benefits.md](../cross-functional/benefits.md).
+
 ## Retention/cross-service opportunities
 
 Examples that satisfy the manifesto because the context is explicit:

@@ -103,6 +103,7 @@ export class MockCustomerApi implements CustomerApi {
       eligibleFrom: null,
       expiresOn: null,
       targetPath: "/transfer?rentalBooking=4&rentalContext=CHECKOUT",
+      benefit: { type: "RENTAL_FIRST_TRANSFER" as const, discountRate: 0.1 },
     };
     const cleaningAction = {
       type: "RENTAL_CLEANING" as const,
@@ -113,6 +114,7 @@ export class MockCustomerApi implements CustomerApi {
       eligibleFrom: "2026-09-09",
       expiresOn: "2026-09-12",
       targetPath: "/cleaning?rentalBooking=4&promo=RC23456789",
+      benefit: null,
     };
 
     if (scenario === "HOME_REPEAT") {

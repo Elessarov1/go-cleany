@@ -92,6 +92,7 @@ export interface CustomerHomePrimaryAction {
   eligibleFrom: string | null;
   expiresOn: string | null;
   targetPath: string;
+  benefit: import("./rental").RentalTransferBenefit | null;
 }
 
 export interface CustomerHomeRepeatOpportunity {

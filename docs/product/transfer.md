@@ -47,7 +47,9 @@ TransferBooking
 
 ## Configuration
 
-GZP, AYT, Sedan and Minivan are seeded business configuration. Commercial rates are admin-managed and price snapshots are stored on bookings.
+GZP, AYT, Sedan and Minivan are seeded business configuration. Commercial rates are admin-managed.
+Bookings store base, discount, payable and currency snapshots; ordinary and legacy bookings have
+equal base/payable values and a zero discount.
 
 The service remains controllable through platform availability state; configuration records are preserved by the pre-commercial reset while transaction history is purged.
 
@@ -103,6 +105,13 @@ A confirmed owned Rental can open Transfer with explicit `ARRIVAL` or `CHECKOUT`
 The bridge derives direction, source date and current property address on the backend, and validates ownership, Rental status, service availability and Transfer booking horizon again at creation. Date/address may be edited; changing direction clears the source context. Airport, time, vehicle, passenger/luggage and flight details remain current customer inputs.
 
 `TransferBooking` stores nullable typed Rental source fields. An active/completed linked booking is unique per Rental/context; cancellation or rejection permits a retry. An unlinked Transfer with the same customer, direction, source date and normalized property address also suppresses duplicate prompting. Rental and Transfer lifecycles remain independent.
+
+The first linked ARRIVAL or CHECKOUT trip can apply `RENTAL_FIRST_TRANSFER`, configured by
+`RENTAL_TRANSFER_BENEFIT_*` and defaulting to 10% for every tariff currency without a monetary cap.
+`POST /api/v1/transfer/quote` recalculates the active rate and eligibility; creation repeats the same
+checks and never silently falls back to full price when the client expects the benefit. Reservation
+is atomic per Rental. Confirmation consumes the benefit permanently, while cancellation/rejection
+before confirmation releases it. Notifications and driver messages use the payable snapshot.
 
 ## Visual identity
 

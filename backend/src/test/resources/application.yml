@@ -99,6 +99,10 @@ rental-cleaning-benefit:
   discount-rate: 0.10
   max-discount: 2000
 
+rental-transfer-benefit:
+  enabled: true
+  discount-rate: 0.10
+
 smart-reminders:
   enabled: false
   cron: "0 0 9 * * *"

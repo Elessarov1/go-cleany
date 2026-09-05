@@ -21,6 +21,7 @@ public record NewTransferBooking(
         LocalTime scheduledArrivalTime,
         String comment,
         TransferPrice price,
+        TransferPriceQuote priceQuote,
         Instant createdAt
 ) {
 }

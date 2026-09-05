@@ -12,6 +12,12 @@ The backend validates the booking horizon and 30-minute slots in `Europe/Istanbu
 rate and persists airport, vehicle and price snapshots. No online payment, map, flight-status API or
 distance pricing is involved.
 
+For a typed Rental ARRIVAL/CHECKOUT source, the customer may receive the one-time
+`RENTAL_FIRST_TRANSFER` percentage benefit. `POST /api/v1/transfer/quote` and booking creation both
+resolve the current customer, Rental ownership/status, service availability, current rate and
+benefit state. The booking persists base price, discount, payable price, currency, benefit type and
+rate. Ordinary bookings keep a zero discount.
+
 ```text
 REQUESTED → CONFIRMED → COMPLETED
      ├────→ REJECTED
@@ -58,6 +64,8 @@ TRANSFER_MIN_BOOKING_DAYS_AHEAD=1
 TRANSFER_BOOKING_MONTHS_AHEAD=6
 TRANSFER_TIME_SLOT_MINUTES=30
 TRANSFER_ZONE_ID=Europe/Istanbul
+RENTAL_TRANSFER_BENEFIT_ENABLED=true
+RENTAL_TRANSFER_BENEFIT_DISCOUNT_RATE=0.10
 ```
 
 Rates, airports, vehicles and drivers are PostgreSQL business configuration and are preserved by the

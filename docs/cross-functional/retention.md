@@ -3,7 +3,7 @@ title: Retention and Progressive Convenience
 type: cross-functional
 status: active
 scope: platform
-updated: 2026-09-02
+updated: 2026-09-05
 ---
 
 # Retention & Progressive Convenience
@@ -96,6 +96,13 @@ The backend computes whether each option is bookable now or when its Transfer bo
 
 The customer still chooses airport, time, vehicle, passenger/luggage and flight data. Changing direction leaves the Rental flow and creates a normal Transfer. Cancelling Rental never silently cancels its separately created Transfer.
 
+The first ARRIVAL or CHECKOUT Transfer created from a confirmed Rental can receive the explicit
+`RENTAL_FIRST_TRANSFER` benefit. The offer appears only for an immediately `BOOKABLE` context and
+uses a backend-authoritative quote. One Rental has one benefit lifecycle: a requested ride reserves
+it, confirmation consumes it permanently, while cancellation/rejection before confirmation releases
+it. A second context remains available at the normal current tariff. This is an explicit
+Rental/Transfer bridge, not a generic recommendation or benefit engine.
+
 ### Contextual next action
 
 The customer home at `/` is a contextual read model for an authenticated returning customer while remaining a clear service catalog for guests and new customers:
@@ -107,7 +114,7 @@ repeat opportunity
 service catalog
 ```
 
-`GET /api/v1/account/home` resolves the current `CustomerAccount`, reuses the first active item from Activity and selects at most one backend-verified contextual action plus one eligible Cleaning/Transfer repeat. Rental → Transfer participates only while immediately bookable; Rental → Cleaning participates only while its existing benefit is available. Repeat is suppressed when the same service is already active or is the primary action target.
+`GET /api/v1/account/home` resolves the current `CustomerAccount`, reuses the first active item from Activity and selects at most one backend-verified contextual action plus one eligible Cleaning/Transfer repeat. Rental → Transfer participates only while immediately bookable and includes the current first-Transfer benefit when eligible; Rental → Cleaning participates only while its existing benefit is available. Repeat is suppressed when the same service is already active or is the primary action target.
 
 The read model is composed at request time and persists nothing. Owned active work remains visible when its service is `IN_TEST` or `DISABLED`, while every new action still follows current customer-flow availability. The frontend records displays through the existing idempotent Rental → Transfer and repeat funnels; HOME and DETAIL are intentionally one funnel.
 

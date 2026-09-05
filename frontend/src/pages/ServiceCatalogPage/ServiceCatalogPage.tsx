@@ -271,6 +271,11 @@ function PrimaryActionCard({ action, locale }: { action: CustomerHomePrimaryActi
         <small>{t("catalog.home.nextTitle")}</small>
         <strong>{t(`catalog.home.actions.${action.type}.title`)}</strong>
         <span>{t(`catalog.home.actions.${action.type}.text`, { date: formatDate(action.relevantDate, locale) })}</span>
+        {action.benefit ? (
+          <b className="customer-home-card__benefit">
+            {t("catalog.home.transferBenefit", { percent: Math.round(action.benefit.discountRate * 100) })}
+          </b>
+        ) : null}
       </span>
       <Icon name="arrow-right" size={19} />
     </Link>

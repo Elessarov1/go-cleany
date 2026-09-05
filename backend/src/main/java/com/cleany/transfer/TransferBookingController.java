@@ -38,6 +38,11 @@ public class TransferBookingController {
                 .body(booking);
     }
 
+    @PostMapping("/quote")
+    public TransferQuoteResponse quote(@Valid @RequestBody TransferQuoteRequest request) {
+        return bookingService.quote(request);
+    }
+
     @GetMapping("/bookings")
     public List<TransferBookingResponse> bookings() {
         return bookingService.currentCustomerBookings();

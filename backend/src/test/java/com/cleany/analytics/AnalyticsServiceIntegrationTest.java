@@ -104,6 +104,7 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
     @AfterEach
     void cleanDatabase() {
         jdbcTemplate.update("delete from rental_transfer_action_event");
+        jdbcTemplate.update("delete from rental_transfer_benefit");
         jdbcTemplate.update("delete from transfer_booking");
         transferDriverRepository.deleteAll();
         transferPriceRepository.deleteAll();
@@ -437,6 +438,7 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
                         "+905551112233",
                         null,
                         null,
+                        null,
                         null
                 )
         );
@@ -453,8 +455,14 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
                 ) values
                     (?, ?, 'ARRIVAL', 'CTA_SHOWN', ?),
                     (?, ?, 'ARRIVAL', 'PREFILL_STARTED', ?),
-                    (?, ?, 'CHECKOUT', 'CTA_SHOWN', ?)
+                    (?, ?, 'CHECKOUT', 'CTA_SHOWN', ?),
+                    (?, ?, 'ARRIVAL', 'BENEFIT_SHOWN', ?),
+                    (?, ?, 'ARRIVAL', 'BENEFIT_PREFILL_STARTED', ?),
+                    (?, ?, 'CHECKOUT', 'BENEFIT_SHOWN', ?)
                 """,
+                customer.customerId(), rental.id(), Timestamp.from(PERIOD_EVENT),
+                customer.customerId(), rental.id(), Timestamp.from(PERIOD_EVENT.plusSeconds(3600)),
+                customer.customerId(), rental.id(), Timestamp.from(PERIOD_EVENT.plusSeconds(60)),
                 customer.customerId(), rental.id(), Timestamp.from(PERIOD_EVENT),
                 customer.customerId(), rental.id(), Timestamp.from(PERIOD_EVENT.plusSeconds(3600)),
                 customer.customerId(), rental.id(), Timestamp.from(PERIOD_EVENT.plusSeconds(60))
@@ -462,6 +470,9 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
         jdbcTemplate.update("""
                 update transfer_booking
                    set source_rental_booking_id = ?, rental_context_type = 'ARRIVAL',
+                       base_price_amount = 2500.00, discount_amount = 250.00,
+                       price_amount = 2250.00, benefit_type = 'RENTAL_FIRST_TRANSFER',
+                       benefit_rate = 0.1000,
                        created_at = ?, status = 'COMPLETED', driver_id = ?,
                        confirmed_at = ?, completed_at = ?
                  where id = ?
@@ -490,8 +501,17 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
                 AnalyticsServiceDimension.TRANSFER
         );
         AnalyticsActionFunnelMetric total = all.rentalToTransfer().total();
+        AnalyticsRentalTransferBenefitMetric benefit = all.rentalTransferBenefit().total();
+        AnalyticsRentalTransferBenefitAmount benefitAmount = benefit.completedAmounts().getFirst();
         Map<String, AnalyticsActionFunnelMetric> contexts = all.rentalToTransfer().byContext().stream()
                 .collect(Collectors.toMap(metric -> metric.context().name(), AnalyticsRentalTransferContextMetric::funnel));
+        Map<String, AnalyticsRentalTransferBenefitMetric> benefitContexts = all.rentalTransferBenefit()
+                .byContext()
+                .stream()
+                .collect(Collectors.toMap(
+                        metric -> metric.context().name(),
+                        AnalyticsRentalTransferBenefitContextMetric::metric
+                ));
 
         Assertions.assertAll(
                 () -> Assertions.assertEquals(2, total.shownSources()),
@@ -506,7 +526,20 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertEquals(1, contexts.get("ARRIVAL").completedSources()),
                 () -> Assertions.assertEquals(0, contexts.get("CHECKOUT").startedSources()),
                 () -> Assertions.assertEquals(2, rentalOnly.rentalToTransfer().total().shownSources()),
-                () -> Assertions.assertEquals(0, transferOnly.rentalToTransfer().total().shownSources())
+                () -> Assertions.assertEquals(0, transferOnly.rentalToTransfer().total().shownSources()),
+                () -> Assertions.assertEquals(1, benefit.funnel().shownSources()),
+                () -> Assertions.assertEquals(1, benefit.funnel().startedSources()),
+                () -> Assertions.assertEquals(1, benefit.funnel().createdSources()),
+                () -> Assertions.assertEquals(1, benefit.funnel().completedSources()),
+                () -> Assertions.assertEquals(new BigDecimal("1.0000"), benefit.funnel().creationRate()),
+                () -> Assertions.assertEquals(new BigDecimal("2.0"), benefit.funnel().medianHoursToCreation()),
+                () -> Assertions.assertEquals("TRY", benefitAmount.currency()),
+                () -> Assertions.assertEquals(new BigDecimal("2500.00"), benefitAmount.baseAmount()),
+                () -> Assertions.assertEquals(new BigDecimal("250.00"), benefitAmount.discountAmount()),
+                () -> Assertions.assertEquals(new BigDecimal("2250.00"), benefitAmount.payableAmount()),
+                () -> Assertions.assertEquals(1, benefitContexts.get("ARRIVAL").funnel().completedSources()),
+                () -> Assertions.assertEquals(0, benefitContexts.get("CHECKOUT").funnel().startedSources()),
+                () -> Assertions.assertEquals(0, transferOnly.rentalTransferBenefit().total().funnel().shownSources())
         );
     }
 
@@ -837,6 +870,7 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
                         null,
                         null,
                         "+905551112233",
+                        null,
                         null,
                         null,
                         null

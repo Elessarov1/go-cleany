@@ -131,7 +131,8 @@ public class CustomerHomeService {
                 relevantDate,
                 context.earliestBenefitCleaningDate(),
                 context.checkOutDate(),
-                "/cleaning?rentalBooking=" + rentalBookingId + "&promo=" + context.promoCode()
+                "/cleaning?rentalBooking=" + rentalBookingId + "&promo=" + context.promoCode(),
+                null
         ));
     }
 
@@ -152,7 +153,8 @@ public class CustomerHomeService {
                 null,
                 null,
                 "/transfer?rentalBooking=" + rentalBookingId
-                        + "&rentalContext=" + option.context()
+                        + "&rentalContext=" + option.context(),
+                option.benefit()
         );
     }
 

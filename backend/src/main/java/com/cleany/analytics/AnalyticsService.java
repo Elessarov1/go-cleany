@@ -29,6 +29,7 @@ public class AnalyticsService {
                 queryRepository.retention(window),
                 queryRepository.transitions(window),
                 queryRepository.rentalToTransfer(window),
+                queryRepository.rentalTransferBenefit(window),
                 queryRepository.repeatActions(window),
                 queryRepository.reminders(window),
                 queryRepository.averageChecks(window),

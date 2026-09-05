@@ -1,5 +1,28 @@
 export type TransferDirection = "TO_AIRPORT" | "FROM_AIRPORT";
 
+export type TransferBenefitType = "RENTAL_FIRST_TRANSFER";
+
+export interface RentalTransferSource {
+  bookingId: number;
+  context: "ARRIVAL" | "CHECKOUT";
+}
+
+export interface TransferQuoteRequest {
+  direction: TransferDirection;
+  airportId: number;
+  vehicleTypeId: number;
+  rentalSource?: RentalTransferSource;
+  benefit?: TransferBenefitType;
+}
+
+export interface TransferQuote {
+  baseAmount: number;
+  discountAmount: number;
+  payableAmount: number;
+  currency: string;
+  appliedBenefit: TransferBenefitType | null;
+}
+
 export type TransferBookingStatus =
   | "REQUESTED"
   | "CONFIRMED"
@@ -54,10 +77,8 @@ export interface CreateTransferBookingRequest {
   phone: string;
   comment?: string | null;
   repeatFromBookingId?: number;
-  rentalSource?: {
-    bookingId: number;
-    context: "ARRIVAL" | "CHECKOUT";
-  };
+  rentalSource?: RentalTransferSource;
+  benefit?: TransferBenefitType;
 }
 
 export interface TransferRepeatPrefill {
@@ -89,8 +110,12 @@ export interface TransferBooking {
   customerName: string;
   phone: string;
   comment: string | null;
+  basePriceAmount: number;
+  discountAmount: number;
   priceAmount: number;
   priceCurrency: string;
+  appliedBenefit: TransferBenefitType | null;
+  benefitRate: number | null;
   status: TransferBookingStatus;
   driverId: number | null;
   driverName: string | null;

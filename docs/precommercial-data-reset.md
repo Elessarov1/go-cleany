@@ -23,7 +23,7 @@ Telegram identities, роли и настройки административн
 - обычные `customer_account` вместе с identities, roles и preferences по `ON DELETE CASCADE`;
 - customer-owned `referral_code`, все `referral_reward` и `partner_payout`;
 - все Cleaning orders, events, completion photos, onsite issues и их platform media;
-- все Rental bookings, только occupancy типа `BOOKING`, booking-derived cleaning benefits;
+- все Rental bookings, только occupancy типа `BOOKING`, booking-derived Cleaning/Transfer benefits;
 - все Transfer bookings и связанные с ними notification/analytics outcomes;
 - media assets/provider references, не принадлежащие `rental_property_media`.
 

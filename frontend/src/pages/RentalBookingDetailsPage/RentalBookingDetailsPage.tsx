@@ -96,6 +96,7 @@ export function RentalBookingDetailsPage() {
     cleaningParams.set("promo", cleaningContext.promoCode);
   }
   const cleaningLink = `/cleaning?${cleaningParams.toString()}`;
+  const transferBenefit = transferContext?.options.find((option) => option.benefit !== null)?.benefit ?? null;
 
   return (
     <div className="page page--rental-booking-details">
@@ -153,6 +154,13 @@ export function RentalBookingDetailsPage() {
             <div>
               <h2>{t("rental.bookingDetails.transferTitle")}</h2>
               <p>{t("rental.bookingDetails.transferText")}</p>
+              {transferBenefit ? (
+                <strong className="rental-transfer-cta__benefit">
+                  {t("rental.bookingDetails.transferBenefit", {
+                    percent: Math.round(transferBenefit.discountRate * 100),
+                  })}
+                </strong>
+              ) : null}
             </div>
           </div>
           <div className="rental-transfer-cta__options">
@@ -166,6 +174,13 @@ export function RentalBookingDetailsPage() {
                   <div>
                     <strong>{t(`rental.bookingDetails.transferContext.${option.context}`)}</strong>
                     <span>{formatDate(option.suggestedDate, locale)}</span>
+                    {option.benefit ? (
+                      <small className="rental-transfer-cta__option-benefit">
+                        {t("rental.bookingDetails.transferBenefitShort", {
+                          percent: Math.round(option.benefit.discountRate * 100),
+                        })}
+                      </small>
+                    ) : null}
                     {option.availability === "AVAILABLE_LATER" && option.availableFromDate ? (
                       <small>{t("rental.bookingDetails.transferAvailableFrom", {
                         date: formatDate(option.availableFromDate, locale),

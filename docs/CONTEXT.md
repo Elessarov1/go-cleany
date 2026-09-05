@@ -162,6 +162,14 @@ Same-service repeat is implemented for owned completed Cleaning and Transfer tra
 
 Rental → Transfer contextual flow is implemented through an explicit bridge. A confirmed owned Rental offers arrival (`FROM_AIRPORT`, check-in, property destination) and checkout (`TO_AIRPORT`, checkout, property pickup) independently. Backend-calculated availability can expose an option now or state when its Transfer window opens. Related transfers keep typed source/context fields for deduplication and analytics while both vertical lifecycles remain independent.
 
+Contextual Benefits Stage 8 adds one explicit `RentalTransferBenefit` per confirmed Rental. The first
+linked ARRIVAL or CHECKOUT request can reserve a configurable percentage discount (10% by default in
+every currency, no monetary cap); confirmation consumes it permanently, while rejection/cancellation
+before confirmation releases it. Quote and create are backend-authoritative and Transfer stores the
+complete financial snapshot. Existing or matching active/completed Transfers close the first-trip
+right even without a discount, while the second trip remains available at the ordinary price. This
+bridge remains separate from `RentalCleaningBenefit`; no generic benefit model is introduced.
+
 The platform home at `/` is contextual for authenticated returning customers and stays a plain catalog for guests/new customers. `GET /api/v1/account/home` composes owned Activity, the nearest currently actionable Rental cross-service context and the latest eligible Cleaning/Transfer repeat without persistence. It exposes no `customerId`, never shows `AVAILABLE_LATER` as a home action, suppresses duplicate target services and continues to show owned active work when a vertical is unavailable for new customer flows. The catalog and personalized context load independently.
 
 Unified Support & Feedback is implemented without modifying vertical aggregates. Every owned Cleaning, Rental and Transfer detail page embeds the shared panel for opening a categorized case in any source status; completed sources additionally accept one immutable `GOOD` or `PROBLEM` feedback. Negative feedback atomically opens or reuses the single open case for that source. Customer ownership is resolved through the vertical repository and unavailable services do not hide support.
@@ -290,17 +298,24 @@ Cleaning/Transfer repeat UX is measured as shown → prefill opened → linked r
 
 Rental → Transfer is additionally measured as shown → prefill opened → related Transfer created → related Transfer completed, both overall and by arrival/checkout context. Its source cohort follows the selected Rental reporting period; median conversion time runs from first contextual display to Transfer creation.
 
+Rental → Transfer benefit analytics separately measures benefit shown → benefit prefill opened →
+discounted Transfer created → completed. It deduplicates total cohorts per Rental, keeps context rows
+separate, groups completed base/discount/payable amounts by currency and treats before/after period
+comparison as observational rather than causal.
+
 See [cross-functional/analytics.md](cross-functional/analytics.md).
 
 ## Benefits direction
 
-Current concrete cross-service benefit:
+Current concrete cross-service benefits:
 
 ```text
 RentalBooking → RentalCleaningBenefit → CleaningOrder
+RentalBooking → RentalTransferBenefit → first linked TransferBooking
 ```
 
-Future contextual benefits may connect other service pairs, but do not introduce a generic benefit engine until repeated semantics justify it.
+The two bridges intentionally keep their different lifecycle and financial semantics. Do not
+introduce a generic benefit engine until measured repetition justifies it.
 
 Benefits must be measurable and must not hide bad unit economics.
 

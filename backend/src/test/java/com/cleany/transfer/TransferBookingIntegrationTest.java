@@ -291,6 +291,7 @@ class TransferBookingIntegrationTest extends BaseIntegrationTest {
                 "+905551112233",
                 null,
                 null,
+                null,
                 null
         );
 
@@ -451,6 +452,7 @@ class TransferBookingIntegrationTest extends BaseIntegrationTest {
                 "+905559990000",
                 null,
                 source.id(),
+                null,
                 null
         ));
         jdbcTemplate.update("update transfer_price set enabled = false where id = ?", price.getId());
@@ -545,6 +547,7 @@ class TransferBookingIntegrationTest extends BaseIntegrationTest {
                 flightNumber,
                 scheduledArrivalTime,
                 "+90 555 111 22 33",
+                null,
                 null,
                 null,
                 null

@@ -3,7 +3,11 @@ import { useTranslation } from "react-i18next";
 import { useAnalyticsApi } from "../../api/AnalyticsApiProvider";
 import { BrandName } from "../../components/BrandName/BrandName";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
-import type { AnalyticsOverview, AnalyticsService } from "../../domain/analytics";
+import type {
+  AnalyticsOverview,
+  AnalyticsRentalTransferBenefitMetric,
+  AnalyticsService,
+} from "../../domain/analytics";
 import { AcquisitionCampaignDialog } from "./AcquisitionCampaignDialog";
 
 type PeriodPreset = "TODAY" | "7_DAYS" | "30_DAYS" | "THIS_MONTH" | "CUSTOM";
@@ -263,6 +267,34 @@ export function AdminAnalyticsPage() {
             </section>
           ) : null}
 
+          {service === "ALL" || service === "RENTAL" ? (
+            <section className="admin-analytics__section" aria-labelledby="rental-transfer-benefit-heading">
+              <SectionHeading
+                id="rental-transfer-benefit-heading"
+                title={t("analytics.rentalTransferBenefit.title")}
+                subtitle={t("analytics.rentalTransferBenefit.subtitle")}
+              />
+              <BenefitAnalytics
+                metric={overview.rentalTransferBenefit.total}
+                number={number}
+                percent={percent}
+                decimal={decimal}
+                locale={i18n.language}
+              />
+              {overview.rentalTransferBenefit.byContext.length > 0 ? (
+                <div className="admin-analytics__repeat-grid admin-analytics__rental-transfer-grid">
+                  {overview.rentalTransferBenefit.byContext.map(({ context, metric }) => (
+                    <article className="admin-analytics__repeat" key={context}>
+                      <h3>{t(`analytics.rentalToTransfer.context.${context}`)}</h3>
+                      <BenefitAnalyticsDetails metric={metric} number={number} percent={percent} decimal={decimal} locale={i18n.language} />
+                    </article>
+                  ))}
+                </div>
+              ) : null}
+              <p className="admin-analytics__comparison-note">{t("analytics.rentalTransferBenefit.comparisonNote")}</p>
+            </section>
+          ) : null}
+
           <section className="admin-analytics__section" aria-labelledby="repeat-actions-heading">
             <SectionHeading
               id="repeat-actions-heading"
@@ -405,6 +437,84 @@ function SectionHeading({ id, title, subtitle, contained = false }: { id?: strin
   </div>;
 }
 
+function BenefitAnalytics({ metric, number, percent, decimal, locale }: {
+  metric: AnalyticsRentalTransferBenefitMetric;
+  number: Intl.NumberFormat;
+  percent: Intl.NumberFormat;
+  decimal: Intl.NumberFormat;
+  locale: string;
+}) {
+  const { t } = useTranslation();
+  const funnel = metric.funnel;
+  return (
+    <>
+      <div className="admin-analytics__cards admin-analytics__cards--retention">
+        <MetricCard label={t("analytics.rentalTransferBenefit.shown")} value={number.format(funnel.shownSources)} />
+        <MetricCard label={t("analytics.rentalTransferBenefit.started")} value={number.format(funnel.startedSources)} detail={formatRate(funnel.startRate, percent, t("analytics.insufficientData"))} />
+        <MetricCard label={t("analytics.rentalTransferBenefit.created")} value={number.format(funnel.createdSources)} detail={formatRate(funnel.creationRate, percent, t("analytics.insufficientData"))} />
+        <MetricCard label={t("analytics.rentalTransferBenefit.completed")} value={number.format(funnel.completedSources)} detail={formatRate(funnel.completionRate, percent, t("analytics.insufficientData"))} />
+        <MetricCard
+          label={t("analytics.rentalTransferBenefit.medianTime")}
+          value={funnel.medianHoursToCreation === null
+            ? t("analytics.insufficientData")
+            : t("analytics.hours", { count: decimal.format(funnel.medianHoursToCreation) })}
+        />
+      </div>
+      <BenefitAmounts amounts={metric.completedAmounts} locale={locale} />
+    </>
+  );
+}
+
+function BenefitAnalyticsDetails({ metric, number, percent, decimal, locale }: {
+  metric: AnalyticsRentalTransferBenefitMetric;
+  number: Intl.NumberFormat;
+  percent: Intl.NumberFormat;
+  decimal: Intl.NumberFormat;
+  locale: string;
+}) {
+  const { t } = useTranslation();
+  const funnel = metric.funnel;
+  return (
+    <>
+      <dl>
+        <div><dt>{t("analytics.rentalTransferBenefit.shown")}</dt><dd>{number.format(funnel.shownSources)}</dd></div>
+        <div><dt>{t("analytics.rentalTransferBenefit.started")}</dt><dd>{number.format(funnel.startedSources)}</dd></div>
+        <div><dt>{t("analytics.rentalTransferBenefit.created")}</dt><dd>{number.format(funnel.createdSources)}</dd></div>
+        <div><dt>{t("analytics.rentalTransferBenefit.completed")}</dt><dd>{number.format(funnel.completedSources)}</dd></div>
+        <div><dt>{t("analytics.rentalTransferBenefit.startRate")}</dt><dd>{formatRate(funnel.startRate, percent, t("analytics.insufficientData"))}</dd></div>
+        <div><dt>{t("analytics.rentalTransferBenefit.creationRate")}</dt><dd>{formatRate(funnel.creationRate, percent, t("analytics.insufficientData"))}</dd></div>
+        <div><dt>{t("analytics.rentalTransferBenefit.completionRate")}</dt><dd>{formatRate(funnel.completionRate, percent, t("analytics.insufficientData"))}</dd></div>
+        <div><dt>{t("analytics.rentalTransferBenefit.medianTime")}</dt><dd>{funnel.medianHoursToCreation === null ? t("analytics.insufficientData") : t("analytics.hours", { count: decimal.format(funnel.medianHoursToCreation) })}</dd></div>
+      </dl>
+      <BenefitAmounts amounts={metric.completedAmounts} locale={locale} compact />
+    </>
+  );
+}
+
+function BenefitAmounts({ amounts, locale, compact = false }: {
+  amounts: AnalyticsRentalTransferBenefitMetric["completedAmounts"];
+  locale: string;
+  compact?: boolean;
+}) {
+  const { t } = useTranslation();
+  if (amounts.length === 0) return null;
+  return (
+    <div className={`admin-analytics__benefit-amounts${compact ? " admin-analytics__benefit-amounts--compact" : ""}`}>
+      {amounts.map((amount) => (
+        <article key={amount.currency}>
+          <strong>{amount.currency}</strong>
+          <span>{t("analytics.rentalTransferBenefit.completedCount", { count: amount.completedTransfers })}</span>
+          <dl>
+            <div><dt>{t("analytics.rentalTransferBenefit.baseAmount")}</dt><dd>{formatMoney(amount.baseAmount, amount.currency, locale, "—")}</dd></div>
+            <div><dt>{t("analytics.rentalTransferBenefit.discountAmount")}</dt><dd>−{formatMoney(amount.discountAmount, amount.currency, locale, "—")}</dd></div>
+            <div><dt>{t("analytics.rentalTransferBenefit.payableAmount")}</dt><dd>{formatMoney(amount.payableAmount, amount.currency, locale, "—")}</dd></div>
+          </dl>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 function formatRate(rate: number | null, formatter: Intl.NumberFormat, empty: string): string {
   return rate === null ? empty : formatter.format(rate);
 }
@@ -424,7 +534,7 @@ function formatCohort(
 
 function formatMoney(amount: number | undefined, currency: string | undefined, locale: string, empty: string): string {
   if (amount === undefined || !currency) return empty;
-  return new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 0 }).format(amount);
+  return new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 2 }).format(amount);
 }
 
 function periodRange(preset: PeriodPreset, today: string, customFrom: string, customTo: string) {
