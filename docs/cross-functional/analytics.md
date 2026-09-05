@@ -59,6 +59,14 @@ context action shown
 
 Its cohort is the first deduplicated `CTA_SHOWN` for a Rental booking/context inside the selected period. It is available for `ALL` and source-service `RENTAL` filters. Start rate is opened/shown, creation rate is created/shown, completion rate is completed/created, and conversion time is the median from first shown to first linked Transfer creation. Events live in the explicit Rental/Transfer bridge; this does not introduce a universal cross-service event or transaction model.
 
+The adjacent Rental → Transfer Benefit block keeps that funnel as its baseline and uses the first
+deduplicated `BENEFIT_SHOWN` in the selected period as its cohort. It reports benefit prefill starts,
+discounted Transfers created/completed, conversion rates and median time to creation. Total counts
+each Rental once; ARRIVAL/CHECKOUT rows count contexts separately and therefore need not add up to
+the total. Completed base, discount and payable snapshots are grouped by currency. Period comparison
+shows observed before/after movement only: without a control group it is not a causal uplift claim,
+and contribution remains unavailable until Transfer driver cost is trustworthy.
+
 The Smart Reminders section uses reminders whose durable notification was created (`notifiedAt`) in the selected period. Service filters apply to the source vertical. Cleaning repeat and Rental checkout reminders attribute created/completed targets through their existing typed source fields; Transfer operational reminders measure whether the reminded source Transfer completed. Empty denominators return `null`, and Telegram delivery is intentionally not a separate metric until durable external delivery checkpoints exist.
 
 ## Business Health semantics
@@ -135,7 +143,7 @@ new customers
 90-day repeat — implemented with mature cohorts
 customers with 2+ lifetime completed tasks — implemented for period-active customers
 customers using 2+ services — implemented for period-active customers
-cross-service conversion — immediate-next and contextual Rental → Transfer funnels implemented
+cross-service conversion — immediate-next, contextual Rental → Transfer and benefit funnels implemented
 average check by service + currency — implemented
 GMV
 Loco revenue when available

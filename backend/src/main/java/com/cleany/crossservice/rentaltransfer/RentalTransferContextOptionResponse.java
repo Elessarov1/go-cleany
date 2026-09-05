@@ -10,6 +10,7 @@ public record RentalTransferContextOptionResponse(
         TransferDirection direction,
         LocalDate suggestedDate,
         String address,
-        LocalDate availableFromDate
+        LocalDate availableFromDate,
+        RentalTransferBenefitResponse benefit
 ) {
 }

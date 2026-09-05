@@ -11,6 +11,8 @@ import type {
   TransferConfiguration,
   TransferDriverLink,
   TransferRepeatPrefill,
+  TransferQuote,
+  TransferQuoteRequest,
   UpdateTransferAirportRequest,
   UpdateTransferVehicleRequest,
   UpsertTransferDriverRequest,
@@ -19,6 +21,7 @@ import type {
 
 export interface TransferApi {
   getConfiguration(): Promise<TransferConfiguration>;
+  quote(request: TransferQuoteRequest): Promise<TransferQuote>;
   createBooking(request: CreateTransferBookingRequest): Promise<TransferBooking>;
   getBookings(): Promise<TransferBooking[]>;
   getBooking(id: number): Promise<TransferBooking>;

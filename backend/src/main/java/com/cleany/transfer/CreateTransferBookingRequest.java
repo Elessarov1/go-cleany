@@ -27,6 +27,7 @@ public record CreateTransferBookingRequest(
         @NotBlank @Size(max = 40) String phone,
         @Size(max = 1000) String comment,
         @Positive Long repeatFromBookingId,
-        @Valid RentalTransferSourceRequest rentalSource
+        @Valid RentalTransferSourceRequest rentalSource,
+        TransferBenefitType benefit
 ) {
 }

@@ -3,6 +3,7 @@ package com.cleany.customer.home;
 import java.time.LocalDate;
 
 import com.cleany.catalog.PlatformService;
+import com.cleany.crossservice.rentaltransfer.RentalTransferBenefitResponse;
 
 public record CustomerHomePrimaryAction(
         CustomerHomePrimaryActionType type,
@@ -12,6 +13,7 @@ public record CustomerHomePrimaryAction(
         LocalDate relevantDate,
         LocalDate eligibleFrom,
         LocalDate expiresOn,
-        String targetPath
+        String targetPath,
+        RentalTransferBenefitResponse benefit
 ) {
 }

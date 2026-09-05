@@ -9,6 +9,7 @@ public record RentalTransferPrefillResponse(
         RentalTransferContextType context,
         TransferDirection direction,
         LocalDate suggestedDate,
-        String address
+        String address,
+        RentalTransferBenefitResponse benefit
 ) {
 }

@@ -543,6 +543,23 @@
         "TRANSFER_UPCOMING": "Upcoming transfer"
       }
     },
+    "rentalTransferBenefit": {
+      "title": "Rental → Transfer benefit",
+      "subtitle": "The funnel for the first discounted ride linked to a confirmed rental, plus completed-transfer financial results.",
+      "shown": "Benefit shown",
+      "started": "Booking flow opened",
+      "created": "Created with discount",
+      "completed": "Completed with discount",
+      "startRate": "Started from shown",
+      "creationRate": "Created from shown",
+      "completionRate": "Completed from created",
+      "medianTime": "Median time to creation",
+      "completedCount": "Completed transfers: {{count}}",
+      "baseAmount": "Price before discount",
+      "discountAmount": "Discount amount",
+      "payableAmount": "Payable amount",
+      "comparisonNote": "Compare periods before and after launch as observed movement. Without a control group, these figures do not establish causal uplift."
+    },
     "averageChecks": {
       "title": "Average check",
       "subtitle": "Services and currencies are shown separately; unlike currencies are never combined.",
@@ -804,6 +821,7 @@
       "activity": "Open activity",
       "nextTitle": "What to do next",
       "repeatTitle": "Repeat",
+      "transferBenefit": "{{percent}}% off one transfer linked to this rental",
       "actions": {
         "RENTAL_TRANSFER_ARRIVAL": {
           "title": "Arrange your arrival transfer",
@@ -978,6 +996,8 @@
       "bookCleaning": "Book cleaning",
       "transferTitle": "Transfer for your stay",
       "transferText": "We already know the dates and address. Choose the airport, time, and vehicle.",
+      "transferBenefit": "{{percent}}% off one transfer linked to this rental",
+      "transferBenefitShort": "The first ride gets {{percent}}% off",
       "transferContext": {
         "ARRIVAL": "From the airport to the apartment",
         "CHECKOUT": "From the apartment to the airport"
@@ -1029,11 +1049,18 @@
     },
     "summary": {
       "fixedPrice": "Fixed price",
+      "basePrice": "Price before discount",
+      "discount": "{{percent}}% discount",
+      "payable": "Total to pay",
+      "calculating": "Updating the price…",
+      "quoteError": "We could not update the price.",
       "requested": "After submission, the request will await confirmation. No online payment is charged."
     },
     "submit": "Send request",
     "submitting": "Sending…",
     "submitError": "We could not create the request. Check the details and try again.",
+    "benefitUnavailable": "The benefit is no longer available or its conditions changed.",
+    "refreshQuote": "Refresh quote",
     "repeatContext": {
       "title": "Repeat transfer #{{id}}",
       "text": "The route and ride details were filled from your past transfer. Choose a new date and time, then review everything.",
@@ -1043,6 +1070,7 @@
       "title": "Transfer for rental booking #{{id}}",
       "ARRIVAL": "We filled in the check-in date and apartment address. Choose the airport, arrival time, and vehicle.",
       "CHECKOUT": "We filled in the checkout date and pickup address. Choose the airport, time, and vehicle.",
+      "benefit": "Your first ride linked to this rental receives {{percent}}% off.",
       "error": "That rental context is no longer available. You can still create a new request manually."
     },
     "status": {
@@ -1073,6 +1101,9 @@
       "flight": "Flight and arrival time",
       "phone": "Phone",
       "price": "Price",
+      "basePrice": "Price before discount",
+      "discount": "Discount",
+      "payable": "Total to pay",
       "driver": "Driver",
       "comment": "Comment",
       "reason": "Reason",

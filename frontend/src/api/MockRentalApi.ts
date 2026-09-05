@@ -400,6 +400,10 @@ export class MockRentalApi implements RentalApi {
         address: property.address!,
         availability: suggestedDate <= latest ? "BOOKABLE" as const : "AVAILABLE_LATER" as const,
         availableFromDate: suggestedDate <= latest ? null : addMonthsToInputValue(suggestedDate, -6),
+        benefit: suggestedDate <= latest ? {
+          type: "RENTAL_FIRST_TRANSFER" as const,
+          discountRate: 0.1,
+        } : null,
       }));
     return simulateNetwork({ rentalBookingId: id, transferFlowAvailable: true, options });
   }
@@ -419,6 +423,7 @@ export class MockRentalApi implements RentalApi {
       direction: option.direction,
       suggestedDate: option.suggestedDate,
       address: option.address,
+      benefit: option.benefit,
     };
   }
 

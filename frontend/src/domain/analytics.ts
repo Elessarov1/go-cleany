@@ -77,6 +77,13 @@ export interface AnalyticsOverview {
       funnel: AnalyticsActionFunnel;
     }>;
   };
+  rentalTransferBenefit: {
+    total: AnalyticsRentalTransferBenefitMetric;
+    byContext: Array<{
+      context: "ARRIVAL" | "CHECKOUT";
+      metric: AnalyticsRentalTransferBenefitMetric;
+    }>;
+  };
   repeatActions: Array<{
     service: "CLEANING" | "TRANSFER";
     shownSources: number;
@@ -122,6 +129,17 @@ export interface AnalyticsActionFunnel {
   creationRate: number | null;
   completionRate: number | null;
   medianHoursToCreation: number | null;
+}
+
+export interface AnalyticsRentalTransferBenefitMetric {
+  funnel: AnalyticsActionFunnel;
+  completedAmounts: Array<{
+    currency: string;
+    completedTransfers: number;
+    baseAmount: number;
+    discountAmount: number;
+    payableAmount: number;
+  }>;
 }
 
 interface AnalyticsCohortMetric {

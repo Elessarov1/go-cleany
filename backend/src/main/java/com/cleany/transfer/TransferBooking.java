@@ -113,6 +113,19 @@ public class TransferBooking {
     @Column(length = 1000)
     private String comment;
 
+    @Column(name = "base_price_amount", nullable = false, precision = 12, scale = 2)
+    private BigDecimal basePriceAmount;
+
+    @Column(name = "discount_amount", nullable = false, precision = 12, scale = 2)
+    private BigDecimal discountAmount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "benefit_type", length = 48)
+    private TransferBenefitType appliedBenefit;
+
+    @Column(name = "benefit_rate", precision = 5, scale = 4)
+    private BigDecimal benefitRate;
+
     @Column(name = "price_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal priceAmount;
 
@@ -177,8 +190,14 @@ public class TransferBooking {
         this.scheduledArrivalTime = required.scheduledArrivalTime();
         validateFlightData();
         this.comment = normalizeOptional(required.comment());
-        this.priceAmount = required.price().getAmount();
-        this.priceCurrency = required.price().getCurrency();
+        TransferPriceQuote quote = Objects.requireNonNull(required.priceQuote(), "priceQuote");
+        validatePriceQuote(required.price(), quote);
+        this.basePriceAmount = quote.baseAmount();
+        this.discountAmount = quote.discountAmount();
+        this.priceAmount = quote.payableAmount();
+        this.priceCurrency = quote.currency();
+        this.appliedBenefit = quote.appliedBenefit();
+        this.benefitRate = quote.benefitRate();
         this.status = TransferBookingStatus.REQUESTED;
         this.createdAt = Objects.requireNonNull(required.createdAt(), "createdAt");
     }
@@ -264,6 +283,19 @@ public class TransferBooking {
         }
         if (booking.luggageCount() < 0 || booking.luggageCount() > vehicleType.getMaxLuggage()) {
             throw invalid("Luggage count exceeds vehicle capacity");
+        }
+    }
+
+    private void validatePriceQuote(TransferPrice price, TransferPriceQuote quote) {
+        if (quote.baseAmount().compareTo(price.getAmount()) != 0
+                || !quote.currency().equals(price.getCurrency())
+                || quote.discountAmount().signum() < 0
+                || quote.payableAmount().signum() <= 0
+                || quote.baseAmount().subtract(quote.discountAmount()).compareTo(quote.payableAmount()) != 0
+                || quote.appliedBenefit() == null != (quote.benefitRate() == null)
+                || quote.appliedBenefit() == null && quote.discountAmount().signum() != 0
+                || quote.appliedBenefit() != null && quote.discountAmount().signum() <= 0) {
+            throw invalid("Transfer price quote is invalid");
         }
     }
 

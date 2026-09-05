@@ -3,14 +3,14 @@ title: Loco Benefits Direction
 type: cross-functional
 status: active-direction
 scope: platform
-updated: 2026-08-30
+updated: 2026-09-05
 ---
 
 # Benefits
 
 Benefits are tools for useful repeat/cross-service behavior, not a substitute for product-market fit or positive unit economics.
 
-## Existing implemented case
+## Existing implemented cases
 
 ```text
 RentalBooking
@@ -21,6 +21,26 @@ RentalBooking
 Read [../rental-cleaning-benefit.md](../rental-cleaning-benefit.md) before changing it.
 
 This bridge is intentionally not the Cleaning referral program.
+
+```text
+RentalBooking
+→ RentalTransferBenefit
+→ first linked TransferBooking
+```
+
+A confirmed owned Rental offers one percentage benefit for either its ARRIVAL or CHECKOUT Transfer,
+whichever is requested first. The backend identifies the right through `CustomerAccount`, the owned
+Rental and typed `rentalSource`; no promo code is involved. The default is 10% in every tariff
+currency with two-decimal `HALF_UP` rounding and no monetary cap.
+
+Creation atomically reserves the benefit. `REQUESTED → CONFIRMED` consumes it permanently;
+cancellation/rejection while still `REQUESTED` releases it. A previously created matching active or
+completed Transfer closes the first-ride opportunity even if it did not receive a discount. The
+other Rental context remains bookable at its ordinary current price.
+
+`TransferBooking` stores immutable base, discount, payable, currency, benefit type and rate
+snapshots. Quote and create both recalculate current price and eligibility. The explicit bridge is
+kept separate from `RentalCleaningBenefit`; a generic benefit engine is still unjustified.
 
 ## Product rule
 
@@ -33,12 +53,9 @@ source service/action
 → eligibility window
 ```
 
-Examples:
+Further examples:
 
 ```text
-confirmed rental
-→ contextual Transfer benefit
-
 first completed cleaning
 → second-cleaning benefit
 ```

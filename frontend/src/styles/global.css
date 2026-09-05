@@ -2198,6 +2198,11 @@ h3 {
 }
 .customer-home-card__body strong { font-size: 15px; letter-spacing: -0.02em; line-height: 1.25; }
 .customer-home-card__body > span { color: var(--color-muted); font-size: 11px; line-height: 1.4; }
+.customer-home-card__body > .customer-home-card__benefit {
+  color: var(--color-primary-dark);
+  font-size: 11px;
+  line-height: 1.35;
+}
 .customer-home-card__aside { display: grid; justify-items: end; gap: 10px; }
 .customer-home-card__aside .status { padding: 0; background: transparent; border: 0; }
 .customer-home-state {
@@ -2841,6 +2846,13 @@ h3 {
 }
 .rental-transfer-cta h2 { margin: 1px 0 4px; font-size: 15px; }
 .rental-transfer-cta p { margin: 0; color: var(--color-muted); font-size: 11px; line-height: 1.45; }
+.rental-transfer-cta .rental-transfer-cta__benefit {
+  display: block;
+  margin-top: 7px;
+  color: var(--color-primary-dark);
+  font-size: 11px;
+  line-height: 1.4;
+}
 .rental-transfer-cta__options { display: grid; margin-top: 14px; gap: 9px; }
 .rental-transfer-cta__option {
   display: flex;
@@ -2857,6 +2869,10 @@ h3 {
 .rental-transfer-cta__option strong { color: var(--color-ink); font-size: 12px; }
 .rental-transfer-cta__option span,
 .rental-transfer-cta__option small { color: var(--color-muted); font-size: 10px; line-height: 1.4; }
+.rental-transfer-cta__option .rental-transfer-cta__option-benefit {
+  color: var(--color-primary-dark);
+  font-weight: 750;
+}
 .rental-transfer-cta__option .button { flex: 0 0 auto; min-height: 38px; padding: 9px 12px; }
 .rental-transfer-cta__later {
   flex: 0 0 auto;
@@ -3442,6 +3458,43 @@ h3 {
 .admin-analytics__repeat dl div { min-width: 0; padding: 12px; border-radius: 12px; background: color-mix(in srgb, var(--color-canvas) 62%, var(--color-surface)); }
 .admin-analytics__repeat dt { color: var(--color-muted); font-size: 12px; font-weight: 750; }
 .admin-analytics__repeat dd { margin: 5px 0 0; overflow-wrap: anywhere; color: var(--color-ink); font-size: 18px; font-weight: 850; }
+.admin-analytics__benefit-amounts {
+  display: grid;
+  margin-top: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+}
+.admin-analytics__benefit-amounts > article {
+  min-width: 0;
+  padding: 16px;
+  background: color-mix(in srgb, var(--color-primary-soft) 38%, var(--color-surface));
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+}
+.admin-analytics__benefit-amounts > article > strong { font-size: 14px; }
+.admin-analytics__benefit-amounts > article > span { display: block; margin-top: 3px; color: var(--color-muted); font-size: 11px; }
+.admin-analytics__benefit-amounts dl,
+.admin-analytics__repeat .admin-analytics__benefit-amounts dl {
+  display: grid;
+  margin: 11px 0 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 5px;
+}
+.admin-analytics__benefit-amounts dl div,
+.admin-analytics__repeat .admin-analytics__benefit-amounts dl div {
+  display: flex;
+  min-width: 0;
+  padding: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  background: transparent;
+}
+.admin-analytics__benefit-amounts dt { color: var(--color-muted); font-size: 11px; }
+.admin-analytics__benefit-amounts dd,
+.admin-analytics__repeat .admin-analytics__benefit-amounts dd { margin: 0; color: var(--color-ink); font-size: 13px; font-weight: 800; }
+.admin-analytics__benefit-amounts--compact { grid-template-columns: minmax(0, 1fr); }
+.admin-analytics__comparison-note { margin: 13px 0 0; color: var(--color-muted); font-size: 11px; line-height: 1.5; }
 .admin-analytics__table-wrap { width: 100%; overflow-x: auto; }
 .admin-analytics__table { width: 100%; min-width: 790px; border-collapse: collapse; }
 .admin-analytics__table th, .admin-analytics__table td { padding: 14px 16px; border-bottom: 1px solid var(--color-line); text-align: left; font-size: 13px; }
@@ -4242,8 +4295,29 @@ h3 {
 .transfer-form-grid textarea { min-height: 88px; }
 .transfer-summary { display: grid; padding: 18px; gap: 12px; }
 .transfer-summary > div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.transfer-summary > .transfer-summary__benefit {
+  display: grid;
+  padding-bottom: 10px;
+  align-items: stretch;
+  gap: 7px;
+  border-bottom: 1px solid var(--color-line);
+}
+.transfer-summary__benefit > div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.transfer-summary__benefit strong { font-size: 14px; letter-spacing: -0.01em; }
 .transfer-summary span { color: var(--color-muted); font-size: 12px; }
 .transfer-summary strong { font-size: 25px; letter-spacing: -0.04em; }
+.transfer-summary .transfer-summary__quote-state { color: var(--color-primary-dark); }
+.inline-action {
+  display: inline;
+  padding: 0;
+  color: var(--color-primary-dark);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+}
 .transfer-summary p,
 .transfer-booking-note { margin: 0; color: var(--color-muted); font-size: 11px; line-height: 1.55; }
 .transfer-unavailable { color: var(--color-ink); background: var(--color-surface); }

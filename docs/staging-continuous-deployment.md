@@ -169,6 +169,8 @@ Repository -> Settings -> Environments -> staging
 | `RENTAL_MAX_ACTIVE_BOOKINGS_PER_CUSTOMER` | `3` |
 | `RENTAL_MEDIA_CACHE_ENABLED` | `true` |
 | `RENTAL_MEDIA_CACHE_MAX_SIZE` | `64MB` |
+| `RENTAL_TRANSFER_BENEFIT_ENABLED` | `true` |
+| `RENTAL_TRANSFER_BENEFIT_DISCOUNT_RATE` | `0.10` |
 | `RENTAL_CLEANING_DISCOUNT_RATE` | `0.10` |
 | `RENTAL_CLEANING_MAX_DISCOUNT` | `2000` |
 
@@ -198,6 +200,11 @@ fallback-значениями из `.env.production` при Docker Compose inter
 `RENTAL_MEDIA_CACHE_*` включают локальный для backend-процесса weighted cache; `64MB`
 — безопасный pilot default. Эти GitHub Environment variables передаются в Compose при каждой
 выкладке, но load-тесты по-прежнему выполняются только локально.
+
+`RENTAL_TRANSFER_BENEFIT_ENABLED` включает одну выгоду для первого связанного трансфера по
+подтверждённой аренде. `RENTAL_TRANSFER_BENEFIT_DISCOUNT_RATE` задаёт долю скидки строго больше 0 и
+меньше 1; default `0.10` означает 10% в валюте текущего Transfer-тарифа без денежного cap. Workflow
+проверяет оба значения и передаёт их в runtime при каждой выкладке.
 
 `RENTAL_CLEANING_DISCOUNT_RATE` и `RENTAL_CLEANING_MAX_DISCOUNT` управляют персональной выгодой
 Loco Rent на уборку перед выездом. Значения берутся из GitHub Environment при каждой выкладке и имеют

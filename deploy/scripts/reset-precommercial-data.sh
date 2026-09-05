@@ -75,6 +75,7 @@ select section, table_name, record_count
       ('DELETE', 'transfer_booking', (select count(*) from transfer_booking)),
       ('DELETE', 'rental_booking_occupancy', (select count(*) from rental_occupancy where type = 'BOOKING')),
       ('DELETE', 'rental_cleaning_benefit', (select count(*) from rental_cleaning_benefit)),
+      ('DELETE', 'rental_transfer_benefit', (select count(*) from rental_transfer_benefit)),
       ('DELETE', 'operational_media_asset', (
           select count(*) from media_asset asset
            where not exists (
@@ -197,6 +198,7 @@ select 'customer_acquisition', count(*) from customer_acquisition
 union all select 'acquisition_campaign_entry', count(*) from acquisition_campaign_entry
 union all select 'cleaning_order', count(*) from cleaning_order
 union all select 'rental_booking', count(*) from rental_booking
+union all select 'rental_transfer_benefit', count(*) from rental_transfer_benefit
 union all select 'transfer_booking', count(*) from transfer_booking
 union all select 'customer_notification', count(*) from customer_notification
 union all select 'transaction_feedback', count(*) from transaction_feedback

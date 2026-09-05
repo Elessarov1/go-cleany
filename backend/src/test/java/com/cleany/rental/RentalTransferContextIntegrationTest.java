@@ -232,7 +232,7 @@ class RentalTransferContextIntegrationTest extends BaseIntegrationTest {
                         RentalTransferContextType.CHECKOUT,
                         afterCreate.options().getFirst().context()
                 ),
-                () -> Assertions.assertEquals(2, jdbcTemplate.queryForObject(
+                () -> Assertions.assertEquals(4, jdbcTemplate.queryForObject(
                         "select count(*) from rental_transfer_action_event",
                         Integer.class
                 )),
@@ -356,7 +356,8 @@ class RentalTransferContextIntegrationTest extends BaseIntegrationTest {
                 valid.phone(),
                 valid.comment(),
                 999L,
-                source
+                source,
+                null
         );
 
         Assertions.assertAll(
@@ -490,7 +491,8 @@ class RentalTransferContextIntegrationTest extends BaseIntegrationTest {
                 "+905551234567",
                 null,
                 null,
-                rentalSource
+                rentalSource,
+                null
         );
     }
 

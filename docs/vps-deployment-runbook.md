@@ -122,6 +122,9 @@ nano .env.production
   лимит активных броней клиента. Суточные цены квартир задаются в `/admin/rent`, а не в `.env`;
 - `RENTAL_MEDIA_CACHE_ENABLED` и `RENTAL_MEDIA_CACHE_MAX_SIZE` — общий для пользователей
   in-process кэш публичных Rental-фотографий (по умолчанию `true`, `64MB`);
+- `RENTAL_TRANSFER_BENEFIT_ENABLED` и `RENTAL_TRANSFER_BENEFIT_DISCOUNT_RATE` — одна процентная
+  скидка на первый связанный Transfer подтверждённой Rental (по умолчанию `true` и `0.10`, любая
+  валюта тарифа, без денежного cap);
 - `RENTAL_CLEANING_*` — ежедневная выдача персональной выгоды на checkout-уборку, допустимое окно
   дат, ставка и максимальная скидка. Ставка не может превышать `REFERRAL_COMMISSION_RATE`;
 - `DATA_RETENTION_DAYS` — срок хранения audit trail и фотографий терминальных заказов, по умолчанию 7 дней;

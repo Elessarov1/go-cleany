@@ -3,26 +3,20 @@ package com.cleany.crossservice.rentaltransfer;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.catalog.PlatformService;
 import com.cleany.catalog.PlatformServiceAccessService;
-import com.cleany.common.text.AddressNormalizer;
 import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountService;
 import com.cleany.rental.RentalBooking;
 import com.cleany.rental.RentalBookingNotFoundException;
 import com.cleany.rental.RentalBookingRepository;
 import com.cleany.rental.RentalBookingStatus;
-import com.cleany.transfer.TransferBooking;
 import com.cleany.transfer.TransferBookingPolicy;
-import com.cleany.transfer.TransferBookingRepository;
-import com.cleany.transfer.TransferBookingStatus;
 import com.cleany.transfer.TransferDirection;
 
 import lombok.RequiredArgsConstructor;
@@ -31,20 +25,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class RentalTransferContextService {
 
-    private static final Set<TransferBookingStatus> MATCHING_STATUSES = Collections.unmodifiableSet(
-            EnumSet.of(
-                    TransferBookingStatus.REQUESTED,
-                    TransferBookingStatus.CONFIRMED,
-                    TransferBookingStatus.COMPLETED
-            )
-    );
-
     private final CustomerAccountService customerAccountService;
     private final RentalBookingRepository rentalBookingRepository;
-    private final TransferBookingRepository transferBookingRepository;
     private final TransferBookingPolicy transferBookingPolicy;
     private final PlatformServiceAccessService serviceAccessService;
     private final RentalTransferActionTrackingService trackingService;
+    private final RentalTransferMatchingService matchingService;
+    private final RentalTransferBenefitService benefitService;
 
     @Transactional(readOnly = true)
     public RentalTransferContextResponse currentCustomerContext(long rentalBookingId) {
@@ -94,13 +81,21 @@ public class RentalTransferContextService {
             long rentalBookingId,
             RentalTransferContextType context
     ) {
-        resolveBookable(customer, rentalBookingId, context);
+        RentalBooking booking = resolveBookable(customer, rentalBookingId, context);
         trackingService.record(
                 customer.customerId(),
                 rentalBookingId,
                 context,
                 RentalTransferActionEventType.CTA_SHOWN
         );
+        if (benefitService.visibleBenefit(customer.customerId(), booking) != null) {
+            trackingService.record(
+                    customer.customerId(),
+                    rentalBookingId,
+                    context,
+                    RentalTransferActionEventType.BENEFIT_SHOWN
+            );
+        }
     }
 
     @Transactional
@@ -124,24 +119,41 @@ public class RentalTransferContextService {
                 context,
                 RentalTransferActionEventType.PREFILL_STARTED
         );
-        return prefill(booking, context);
+        RentalTransferBenefitResponse benefit = benefitService.visibleBenefit(
+                customer.customerId(),
+                booking
+        );
+        if (benefit != null) {
+            trackingService.record(
+                    customer.customerId(),
+                    rentalBookingId,
+                    context,
+                    RentalTransferActionEventType.BENEFIT_PREFILL_STARTED
+            );
+        }
+        return prefill(booking, context, benefit);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ResolvedRentalTransferSource resolveForCreation(
             CurrentCustomer customer,
             RentalTransferSourceRequest source,
             TransferDirection requestedDirection
     ) {
-        RentalTransferContextType context = source.context();
-        if (context.direction() != requestedDirection) {
-            throw new RentalTransferContextNotEligibleException(
-                    source.bookingId(),
-                    "transfer direction does not match the selected context"
-            );
-        }
-        resolveBookable(customer, source.bookingId(), context);
-        return new ResolvedRentalTransferSource(source.bookingId(), context);
+        requireMatchingDirection(source, requestedDirection);
+        RentalBooking booking = resolveBookableForUpdate(customer, source.bookingId(), source.context());
+        return new ResolvedRentalTransferSource(source.bookingId(), source.context(), booking);
+    }
+
+    @Transactional(readOnly = true)
+    public ResolvedRentalTransferSource resolveForQuote(
+            CurrentCustomer customer,
+            RentalTransferSourceRequest source,
+            TransferDirection requestedDirection
+    ) {
+        requireMatchingDirection(source, requestedDirection);
+        RentalBooking booking = resolveBookable(customer, source.bookingId(), source.context());
+        return new ResolvedRentalTransferSource(source.bookingId(), source.context(), booking);
     }
 
     private RentalBooking resolveBookable(
@@ -154,6 +166,31 @@ public class RentalTransferContextService {
                 customer.customerId()
         );
         RentalBooking booking = requireOwnedBooking(customer, rentalBookingId);
+        requireBookable(customer.customerId(), booking, context);
+        return booking;
+    }
+
+    private RentalBooking resolveBookableForUpdate(
+            CurrentCustomer customer,
+            long rentalBookingId,
+            RentalTransferContextType context
+    ) {
+        serviceAccessService.requireCanStartCustomerFlow(
+                PlatformService.TRANSFER,
+                customer.customerId()
+        );
+        RentalBooking booking = rentalBookingRepository.findByIdForUpdate(rentalBookingId)
+                .filter(candidate -> candidate.getCustomerId() == customer.customerId())
+                .orElseThrow(() -> new RentalBookingNotFoundException(rentalBookingId));
+        requireBookable(customer.customerId(), booking, context);
+        return booking;
+    }
+
+    private void requireBookable(
+            long customerId,
+            RentalBooking booking,
+            RentalTransferContextType context
+    ) {
         if (booking.getStatus() != RentalBookingStatus.CONFIRMED) {
             throw ineligible(booking, "rental booking is not confirmed");
         }
@@ -161,10 +198,9 @@ public class RentalTransferContextService {
         if (!transferBookingPolicy.isBookableDate(suggestedDate)) {
             throw ineligible(booking, "suggested date is outside the current transfer booking window");
         }
-        if (hasMatchingTransfer(customer.customerId(), booking, context)) {
+        if (matchingService.hasMatchingTransfer(customerId, booking, context)) {
             throw new RentalTransferAlreadyBookedException(booking.getId(), context);
         }
-        return booking;
     }
 
     private RentalTransferContextOptionResponse visibleOption(
@@ -173,7 +209,7 @@ public class RentalTransferContextService {
             RentalTransferContextType context
     ) {
         LocalDate suggestedDate = context.suggestedDate(booking);
-        if (hasMatchingTransfer(customerId, booking, context)
+        if (matchingService.hasMatchingTransfer(customerId, booking, context)
                 || suggestedDate.isBefore(transferBookingPolicy.earliestBookingDate())) {
             return null;
         }
@@ -186,36 +222,9 @@ public class RentalTransferContextService {
                 context.direction(),
                 suggestedDate,
                 booking.getProperty().getAddress(),
-                bookable ? null : transferBookingPolicy.bookingOpensOn(suggestedDate)
+                bookable ? null : transferBookingPolicy.bookingOpensOn(suggestedDate),
+                bookable ? benefitService.visibleBenefit(customerId, booking) : null
         );
-    }
-
-    private boolean hasMatchingTransfer(
-            long customerId,
-            RentalBooking rentalBooking,
-            RentalTransferContextType context
-    ) {
-        if (transferBookingRepository.existsByCustomerIdAndSourceRentalBookingIdAndRentalContextAndStatusIn(
-                customerId,
-                rentalBooking.getId(),
-                context,
-                MATCHING_STATUSES
-        )) {
-            return true;
-        }
-        LocalDate suggestedDate = context.suggestedDate(rentalBooking);
-        String expectedAddress = AddressNormalizer.normalize(rentalBooking.getProperty().getAddress());
-        return transferBookingRepository
-                .findAllByCustomerIdAndSourceRentalBookingIdIsNullAndDirectionAndPickupDateAndStatusIn(
-                        customerId,
-                        context.direction(),
-                        suggestedDate,
-                        MATCHING_STATUSES
-                )
-                .stream()
-                .map(TransferBooking::getAddress)
-                .map(AddressNormalizer::normalize)
-                .anyMatch(expectedAddress::equals);
     }
 
     private RentalBooking requireOwnedBooking(CurrentCustomer customer, long rentalBookingId) {
@@ -229,15 +238,29 @@ public class RentalTransferContextService {
 
     private static RentalTransferPrefillResponse prefill(
             RentalBooking booking,
-            RentalTransferContextType context
+            RentalTransferContextType context,
+            RentalTransferBenefitResponse benefit
     ) {
         return new RentalTransferPrefillResponse(
                 booking.getId(),
                 context,
                 context.direction(),
                 context.suggestedDate(booking),
-                booking.getProperty().getAddress()
+                booking.getProperty().getAddress(),
+                benefit
         );
+    }
+
+    private static void requireMatchingDirection(
+            RentalTransferSourceRequest source,
+            TransferDirection requestedDirection
+    ) {
+        if (source.context().direction() != requestedDirection) {
+            throw new RentalTransferContextNotEligibleException(
+                    source.bookingId(),
+                    "transfer direction does not match the selected context"
+            );
+        }
     }
 
     private static RentalTransferContextNotEligibleException ineligible(
@@ -246,5 +269,4 @@ public class RentalTransferContextService {
     ) {
         return new RentalTransferContextNotEligibleException(booking.getId(), reason);
     }
-
 }

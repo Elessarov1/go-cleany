@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260913-01" author="loco-place">
+        <comment>Persist the Rental to Transfer benefit lifecycle and immutable Transfer price breakdown.</comment>
+
+        <addColumn tableName="transfer_booking">
+            <column name="base_price_amount" type="NUMERIC(12,2)"/>
+            <column name="discount_amount" type="NUMERIC(12,2)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="benefit_type" type="VARCHAR(48)"/>
+            <column name="benefit_rate" type="NUMERIC(5,4)"/>
+        </addColumn>
+        <sql dbms="postgresql"><![CDATA[
+            update transfer_booking
+               set base_price_amount = price_amount;
+
+            alter table transfer_booking
+                alter column base_price_amount set not null,
+                add constraint ck_transfer_booking_price_breakdown check (
+                    base_price_amount > 0
+                    and discount_amount >= 0
+                    and price_amount = base_price_amount - discount_amount
+                    and (
+                        (benefit_type is null and benefit_rate is null and discount_amount = 0)
+                        or
+                        (benefit_type = 'RENTAL_FIRST_TRANSFER'
+                            and benefit_rate > 0 and benefit_rate < 1
+                            and discount_amount > 0)
+                    )
+                );
+        ]]></sql>
+        <dropDefaultValue tableName="transfer_booking" columnName="discount_amount"/>
+
+        <createTable tableName="rental_transfer_benefit">
+            <column name="rental_booking_id" type="BIGINT">
+                <constraints primaryKey="true"
+                             primaryKeyName="pk_rental_transfer_benefit"
+                             nullable="false"/>
+            </column>
+            <column name="customer_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="status" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="transfer_booking_id" type="BIGINT"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="reserved_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="consumed_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="released_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="version" type="BIGINT" defaultValueNumeric="0"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="rental_transfer_benefit"
+                                 baseColumnNames="rental_booking_id"
+                                 constraintName="fk_rental_transfer_benefit_rental"
+                                 referencedTableName="rental_booking"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="rental_transfer_benefit"
+                                 baseColumnNames="customer_id"
+                                 constraintName="fk_rental_transfer_benefit_customer"
+                                 referencedTableName="customer_account"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="rental_transfer_benefit"
+                                 baseColumnNames="transfer_booking_id"
+                                 constraintName="fk_rental_transfer_benefit_transfer"
+                                 referencedTableName="transfer_booking"
+                                 referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+        <addUniqueConstraint tableName="rental_transfer_benefit"
+                             columnNames="transfer_booking_id"
+                             constraintName="uk_rental_transfer_benefit_transfer"/>
+        <createIndex tableName="rental_transfer_benefit"
+                     indexName="idx_rental_transfer_benefit_customer_status">
+            <column name="customer_id"/>
+            <column name="status"/>
+        </createIndex>
+        <sql dbms="postgresql"><![CDATA[
+            alter table rental_transfer_benefit
+                add constraint ck_rental_transfer_benefit_status check (
+                    status in ('RESERVED', 'CONSUMED', 'RELEASED')
+                ),
+                add constraint ck_rental_transfer_benefit_state check (
+                    (status = 'RESERVED'
+                        and transfer_booking_id is not null
+                        and reserved_at is not null
+                        and consumed_at is null)
+                    or
+                    (status = 'CONSUMED'
+                        and transfer_booking_id is not null
+                        and reserved_at is not null
+                        and consumed_at is not null)
+                    or
+                    (status = 'RELEASED'
+                        and transfer_booking_id is null
+                        and released_at is not null
+                        and consumed_at is null)
+                );
+
+            alter table rental_transfer_action_event
+                drop constraint ck_rental_transfer_action_type,
+                add constraint ck_rental_transfer_action_type check (
+                    event_type in (
+                        'CTA_SHOWN',
+                        'PREFILL_STARTED',
+                        'BENEFIT_SHOWN',
+                        'BENEFIT_PREFILL_STARTED'
+                    )
+                );
+        ]]></sql>
+        <dropDefaultValue tableName="rental_transfer_benefit" columnName="version"/>
+
+        <rollback>
+            <sql dbms="postgresql"><![CDATA[
+                alter table rental_transfer_action_event
+                    drop constraint ck_rental_transfer_action_type,
+                    add constraint ck_rental_transfer_action_type check (
+                        event_type in ('CTA_SHOWN', 'PREFILL_STARTED')
+                    );
+
+                alter table transfer_booking
+                    drop constraint ck_transfer_booking_price_breakdown;
+            ]]></sql>
+            <dropTable tableName="rental_transfer_benefit"/>
+            <dropColumn tableName="transfer_booking" columnName="benefit_rate"/>
+            <dropColumn tableName="transfer_booking" columnName="benefit_type"/>
+            <dropColumn tableName="transfer_booking" columnName="discount_amount"/>
+            <dropColumn tableName="transfer_booking" columnName="base_price_amount"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

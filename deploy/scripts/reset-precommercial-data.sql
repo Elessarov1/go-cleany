@@ -16,6 +16,7 @@ delete from cleaning_order_event;
 delete from partner_payout;
 delete from referral_reward;
 delete from rental_cleaning_benefit;
+delete from rental_transfer_benefit;
 delete from rental_occupancy where type = 'BOOKING';
 delete from rental_booking;
 delete from transfer_booking;

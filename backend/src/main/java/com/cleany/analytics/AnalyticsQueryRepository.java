@@ -370,6 +370,254 @@ public class AnalyticsQueryRepository {
         );
     }
 
+    public AnalyticsRentalTransferBenefitMetrics rentalTransferBenefit(AnalyticsTimeWindow window) {
+        List<RentalTransferBenefitFunnelRow> funnels = jdbcTemplate.query("""
+                with shown_contexts as (
+                    select event.customer_id,
+                           event.rental_booking_id,
+                           event.context_type,
+                           min(event.occurred_at) shown_at
+                      from rental_transfer_action_event event
+                     where event.event_type = 'BENEFIT_SHOWN'
+                       and event.occurred_at >= :fromInclusive
+                       and event.occurred_at < :toExclusive
+                       and :service in ('ALL', 'RENTAL')
+                     group by event.customer_id, event.rental_booking_id, event.context_type
+                ),
+                shown_sources as (
+                    select customer_id,
+                           rental_booking_id,
+                           min(shown_at) shown_at
+                      from shown_contexts
+                     group by customer_id, rental_booking_id
+                ),
+                source_metrics as (
+                    select shown.*,
+                           exists (
+                               select 1
+                                 from rental_transfer_action_event started
+                                where started.customer_id = shown.customer_id
+                                  and started.rental_booking_id = shown.rental_booking_id
+                                  and started.event_type = 'BENEFIT_PREFILL_STARTED'
+                                  and started.occurred_at >= shown.shown_at
+                                  and started.occurred_at < :toExclusive
+                           ) started,
+                           (select min(transfer.created_at)
+                              from transfer_booking transfer
+                             where transfer.customer_id = shown.customer_id
+                               and transfer.source_rental_booking_id = shown.rental_booking_id
+                               and transfer.benefit_type = 'RENTAL_FIRST_TRANSFER'
+                               and transfer.created_at >= shown.shown_at
+                               and transfer.created_at < :toExclusive
+                           ) first_created_at,
+                           exists (
+                               select 1
+                                 from transfer_booking transfer
+                                where transfer.customer_id = shown.customer_id
+                                  and transfer.source_rental_booking_id = shown.rental_booking_id
+                                  and transfer.benefit_type = 'RENTAL_FIRST_TRANSFER'
+                                  and transfer.created_at >= shown.shown_at
+                                  and transfer.status = 'COMPLETED'
+                                  and transfer.completed_at < :toExclusive
+                           ) completed
+                      from shown_sources shown
+                ),
+                context_metrics as (
+                    select shown.*,
+                           exists (
+                               select 1
+                                 from rental_transfer_action_event started
+                                where started.customer_id = shown.customer_id
+                                  and started.rental_booking_id = shown.rental_booking_id
+                                  and started.context_type = shown.context_type
+                                  and started.event_type = 'BENEFIT_PREFILL_STARTED'
+                                  and started.occurred_at >= shown.shown_at
+                                  and started.occurred_at < :toExclusive
+                           ) started,
+                           (select min(transfer.created_at)
+                              from transfer_booking transfer
+                             where transfer.customer_id = shown.customer_id
+                               and transfer.source_rental_booking_id = shown.rental_booking_id
+                               and transfer.rental_context_type = shown.context_type
+                               and transfer.benefit_type = 'RENTAL_FIRST_TRANSFER'
+                               and transfer.created_at >= shown.shown_at
+                               and transfer.created_at < :toExclusive
+                           ) first_created_at,
+                           exists (
+                               select 1
+                                 from transfer_booking transfer
+                                where transfer.customer_id = shown.customer_id
+                                  and transfer.source_rental_booking_id = shown.rental_booking_id
+                                  and transfer.rental_context_type = shown.context_type
+                                  and transfer.benefit_type = 'RENTAL_FIRST_TRANSFER'
+                                  and transfer.created_at >= shown.shown_at
+                                  and transfer.status = 'COMPLETED'
+                                  and transfer.completed_at < :toExclusive
+                           ) completed
+                      from shown_contexts shown
+                ),
+                metric_rows as (
+                    select true total,
+                           null::varchar context_type,
+                           count(*) shown_sources,
+                           count(*) filter (where started) started_sources,
+                           count(*) filter (where first_created_at is not null) created_sources,
+                           count(*) filter (where completed) completed_sources,
+                           percentile_cont(0.5) within group (
+                               order by extract(epoch from (first_created_at - shown_at)) / 3600.0
+                           ) filter (where first_created_at is not null) median_hours
+                      from source_metrics
+                    union all
+                    select false total,
+                           context_type,
+                           count(*) shown_sources,
+                           count(*) filter (where started) started_sources,
+                           count(*) filter (where first_created_at is not null) created_sources,
+                           count(*) filter (where completed) completed_sources,
+                           percentile_cont(0.5) within group (
+                               order by extract(epoch from (first_created_at - shown_at)) / 3600.0
+                           ) filter (where first_created_at is not null) median_hours
+                      from context_metrics
+                     group by context_type
+                )
+                select *
+                  from metric_rows
+                 order by total desc, context_type
+                """, parameters(window), (resultSet, rowNumber) -> {
+            long shown = resultSet.getLong("shown_sources");
+            long started = resultSet.getLong("started_sources");
+            long created = resultSet.getLong("created_sources");
+            long completed = resultSet.getLong("completed_sources");
+            BigDecimal median = resultSet.getBigDecimal("median_hours");
+            String context = resultSet.getString("context_type");
+            return new RentalTransferBenefitFunnelRow(
+                    resultSet.getBoolean("total"),
+                    context == null ? null : RentalTransferContextType.valueOf(context),
+                    new AnalyticsActionFunnelMetric(
+                            shown,
+                            started,
+                            created,
+                            completed,
+                            nullableRatio(started, shown),
+                            nullableRatio(created, shown),
+                            nullableRatio(completed, created),
+                            median == null ? null : median.setScale(1, RoundingMode.HALF_UP)
+                    )
+            );
+        });
+        List<RentalTransferBenefitAmountRow> amounts = rentalTransferBenefitAmounts(window);
+        AnalyticsRentalTransferBenefitMetric total = funnels.stream()
+                .filter(RentalTransferBenefitFunnelRow::total)
+                .findFirst()
+                .map(row -> benefitMetric(row.funnel(), amounts, true, null))
+                .orElseGet(() -> benefitMetric(emptyActionFunnel(), amounts, true, null));
+        List<AnalyticsRentalTransferBenefitContextMetric> byContext = funnels.stream()
+                .filter(row -> !row.total())
+                .map(row -> new AnalyticsRentalTransferBenefitContextMetric(
+                        row.context(),
+                        benefitMetric(row.funnel(), amounts, false, row.context())
+                ))
+                .toList();
+        return new AnalyticsRentalTransferBenefitMetrics(
+                total,
+                byContext.isEmpty() ? Collections.emptyList() : byContext
+        );
+    }
+
+    private List<RentalTransferBenefitAmountRow> rentalTransferBenefitAmounts(
+            AnalyticsTimeWindow window
+    ) {
+        return jdbcTemplate.query("""
+                with shown_contexts as (
+                    select event.customer_id,
+                           event.rental_booking_id,
+                           event.context_type,
+                           min(event.occurred_at) shown_at
+                      from rental_transfer_action_event event
+                     where event.event_type = 'BENEFIT_SHOWN'
+                       and event.occurred_at >= :fromInclusive
+                       and event.occurred_at < :toExclusive
+                       and :service in ('ALL', 'RENTAL')
+                     group by event.customer_id, event.rental_booking_id, event.context_type
+                ),
+                shown_sources as (
+                    select customer_id,
+                           rental_booking_id,
+                           min(shown_at) shown_at
+                      from shown_contexts
+                     group by customer_id, rental_booking_id
+                ),
+                amount_rows as (
+                    select true total,
+                           null::varchar context_type,
+                           transfer.price_currency currency,
+                           count(*) completed_transfers,
+                           sum(transfer.base_price_amount) base_amount,
+                           sum(transfer.discount_amount) discount_amount,
+                           sum(transfer.price_amount) payable_amount
+                      from shown_sources shown
+                      join transfer_booking transfer
+                        on transfer.customer_id = shown.customer_id
+                       and transfer.source_rental_booking_id = shown.rental_booking_id
+                       and transfer.benefit_type = 'RENTAL_FIRST_TRANSFER'
+                       and transfer.created_at >= shown.shown_at
+                       and transfer.status = 'COMPLETED'
+                       and transfer.completed_at < :toExclusive
+                     group by transfer.price_currency
+                    union all
+                    select false total,
+                           shown.context_type,
+                           transfer.price_currency currency,
+                           count(*) completed_transfers,
+                           sum(transfer.base_price_amount) base_amount,
+                           sum(transfer.discount_amount) discount_amount,
+                           sum(transfer.price_amount) payable_amount
+                      from shown_contexts shown
+                      join transfer_booking transfer
+                        on transfer.customer_id = shown.customer_id
+                       and transfer.source_rental_booking_id = shown.rental_booking_id
+                       and transfer.rental_context_type = shown.context_type
+                       and transfer.benefit_type = 'RENTAL_FIRST_TRANSFER'
+                       and transfer.created_at >= shown.shown_at
+                       and transfer.status = 'COMPLETED'
+                       and transfer.completed_at < :toExclusive
+                     group by shown.context_type, transfer.price_currency
+                )
+                select *
+                  from amount_rows
+                 order by total desc, context_type, currency
+                """, parameters(window), (resultSet, rowNumber) -> {
+            String context = resultSet.getString("context_type");
+            return new RentalTransferBenefitAmountRow(
+                    resultSet.getBoolean("total"),
+                    context == null ? null : RentalTransferContextType.valueOf(context),
+                    new AnalyticsRentalTransferBenefitAmount(
+                            resultSet.getString("currency"),
+                            resultSet.getLong("completed_transfers"),
+                            resultSet.getBigDecimal("base_amount").setScale(2, RoundingMode.HALF_UP),
+                            resultSet.getBigDecimal("discount_amount").setScale(2, RoundingMode.HALF_UP),
+                            resultSet.getBigDecimal("payable_amount").setScale(2, RoundingMode.HALF_UP)
+                    )
+            );
+        });
+    }
+
+    private static AnalyticsRentalTransferBenefitMetric benefitMetric(
+            AnalyticsActionFunnelMetric funnel,
+            List<RentalTransferBenefitAmountRow> amounts,
+            boolean total,
+            RentalTransferContextType context
+    ) {
+        List<AnalyticsRentalTransferBenefitAmount> matchingAmounts = amounts.stream()
+                .filter(row -> row.total() == total && row.context() == context)
+                .map(RentalTransferBenefitAmountRow::amount)
+                .toList();
+        return new AnalyticsRentalTransferBenefitMetric(
+                funnel,
+                matchingAmounts.isEmpty() ? Collections.emptyList() : matchingAmounts
+        );
+    }
+
     public List<AnalyticsRepeatActionMetric> repeatActions(AnalyticsTimeWindow window) {
         return jdbcTemplate.query("""
                 with source_tasks as (
@@ -844,6 +1092,20 @@ public class AnalyticsQueryRepository {
             boolean total,
             RentalTransferContextType context,
             AnalyticsActionFunnelMetric funnel
+    ) {
+    }
+
+    private record RentalTransferBenefitFunnelRow(
+            boolean total,
+            RentalTransferContextType context,
+            AnalyticsActionFunnelMetric funnel
+    ) {
+    }
+
+    private record RentalTransferBenefitAmountRow(
+            boolean total,
+            RentalTransferContextType context,
+            AnalyticsRentalTransferBenefitAmount amount
     ) {
     }
 }

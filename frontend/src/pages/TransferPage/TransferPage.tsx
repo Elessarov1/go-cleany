@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useTransferApi } from "../../api/TransferApiProvider";
 import { useCustomerApi } from "../../api/CustomerApiProvider";
 import { useRentalApi } from "../../api/RentalApiProvider";
+import { ApiError } from "../../api/ApiError";
 import { BrandName } from "../../components/BrandName/BrandName";
 import { Icon } from "../../components/Icon/Icon";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
@@ -11,6 +12,7 @@ import type {
   TransferConfiguration,
   TransferDirection,
   TransferRepeatPrefill,
+  TransferQuote,
   TransferVehicleType,
 } from "../../domain/transfer";
 import type { RentalTransferContextType, RentalTransferPrefill } from "../../domain/rental";
@@ -33,7 +35,7 @@ export function TransferPage() {
   const [configuration, setConfiguration] = useState<TransferConfiguration | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState(false);
+  const [submitError, setSubmitError] = useState<"generic" | "benefit" | null>(null);
   const [direction, setDirection] = useState<TransferDirection>("TO_AIRPORT");
   const [airportId, setAirportId] = useState(0);
   const [vehicleTypeId, setVehicleTypeId] = useState(0);
@@ -50,6 +52,12 @@ export function TransferPage() {
   const [repeatContextError, setRepeatContextError] = useState(false);
   const [rentalContext, setRentalContext] = useState<RentalTransferPrefill | null>(null);
   const [rentalContextError, setRentalContextError] = useState(false);
+  const [rentalContextLoading, setRentalContextLoading] = useState(false);
+  const [rentalContextReloadKey, setRentalContextReloadKey] = useState(0);
+  const [quote, setQuote] = useState<TransferQuote | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState<"generic" | "benefit" | null>(null);
+  const [quoteReloadKey, setQuoteReloadKey] = useState(0);
   const russian = i18n.resolvedLanguage?.startsWith("ru") ?? true;
   const rawRepeatSourceId = searchParams.get("repeatFrom");
   const parsedRepeatSourceId = rawRepeatSourceId === null ? null : Number(rawRepeatSourceId);
@@ -138,12 +146,14 @@ export function TransferPage() {
   useEffect(() => {
     setRentalContext(null);
     setRentalContextError(false);
+    setRentalContextLoading(false);
     if (rawRentalBookingId === null || !configuration) return;
     if (rentalBookingId === null || rentalContextType === null || rawRepeatSourceId !== null) {
       setRentalContextError(true);
       return;
     }
     let active = true;
+    setRentalContextLoading(true);
     rentalApi.getTransferPrefill(rentalBookingId, rentalContextType)
       .then((context) => {
         if (!active) return;
@@ -171,6 +181,9 @@ export function TransferPage() {
       })
       .catch(() => {
         if (active) setRentalContextError(true);
+      })
+      .finally(() => {
+        if (active) setRentalContextLoading(false);
       });
     return () => { active = false; };
   }, [
@@ -179,6 +192,7 @@ export function TransferPage() {
     rawRepeatSourceId,
     rentalApi,
     rentalBookingId,
+    rentalContextReloadKey,
     rentalContextType,
   ]);
 
@@ -201,6 +215,38 @@ export function TransferPage() {
     && item.vehicleTypeId === vehicleTypeId && item.direction === direction);
 
   useEffect(() => {
+    setQuote(null);
+    setQuoteError(null);
+    setSubmitError(null);
+    if (!price || !airportId || !vehicleTypeId || rentalContextLoading) return;
+    let active = true;
+    setQuoteLoading(true);
+    api.quote({
+      direction,
+      airportId,
+      vehicleTypeId,
+      rentalSource: rentalContext ? {
+        bookingId: rentalContext.rentalBookingId,
+        context: rentalContext.context,
+      } : undefined,
+      benefit: rentalContext?.benefit?.type,
+    })
+      .then((result) => {
+        if (active) setQuote(result);
+      })
+      .catch((error) => {
+        if (!active) return;
+        setQuoteError(error instanceof ApiError && error.code === "rental_transfer_benefit_unavailable"
+          ? "benefit"
+          : "generic");
+      })
+      .finally(() => {
+        if (active) setQuoteLoading(false);
+      });
+    return () => { active = false; };
+  }, [api, airportId, direction, price, quoteReloadKey, rentalContext, rentalContextLoading, vehicleTypeId]);
+
+  useEffect(() => {
     if (!vehicle) return;
     setPassengerCount((value) => Math.min(value, vehicle.maxPassengers));
     setLuggageCount((value) => Math.min(value, vehicle.maxLuggage));
@@ -208,9 +254,9 @@ export function TransferPage() {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!price || !vehicle) return;
+    if (!quote || !vehicle) return;
     setSubmitting(true);
-    setSubmitError(false);
+    setSubmitError(null);
     try {
       const booking = await api.createBooking({
         direction,
@@ -230,10 +276,16 @@ export function TransferPage() {
           bookingId: rentalContext.rentalBookingId,
           context: rentalContext.context,
         } : undefined,
+        benefit: rentalContext?.benefit?.type,
       });
       navigate(`/transfer/bookings/${booking.id}`);
-    } catch {
-      setSubmitError(true);
+    } catch (error) {
+      if (error instanceof ApiError && error.code === "rental_transfer_benefit_unavailable") {
+        setSubmitError("benefit");
+        setQuote(null);
+      } else {
+        setSubmitError("generic");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -266,6 +318,11 @@ export function TransferPage() {
           <div>
             <strong>{t("transfer.rentalContext.title", { id: rentalContext.rentalBookingId })}</strong>
             <p>{t(`transfer.rentalContext.${rentalContext.context}`)}</p>
+            {rentalContext.benefit ? (
+              <small>{t("transfer.rentalContext.benefit", {
+                percent: Math.round(rentalContext.benefit.discountRate * 100),
+              })}</small>
+            ) : null}
           </div>
         </section>
       ) : null}
@@ -377,10 +434,50 @@ export function TransferPage() {
           </section>
 
           <section className="transfer-summary">
-            <div><span>{t("transfer.summary.fixedPrice")}</span><strong>{price ? formatPrice(price.amount, price.currency, russian ? "ru-RU" : "en-GB") : "—"}</strong></div>
+            {quote?.appliedBenefit ? (
+              <div className="transfer-summary__benefit">
+                <div><span>{t("transfer.summary.basePrice")}</span><strong>{formatPrice(quote.baseAmount, quote.currency, russian ? "ru-RU" : "en-GB")}</strong></div>
+                <div><span>{t("transfer.summary.discount", { percent: Math.round((rentalContext?.benefit?.discountRate ?? 0) * 100) })}</span><strong>−{formatPrice(quote.discountAmount, quote.currency, russian ? "ru-RU" : "en-GB")}</strong></div>
+              </div>
+            ) : null}
+            <div><span>{t(quote?.appliedBenefit ? "transfer.summary.payable" : "transfer.summary.fixedPrice")}</span><strong>{quote ? formatPrice(quote.payableAmount, quote.currency, russian ? "ru-RU" : "en-GB") : "—"}</strong></div>
             <p>{t("transfer.summary.requested")}</p>
-            {submitError ? <p className="form-error">{t("transfer.submitError")}</p> : null}
-            <button className="button button--primary button--large button--full" disabled={!price || submitting} type="submit">
+            {quoteLoading ? <p className="transfer-summary__quote-state">{t("transfer.summary.calculating")}</p> : null}
+            {quoteError === "generic" ? (
+              <p className="form-error">
+                {t("transfer.summary.quoteError")}{" "}
+                <button type="button" className="inline-action" onClick={() => setQuoteReloadKey((key) => key + 1)}>{t("common.retry")}</button>
+              </p>
+            ) : null}
+            {quoteError === "benefit" ? (
+              <p className="form-error">
+                {t("transfer.benefitUnavailable")}{" "}
+                <button
+                  type="button"
+                  className="inline-action"
+                  onClick={() => setRentalContextReloadKey((key) => key + 1)}
+                >
+                  {t("transfer.refreshQuote")}
+                </button>
+              </p>
+            ) : null}
+            {submitError === "benefit" ? (
+              <p className="form-error">
+                {t("transfer.benefitUnavailable")}{" "}
+                <button
+                  type="button"
+                  className="inline-action"
+                  onClick={() => {
+                    setSubmitError(null);
+                    setRentalContextReloadKey((key) => key + 1);
+                  }}
+                >
+                  {t("transfer.refreshQuote")}
+                </button>
+              </p>
+            ) : null}
+            {submitError === "generic" ? <p className="form-error">{t("transfer.submitError")}</p> : null}
+            <button className="button button--primary button--large button--full" disabled={!quote || quoteLoading || rentalContextLoading || submitting} type="submit">
               {submitting ? t("transfer.submitting") : t("transfer.submit")}
             </button>
           </section>

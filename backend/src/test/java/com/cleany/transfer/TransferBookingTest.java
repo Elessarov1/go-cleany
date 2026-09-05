@@ -216,6 +216,7 @@ class TransferBookingTest {
                 arrivalTime,
                 null,
                 price,
+                TransferPriceQuote.standard(price),
                 NOW
         ));
     }

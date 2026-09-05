@@ -11,6 +11,8 @@ import type {
   TransferConfiguration,
   TransferDriverLink,
   TransferRepeatPrefill,
+  TransferQuote,
+  TransferQuoteRequest,
   UpdateTransferAirportRequest,
   UpdateTransferVehicleRequest,
   UpsertTransferDriverRequest,
@@ -90,6 +92,21 @@ export class MockTransferApi implements TransferApi {
     return Promise.resolve(structuredClone(configuration));
   }
 
+  quote(request: TransferQuoteRequest): Promise<TransferQuote> {
+    const price = configuration.prices.find((item) => item.airportId === request.airportId
+      && item.vehicleTypeId === request.vehicleTypeId && item.direction === request.direction);
+    if (!price) return Promise.reject(new ApiError("Transfer configuration is unavailable", 409));
+    const discounted = request.benefit === "RENTAL_FIRST_TRANSFER" && request.rentalSource !== undefined;
+    const discountAmount = discounted ? Number((price.amount * 0.1).toFixed(2)) : 0;
+    return Promise.resolve({
+      baseAmount: price.amount,
+      discountAmount,
+      payableAmount: price.amount - discountAmount,
+      currency: price.currency,
+      appliedBenefit: discounted ? "RENTAL_FIRST_TRANSFER" : null,
+    });
+  }
+
   createBooking(request: CreateTransferBookingRequest): Promise<TransferBooking> {
     const airport = configuration.airports.find((item) => item.id === request.airportId);
     const vehicle = configuration.vehicleTypes.find((item) => item.id === request.vehicleTypeId);
@@ -117,8 +134,14 @@ export class MockTransferApi implements TransferApi {
       customerName: "Alex",
       phone: request.phone,
       comment: request.comment ?? null,
-      priceAmount: price.amount,
+      basePriceAmount: price.amount,
+      discountAmount: request.benefit === "RENTAL_FIRST_TRANSFER" ? Number((price.amount * 0.1).toFixed(2)) : 0,
+      priceAmount: request.benefit === "RENTAL_FIRST_TRANSFER"
+        ? price.amount - Number((price.amount * 0.1).toFixed(2))
+        : price.amount,
       priceCurrency: price.currency,
+      appliedBenefit: request.benefit ?? null,
+      benefitRate: request.benefit === "RENTAL_FIRST_TRANSFER" ? 0.1 : null,
       status: "REQUESTED",
       driverId: null,
       driverName: null,

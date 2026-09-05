@@ -70,7 +70,15 @@ export function AdminTransferBookingPage() {
         <Detail label={t("transfer.booking.passengers")} value={String(booking.passengerCount)} />
         <Detail label={t("transfer.booking.luggage")} value={String(booking.luggageCount)} />
         {booking.flightNumber ? <Detail label={t("transfer.booking.flight")} value={`${booking.flightNumber} · ${booking.scheduledArrivalTime?.slice(0, 5)}`} /> : null}
-        <Detail label={t("transfer.booking.price")} value={formatPrice(booking.priceAmount, booking.priceCurrency, locale)} />
+        {booking.discountAmount > 0 ? (
+          <>
+            <Detail label={t("transfer.booking.basePrice")} value={formatPrice(booking.basePriceAmount, booking.priceCurrency, locale)} />
+            <Detail label={t("transfer.booking.discount")} value={`−${formatPrice(booking.discountAmount, booking.priceCurrency, locale)}`} />
+            <Detail label={t("transfer.booking.payable")} value={formatPrice(booking.priceAmount, booking.priceCurrency, locale)} />
+          </>
+        ) : (
+          <Detail label={t("transfer.booking.price")} value={formatPrice(booking.priceAmount, booking.priceCurrency, locale)} />
+        )}
         <Detail label={t("transfer.booking.driver")} value={booking.driverName ?? t("common.notProvided")} />
         {booking.comment ? <Detail label={t("transfer.booking.comment")} value={booking.comment} wide /> : null}
       </section>

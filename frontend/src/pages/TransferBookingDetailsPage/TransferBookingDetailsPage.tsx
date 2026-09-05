@@ -89,7 +89,15 @@ export function TransferBookingDetailsPage() {
         <Detail label={t("transfer.booking.luggage")} value={String(booking.luggageCount)} />
         {booking.flightNumber ? <Detail label={t("transfer.booking.flight")} value={`${booking.flightNumber} · ${booking.scheduledArrivalTime?.slice(0, 5) ?? "—"}`} /> : null}
         <Detail label={t("transfer.booking.phone")} value={booking.phone} />
-        <Detail label={t("transfer.booking.price")} value={formatPrice(booking.priceAmount, booking.priceCurrency, locale)} />
+        {booking.discountAmount > 0 ? (
+          <>
+            <Detail label={t("transfer.booking.basePrice")} value={formatPrice(booking.basePriceAmount, booking.priceCurrency, locale)} />
+            <Detail label={t("transfer.booking.discount")} value={`−${formatPrice(booking.discountAmount, booking.priceCurrency, locale)}`} />
+            <Detail label={t("transfer.booking.payable")} value={formatPrice(booking.priceAmount, booking.priceCurrency, locale)} />
+          </>
+        ) : (
+          <Detail label={t("transfer.booking.price")} value={formatPrice(booking.priceAmount, booking.priceCurrency, locale)} />
+        )}
         {booking.driverName ? <Detail label={t("transfer.booking.driver")} value={booking.driverName} /> : null}
         {booking.comment ? <Detail label={t("transfer.booking.comment")} value={booking.comment} wide /> : null}
         {booking.statusReason ? <Detail label={t("transfer.booking.reason")} value={booking.statusReason} wide /> : null}
