@@ -29,7 +29,7 @@ const TelegramAccountLinkPage = lazy(() => import("../pages/TelegramAccountLinkP
 const NotificationsPage = lazy(() => import("../pages/NotificationsPage/NotificationsPage").then((module) => ({ default: module.NotificationsPage })));
 const AdminAnalyticsPage = lazy(() => import("../pages/AdminAnalyticsPage/AdminAnalyticsPage").then((module) => ({ default: module.AdminAnalyticsPage })));
 const LegalPage = lazy(() => import("../pages/LegalPage/LegalPage").then((module) => ({ default: module.LegalPage })));
-const TransferPage = lazy(() => import("../pages/TransferPage/TransferPage").then((module) => ({ default: module.TransferPage })));
+const TransferEntryPage = lazy(() => import("../pages/TransferEntryPage/TransferEntryPage").then((module) => ({ default: module.TransferEntryPage })));
 const TransferBookingsPage = lazy(() => import("../pages/TransferBookingsPage/TransferBookingsPage").then((module) => ({ default: module.TransferBookingsPage })));
 const TransferBookingDetailsPage = lazy(() => import("../pages/TransferBookingDetailsPage/TransferBookingDetailsPage").then((module) => ({ default: module.TransferBookingDetailsPage })));
 const AdminTransferBookingsPage = lazy(() => import("../pages/AdminTransferBookingsPage/AdminTransferBookingsPage").then((module) => ({ default: module.AdminTransferBookingsPage })));
@@ -57,6 +57,7 @@ export const router = createBrowserRouter([
       { path: "/privacy", element: <LegalPage kind="privacy" /> },
       { path: "/terms", element: <LegalPage kind="terms" /> },
       { path: "/cleaning", element: <ServiceAvailabilityGate service="CLEANING"><CreateOrderPage /></ServiceAvailabilityGate> },
+      { path: "/transfer", element: <ServiceAvailabilityGate service="TRANSFER"><TransferEntryPage /></ServiceAvailabilityGate> },
       {
         element: <CustomerAccessGate />,
         children: [
@@ -65,7 +66,6 @@ export const router = createBrowserRouter([
           { path: "/cleaning/orders/:id/created", element: <OrderCreatedPage /> },
           { path: "/rent/bookings", element: <RentalBookingsPage /> },
           { path: "/rent/bookings/:id", element: <RentalBookingDetailsPage /> },
-          { path: "/transfer", element: <ServiceAvailabilityGate service="TRANSFER"><TransferPage /></ServiceAvailabilityGate> },
           { path: "/transfer/bookings", element: <TransferBookingsPage /> },
           { path: "/transfer/bookings/:id", element: <TransferBookingDetailsPage /> },
           { path: "/account", element: <AccountPage /> },

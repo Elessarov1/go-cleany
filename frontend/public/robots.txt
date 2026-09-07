@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /oauth2/
+Disallow: /login/
+
+Sitemap: https://loco-place.com/sitemap.xml
+Host: loco-place.com

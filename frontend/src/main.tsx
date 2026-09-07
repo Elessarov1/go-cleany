@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app/App";
 import { bootstrap } from "./app/bootstrap";
+import { applyPublicCopyOverrides } from "./i18n/publicCopy";
 import { initializeTheme } from "./theme/theme";
 import "./styles/variables.css";
 import "./styles/global.css";
@@ -21,6 +22,7 @@ async function start() {
   }
 
   const services = await bootstrap();
+  applyPublicCopyOverrides();
   createRoot(rootElement).render(
     <StrictMode>
       <App {...services} />
