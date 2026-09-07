@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import type { CleaningType } from "../../domain/order";
 import { Icon } from "../Icon/Icon";
@@ -35,7 +36,7 @@ export function ServiceInfoDialog({
     };
   }, [onClose]);
 
-  return (
+  return createPortal(
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
       <section
         className="service-dialog"
@@ -79,6 +80,7 @@ export function ServiceInfoDialog({
           {t("common.close")}
         </button>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useId } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Icon } from "../Icon/Icon";
 
@@ -37,7 +38,7 @@ export function ConfirmationDialog({
     };
   }, [onCancel, pending]);
 
-  return (
+  return createPortal(
     <div className="modal-backdrop" role="presentation" onMouseDown={() => !pending && onCancel()}>
       <section
         className="confirmation-dialog"
@@ -63,6 +64,7 @@ export function ConfirmationDialog({
           </button>
         </div>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
