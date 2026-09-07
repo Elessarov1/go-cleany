@@ -3,6 +3,8 @@ import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 const SITE_ORIGIN = "https://loco-place.com";
+const SOCIAL_IMAGE_URL = `${SITE_ORIGIN}/og-image.png`;
+const SOCIAL_IMAGE_ALT = "Loco Place — cleaning, rental and transfer in Alanya";
 
 interface RouteMeta {
   titleKey: string;
@@ -103,6 +105,8 @@ function setDocumentMetadata(title: string, description: string): void {
   upsertMeta('meta[name="description"]', { name: "description" }, description);
   upsertMeta('meta[property="og:title"]', { property: "og:title" }, title);
   upsertMeta('meta[property="og:description"]', { property: "og:description" }, description);
+  upsertMeta('meta[name="twitter:title"]', { name: "twitter:title" }, title);
+  upsertMeta('meta[name="twitter:description"]', { name: "twitter:description" }, description);
 }
 
 export function RouteMetadata() {
@@ -123,6 +127,15 @@ export function RouteMetadata() {
     upsertMeta('meta[property="og:site_name"]', { property: "og:site_name" }, "Loco Place");
     upsertMeta('meta[property="og:type"]', { property: "og:type" }, "website");
     upsertMeta('meta[property="og:locale"]', { property: "og:locale" }, language === "ru" ? "ru_RU" : "en_US");
+    upsertMeta('meta[property="og:image"]', { property: "og:image" }, SOCIAL_IMAGE_URL);
+    upsertMeta('meta[property="og:image:secure_url"]', { property: "og:image:secure_url" }, SOCIAL_IMAGE_URL);
+    upsertMeta('meta[property="og:image:type"]', { property: "og:image:type" }, "image/png");
+    upsertMeta('meta[property="og:image:width"]', { property: "og:image:width" }, "1200");
+    upsertMeta('meta[property="og:image:height"]', { property: "og:image:height" }, "630");
+    upsertMeta('meta[property="og:image:alt"]', { property: "og:image:alt" }, SOCIAL_IMAGE_ALT);
+    upsertMeta('meta[name="twitter:card"]', { name: "twitter:card" }, "summary_large_image");
+    upsertMeta('meta[name="twitter:image"]', { name: "twitter:image" }, SOCIAL_IMAGE_URL);
+    upsertMeta('meta[name="twitter:image:alt"]', { name: "twitter:image:alt" }, SOCIAL_IMAGE_ALT);
 
     if (indexable && definition.canonicalPath) {
       const canonical = new URL(definition.canonicalPath, SITE_ORIGIN).toString();

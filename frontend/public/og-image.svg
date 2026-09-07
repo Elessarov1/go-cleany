@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
+  <title id="title">Loco Place</title>
+  <desc id="description">Cleaning, rental and transfer services in Alanya</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B2E3D"/>
+      <stop offset="1" stop-color="#123F50"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="94" y1="92" x2="278" y2="276" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#426A8A"/>
+      <stop offset="1" stop-color="#25394D"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#041820" flood-opacity="0.36"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#background)"/>
+  <circle cx="1092" cy="76" r="240" fill="#1A5365" opacity="0.34"/>
+  <circle cx="1040" cy="600" r="310" fill="#0A2632" opacity="0.38"/>
+  <path d="M0 515C214 451 353 505 543 478C757 447 869 336 1200 361V630H0Z" fill="#0A2632" opacity="0.42"/>
+
+  <g filter="url(#shadow)">
+    <rect x="88" y="88" width="196" height="196" rx="62" fill="url(#mark)"/>
+    <path d="M151 132V216C151 239 163 250 186 250H238" fill="none" stroke="#F5E6CB" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="236" cy="247" r="15" fill="#E29A5B"/>
+  </g>
+
+  <text x="337" y="143" fill="#55C4DD" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700" letter-spacing="5">ALANYA · TÜRKİYE</text>
+  <text x="329" y="244" fill="#FFF8EA" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="800" letter-spacing="-3">loco place</text>
+  <text x="92" y="390" fill="#FFF8EA" font-family="Arial, Helvetica, sans-serif" font-size="43" font-weight="700" letter-spacing="2">CLEANING · RENTAL · TRANSFER</text>
+  <text x="92" y="454" fill="#B9D1D9" font-family="Arial, Helvetica, sans-serif" font-size="30">Your local tasks, arranged.</text>
+
+  <rect x="92" y="532" width="1016" height="2" rx="1" fill="#4A8292" opacity="0.55"/>
+  <text x="92" y="580" fill="#81A7B2" font-family="Arial, Helvetica, sans-serif" font-size="24" letter-spacing="1.5">LOCO-PLACE.COM</text>
+</svg>
