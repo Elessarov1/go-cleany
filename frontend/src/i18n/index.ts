@@ -37,7 +37,7 @@ const languageTranslations = {
 
 const footerTranslations = {
   en: {
-    tagline: "Everyday services in Alanya, in one place.",
+    tagline: "Services in Alanya.",
     services: "Services",
     contacts: "Contacts",
     telegram: "Telegram",
@@ -46,7 +46,7 @@ const footerTranslations = {
     terms: "Terms of Use",
   },
   ru: {
-    tagline: "Повседневные сервисы в Аланье — в одном месте.",
+    tagline: "Сервисы в Аланье.",
     services: "Сервисы",
     contacts: "Контакты",
     telegram: "Telegram",
@@ -61,7 +61,7 @@ const legalTranslations = {
     pilotNote: "Loco Place is currently in pilot. These pages describe the current product behavior and will be updated with the operator's legal details before commercial launch.",
     privacy: {
       title: "Privacy",
-      intro: "This notice explains the main categories of data Loco Place currently uses to provide Cleaning and Rental services during the pilot.",
+      intro: "This notice explains the main categories of data Loco Place uses to provide Cleaning, Rental and Transfer services during the pilot.",
       sections: {
         first: {
           title: "Data we use",
@@ -87,7 +87,7 @@ const legalTranslations = {
       sections: {
         first: {
           title: "Using the platform",
-          text: "Loco Place lets you request Cleaning services and browse or book Rental properties where those services are enabled. Some functionality may still be marked as in test during the pilot.",
+          text: "Loco Place lets you book cleaning, browse and reserve apartments, and request airport transfers wherever the relevant service is available. Some functionality may still be marked as in test during the pilot.",
         },
         second: {
           title: "Your information",
@@ -108,7 +108,7 @@ const legalTranslations = {
     pilotNote: "Loco Place пока работает в пилотном режиме. Эти страницы описывают текущее поведение продукта и будут дополнены юридическими реквизитами оператора до коммерческого запуска.",
     privacy: {
       title: "Конфиденциальность",
-      intro: "Здесь перечислены основные категории данных, которые Loco Place сейчас использует для работы сервисов Cleaning и Rental в рамках пилота.",
+      intro: "Здесь перечислены основные категории данных, которые Loco Place использует для работы сервисов Cleaning, Rental и Transfer в рамках пилота.",
       sections: {
         first: {
           title: "Какие данные мы используем",
@@ -134,7 +134,7 @@ const legalTranslations = {
       sections: {
         first: {
           title: "Использование платформы",
-          text: "Loco Place позволяет заказывать услуги Cleaning и просматривать или бронировать объекты Rental там, где соответствующий сервис доступен. Во время пилота отдельные функции могут быть отмечены как тестовые.",
+          text: "Loco Place позволяет заказывать уборку, просматривать и бронировать квартиры, а также оформлять трансфер там, где соответствующий сервис доступен. Во время пилота отдельные функции могут быть отмечены как тестовые.",
         },
         second: {
           title: "Ваши данные",

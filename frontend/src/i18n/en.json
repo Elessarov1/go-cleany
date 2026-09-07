@@ -1,6 +1,6 @@
 {
   "app": {
-    "tagline": "A clean home, without the back-and-forth",
+    "tagline": "Services in Alanya",
     "homeLabel": "{{brand}} home",
     "navigation": {
       "label": "Primary navigation",
@@ -49,8 +49,8 @@
   },
   "create": {
     "eyebrow": "Apartment cleaning in Alanya",
-    "title": "Book a cleaner in a few taps",
-    "subtitle": "Choose what you need, see the fixed price, and let a cleaner confirm the date with you.",
+    "title": "Book cleaning",
+    "subtitle": "Choose the details and see the price instantly.",
     "area": {
       "step": "01",
       "title": "Where should we come?",
@@ -83,7 +83,7 @@
       "commentPlaceholder": "Access details, pets, or anything useful for the cleaner",
       "referralCode": "Referral code",
       "referralCodePlaceholder": "For example, GC7K9P2M4Q",
-      "referralCodeHint": "The same code works for customer invitations and partner referrals."
+      "referralCodeHint": "Use a code for a first-order discount."
     },
     "summary": {
       "title": "Your cleaning",
@@ -97,7 +97,7 @@
     "notificationAccessRequired": "Allow bot messages so we can confirm your order and send the photo report.",
     "rentalContext": {
       "title": "Cleaning for booking #{{id}}",
-      "prefilled": "The address and phone were filled from your loco-rent booking.",
+      "prefilled": "Address and phone filled from your booking.",
       "benefit": "Your personal code {{code}} applies to cleaning from {{from}} to {{to}} and replaces other discounts.",
       "notApplicable": "This benefit is unavailable or the selected date is outside the checkout-cleaning window. Check the eligible dates."
     },
@@ -133,7 +133,7 @@
   "cleaning": {
     "REGULAR": {
       "title": "Regular",
-      "description": "A fresh, tidy home for everyday comfort.",
+      "description": "For regular upkeep.",
       "included": [
         "Floors",
         "Dust and surfaces",
@@ -150,7 +150,7 @@
     },
     "DEEP": {
       "title": "Deep",
-      "description": "A more thorough clean when your home needs extra care.",
+      "description": "When you need a thorough clean.",
       "included": [
         "All regular-cleaning areas",
         "Detailed kitchen surfaces",
@@ -238,7 +238,7 @@
   "created": {
     "eyebrow": "Order sent",
     "title": "We’re finding your cleaner",
-    "text": "The cleaner will confirm the order. We will notify you in Telegram.",
+    "text": "Order sent. We will notify you after confirmation.",
     "date": "Preferred date",
     "price": "Fixed price",
     "discount": "{{amount}} discount applied",
@@ -637,7 +637,7 @@
       "targetServices": {
         "PLATFORM": "Loco Place home",
         "CLEANING": "Loco Cleaning",
-        "RENTAL": "Loco Rent",
+        "RENTAL": "Loco Rental",
         "TRANSFER": "Loco Transfer"
       }
     }
@@ -649,7 +649,7 @@
     },
     "notifications": {
       "title": "Telegram notifications about bookings",
-      "description": "Receive new booking and customer cancellation alerts for loco-rent.",
+      "description": "Receive Telegram messages about new Loco Rental bookings and customer cancellations.",
       "notLinked": "Connect Telegram to your Loco Place account to receive notifications.",
       "writeAccessMissing": "Allow bot messages in the Telegram Mini App.",
       "error": "Could not load or save your notification setting.",
@@ -800,7 +800,7 @@
   },
   "catalog": {
     "title": "Give the task to Loco",
-    "subtitle": "Loco arranges cleaning, rentals, and transfers without making you search for providers.",
+    "subtitle": "Cleaning, rentals and airport transfers in Alanya.",
     "allServices": "All services",
     "testBadge": "TEST",
     "loadError": "Could not load the available services.",
@@ -808,38 +808,38 @@
     "empty": "No services are currently available. Your existing orders and bookings remain in history.",
     "rent": {
       "title": "Rent an apartment",
-      "text": "Verified Alanya apartments for stays from one week"
+      "text": "Apartments from one week with live availability"
     },
     "cleaning": {
-      "title": "Order cleaning",
-      "text": "Clear fixed pricing and a completion photo report"
+      "title": "Book cleaning",
+      "text": "Fixed price and a photo report"
     },
     "transfer": {
       "title": "Book a transfer",
-      "text": "A fixed-price ride between Alanya and the airport"
+      "text": "Fixed price to the airport and back"
     },
     "home": {
       "sectionLabel": "Your tasks with Loco",
       "loading": "Finding what is relevant for you…",
       "loadError": "We could not load your current tasks. The services below are still available.",
       "activeTitle": "Next task",
-      "allActivity": "All activity · {{count}}",
+      "allActivity": "All tasks · {{count}}",
       "activity": "Open activity",
       "nextTitle": "What to do next",
       "repeatTitle": "Repeat",
       "transferBenefit": "{{percent}}% off one transfer linked to this rental",
       "actions": {
         "RENTAL_TRANSFER_ARRIVAL": {
-          "title": "Arrange your arrival transfer",
-          "text": "We will prepare an airport pickup for {{date}}"
+          "title": "Book an airport pickup",
+          "text": "Date and address are filled: {{date}}"
         },
         "RENTAL_TRANSFER_CHECKOUT": {
-          "title": "Arrange your checkout transfer",
-          "text": "We will prepare your airport ride for {{date}}"
+          "title": "Book a transfer to the airport",
+          "text": "Date and address are filled: {{date}}"
         },
         "RENTAL_CLEANING": {
-          "title": "Book checkout cleaning",
-          "text": "Your rental context and benefit are available for {{date}}"
+          "title": "Book cleaning before checkout",
+          "text": "Address is filled: {{date}}"
         }
       },
       "repeat": {
@@ -848,7 +848,7 @@
         "completed": "Last completed: {{date}}"
       }
     },
-    "note": "One profile, different services. Your contacts and history stay close."
+    "note": "Your contacts and history are saved."
   },
   "rental": {
     "common": {
@@ -856,12 +856,12 @@
       "perMonth": "per month"
     },
     "catalog": {
-      "title": "Apartments for life by the sea",
-      "subtitle": "From one week to several months, with clear prices and live availability.",
+      "title": "Apartments in Alanya",
+      "subtitle": "Choose an apartment and available dates.",
       "minStay": "Minimum {{count}} days",
       "longTerm": "{{percent}}% off from {{count}} days",
-      "emptyTitle": "Apartments are coming soon",
-      "emptyText": "We are preparing the first homes and will open dates after review.",
+      "emptyTitle": "No apartments available yet",
+      "emptyText": "Check back later.",
       "loadError": "We could not load the apartment catalog."
     },
     "property": {
@@ -945,13 +945,13 @@
       "comment": "Comment",
       "commentPlaceholder": "Arrival time or other useful information",
       "quoteLoading": "Calculating your stay…",
-      "selectDates": "Choose check-in and check-out dates. The server will calculate the price.",
-      "selectMonthlyStart": "Choose a start date. The server will check the full monthly period and calculate the price.",
+      "selectDates": "Choose dates to see the total price.",
+      "selectMonthlyStart": "Choose a start date and term to see the price.",
       "stay_one": "{{count}} day stay",
       "stay_other": "{{count}} days stay",
       "longTermDiscount": "{{percent}}% extended-stay discount",
       "total": "Total",
-      "confirm": "Confirm booking",
+      "confirm": "Book apartment",
       "submitting": "Booking…",
       "noPayment": "No payment is charged now. We will send confirmation after booking.",
       "errors": {
@@ -995,14 +995,14 @@
       "cancelling": "Cancelling…",
       "cancelError": "The booking could not be cancelled.",
       "loadError": "We could not find this booking.",
-      "cleaningTitle": "Need cleaning?",
-      "cleaningText": "Book the apartment cleaning through loco-cleaning. We will prefill the address and phone from your booking.",
+      "cleaningTitle": "Cleaning before checkout",
+      "cleaningText": "Address and phone are already filled.",
       "cleaningBenefit": "Checkout cleaning benefit",
       "cleaningWindow": "For cleaning from {{from}} to {{to}}",
       "cleaningFutureBenefit": "A personal cleaning benefit will appear shortly before checkout.",
       "bookCleaning": "Book cleaning",
-      "transferTitle": "Transfer for your stay",
-      "transferText": "We already know the dates and address. Choose the airport, time, and vehicle.",
+      "transferTitle": "Transfer for your trip",
+      "transferText": "Date and address are already filled.",
       "transferBenefit": "{{percent}}% off one transfer linked to this rental",
       "transferBenefitShort": "The first ride gets {{percent}}% off",
       "transferContext": {
@@ -1027,11 +1027,11 @@
     }
   },
   "transfer": {
-    "title": "Airport transfers without unnecessary calls",
-    "subtitle": "Choose the route and vehicle class. We will review the request, assign a driver, and confirm the ride.",
+    "title": "Airport transfer",
+    "subtitle": "Choose a route and vehicle — the price is fixed.",
     "loadError": "We could not load the available routes.",
-    "unavailableTitle": "Rates are not open yet",
-    "unavailableText": "The administrator is preparing routes and prices. The service will appear here after configuration.",
+    "unavailableTitle": "Transfers are temporarily unavailable",
+    "unavailableText": "Please try again later.",
     "route": { "title": "Route", "direction": "Direction", "airport": "Airport" },
     "direction": { "TO_AIRPORT": "To the airport", "FROM_AIRPORT": "From the airport" },
     "vehicle": {
@@ -1061,9 +1061,9 @@
       "payable": "Total to pay",
       "calculating": "Updating the price…",
       "quoteError": "We could not update the price.",
-      "requested": "After submission, the request will await confirmation. No online payment is charged."
+      "requested": "No online payment is required. Confirmation follows driver assignment."
     },
-    "submit": "Send request",
+    "submit": "Book transfer",
     "submitting": "Sending…",
     "submitError": "We could not create the request. Check the details and try again.",
     "benefitUnavailable": "The benefit is no longer available or its conditions changed.",
@@ -1121,9 +1121,9 @@
   },
   "account": {
     "title": "Account",
-    "subtitle": "Manage sign-in methods and optional notification channels.",
+    "subtitle": "Sign-in methods and notifications.",
     "activityTitle": "Your Loco Place activity",
-    "activityText": "Cleaning, rentals and transfers — active tasks and past activity in one place.",
+    "activityText": "All your tasks in one place.",
     "connected": "Connected",
     "notConnected": "Not connected",
     "telegramBenefit": "Receive Telegram notifications and use the same account in the Mini App.",
@@ -1145,20 +1145,20 @@
     "linkSuccessNoAccess": "Accounts are linked, but Telegram notifications are not allowed.",
     "linkInvalid": "This link is invalid, already used or expired. Create a new link in your web account.",
     "nudgeTitle": "Receive important Telegram notifications",
-    "nudgeText": "Connect Telegram to receive order, booking and report-ready updates.",
+    "nudgeText": "Get order updates in Telegram.",
     "notNow": "Not now"
   },
   "customerHub": {
     "label": "Activity and notifications",
-    "title": "My activity",
-    "subtitle": "Active tasks, past activity and important updates — all in one place.",
+    "title": "My tasks",
+    "subtitle": "History and important updates.",
     "activity": "Activity",
     "notifications": "Notifications",
     "unread": "Unread notifications: {{count}}"
   },
   "activity": {
     "title": "Activity",
-    "subtitle": "All your active tasks and past Loco Place activity in one place.",
+    "subtitle": "Current and completed tasks.",
     "activeTitle": "Active and upcoming",
     "historyTitle": "History",
     "activeEmpty": "You have no active or upcoming tasks right now.",
@@ -1178,11 +1178,11 @@
   },
   "notifications": {
     "title": "Notifications",
-    "subtitle": "Important updates about your orders, bookings and benefits.",
+    "subtitle": "Confirmations, status changes and reminders.",
     "readAll": "Mark all as read",
     "unread": "Unread notification",
     "emptyTitle": "No notifications yet",
-    "emptyText": "Status changes and available benefits will appear here.",
+    "emptyText": "Important updates will appear here.",
     "pagination": "Notification pages",
     "next": "Next",
     "types": {
@@ -1225,19 +1225,19 @@
     },
     "customer": {
       "title": "Loco support",
-      "subtitle": "If something is wrong, tell us here — the task context is already attached.",
+      "subtitle": "Describe the problem — order details are already attached.",
       "error": "Support information could not be loaded.",
       "caseTitle": "Support case #{{id}}",
       "resolution": "Resolution",
       "feedbackTitle": "How did it go?",
-      "feedbackText": "A quick answer helps us keep the service reliable.",
+      "feedbackText": "A quick answer helps improve the service.",
       "good": "Everything was good",
       "problem": "There was a problem",
       "sendFeedback": "Send feedback",
       "feedbackSaved": "Thank you — your feedback has been saved.",
       "needHelp": "Need help",
       "needMoreHelp": "Need more help",
-      "openCase": "Open support case",
+      "openCase": "Report a problem",
       "category": "What happened?",
       "comment": "Comment (optional)",
       "sending": "Sending…"
@@ -1274,20 +1274,35 @@
     }
   },
   "titles": {
-    "fallback": "Loco Place",
-    "description": "Loco Place — apartment rentals and cleaning services in Alanya.",
-    "home": "Loco Place — apartment rentals and cleaning in Alanya",
-    "rent": "Loco Rent — apartment rentals in Alanya | Loco Place",
-    "rentPage": "Apartment rentals | Loco Rent",
-    "cleaning": "Loco Cleaning — apartment cleaning in Alanya | Loco Place",
-    "cleaningPage": "Orders and cleaning | Loco Cleaning",
-    "transfer": "Loco Transfer — Alanya airport transfers | Loco Place",
-    "transferPage": "Requests and rides | Loco Transfer",
+    "fallback": "Loco Place — services in Alanya",
+    "description": "Loco Place helps you book apartment cleaning, rent a home and arrange airport transfers in Alanya.",
+    "home": "Cleaning, Rentals & Airport Transfers in Alanya | Loco Place",
+    "homeDescription": "Book apartment cleaning, rent a home or arrange a transfer between Alanya and the airports. See prices and availability before you order.",
+    "cleaning": "Apartment Cleaning in Alanya | Loco Cleaning",
+    "cleaningDescription": "Book regular or deep apartment cleaning in Mahmutlar, Kargıcak or Kestel. Fixed pricing, cleaner confirmation and a completion photo report.",
+    "cleaningPage": "Cleaning Order | Loco Cleaning",
+    "cleaningPageDescription": "Manage your apartment-cleaning order in Alanya.",
+    "rent": "Apartment Rentals in Alanya from One Week | Loco Rental",
+    "rentDescription": "Apartments in Alanya for stays from one week to several months. Check available dates and see the full price before booking.",
+    "rentPage": "Apartment in Alanya | Loco Rental",
+    "rentPageDescription": "View photos, details, available dates and the rental price for an apartment in Alanya.",
+    "rentalPropertyTitle": "{{title}} — apartment in {{area}}, Alanya | Loco Rental",
+    "rentalPropertyDescription": "{{title}} in {{area}}, Alanya: up to {{guests}} guests, {{areaSqm}} m², from {{price}} {{currency}} per day. Available dates are shown in the calendar.",
+    "transfer": "Alanya Airport Transfers | Loco Transfer",
+    "transferDescription": "Book transfers between Alanya and Antalya or Gazipaşa airports. Choose a vehicle, see the fixed price and receive driver confirmation.",
+    "transferPage": "Transfer Request | Loco Transfer",
+    "transferPageDescription": "Manage your transfer request between Alanya and the airport.",
     "account": "Account | Loco Place",
-    "activity": "Activity | Loco Place",
+    "accountDescription": "Manage your Loco Place account and notification channels.",
+    "activity": "My Tasks | Loco Place",
+    "activityDescription": "Your cleaning orders, apartment bookings and transfers in Loco Place.",
     "notifications": "Notifications | Loco Place",
+    "notificationsDescription": "Confirmations, status changes and reminders for your Loco Place tasks.",
     "admin": "Admin | Loco Place",
-    "adminPage": "Admin section | Loco Place"
+    "adminPage": "Admin Section | Loco Place",
+    "privateDescription": "A protected Loco Place account page.",
+    "privacyDescription": "How Loco Place uses and retains customer data during the pilot period.",
+    "termsDescription": "Terms for using Loco Place services during the pilot period."
   },
   "notFound": {
     "title": "Page not found",
