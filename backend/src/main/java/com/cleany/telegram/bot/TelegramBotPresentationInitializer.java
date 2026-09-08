@@ -21,17 +21,17 @@ public class TelegramBotPresentationInitializer {
     private static final int MAX_ATTEMPTS = 3;
 
     private static final String DESCRIPTION_RU = """
-            Поручите задачу Loco Place: уборка, аренда квартир и трансфер в Аланье. \
+            Поручите задачу Loco Place: аренда квартир, трансфер и уборка в Аланье. \
             Откройте приложение, чтобы выбрать сервис.
             """.strip();
     private static final String DESCRIPTION_EN = """
-            Delegate a task to Loco Place: cleaning, apartment rentals and airport transfers in Alanya. \
+            Delegate a task to Loco Place: apartment rentals, airport transfers and cleaning in Alanya. \
             Open the app to choose a service.
             """.strip();
     private static final String SHORT_DESCRIPTION_RU =
-            "Loco Place — уборка, аренда квартир и трансфер в Аланье.";
+            "Loco Place — аренда квартир, трансфер и уборка в Аланье.";
     private static final String SHORT_DESCRIPTION_EN =
-            "Loco Place — cleaning, apartment rentals and airport transfers in Alanya.";
+            "Loco Place — apartment rentals, airport transfers and cleaning in Alanya.";
 
     private final TelegramBotClient botClient;
     private final PublicApplicationProperties publicApplicationProperties;

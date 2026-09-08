@@ -18,7 +18,7 @@ Goal:
 
 ### Unified history
 
-A customer has a coherent Activity screen at `/account/activity` for owned Cleaning, Rental and Transfer transactions without merging their domain models.
+A customer has a coherent Activity screen at `/account/activity` for owned Rental, Transfer and Cleaning transactions without merging their domain models.
 
 `GET /api/v1/account/activity` resolves `CustomerAccount.id` from the authenticated identity and composes the response from the three vertical repositories at request time. It returns active/upcoming items separately from terminal history, preserves price/currency snapshots and links each item to its vertical-owned detail page.
 
@@ -122,7 +122,7 @@ Avoid an advertising feed, recommendation engine or client-calculated eligibilit
 
 ### Support entry point
 
-Every owned Cleaning, Rental and Transfer detail page now provides the shared "Need help" panel with source context already attached. It works for every transaction status and independently of current service availability. The backend verifies source ownership through the vertical repository and exposes the latest case and resolution in the originating transaction.
+Every owned Rental, Transfer and Cleaning detail page now provides the shared "Need help" panel with source context already attached. It works for every transaction status and independently of current service availability. The backend verifies source ownership through the vertical repository and exposes the latest case and resolution in the originating transaction.
 
 The platform support queue gives persisted administrators one oldest-first operational inbox while preserving vertical aggregates and vertical admin detail pages. See [support.md](support.md).
 

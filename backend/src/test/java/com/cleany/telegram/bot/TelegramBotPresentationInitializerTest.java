@@ -34,8 +34,14 @@ class TelegramBotPresentationInitializerTest {
         initializer.configureWithRetry();
 
         Mockito.verify(botClient).setName("Loco Place", null);
-        Mockito.verify(botClient).setDescription(Mockito.contains("уборка"), Mockito.isNull());
-        Mockito.verify(botClient).setDescription(Mockito.contains("cleaning"), Mockito.eq("en"));
+        Mockito.verify(botClient).setDescription(
+                Mockito.contains("аренда квартир, трансфер и уборка"),
+                Mockito.isNull()
+        );
+        Mockito.verify(botClient).setDescription(
+                Mockito.contains("apartment rentals, airport transfers and cleaning"),
+                Mockito.eq("en")
+        );
         Mockito.verify(botClient).setShortDescription(Mockito.contains("Аланье"), Mockito.isNull());
         Mockito.verify(botClient).setShortDescription(Mockito.contains("Alanya"), Mockito.eq("en"));
         Mockito.verify(botClient).setDefaultMenuButton("Loco Place", "https://loco-place.com/");

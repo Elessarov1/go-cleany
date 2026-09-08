@@ -22,7 +22,7 @@ Do not make the customer discover which provider owns the problem.
 
 ## Implemented unified entry point
 
-Every owned Cleaning/Rental/Transfer detail page exposes the shared `TransactionCarePanel`. The panel attaches the originating transaction without asking the customer to identify it again, and remains available for every transaction status even when the service is `IN_TEST` or `DISABLED`.
+Every owned Rental/Transfer/Cleaning detail page exposes the shared `TransactionCarePanel`. The panel attaches the originating transaction without asking the customer to identify it again, and remains available for every transaction status even when the service is `IN_TEST` or `DISABLED`.
 
 General questions and problems that prevent use of an authenticated transaction flow can be sent to the official support address:
 
@@ -61,7 +61,7 @@ BOOKING_PROBLEM
 OTHER
 ```
 
-The backend resolves the polymorphic reference through the corresponding Cleaning, Rental or Transfer repository and verifies `CustomerAccount.id` ownership. Missing and foreign sources both return `404`. The reference is a platform triage/read boundary, not a universal order aggregate.
+The backend resolves the polymorphic reference through the corresponding Rental, Transfer or Cleaning repository and verifies `CustomerAccount.id` ownership. Missing and foreign sources both return `404`. The reference is a platform triage/read boundary, not a universal order aggregate.
 
 At most one `OPEN` case exists for a customer/source tuple. Repeated opening returns that case; after `RESOLVED`, a new case may be opened. Resolution is final and requires a non-empty comment. Database constraints and a partial unique index reinforce the application rules.
 

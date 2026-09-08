@@ -55,9 +55,9 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
                 update platform_service_state
                    set status = 'ENABLED',
                        display_order = case service
-                           when 'CLEANING' then 10
-                           when 'RENTAL' then 20
-                           when 'TRANSFER' then 30
+                           when 'RENTAL' then 10
+                           when 'TRANSFER' then 20
+                           when 'CLEANING' then 30
                            else 100
                        end,
                        updated_at = current_timestamp,
@@ -87,6 +87,16 @@ class PlatformServiceAccessIntegrationTest extends BaseIntegrationTest {
                         states.stream()
                                 .map(PlatformServiceState::getDisplayOrder)
                                 .sorted()
+                                .toList()
+                ),
+                () -> Assertions.assertEquals(
+                        java.util.List.of(
+                                PlatformService.RENTAL,
+                                PlatformService.TRANSFER,
+                                PlatformService.CLEANING
+                        ),
+                        accessService.currentCustomerCatalog().stream()
+                                .map(PlatformServiceStateResponse::service)
                                 .toList()
                 )
         );

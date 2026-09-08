@@ -43,7 +43,7 @@ export function AdminSupportCasesPage() {
       </header>
       <div className="admin-support-filters">
         <label><span>{t("support.admin.statusFilter")}</span><select value={status} onChange={(event) => { setStatus(event.target.value as StatusFilter); setPage(0); }}><option value="OPEN">{t("support.status.OPEN")}</option><option value="RESOLVED">{t("support.status.RESOLVED")}</option><option value="ALL">{t("support.admin.all")}</option></select></label>
-        <label><span>{t("support.admin.serviceFilter")}</span><select value={service} onChange={(event) => { setService(event.target.value as ServiceFilter); setPage(0); }}><option value="ALL">{t("support.admin.all")}</option>{(["CLEANING", "RENTAL", "TRANSFER"] as PlatformService[]).map((value) => <option key={value} value={value}>{t(`support.service.${value}`)}</option>)}</select></label>
+        <label><span>{t("support.admin.serviceFilter")}</span><select value={service} onChange={(event) => { setService(event.target.value as ServiceFilter); setPage(0); }}><option value="ALL">{t("support.admin.all")}</option>{(["RENTAL", "TRANSFER", "CLEANING"] as PlatformService[]).map((value) => <option key={value} value={value}>{t(`support.service.${value}`)}</option>)}</select></label>
       </div>
       {!result ? <LoadingState /> : result.content.length === 0 ? (
         <section className="admin-support-empty"><Icon name="check" size={28} /><h2>{t("support.admin.emptyTitle")}</h2><p>{t("support.admin.emptyText")}</p></section>

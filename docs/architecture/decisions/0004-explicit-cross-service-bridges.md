@@ -10,7 +10,7 @@ updated: 2026-08-30
 
 ## Decision
 
-Cleaning, Rental, Transfer and future verticals keep their own aggregates. Cross-service behavior uses explicit bridge/application/read models.
+Rental, Transfer, Cleaning and future verticals keep their own aggregates. Cross-service behavior uses explicit bridge/application/read models.
 
 ## Existing example
 

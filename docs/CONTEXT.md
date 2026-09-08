@@ -28,12 +28,13 @@ The customer delegates a task; Loco owns the coordination needed to get to the o
 
 ```text
 Loco Place
-├── Loco Cleaning  — apartment cleaning
 ├── Loco Rental    — apartment rental
-└── Loco Transfer  — scheduled fixed-price airport transfer
+├── Loco Transfer  — scheduled fixed-price airport transfer
+└── Loco Cleaning  — apartment cleaning
 ```
 
 All three are implemented. Do not treat Transfer as a future/planned module.
+Customer-facing service listings use the priority Rental → Transfer → Cleaning. Technical identifiers and domain ownership remain unchanged.
 
 Technical names intentionally remain stable:
 
@@ -137,7 +138,7 @@ Architecture: one modular monolith.
 
 Shared platform concerns include customer identity, authentication, service availability/catalog, notifications, communication, media, analytics and shared admin shell.
 
-Vertical-owned concerns remain inside Cleaning, Rental and Transfer.
+Vertical-owned concerns remain inside Rental, Transfer and Cleaning.
 
 Do not introduce microservices, Kafka, workflow engines, S3/MinIO or another database without a concrete requirement.
 
@@ -156,7 +157,7 @@ The same business backend is used across channels. Channel-specific behavior bel
 
 The UI should progressively use known context to reduce friction. New users provide required data; returning users get safe prefill; cross-service flows inherit relevant source context; mature flows can expose an explainable next action.
 
-Unified customer Activity is implemented at `/account/activity`. Its API composes customer-owned Cleaning, Rental and Transfer data at request time into active/upcoming and terminal-history sections while keeping each vertical aggregate and detail workflow independent. Activity and `/notifications` form one visually unified customer section with persistent tabs while remaining separate read models and routes. The shared customer navigation uses Activity as its stable history destination; legacy vertical list routes remain available.
+Unified customer Activity is implemented at `/account/activity`. Its API composes customer-owned Rental, Transfer and Cleaning data at request time into active/upcoming and terminal-history sections while keeping each vertical aggregate and detail workflow independent. Activity and `/notifications` form one visually unified customer section with persistent tabs while remaining separate read models and routes. The shared customer navigation uses Activity as its stable history destination; legacy vertical list routes remain available.
 
 Same-service repeat is implemented for owned completed Cleaning and Transfer transactions. Their detail pages open safe prefilled forms; the backend rechecks ownership, completed status, service availability and current business configuration at both prefill and creation. Only explicitly reusable fields are copied, current account phone is used, and new scheduling/current price/incentives/assignment/status are never inherited. Typed self-source links preserve attribution without a universal transaction model.
 
@@ -172,7 +173,7 @@ bridge remains separate from `RentalCleaningBenefit`; no generic benefit model i
 
 The platform home at `/` is contextual for authenticated returning customers and stays a plain catalog for guests/new customers. `GET /api/v1/account/home` composes owned Activity, the nearest currently actionable Rental cross-service context and the latest eligible Cleaning/Transfer repeat without persistence. It exposes no `customerId`, never shows `AVAILABLE_LATER` as a home action, suppresses duplicate target services and continues to show owned active work when a vertical is unavailable for new customer flows. The catalog and personalized context load independently.
 
-Unified Support & Feedback is implemented without modifying vertical aggregates. Every owned Cleaning, Rental and Transfer detail page embeds the shared panel for opening a categorized case in any source status; completed sources additionally accept one immutable `GOOD` or `PROBLEM` feedback. Negative feedback atomically opens or reuses the single open case for that source. Customer ownership is resolved through the vertical repository and unavailable services do not hide support.
+Unified Support & Feedback is implemented without modifying vertical aggregates. Every owned Rental, Transfer and Cleaning detail page embeds the shared panel for opening a categorized case in any source status; completed sources additionally accept one immutable `GOOD` or `PROBLEM` feedback. Negative feedback atomically opens or reuses the single open case for that source. Customer ownership is resolved through the vertical repository and unavailable services do not hide support.
 
 General support is reachable at `hello@loco-place.com`. Standalone web exposes it in the public footer; the public `/support` page explains when to use the transaction-attached support flow and is linked from Telegram Mini App navigation. The Telegram bot is a customer-facing Loco Place entry point: `/start`, `/help`, its web-app buttons and its persistent menu open the application or support page. Driver links and provider/admin commands retain routing priority and remain operational interfaces rather than customer navigation.
 
@@ -284,7 +285,7 @@ See [product/transfer.md](product/transfer.md) and [loco-transfer.md](loco-trans
 
 ## Analytics currently implemented
 
-Platform first-touch acquisition is attached to `CustomerAccount.id` and shared by Cleaning, Rental and Transfer.
+Platform first-touch acquisition is attached to `CustomerAccount.id` and shared by Rental, Transfer and Cleaning.
 
 Stable campaign entry:
 
@@ -292,7 +293,7 @@ Stable campaign entry:
 /a/<publicCode>
 ```
 
-Admin analytics supports ALL/CLEANING/RENTAL/TRANSFER and calculates new/active customer acquisition, average checks from completed price snapshots without mixing currencies, and Business Health metrics from completed Cleaning, Rental and Transfer tasks.
+Admin analytics supports ALL/RENTAL/TRANSFER/CLEANING and calculates new/active customer acquisition, average checks from completed price snapshots without mixing currencies, and Business Health metrics from completed Rental, Transfer and Cleaning tasks.
 
 Retention uses first-completed-task mature 30/90-day cohorts, cumulative mature second-order conversion and median time to the second task. Initial cross-service funnels count only the immediate next completed task. Empty mature cohorts are reported as insufficient data, not zero retention.
 

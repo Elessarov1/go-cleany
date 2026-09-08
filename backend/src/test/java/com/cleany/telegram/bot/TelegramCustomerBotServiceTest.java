@@ -38,6 +38,7 @@ class TelegramCustomerBotServiceTest {
 
         Assertions.assertAll(
                 () -> Assertions.assertTrue(text.getValue().startsWith("Добро пожаловать в Loco Place")),
+                () -> Assertions.assertTrue(text.getValue().contains("Аренда квартир, трансфер и уборка")),
                 () -> Assertions.assertTrue(text.getValue().contains("hello@loco-place.com")),
                 () -> Assertions.assertEquals(2, keyboard.getValue().rows().size()),
                 () -> Assertions.assertEquals(
@@ -55,11 +56,18 @@ class TelegramCustomerBotServiceTest {
     void startCommandWithUnknownParameter_englishWelcomeSent() {
         Assertions.assertTrue(service.handleIfSupported(update(101L, "en-US", "/start unknown_parameter")));
 
+        ArgumentCaptor<String> text = ArgumentCaptor.forClass(String.class);
         Mockito.verify(botClient).sendMessage(
                 Mockito.eq(101L),
-                Mockito.startsWith("Welcome to Loco Place"),
+                text.capture(),
                 Mockito.argThat(keyboard -> "Open Loco Place".equals(
                         keyboard.rows().getFirst().getFirst().text()
+                ))
+        );
+        Assertions.assertAll(
+                () -> Assertions.assertTrue(text.getValue().startsWith("Welcome to Loco Place")),
+                () -> Assertions.assertTrue(text.getValue().contains(
+                        "Apartment rentals, airport transfers and cleaning"
                 ))
         );
     }

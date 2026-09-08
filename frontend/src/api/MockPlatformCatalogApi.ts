@@ -8,9 +8,9 @@ import type { PlatformCatalogApi } from "./PlatformCatalogApi";
 export class MockPlatformCatalogApi implements PlatformCatalogApi {
   private readonly adminCustomer: boolean;
   private states: PlatformServiceState[] = [
-    state("CLEANING", 10),
-    state("RENTAL", 20),
-    state("TRANSFER", 30),
+    state("RENTAL", 10),
+    state("TRANSFER", 20),
+    state("CLEANING", 30),
   ];
 
   constructor(scenario = new URLSearchParams(window.location.search).get("scenario")) {

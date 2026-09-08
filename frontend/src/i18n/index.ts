@@ -61,7 +61,7 @@ const legalTranslations = {
     pilotNote: "Loco Place is currently in pilot. These pages describe the current product behavior and will be updated with the operator's legal details before commercial launch.",
     privacy: {
       title: "Privacy",
-      intro: "This notice explains the main categories of data Loco Place uses to provide Cleaning, Rental and Transfer services during the pilot.",
+      intro: "This notice explains the main categories of data Loco Place uses to provide Rental, Transfer and Cleaning services during the pilot.",
       sections: {
         first: {
           title: "Data we use",
@@ -108,7 +108,7 @@ const legalTranslations = {
     pilotNote: "Loco Place пока работает в пилотном режиме. Эти страницы описывают текущее поведение продукта и будут дополнены юридическими реквизитами оператора до коммерческого запуска.",
     privacy: {
       title: "Конфиденциальность",
-      intro: "Здесь перечислены основные категории данных, которые Loco Place использует для работы сервисов Cleaning, Rental и Transfer в рамках пилота.",
+      intro: "Здесь перечислены основные категории данных, которые Loco Place использует для работы сервисов Rental, Transfer и Cleaning в рамках пилота.",
       sections: {
         first: {
           title: "Какие данные мы используем",

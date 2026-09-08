@@ -80,12 +80,13 @@ export function AppShell() {
   const catalog = location.pathname === "/" || location.pathname === "/admin";
   const publicPlatformPage = location.pathname === "/privacy" || location.pathname === "/terms";
   const supportPage = location.pathname === "/support";
+  const accountPage = location.pathname === "/account" || location.pathname.startsWith("/account/");
   const activity = location.pathname === "/account/activity";
   const notifications = location.pathname === "/notifications";
   const customerHub = activity || notifications;
   const adminSupport = location.pathname.startsWith("/admin/support");
-  const neutralCustomer = customerHub || publicPlatformPage || supportPage || adminSupport;
-  const globalCustomerNavigation = catalog || customerHub || supportPage;
+  const neutralCustomer = accountPage || customerHub || publicPlatformPage || supportPage || adminSupport;
+  const globalCustomerNavigation = catalog || accountPage || customerHub || supportPage;
   const customerServiceHome = location.pathname === "/cleaning"
     || location.pathname === "/rent"
     || location.pathname === "/rent/properties"

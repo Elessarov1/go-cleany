@@ -90,7 +90,7 @@ export function AdminAnalyticsPage() {
         <label className="admin-analytics__service">
           <span>{t("analytics.filters.service")}</span>
           <select value={service} onChange={(event) => setService(event.target.value as AnalyticsService)}>
-            {(["ALL", "CLEANING", "RENTAL", "TRANSFER"] as AnalyticsService[]).map((item) => (
+            {(["ALL", "RENTAL", "TRANSFER", "CLEANING"] as AnalyticsService[]).map((item) => (
               <option key={item} value={item}>{t(`analytics.services.${item}`)}</option>
             ))}
           </select>

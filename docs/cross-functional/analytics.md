@@ -82,7 +82,7 @@ active customers with 2+ completed services
 cross-service customer rate
 ```
 
-Only `COMPLETED` Cleaning, Rental and Transfer transactions participate. The completed-task and active-customer counts use the selected service. Lifetime depth for those active customers can span all services, starts no earlier than `COMMERCIAL_LAUNCH_AT` and is observed only through the selected period end.
+Only `COMPLETED` Rental, Transfer and Cleaning transactions participate. The completed-task and active-customer counts use the selected service. Lifetime depth for those active customers can span all services, starts no earlier than `COMMERCIAL_LAUNCH_AT` and is observed only through the selected period end.
 
 Average checks remain grouped by both service and currency.
 

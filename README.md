@@ -197,7 +197,7 @@ Main administration routes:
 - The customer must not become the dispatcher after placing an order.
 - Known safe customer context should reduce actions in later orders.
 - Prices, discounts, identity, ownership, availability and lifecycle transitions are backend-authoritative.
-- Cleaning, Rental and Transfer remain separate business aggregates.
+- Rental, Transfer and Cleaning remain separate business aggregates.
 - Cross-service features use explicit bridges/read models rather than a universal transaction model.
 - Performance work starts from a measured regression or real telemetry.
 - Do not introduce microservices, Kafka, S3/MinIO, another database or a generic benefit engine without a concrete measured need.

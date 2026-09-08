@@ -1,6 +1,6 @@
 # Loco Place acquisition analytics
 
-Analytics is a platform capability shared by Loco Cleaning, Loco Rental and Loco Transfer. Canonical customer
+Analytics is a platform capability shared by Loco Rental, Loco Transfer and Loco Cleaning. Canonical customer
 identity is `CustomerAccount.id`; Telegram and standalone web are only capture/authentication adapters.
 
 ## First-touch rules
@@ -10,7 +10,7 @@ At most one `customer_acquisition` row exists per canonical customer. Priority i
 1. explicit active campaign link;
 2. existing partner code;
 3. existing customer referral code;
-4. organic fallback on the first Cleaning order, Rental booking or Transfer request.
+4. organic fallback on the first Rental booking, Transfer request or Cleaning order.
 
 A later campaign or code never overwrites first touch. Account merge keeps the earlier of the two
 attributions. Existing customers are deterministically backfilled; historical QR sources are not guessed.

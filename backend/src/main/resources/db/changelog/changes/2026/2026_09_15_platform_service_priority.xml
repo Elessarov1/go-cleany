@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260915-01" author="loco-place">
+        <comment>Prioritize Rental, then Transfer, then Cleaning in the customer service catalog.</comment>
+
+        <sql dbms="postgresql"><![CDATA[
+            update platform_service_state
+               set display_order = case service
+                   when 'RENTAL' then 10
+                   when 'TRANSFER' then 20
+                   when 'CLEANING' then 30
+                   else display_order
+               end,
+                   updated_at = current_timestamp,
+                   updated_by_customer_id = null,
+                   version = version + 1
+             where service in ('RENTAL', 'TRANSFER', 'CLEANING');
+        ]]></sql>
+
+        <rollback>
+            <sql dbms="postgresql"><![CDATA[
+                update platform_service_state
+                   set display_order = case service
+                       when 'CLEANING' then 10
+                       when 'RENTAL' then 20
+                       when 'TRANSFER' then 30
+                       else display_order
+                   end,
+                       updated_at = current_timestamp,
+                       updated_by_customer_id = null,
+                       version = version + 1
+                 where service in ('RENTAL', 'TRANSFER', 'CLEANING');
+            ]]></sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
   <title id="title">Loco Place</title>
-  <desc id="description">Cleaning, rental and transfer services in Alanya</desc>
+  <desc id="description">Rental, transfer and cleaning services in Alanya</desc>
   <defs>
     <linearGradient id="background" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
       <stop stop-color="#0B2E3D"/>
@@ -28,7 +28,7 @@
 
   <text x="337" y="143" fill="#55C4DD" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700" letter-spacing="5">ALANYA · TÜRKİYE</text>
   <text x="329" y="244" fill="#FFF8EA" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="800" letter-spacing="-3">loco place</text>
-  <text x="92" y="390" fill="#FFF8EA" font-family="Arial, Helvetica, sans-serif" font-size="43" font-weight="700" letter-spacing="2">CLEANING · RENTAL · TRANSFER</text>
+  <text x="92" y="390" fill="#FFF8EA" font-family="Arial, Helvetica, sans-serif" font-size="43" font-weight="700" letter-spacing="2">RENTAL · TRANSFER · CLEANING</text>
   <text x="92" y="454" fill="#B9D1D9" font-family="Arial, Helvetica, sans-serif" font-size="30">Your local tasks, arranged.</text>
 
   <rect x="92" y="532" width="1016" height="2" rx="1" fill="#4A8292" opacity="0.55"/>

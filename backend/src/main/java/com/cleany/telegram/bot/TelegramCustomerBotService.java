@@ -91,7 +91,7 @@ public class TelegramCustomerBotService {
             return """
                     Welcome to Loco Place 👋
 
-                    Cleaning, apartment rentals and airport transfers in Alanya — all in one app.
+                    Apartment rentals, airport transfers and cleaning in Alanya — all in one app.
                     Choose a service or view your current tasks.
 
                     For general questions: %s
@@ -100,7 +100,7 @@ public class TelegramCustomerBotService {
         return """
                 Добро пожаловать в Loco Place 👋
 
-                Уборка, аренда квартир и трансфер в Аланье — в одном приложении.
+                Аренда квартир, трансфер и уборка в Аланье — в одном приложении.
                 Выберите услугу или посмотрите свои текущие задачи.
 
                 По общим вопросам: %s

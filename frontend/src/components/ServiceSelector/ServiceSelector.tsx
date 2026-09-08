@@ -23,7 +23,7 @@ const SERVICES: Record<PlatformService, ServiceOption> = {
   TRANSFER: { path: "/transfer", service: "transfer", icon: "car", titleKey: "catalog.transfer.title" },
 };
 
-const DEFAULT_ORDER: PlatformService[] = ["CLEANING", "RENTAL", "TRANSFER"];
+const DEFAULT_ORDER: PlatformService[] = ["RENTAL", "TRANSFER", "CLEANING"];
 
 export function ServiceSelector({ compact = false }: ServiceSelectorProps) {
   const { t } = useTranslation();

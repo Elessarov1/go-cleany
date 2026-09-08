@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 
 const SITE_ORIGIN = "https://loco-place.com";
 const SOCIAL_IMAGE_URL = `${SITE_ORIGIN}/og-image.png`;
-const SOCIAL_IMAGE_ALT = "Loco Place — cleaning, rental and transfer in Alanya";
+const SOCIAL_IMAGE_ALT = "Loco Place — rental, transfer and cleaning in Alanya";
 
 interface RouteMeta {
   titleKey: string;

@@ -801,7 +801,7 @@
   },
   "catalog": {
     "title": "Give the task to Loco",
-    "subtitle": "Cleaning, rentals and airport transfers in Alanya.",
+    "subtitle": "Apartment rentals, airport transfers and cleaning in Alanya.",
     "allServices": "All services",
     "testBadge": "TEST",
     "loadError": "Could not load the available services.",
@@ -1285,9 +1285,9 @@
   },
   "titles": {
     "fallback": "Loco Place — services in Alanya",
-    "description": "Loco Place helps you book apartment cleaning, rent a home and arrange airport transfers in Alanya.",
-    "home": "Cleaning, Rentals & Airport Transfers in Alanya | Loco Place",
-    "homeDescription": "Book apartment cleaning, rent a home or arrange a transfer between Alanya and the airports. See prices and availability before you order.",
+    "description": "Loco Place helps you rent a home, arrange airport transfers and book apartment cleaning in Alanya.",
+    "home": "Apartment Rentals, Airport Transfers & Cleaning in Alanya | Loco Place",
+    "homeDescription": "Rent a home, arrange a transfer between Alanya and the airports or book apartment cleaning. See prices and availability before you order.",
     "cleaning": "Apartment Cleaning in Alanya | Loco Cleaning",
     "cleaningDescription": "Book regular or deep apartment cleaning in Mahmutlar, Kargıcak or Kestel. Fixed pricing, cleaner confirmation and a completion photo report.",
     "cleaningPage": "Cleaning Order | Loco Cleaning",
