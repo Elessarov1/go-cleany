@@ -15,6 +15,7 @@
       "settings": "Настройки",
       "analytics": "Аналитика",
       "support": "Поддержка",
+      "help": "Помощь",
       "admin": "Админ",
       "main": "Главная",
       "serviceHome": "Главная сервиса",
@@ -1127,6 +1128,15 @@
       "cancel": "Отменить заявку"
     }
   },
+  "supportPage": {
+    "title": "Помощь и поддержка",
+    "subtitle": "Если что-то пошло не так, Loco поможет решить вопрос.",
+    "transactionTitle": "Вопрос по заказу или бронированию",
+    "transactionText": "Откройте нужную задачу в истории и отправьте обращение из её карточки. Так нам не придётся снова спрашивать детали.",
+    "activityAction": "Мои задачи",
+    "generalTitle": "Другой вопрос",
+    "generalText": "Напишите в официальную поддержку Loco Place:"
+  },
   "account": {
     "title": "Аккаунт",
     "subtitle": "Способы входа и уведомления.",
@@ -1306,6 +1316,8 @@
     "activityDescription": "История уборок, бронирований квартир и трансферов в вашем аккаунте Loco Place.",
     "notifications": "Уведомления | Loco Place",
     "notificationsDescription": "Подтверждения, изменения статусов и напоминания по вашим задачам в Loco Place.",
+    "support": "Помощь и поддержка | Loco Place",
+    "supportDescription": "Официальные способы обратиться в поддержку Loco Place по заказам, бронированиям и общим вопросам.",
     "admin": "Админка | Loco Place",
     "adminPage": "Раздел админки | Loco Place",
     "privateDescription": "Защищённая страница аккаунта Loco Place.",

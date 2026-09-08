@@ -11,10 +11,12 @@ import lombok.RequiredArgsConstructor;
 public class TelegramBotUpdateRouter {
 
     private final TransferDriverBotService transferDriverBotService;
+    private final TelegramCustomerBotService customerBotService;
     private final TelegramCleanerBotService cleanerBotService;
 
     public void handle(TelegramUpdate update) {
-        if (!transferDriverBotService.handleIfSupported(update)) {
+        if (!transferDriverBotService.handleIfSupported(update)
+                && !customerBotService.handleIfSupported(update)) {
             cleanerBotService.handle(update);
         }
     }

@@ -19,11 +19,33 @@ public interface TelegramBotClient {
 
     void answerCallbackQuery(String callbackQueryId, String text, boolean showAlert);
 
+    void setName(String name, String languageCode);
+
+    void setDescription(String description, String languageCode);
+
+    void setShortDescription(String shortDescription, String languageCode);
+
+    void setCommands(List<BotCommand> commands, String languageCode);
+
+    void setDefaultMenuButton(String text, String webAppUrl);
+
     default void sendMessage(long chatId, String text) {
         sendMessage(chatId, text, InlineKeyboard.empty());
     }
 
-    record InlineButton(String text, String callbackData, String url) {
+    record BotCommand(String command, String description) {
+
+        public BotCommand {
+            if (command == null || !command.matches("[a-z0-9_]{1,32}")) {
+                throw new IllegalArgumentException("Telegram bot command is invalid");
+            }
+            if (description == null || description.isBlank() || description.length() > 256) {
+                throw new IllegalArgumentException("Telegram bot command description is invalid");
+            }
+        }
+    }
+
+    record InlineButton(String text, String callbackData, String url, String webAppUrl) {
 
         private static final int MAX_CALLBACK_DATA_BYTES = 64;
 
@@ -33,7 +55,8 @@ public interface TelegramBotClient {
             }
             boolean hasCallback = callbackData != null && !callbackData.isBlank();
             boolean hasUrl = url != null && !url.isBlank();
-            if (hasCallback == hasUrl) {
+            boolean hasWebApp = webAppUrl != null && !webAppUrl.isBlank();
+            if ((hasCallback ? 1 : 0) + (hasUrl ? 1 : 0) + (hasWebApp ? 1 : 0) != 1) {
                 throw new IllegalArgumentException("Telegram button must have exactly one action");
             }
             if (hasCallback
@@ -43,11 +66,15 @@ public interface TelegramBotClient {
         }
 
         public static InlineButton callback(String text, String callbackData) {
-            return new InlineButton(text, callbackData, null);
+            return new InlineButton(text, callbackData, null, null);
         }
 
         public static InlineButton url(String text, String url) {
-            return new InlineButton(text, null, url);
+            return new InlineButton(text, null, url, null);
+        }
+
+        public static InlineButton webApp(String text, String webAppUrl) {
+            return new InlineButton(text, null, null, webAppUrl);
         }
     }
 

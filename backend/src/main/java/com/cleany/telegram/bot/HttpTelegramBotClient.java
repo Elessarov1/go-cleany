@@ -111,6 +111,53 @@ public class HttpTelegramBotClient implements TelegramBotClient {
         ), TelegramApiResponse.class);
     }
 
+    @Override
+    public void setName(String name, String languageCode) {
+        invoke("setMyName", localizedRequest("name", name, languageCode), TelegramApiResponse.class);
+    }
+
+    @Override
+    public void setDescription(String description, String languageCode) {
+        invoke(
+                "setMyDescription",
+                localizedRequest("description", description, languageCode),
+                TelegramApiResponse.class
+        );
+    }
+
+    @Override
+    public void setShortDescription(String shortDescription, String languageCode) {
+        invoke(
+                "setMyShortDescription",
+                localizedRequest("short_description", shortDescription, languageCode),
+                TelegramApiResponse.class
+        );
+    }
+
+    @Override
+    public void setCommands(List<BotCommand> commands, String languageCode) {
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("commands", commands.stream()
+                .map(command -> Map.of(
+                        "command", command.command(),
+                        "description", command.description()
+                ))
+                .toList());
+        putLanguageCode(request, languageCode);
+        invoke("setMyCommands", request, TelegramApiResponse.class);
+    }
+
+    @Override
+    public void setDefaultMenuButton(String text, String webAppUrl) {
+        invoke("setChatMenuButton", Map.of(
+                "menu_button", Map.of(
+                        "type", "web_app",
+                        "text", text,
+                        "web_app", Map.of("url", webAppUrl)
+                )
+        ), TelegramApiResponse.class);
+    }
+
     private <T extends ApiResponse> T invoke(
             String method,
             Map<String, Object> request,
@@ -137,21 +184,36 @@ public class HttpTelegramBotClient implements TelegramBotClient {
         }
     }
 
-    private static List<List<Map<String, String>>> serializeRows(InlineKeyboard keyboard) {
+    private static List<List<Map<String, Object>>> serializeRows(InlineKeyboard keyboard) {
         return keyboard.rows().stream()
                 .map(row -> row.stream().map(HttpTelegramBotClient::serializeButton).toList())
                 .toList();
     }
 
-    private static Map<String, String> serializeButton(InlineButton button) {
-        Map<String, String> result = new LinkedHashMap<>();
+    private static Map<String, Object> serializeButton(InlineButton button) {
+        Map<String, Object> result = new LinkedHashMap<>();
         result.put("text", button.text());
         if (button.callbackData() != null) {
             result.put("callback_data", button.callbackData());
-        } else {
+        } else if (button.url() != null) {
             result.put("url", button.url());
+        } else {
+            result.put("web_app", Map.of("url", button.webAppUrl()));
         }
         return result;
+    }
+
+    private static Map<String, Object> localizedRequest(String key, String value, String languageCode) {
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put(key, value);
+        putLanguageCode(request, languageCode);
+        return request;
+    }
+
+    private static void putLanguageCode(Map<String, Object> request, String languageCode) {
+        if (languageCode != null && !languageCode.isBlank()) {
+            request.put("language_code", languageCode);
+        }
     }
 
     private static String withoutTrailingSlash(String value) {

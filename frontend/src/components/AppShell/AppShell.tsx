@@ -79,11 +79,13 @@ export function AppShell() {
   const transfer = location.pathname.startsWith("/transfer") || location.pathname.startsWith("/admin/transfer");
   const catalog = location.pathname === "/" || location.pathname === "/admin";
   const publicPlatformPage = location.pathname === "/privacy" || location.pathname === "/terms";
+  const supportPage = location.pathname === "/support";
   const activity = location.pathname === "/account/activity";
   const notifications = location.pathname === "/notifications";
   const customerHub = activity || notifications;
   const adminSupport = location.pathname.startsWith("/admin/support");
-  const neutralCustomer = customerHub || publicPlatformPage || adminSupport;
+  const neutralCustomer = customerHub || publicPlatformPage || supportPage || adminSupport;
+  const globalCustomerNavigation = catalog || customerHub || supportPage;
   const customerServiceHome = location.pathname === "/cleaning"
     || location.pathname === "/rent"
     || location.pathname === "/rent/properties"
@@ -96,7 +98,9 @@ export function AppShell() {
       ? t("app.navigation.serviceHome")
       : t("app.navigation.main");
   const brandService: BrandService | undefined = catalog || neutralCustomer ? undefined : transfer ? "transfer" : rental ? "rental" : "cleaning";
-  const showLocalNavigation = customerHub || (!catalog && !neutralCustomer && (!admin || rental || transfer));
+  const showLocalNavigation = (!standaloneWeb && !admin)
+    || customerHub
+    || (!catalog && !neutralCustomer && (!admin || rental || transfer));
   const showWebAdminSidebar = standaloneWeb && admin && hasAdminAccess;
   const showSiteFooter = standaloneWeb && !admin;
 
@@ -226,17 +230,29 @@ export function AppShell() {
 
         {showLocalNavigation ? (
           <nav
-            className={`bottom-nav${showAdminNavigation && !admin ? " bottom-nav--three-items" : ""}`}
+            className={`bottom-nav${!standaloneWeb
+              ? showAdminNavigation && !admin
+                ? " bottom-nav--four-items"
+                : " bottom-nav--three-items"
+              : showAdminNavigation && !admin
+                ? " bottom-nav--three-items"
+                : ""}`}
             aria-label={t("app.navigation.label")}
           >
-            <NavLink className={navClassName} to={customerHub ? "/" : admin && transfer ? "/admin/transfer/configuration" : admin && rental ? "/admin/rent/properties" : transfer ? "/transfer" : rental ? "/rent" : "/cleaning"} end>
-              <span className="bottom-nav__icon"><Icon name={customerHub ? "services" : transfer ? "car" : rental ? "building" : "calendar-plus"} size={21} /></span>
-              <span>{t(customerHub ? "app.navigation.services" : admin && transfer ? "app.navigation.settings" : transfer ? "app.navigation.transfer" : rental ? "app.navigation.apartments" : "app.navigation.book")}</span>
+            <NavLink className={navClassName} to={globalCustomerNavigation ? "/" : admin && transfer ? "/admin/transfer/configuration" : admin && rental ? "/admin/rent/properties" : transfer ? "/transfer" : rental ? "/rent" : "/cleaning"} end>
+              <span className="bottom-nav__icon"><Icon name={globalCustomerNavigation ? "services" : transfer ? "car" : rental ? "building" : "calendar-plus"} size={21} /></span>
+              <span>{t(globalCustomerNavigation ? "app.navigation.services" : admin && transfer ? "app.navigation.settings" : transfer ? "app.navigation.transfer" : rental ? "app.navigation.apartments" : "app.navigation.book")}</span>
             </NavLink>
             <NavLink className={navClassName} to={admin && transfer ? "/admin/transfer/bookings" : admin && rental ? "/admin/rent/bookings" : "/account/activity"}>
               <span className="bottom-nav__icon"><Icon name="clipboard" size={21} /></span>
               <span>{t(admin ? (rental ? "app.navigation.bookings" : "app.navigation.orders") : "app.navigation.activity")}</span>
             </NavLink>
+            {!standaloneWeb && !admin ? (
+              <NavLink className={navClassName} to="/support">
+                <span className="bottom-nav__icon"><Icon name="support" size={21} /></span>
+                <span>{t("app.navigation.help")}</span>
+              </NavLink>
+            ) : null}
             {showAdminNavigation && !admin ? (
               <NavLink className={navClassName} to="/admin" end>
                 <span className="bottom-nav__icon"><Icon name="admin" size={21} /></span>

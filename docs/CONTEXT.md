@@ -3,7 +3,7 @@ title: Loco Place Current Context
 type: ai-context
 status: active
 scope: platform
-updated: 2026-09-05
+updated: 2026-09-08
 ---
 
 # Loco Place — Current Context
@@ -174,6 +174,8 @@ The platform home at `/` is contextual for authenticated returning customers and
 
 Unified Support & Feedback is implemented without modifying vertical aggregates. Every owned Cleaning, Rental and Transfer detail page embeds the shared panel for opening a categorized case in any source status; completed sources additionally accept one immutable `GOOD` or `PROBLEM` feedback. Negative feedback atomically opens or reuses the single open case for that source. Customer ownership is resolved through the vertical repository and unavailable services do not hide support.
 
+General support is reachable at `hello@loco-place.com`. Standalone web exposes it in the public footer; the public `/support` page explains when to use the transaction-attached support flow and is linked from Telegram Mini App navigation. The Telegram bot is a customer-facing Loco Place entry point: `/start`, `/help`, its web-app buttons and its persistent menu open the application or support page. Driver links and provider/admin commands retain routing priority and remain operational interfaces rather than customer navigation.
+
 Smart Reminders v1 is implemented through persisted `customer_reminder` lifecycle state and the durable notification inbox. Customers explicitly choose 14/30/off after a completed Cleaning; Rental checkout reminders reuse the `CHECKOUT` Transfer context three days before checkout; confirmed Transfers receive an operational reminder one day before pickup. The job runs daily at 09:00 Europe/Istanbul by default, is idempotent, suppresses already satisfied needs and treats Telegram as optional secondary delivery. Admin analytics attributes reminder outcomes through existing typed source links.
 
 Stage 7.5 is complete. It provides a local-only reproducible measurement contour with deterministic data, pinned Docker k6 scenarios, JFR capture and performance-only Actuator/Hibernate metrics; it is not run in CI, staging or on the VPS. Its measured pass removed nested customer-identity connection starvation, added right-sized Rental image variants and cover-only list reads, lazy-loaded frontend routes/locales, moved optional Smart Reminder Telegram I/O after the database commit and consolidated runtime web serving on Caddy. Production now uses one Caddy application image to serve fingerprinted Vite assets with immutable caching and proxy API/OAuth directly to backend; local/performance Compose retains the service name `frontend` but runs the same Caddy server. The final end-to-end contour verified zero-error mixed traffic, approximately 89% lower UI-shaped Rental image transfer and no saturation through 100 VU on the development workstation. P5 retained the measured JPA/JDBC balance, protected Rental booking property reads against N+1 behavior, removed proven frontend/CSS dead code, isolated preview APIs/UI from production builds and replaced recurring page-specific iOS date-input fixes with one application-shell guard. Its codebase and after-hardening evidence is recorded under `performance/`. Smart Reminders, data retention and Rental Cleaning Benefit issuance expose tagged counters and structured per-run logs. Further performance work requires a measured regression or real telemetry rather than speculative infrastructure. Frequent source builds on the small VPS remain bounded operationally by pruning unused BuildKit cache older than a configurable retention window before a deploy and dangling images after a successful health check; runtime containers, volumes, database data and backups are never part of that cleanup.
@@ -322,6 +324,8 @@ Benefits must be measurable and must not hide bad unit economics.
 ## Support
 
 The platform `support` module owns `SupportCase` and `TransactionFeedback` records keyed by `customerId + service + sourceEntityId`. This polymorphic reference is deliberately not a universal transaction aggregate. There can be one open case per source; resolved cases are final and a later incident creates a new case.
+
+The official general support address is `hello@loco-place.com`. Questions tied to an owned transaction should still enter through that transaction so Loco retains the source context automatically.
 
 Loco owns the problem in the customer's eyes. Shared support provides intake, feedback, queue and resolution visibility; each vertical still owns its remediation semantics. Attachments, assignment, SLA, compensation, public ratings and support analytics remain deferred.
 

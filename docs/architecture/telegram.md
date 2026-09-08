@@ -3,7 +3,7 @@ title: Telegram Integration Boundaries
 type: architecture
 status: active
 scope: platform
-updated: 2026-08-30
+updated: 2026-09-08
 ---
 
 # Telegram
@@ -18,9 +18,17 @@ Customer business data, order ownership and durable notifications must not exist
 
 Google ↔ Telegram linking is explicit. Do not merge by correlated profile fields.
 
+The bot is also the customer-facing Telegram entry point for Loco Place. Its public profile, `/start`, `/help`, inline web-app buttons and persistent menu are configured by the backend through Bot API and lead to the application or public `/support` page. Customer-facing text follows Telegram `language_code` for RU/EN. Profile configuration is idempotent, runs outside transactions and fails without disabling update handling or notification delivery.
+
+The deployed Mini App must be designated as the bot's Main Mini App once through BotFather. Runtime profile text, commands and the menu button are subsequently owned by code.
+
+Public commands remain limited to `/start` and `/help`. Operational `/whoami`, cleaner and admin commands may remain available without appearing in the general customer command list. A plain or otherwise unrecognized `/start` parameter falls back to the customer welcome after more specific start handlers have had a chance to consume it.
+
 ## Start parameters
 
 Existing acquisition and account-linking semantics may share Telegram start/deep-link handling. New start parameter types must coexist without breaking existing acquisition/link flows.
+
+Routing order is significant: verified provider connection parameters such as `driver_<token>` are handled before the generic customer welcome. Mini App start parameters continue to be interpreted at the frontend boundary; bot presentation must not treat them as authorization.
 
 ## Provider-side flows
 

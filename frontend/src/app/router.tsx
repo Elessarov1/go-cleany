@@ -38,6 +38,7 @@ const AdminTransferConfigurationPage = lazy(() => import("../pages/AdminTransfer
 const CustomerActivityPage = lazy(() => import("../pages/CustomerActivityPage/CustomerActivityPage").then((module) => ({ default: module.CustomerActivityPage })));
 const AdminSupportCasesPage = lazy(() => import("../pages/AdminSupportCasesPage/AdminSupportCasesPage").then((module) => ({ default: module.AdminSupportCasesPage })));
 const AdminSupportCasePage = lazy(() => import("../pages/AdminSupportCasePage/AdminSupportCasePage").then((module) => ({ default: module.AdminSupportCasePage })));
+const SupportPage = lazy(() => import("../pages/SupportPage/SupportPage").then((module) => ({ default: module.SupportPage })));
 
 function LegacyCleaningOrderRedirect({ created = false }: { created?: boolean }) {
   const { id } = useParams();
@@ -56,6 +57,7 @@ export const router = createBrowserRouter([
       { path: "/", element: <ServiceCatalogPage /> },
       { path: "/privacy", element: <LegalPage kind="privacy" /> },
       { path: "/terms", element: <LegalPage kind="terms" /> },
+      { path: "/support", element: <SupportPage /> },
       { path: "/cleaning", element: <ServiceAvailabilityGate service="CLEANING"><CreateOrderPage /></ServiceAvailabilityGate> },
       { path: "/transfer", element: <ServiceAvailabilityGate service="TRANSFER"><TransferEntryPage /></ServiceAvailabilityGate> },
       {

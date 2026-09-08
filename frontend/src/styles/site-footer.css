@@ -111,9 +111,15 @@
   gap: 7px;
 }
 
-.site-footer__contact-link img {
+.site-footer__contact-link img,
+.site-footer__contact-link .icon {
   width: 16px;
   height: 16px;
+}
+
+.site-footer__contact-link {
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .site-footer__bottom {

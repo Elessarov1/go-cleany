@@ -33,6 +33,9 @@ function routeMeta(pathname: string): RouteMeta {
   if (pathname === "/terms") {
     return { titleKey: "titles.terms", descriptionKey: "titles.termsDescription", indexable: true, canonicalPath: "/terms" };
   }
+  if (pathname === "/support") {
+    return { titleKey: "titles.support", descriptionKey: "titles.supportDescription", indexable: true, canonicalPath: "/support" };
+  }
   if (pathname === "/cleaning") {
     return { titleKey: "titles.cleaning", descriptionKey: "titles.cleaningDescription", indexable: true, canonicalPath: "/cleaning" };
   }

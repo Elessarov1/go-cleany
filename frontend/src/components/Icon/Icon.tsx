@@ -18,6 +18,7 @@ export type IconName =
   | "info"
   | "location"
   | "logout"
+  | "mail"
   | "moon"
   | "reorder"
   | "services"
@@ -111,6 +112,12 @@ const iconContents = {
     <>
       <path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5" />
       <path d="m15 16 4-4-4-4M19 12H9" />
+    </>
+  ),
+  mail: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m4 7 8 6 8-6" />
     </>
   ),
   moon: <path d="M20 15.5A8.5 8.5 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5Z" />,

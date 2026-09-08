@@ -3,7 +3,7 @@ title: Loco Support and Guarantee Direction
 type: cross-functional
 status: active
 scope: platform
-updated: 2026-08-31
+updated: 2026-09-08
 ---
 
 # Support & Guarantee
@@ -23,6 +23,14 @@ Do not make the customer discover which provider owns the problem.
 ## Implemented unified entry point
 
 Every owned Cleaning/Rental/Transfer detail page exposes the shared `TransactionCarePanel`. The panel attaches the originating transaction without asking the customer to identify it again, and remains available for every transaction status even when the service is `IN_TEST` or `DISABLED`.
+
+General questions and problems that prevent use of an authenticated transaction flow can be sent to the official support address:
+
+```text
+hello@loco-place.com
+```
+
+Standalone web exposes the address in its footer. The public `/support` page is reachable from Telegram Mini App navigation and distinguishes transaction-specific help from general email. It directs an authenticated customer back to the owned transaction whenever possible so source context is not requested again.
 
 The platform `support` module owns two records without changing any vertical aggregate:
 

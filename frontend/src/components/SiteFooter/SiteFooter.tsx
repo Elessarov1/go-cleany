@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { BrandName } from "../BrandName/BrandName";
+import { Icon } from "../Icon/Icon";
+import { SUPPORT_EMAIL } from "../../brand/publicContact";
 
 export function SiteFooter() {
   const { t } = useTranslation();
@@ -41,6 +43,10 @@ export function SiteFooter() {
           >
             <img src="/assets/icons/telegram.svg" alt="" />
             {t("footer.telegram")}
+          </a>
+          <a className="site-footer__contact-link" href={`mailto:${SUPPORT_EMAIL}`}>
+            <Icon name="mail" size={16} />
+            {SUPPORT_EMAIL}
           </a>
         </nav>
 

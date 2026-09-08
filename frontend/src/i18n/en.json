@@ -15,6 +15,7 @@
       "settings": "Settings",
       "analytics": "Analytics",
       "support": "Support",
+      "help": "Help",
       "admin": "Admin",
       "main": "Home",
       "serviceHome": "Service home",
@@ -1119,6 +1120,15 @@
       "cancel": "Cancel request"
     }
   },
+  "supportPage": {
+    "title": "Help and support",
+    "subtitle": "If something goes wrong, Loco will help resolve it.",
+    "transactionTitle": "Question about an order or booking",
+    "transactionText": "Open the relevant task in your activity and contact support from its details. This keeps the context attached automatically.",
+    "activityAction": "My tasks",
+    "generalTitle": "Another question",
+    "generalText": "Email the official Loco Place support address:"
+  },
   "account": {
     "title": "Account",
     "subtitle": "Sign-in methods and notifications.",
@@ -1298,6 +1308,8 @@
     "activityDescription": "Your cleaning orders, apartment bookings and transfers in Loco Place.",
     "notifications": "Notifications | Loco Place",
     "notificationsDescription": "Confirmations, status changes and reminders for your Loco Place tasks.",
+    "support": "Help and Support | Loco Place",
+    "supportDescription": "Official ways to contact Loco Place support about orders, bookings and general questions.",
     "admin": "Admin | Loco Place",
     "adminPage": "Admin Section | Loco Place",
     "privateDescription": "A protected Loco Place account page.",

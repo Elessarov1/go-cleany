@@ -165,10 +165,6 @@ public class TelegramCleanerBotService {
             saveCustomerContact(message);
             return;
         }
-        if (isCommand(message.text(), "/start")) {
-            safeSend(cleanerId, "Бот loco-cleaning запущен. Отправьте /whoami, чтобы узнать свой Telegram ID.");
-            return;
-        }
         if (isCommand(message.text(), "/whoami")) {
             safeSend(cleanerId, "Ваш Telegram ID: " + cleanerId);
             return;
