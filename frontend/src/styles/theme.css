@@ -149,10 +149,10 @@
 :root[data-theme="dark"] .service-shell[data-service="platform"] .service-card--cleaning {
   background: linear-gradient(
     145deg,
-    var(--cleaning-card),
-    var(--cleaning-secondary)
+    var(--color-surface-strong),
+    color-mix(in oklch, var(--color-primary) 9%, var(--color-surface-strong))
   );
-  border-color: var(--cleaning-border);
+  border-color: var(--color-line);
 }
 
 :root[data-theme="dark"] .service-shell[data-service="platform"] .service-card--transfer {
