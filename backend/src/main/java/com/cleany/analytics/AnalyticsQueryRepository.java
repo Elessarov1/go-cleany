@@ -6,9 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Collections;
 
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -16,6 +16,7 @@ import org.springframework.stereotype.Repository;
 import com.cleany.catalog.PlatformService;
 import com.cleany.crossservice.rentaltransfer.RentalTransferContextType;
 import com.cleany.reminder.CustomerReminderType;
+import com.cleany.rental.RentalSearchMode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,6 +25,115 @@ import lombok.RequiredArgsConstructor;
 public class AnalyticsQueryRepository {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
+
+    public AnalyticsRentalSearchMetrics rentalSearch(AnalyticsTimeWindow window) {
+        List<RentalSearchMetricRow> rows = jdbcTemplate.query("""
+                with cohort as (
+                    select search.id,
+                           search.mode,
+                           search.result_count,
+                           search.api_duration_ms,
+                           search.created_at,
+                           exists (
+                               select 1 from rental_search_event event
+                                where event.search_execution_id = search.id
+                                  and event.event_type = 'PROPERTY_OPENED'
+                                  and event.occurred_at < :toExclusive
+                           ) opened,
+                           exists (
+                               select 1 from rental_search_event event
+                                where event.search_execution_id = search.id
+                                  and event.event_type = 'BOOKING_CONFLICT'
+                                  and event.occurred_at < :toExclusive
+                           ) conflicted,
+                           (select event.duration_ms
+                              from rental_search_event event
+                             where event.search_execution_id = search.id
+                               and event.event_type = 'FIRST_CARD_RENDERED'
+                               and event.occurred_at < :toExclusive
+                           ) first_card_duration_ms,
+                           (select min(booking.created_at)
+                              from rental_booking booking
+                             where booking.search_execution_id = search.id
+                               and booking.created_at < :toExclusive
+                           ) first_booking_at,
+                           exists (
+                               select 1 from rental_booking booking
+                                where booking.search_execution_id = search.id
+                                  and booking.status = 'COMPLETED'
+                                  and booking.completed_at < :toExclusive
+                           ) completed
+                      from rental_search_execution search
+                     where search.created_at >= :fromInclusive
+                       and search.created_at < :toExclusive
+                       and :service in ('ALL', 'RENTAL')
+                )
+                select mode,
+                       grouping(mode) total,
+                       count(*) search_executions,
+                       count(*) filter (
+                           where mode <> 'BROWSE_ALL' and result_count = 0
+                       ) zero_result_searches,
+                       count(*) filter (where mode <> 'BROWSE_ALL') availability_searches,
+                       count(*) filter (where opened) opened_searches,
+                       count(*) filter (where first_booking_at is not null) created_booking_searches,
+                       count(*) filter (where completed) completed_booking_searches,
+                       count(*) filter (where conflicted) conflict_searches,
+                       percentile_cont(0.5) within group (order by api_duration_ms) median_api_ms,
+                       percentile_cont(0.5) within group (
+                           order by first_card_duration_ms
+                       ) filter (where first_card_duration_ms is not null) median_first_card_ms,
+                       percentile_cont(0.5) within group (
+                           order by extract(epoch from (first_booking_at - created_at)) / 3600.0
+                       ) filter (where first_booking_at is not null) median_hours_to_booking
+                  from cohort
+                 group by grouping sets ((mode), ())
+                 order by grouping(mode) desc, mode
+                """, parameters(window), (resultSet, rowNumber) -> {
+            long searches = resultSet.getLong("search_executions");
+            long zeroResults = resultSet.getLong("zero_result_searches");
+            long availabilitySearches = resultSet.getLong("availability_searches");
+            long opened = resultSet.getLong("opened_searches");
+            long created = resultSet.getLong("created_booking_searches");
+            long completed = resultSet.getLong("completed_booking_searches");
+            long conflicts = resultSet.getLong("conflict_searches");
+            return new RentalSearchMetricRow(
+                    resultSet.getInt("total") == 1,
+                    resultSet.getString("mode") == null
+                            ? null
+                            : RentalSearchMode.valueOf(resultSet.getString("mode")),
+                    new AnalyticsRentalSearchFunnelMetric(
+                            searches,
+                            zeroResults,
+                            opened,
+                            created,
+                            completed,
+                            conflicts,
+                            nullableRatio(zeroResults, availabilitySearches),
+                            nullableRatio(opened, searches),
+                            nullableRatio(created, searches),
+                            nullableRatio(completed, searches),
+                            nullableRatio(conflicts, searches),
+                            decimal(resultSet, "median_api_ms", 1),
+                            decimal(resultSet, "median_first_card_ms", 1),
+                            decimal(resultSet, "median_hours_to_booking", 1)
+                    )
+            );
+        });
+        AnalyticsRentalSearchFunnelMetric total = rows.stream()
+                .filter(RentalSearchMetricRow::total)
+                .map(RentalSearchMetricRow::funnel)
+                .findFirst()
+                .orElseGet(AnalyticsQueryRepository::emptyRentalSearchFunnel);
+        List<AnalyticsRentalSearchModeMetric> byMode = rows.stream()
+                .filter(row -> !row.total())
+                .map(row -> new AnalyticsRentalSearchModeMetric(row.mode(), row.funnel()))
+                .toList();
+        return new AnalyticsRentalSearchMetrics(
+                total,
+                byMode.isEmpty() ? Collections.emptyList() : byMode
+        );
+    }
 
     public AnalyticsBusinessHealthMetrics businessHealth(AnalyticsTimeWindow window) {
         return jdbcTemplate.queryForObject("""
@@ -1084,6 +1194,31 @@ public class AnalyticsQueryRepository {
         return denominator == 0 ? null : ratio(numerator, denominator);
     }
 
+    private static BigDecimal decimal(ResultSet resultSet, String column, int scale)
+            throws SQLException {
+        BigDecimal value = resultSet.getBigDecimal(column);
+        return value == null ? null : value.setScale(scale, RoundingMode.HALF_UP);
+    }
+
+    private static AnalyticsRentalSearchFunnelMetric emptyRentalSearchFunnel() {
+        return new AnalyticsRentalSearchFunnelMetric(
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
     private static AnalyticsActionFunnelMetric emptyActionFunnel() {
         return new AnalyticsActionFunnelMetric(0, 0, 0, 0, null, null, null, null);
     }
@@ -1092,6 +1227,13 @@ public class AnalyticsQueryRepository {
             boolean total,
             RentalTransferContextType context,
             AnalyticsActionFunnelMetric funnel
+    ) {
+    }
+
+    private record RentalSearchMetricRow(
+            boolean total,
+            RentalSearchMode mode,
+            AnalyticsRentalSearchFunnelMetric funnel
     ) {
     }
 

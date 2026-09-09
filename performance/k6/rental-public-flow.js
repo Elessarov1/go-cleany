@@ -12,11 +12,11 @@ export const options = shortOr({
 });
 
 export default function () {
+  const search = http.get(`${BASE_URL}/api/v1/rental/search`, {
+    tags: { endpoint: 'rental-search', mode: 'BROWSE_ALL' },
+  });
+  expectOk(search, 'rental browse-all search');
   const property = manifest.rentalProperties[__ITER % manifest.rentalProperties.length];
-  expectOk(
-    http.get(`${BASE_URL}/api/v1/rental/properties`, { tags: { endpoint: 'rental-catalog' } }),
-    'rental catalog',
-  );
   expectOk(
     http.get(`${BASE_URL}/api/v1/rental/properties/${property.slug}`, {
       tags: { endpoint: 'rental-detail' },

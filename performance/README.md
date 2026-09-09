@@ -5,6 +5,8 @@ This directory is the reproducible, local-only measurement environment for Stage
 - Compose project: `loco-perf`;
 - database: `loco_performance` in its own Docker volume;
 - loopback-only host ports: PostgreSQL `15432`, backend `18080`, Caddy frontend `15173`;
+- isolated Compose subnet: `10.106.250.0/24` by default, overridable with `PERF_DOCKER_SUBNET`;
+- performance tool UID/GID: `1000:1000` by default, overridable with `PERF_CONTAINER_USER` for Linux bind mounts;
 - Telegram, Smart Reminders, data retention and Rental Cleaning Benefit schedulers are disabled by default;
 - k6 runs from the pinned `grafana/k6:2.1.0` image;
 - both the runner and every k6 script reject non-local targets.
@@ -56,7 +58,7 @@ Useful Windows examples:
 
 ```powershell
 $env:PERF_ANCHOR_DATE = '2026-09-03'
-.\performance\scripts\run-local.ps1 -Reset -Scale 2 -Seed 42 -Scenario rental-browse
+.\performance\scripts\run-local.ps1 -Reset -Scale 2 -Seed 42 -Scenario rental-public-flow
 ```
 
 ```powershell
@@ -71,7 +73,8 @@ The seeder refuses to run unless the `performance` profile is active and `DB_URL
 ## Scenarios
 
 ```powershell
-.\performance\scripts\run-local.ps1 -Scenario rental-browse -SkipSeed -ReuseStack
+.\performance\scripts\run-local.ps1 -Scenario rental-public-flow -SkipSeed -ReuseStack
+.\performance\scripts\run-local.ps1 -Scenario rental-search -SkipSeed -ReuseStack
 .\performance\scripts\run-local.ps1 -Scenario image-burst -SkipSeed -ReuseStack
 .\performance\scripts\run-local.ps1 -Scenario mixed-api -SkipSeed -ReuseStack
 .\performance\scripts\run-local.ps1 -Scenario stress -SkipSeed -ReuseStack

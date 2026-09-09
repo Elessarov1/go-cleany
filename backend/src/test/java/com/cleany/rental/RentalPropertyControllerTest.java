@@ -60,7 +60,10 @@ class RentalPropertyControllerTest {
                 Mockito.mock(RentalPropertyService.class),
                 mediaService,
                 Mockito.mock(RentalOccupancyService.class),
-                Mockito.mock(RentalProperties.class)
+                Mockito.mock(RentalProperties.class),
+                Mockito.mock(RentalStayPolicy.class),
+                Mockito.mock(RentalBookingService.class),
+                Mockito.mock(com.cleany.catalog.PlatformServiceAccessService.class)
         );
     }
 }

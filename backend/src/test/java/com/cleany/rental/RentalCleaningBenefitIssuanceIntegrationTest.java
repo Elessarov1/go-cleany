@@ -315,6 +315,9 @@ class RentalCleaningBenefitIssuanceIntegrationTest extends BaseIntegrationTest {
                         null,
                         2,
                         "+90 555 123 45 67",
+                        null,
+                        new BigDecimal("800.00"),
+                        "TRY",
                         null
                 )
         );

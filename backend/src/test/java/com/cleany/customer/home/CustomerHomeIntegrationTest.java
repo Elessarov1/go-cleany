@@ -356,6 +356,9 @@ class CustomerHomeIntegrationTest extends BaseIntegrationTest {
                 null,
                 1,
                 "+905551112233",
+                null,
+                new BigDecimal("100.00").multiply(BigDecimal.valueOf(durationDays + 1L)),
+                "TRY",
                 null
         ));
     }

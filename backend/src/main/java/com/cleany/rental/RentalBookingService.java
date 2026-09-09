@@ -36,33 +36,30 @@ public class RentalBookingService {
     private final CustomerAttributionService customerAttributionService;
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
+    private final RentalSearchTrackingService searchTrackingService;
 
-    @Transactional(readOnly = true)
-    public RentalBookingQuoteResponse quote(RentalBookingQuoteRequest request) {
-        return quote(customerAccountService.currentCustomer(), request);
-    }
-
-    @Transactional(readOnly = true)
-    public RentalBookingQuoteResponse quote(
-            CurrentCustomer customer,
-            RentalBookingQuoteRequest request
+    public RentalQuoteResponse quote(
+            long propertyId,
+            RentalTermType termType,
+            LocalDate checkInDate,
+            LocalDate checkOutDate,
+            Integer months,
+            int guests
     ) {
-        platformServiceAccessService.requireCanStartCustomerFlow(
-                PlatformService.RENTAL,
-                customer.customerId()
-        );
-        RentalProperty property = propertyService.requirePublishedProperty(request.propertyId());
+        platformServiceAccessService.requireCanStartCurrentCustomerFlow(PlatformService.RENTAL);
+        RentalProperty property = propertyService.requirePublishedProperty(propertyId);
+        validateGuests(property, guests);
         ResolvedRentalTerm term = stayPolicy.resolve(
-                request.termType(),
-                request.checkInDate(),
-                request.checkOutDate(),
-                request.months()
+                termType,
+                checkInDate,
+                checkOutDate,
+                months
         );
-        requireAvailable(request.propertyId(), term.checkInDate(), term.checkOutDate());
-        return RentalBookingQuoteResponse.from(
+        requireAvailable(propertyId, term.checkInDate(), term.checkOutDate());
+        return RentalQuoteResponse.from(
                 property,
-                term.checkInDate(),
-                term.checkOutDate(),
+                term,
+                guests,
                 priceService.calculate(property, term)
         );
     }
@@ -92,9 +89,18 @@ public class RentalBookingService {
         enforceActiveBookingLimit(customer.customerId(), stayPolicy.today());
         requireAvailable(property.getId(), term.checkInDate(), term.checkOutDate());
 
+        RentalPriceQuote quote = priceService.calculate(property, term);
+        if (!quote.currency().equals(request.expectedCurrency())
+                || quote.totalPrice().compareTo(request.expectedTotalPrice()) != 0) {
+            throw new RentalPriceChangedException();
+        }
+        var searchExecutionId = searchTrackingService.compatibleExecution(
+                request.searchExecutionId(),
+                term.termType()
+        );
+
         String normalizedPhone = phoneNumberNormalizer.normalize(request.phone());
         customerAccountService.updateNormalizedPhone(customer.customerId(), normalizedPhone);
-        RentalPriceQuote quote = priceService.calculate(property, term);
         var createdAt = clock.instant();
         RentalBooking booking = bookingRepository.saveAndFlush(new RentalBooking(
                 customer.customerId(),
@@ -105,6 +111,7 @@ public class RentalBookingService {
                 normalizedPhone,
                 request.guests(),
                 request.comment(),
+                searchExecutionId,
                 quote,
                 createdAt
         ));

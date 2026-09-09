@@ -9,11 +9,13 @@ import type {
   RentalTransferContext,
   RentalTransferContextType,
   RentalTransferPrefill,
-  RentalBookingQuote,
-  RentalBookingQuoteRequest,
+  RentalQuote,
   RentalConfiguration,
   RentalAdminNotificationPreference,
   RentalProperty,
+  RentalSearchRequest,
+  RentalSearchResponse,
+  RentalTermCriteria,
   RentalOccupancy,
   UpdateRentalPropertyRequest,
   UpsertRentalOccupancyRequest,
@@ -21,10 +23,16 @@ import type {
 
 export interface RentalApi {
   getConfiguration(): Promise<RentalConfiguration>;
-  getProperties(): Promise<RentalProperty[]>;
   getProperty(slug: string): Promise<RentalProperty>;
   getAvailability(propertyId: number, fromDate: string, toDate: string): Promise<RentalAvailability>;
-  quoteBooking(request: RentalBookingQuoteRequest): Promise<RentalBookingQuote>;
+  search(
+    request: RentalSearchRequest,
+    signal?: AbortSignal,
+    previousSearchId?: string,
+  ): Promise<RentalSearchResponse>;
+  quotePublic(propertyId: number, request: RentalTermCriteria): Promise<RentalQuote>;
+  recordPropertyOpened(searchExecutionId: string): Promise<void>;
+  recordFirstCardRendered(searchExecutionId: string, durationMs: number): Promise<void>;
   createBooking(request: CreateRentalBookingRequest): Promise<RentalBooking>;
   getBookings(): Promise<RentalBooking[]>;
   getBooking(id: number): Promise<RentalBooking>;

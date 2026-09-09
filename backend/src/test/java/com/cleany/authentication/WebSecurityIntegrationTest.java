@@ -24,6 +24,7 @@ import org.springframework.session.FindByIndexNameSessionRepository;
 import org.springframework.session.Session;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpHeaders;
 
 import com.cleany.authorization.CustomerRoleRepository;
 import com.cleany.base.BaseIntegrationTest;
@@ -33,8 +34,10 @@ import com.cleany.order.CleaningOrderRepository;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -70,6 +73,9 @@ class WebSecurityIntegrationTest extends BaseIntegrationTest {
     void cleanDatabase() {
         jdbcTemplate.update("delete from spring_session_attributes");
         jdbcTemplate.update("delete from spring_session");
+        jdbcTemplate.update("delete from rental_search_event");
+        jdbcTemplate.update("update rental_booking set search_execution_id = null");
+        jdbcTemplate.update("delete from rental_search_execution");
         orderRepository.deleteAll();
         roleRepository.deleteAll();
         identityRepository.deleteAll();
@@ -116,6 +122,52 @@ class WebSecurityIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].service").value("RENTAL"))
                 .andExpect(jsonPath("$[1].service").value("TRANSFER"));
+    }
+
+    @Test
+    void anonymousRentalSearchCreatesNoAccountAndInTestAllowsOnlyPersistedAdmin() throws Exception {
+        long accountsBefore = accountRepository.count();
+        mvc.perform(get("/api/v1/rental/search"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, containsString("no-store")))
+                .andExpect(jsonPath("$.searchExecutionId").isString())
+                .andExpect(jsonPath("$.criteria.mode").value("BROWSE_ALL"));
+        org.assertj.core.api.Assertions.assertThat(accountRepository.count()).isEqualTo(accountsBefore);
+
+        jdbcTemplate.update(
+                "update platform_service_state set status = 'IN_TEST' where service = 'RENTAL'"
+        );
+        clearPlatformServiceStateCache();
+        mvc.perform(get("/api/v1/rental/search"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("service_not_available"));
+
+        mvc.perform(get("/api/v1/rental/search").with(oidcLogin().oidcUser(user(
+                        "rental-search-admin",
+                        "admin@example.test",
+                        true
+                ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.criteria.mode").value("BROWSE_ALL"));
+    }
+
+    @Test
+    void legacyRentalCatalogAndAuthenticatedQuoteRoutesAreNotMapped() throws Exception {
+        mvc.perform(get("/api/v1/rental/properties"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("resource_not_found"));
+
+        mvc.perform(post("/api/v1/rental/bookings/quote")
+                        .with(oidcLogin().oidcUser(user(
+                                "legacy-rental-route",
+                                "customer@example.test",
+                                true
+                        )))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.code").value("method_not_allowed"));
     }
 
     @Test

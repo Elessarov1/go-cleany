@@ -73,6 +73,63 @@ Record each measured run, not only an average.
 | final Caddy mixed-api | 215.48 | 3.91 ms | 9.17 ms | 17.43 ms | 0% | 29,000,000 | 1,300,000 |
 | final Caddy stress | 4,163.10 | 4.63 ms | 31.24 ms | 55.06 ms | 0% | 1,956,919,257 | 98,412,472 |
 
+## Rental period-first search contour
+
+Measured on 2026-09-09 from the working tree based on commit
+`7190f5b618150f8420b6cfbecb091fae185add49`, with scale `1`, seed `42` and anchor date
+`2026-09-09`. Both runs used the dedicated local `loco-perf` Compose project and the Caddy
+service at `http://frontend`; no remote environment was used. The host was Linux
+6.8.0 x86_64 with Docker Engine 29.7.2 / Compose 2.26.1; the backend image used Java 25.
+
+| Rental search run | RPS | p50 | p95 | p99 | Error rate | Received bytes | Sent bytes |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| first search-path run | 25.05 | 17.56 ms | 24.23 ms | 38.14 ms | 0% | 9.4 MB | 174 KB |
+| same-stack warm run | 25.46 | 15.28 ms | 19.27 ms | 25.25 ms | 0% | 9.6 MB | 177 KB |
+
+The 45-second warm run completed 1,152 DATE_RANGE/MONTHLY searches and all 3,456 checks
+(status, `Cache-Control: no-store`, execution ID) passed. Its summary is retained under the
+ignored `performance/results/` directory. The first run's JSON export exposed a Linux bind-mount
+UID mismatch; the harness now runs k6 as configurable `PERF_CONTAINER_USER` and the warm summary
+was persisted successfully.
+
+The application read path remains two data queries regardless of result count: one availability
+query followed by one batched cover query. Pricing is calculated from the compact row projection
+and performs no SQL. On the seeded 20-property/160-occupancy dataset, `EXPLAIN (ANALYZE, BUFFERS)`
+used `idx_rental_property_status_order` and completed in 0.288 ms. PostgreSQL chose a sequential
+scan of the small occupancy table; adding another search index is not justified by this evidence.
+
+### Period-first legacy removal follow-up
+
+After making period-first search the only customer Rental flow, the same local contour was run
+again on 2026-09-09 with scale `1`, seed `42`, anchor date `2026-09-09`, eight VUs and a 45-second
+duration through Caddy. One reset-and-seed run warmed the rebuilt stack; the second same-stack run
+is the measured result below. No remote environment was used.
+
+| Rental search run | RPS | p50 | p95 | p99 | Error rate | Received bytes | Sent bytes |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| compatibility baseline warm | 25.46 | 15.28 ms | 19.27 ms | 25.25 ms | 0% | 9.6 MB | 177 KB |
+| replacement warm-up | 25.22 | 16.25 ms | 23.46 ms | 33.51 ms | 0% | 9.4 MB | 175 KB |
+| replacement measured warm | 25.50 | 15.16 ms | 18.68 ms | 20.36 ms | 0% | 9.6 MB | 177 KB |
+| measured delta | +0.18% | -0.80% | -3.06% | -19.38% | unchanged | unchanged | unchanged |
+
+The measured run completed 1,152 searches and all 3,456 checks passed. This single controlled
+comparison shows no regression, but the small RPS/p50/p95 differences and the lower p99 are not
+claimed as an optimization result: the removed compatibility code was outside the hot search
+path and run-to-run variance can explain the change. JFR was therefore not justified.
+
+The repeated search `EXPLAIN (ANALYZE, BUFFERS)` kept the same plan: an index scan through
+`idx_rental_property_status_order` plus an anti-join against the small occupancy table. Execution
+time was 0.300 ms versus 0.288 ms in the baseline. The 0.012 ms difference is not material and no
+new index was added.
+
+Physical production-code counts, excluding `package-lock.json`, tests and documentation, changed
+as follows: the Rental backend package fell from 5,229 to 5,117 lines (-112, -2.14%); frontend
+production TypeScript/TSX fell by 49 lines after accounting for the new 37-line contract test.
+The shared HTTP exception mapper gained 9 lines to return a stable 405 for the removed POST route,
+so the net production reduction in these measured scopes is 152 lines. Removed production surface
+includes two HTTP endpoints, one frontend route alias, two legacy quote records and the
+intermediate search-result record.
+
 ## Runtime and database observations
 
 ### Confirmed before optimization
@@ -165,6 +222,24 @@ and reminder state first, then performs optional channel delivery after commit.
 | CSS before / after | 164.95 / 164.95 KB | 26.99 / 26.99 KB | CSS extraction is effectively unchanged |
 | RU locale after | 64.31 KB | 17.68 KB | loaded on demand only when active |
 | EN locale after | 42.07 KB | 13.97 KB | loaded on demand only when active |
+
+The period-first production build keeps the new pages lazy and adds no runtime dependency:
+
+| Period-first artifact | Raw | Gzip |
+|---|---:|---:|
+| Rental search route | 9.05 KB | 2.94 KB |
+| Rental property route | 19.38 KB | 5.62 KB |
+| Shared CSS | 164.10 KB | 27.03 KB |
+| EN locale | 47.19 KB | 15.48 KB |
+| RU locale | 72.75 KB | 19.99 KB |
+
+Vitest, jsdom and Testing Library are development-only dependencies and therefore do not enter
+the production chunks.
+
+After legacy removal, the Rental search chunk remains 9.05 KB / 2.94 KB gzip. The property chunk
+is 19.43 KB / 5.63 KB gzip (+0.05 KB raw and +0.01 KB gzip); shared CSS and both locale chunks are
+unchanged. The code reduction is therefore a maintenance improvement, not a bundle-size or runtime
+performance claim.
 
 ## Saturation and prioritization
 

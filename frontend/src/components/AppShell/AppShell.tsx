@@ -28,7 +28,7 @@ function navClassName({ isActive }: { isActive: boolean }): string {
 function logoTarget(pathname: string): string {
   if (pathname === "/admin") return "/";
   if (pathname.startsWith("/admin/")) return "/admin";
-  if (pathname === "/cleaning" || pathname === "/rent" || pathname === "/rent/properties" || pathname === "/transfer") {
+  if (pathname === "/cleaning" || pathname === "/rent" || pathname === "/transfer") {
     return "/";
   }
   if (pathname.startsWith("/cleaning/")) return "/cleaning";
@@ -89,7 +89,6 @@ export function AppShell() {
   const globalCustomerNavigation = catalog || accountPage || customerHub || supportPage;
   const customerServiceHome = location.pathname === "/cleaning"
     || location.pathname === "/rent"
-    || location.pathname === "/rent/properties"
     || location.pathname === "/transfer";
   const service = catalog || neutralCustomer ? "platform" : transfer ? "transfer" : rental ? "rent" : "cleaning";
   const parentRoute = logoTarget(location.pathname);

@@ -282,6 +282,9 @@ class CustomerActivityIntegrationTest extends BaseIntegrationTest {
                 null,
                 1,
                 "+905551112233",
+                null,
+                new BigDecimal("800.00"),
+                currency,
                 null
         ));
     }

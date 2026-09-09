@@ -404,6 +404,9 @@ class RentalTransferBenefitIntegrationTest extends BaseIntegrationTest {
                 null,
                 2,
                 "+905551234567",
+                null,
+                new BigDecimal("800.00"),
+                "TRY",
                 null
         ));
     }

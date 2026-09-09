@@ -501,6 +501,20 @@
       "subtitle": "Only the immediate next task after the first completed task is counted.",
       "result": "{{converted}} of {{cohort}} customers"
     },
+    "rentalSearch": {
+      "title": "Rental search funnel",
+      "subtitle": "Conversion of search executions in the selected cohort period, not unique-user conversion.",
+      "executions": "Search executions",
+      "zeroResult": "Zero-result rate",
+      "openRate": "Property-open rate",
+      "createdConversion": "Created booking conversion",
+      "completedConversion": "Completed booking conversion",
+      "conflictRate": "Availability-conflict rate",
+      "apiMedian": "Median API duration",
+      "cardMedian": "Median first useful card",
+      "bookingMedian": "Median apply-to-booking",
+      "mode": { "DATE_RANGE": "Date range", "MONTHLY": "Monthly", "BROWSE_ALL": "Browse all" }
+    },
     "rentalToTransfer": {
       "title": "Rental → Transfer",
       "subtitle": "How arrival and checkout context converts into created and completed transfers.",
@@ -865,6 +879,39 @@
       "emptyText": "Check back later.",
       "loadError": "We could not load the apartment catalog."
     },
+    "search": {
+      "title": "Find a place for your dates",
+      "subtitle": "Set the period and number of guests — we will show only apartments available for the whole stay.",
+      "termLabel": "Rental term",
+      "mode": { "DATE_RANGE": "By dates", "MONTHLY": "By months" },
+      "submit": "Find available apartments",
+      "searching": "Checking availability…",
+      "browseAll": "Browse all apartments",
+      "allApartments": "All apartments",
+      "initialHint": "Start with your dates and guests. The full catalog stays available if you only want to look around.",
+      "resultsEyebrow": "Available for the whole stay",
+      "results_one": "{{count}} apartment",
+      "results_other": "{{count}} apartments",
+      "guestsSummary_one": "{{count}} guest",
+      "guestsSummary_other": "{{count}} guests",
+      "bedroomsSummary_one": "{{count}} bedroom",
+      "bedroomsSummary_other": "{{count}} bedrooms",
+      "guestCapacity_one": "up to {{count}} guest",
+      "guestCapacity_other": "up to {{count}} guests",
+      "emptyTitle": "Nothing is free for the whole period",
+      "emptyText": "Change the dates, duration, or number of guests and search again.",
+      "loadError": "We could not check availability. Try the search again.",
+      "backToResults": "Back to results",
+      "errors": {
+        "required": "Complete this field.",
+        "outsideHorizon": "Choose a date in the available booking window.",
+        "minimum": "The selected stay is shorter than the minimum.",
+        "maximum": "The selected stay is too long.",
+        "months": "Enter a whole number of months.",
+        "guests": "Enter a whole number from 1 to 100.",
+        "invalidCombination": "These URL parameters cannot be used together."
+      }
+    },
     "property": {
       "capacity": "{{bedrooms}} bedrooms · up to {{guests}} guests",
       "galleryLabel": "Apartment photos",
@@ -953,6 +1000,7 @@
       "longTermDiscount": "{{percent}}% extended-stay discount",
       "total": "Total",
       "confirm": "Book apartment",
+      "confirmNewPrice": "Confirm new price and book",
       "submitting": "Booking…",
       "noPayment": "No payment is charged now. We will send confirmation after booking.",
       "errors": {
@@ -966,6 +1014,7 @@
         "monthly_dates_not_available": "These dates are not fully available. Choose another start date or rental term.",
         "rental_active_booking_limit_exceeded": "You have reached the active booking limit.",
         "invalid_rental_booking": "Check the selected rental term and dates.",
+        "rental_price_changed": "The price changed while you were booking. Review the updated total and confirm it again.",
         "notificationAccess": "Allow notifications to receive booking confirmations."
       }
     },

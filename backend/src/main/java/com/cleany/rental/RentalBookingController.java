@@ -32,22 +32,21 @@ public class RentalBookingController {
     private final RentalBookingService bookingService;
     private final RentalCleaningContextService cleaningContextService;
     private final RentalTransferContextService transferContextService;
-
-    @PostMapping("/quote")
-    public RentalBookingQuoteResponse quote(
-            @Valid @RequestBody RentalBookingQuoteRequest request
-    ) {
-        return bookingService.quote(request);
-    }
+    private final RentalSearchTrackingService searchTrackingService;
 
     @PostMapping
     public ResponseEntity<RentalBookingResponse> create(
             @Valid @RequestBody CreateRentalBookingRequest request
     ) {
-        RentalBookingResponse booking = bookingService.create(request);
-        return ResponseEntity
-                .created(URI.create(BASE_PATH + "/" + booking.id()))
-                .body(booking);
+        try {
+            RentalBookingResponse booking = bookingService.create(request);
+            return ResponseEntity
+                    .created(URI.create(BASE_PATH + "/" + booking.id()))
+                    .body(booking);
+        } catch (RentalDatesNotAvailableException exception) {
+            searchTrackingService.recordBookingConflictSafely(request.searchExecutionId());
+            throw exception;
+        }
     }
 
     @GetMapping

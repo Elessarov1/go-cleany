@@ -22,8 +22,10 @@ export default function () {
     'service catalog',
   );
   expectOk(
-    http.get(`${BASE_URL}/api/v1/rental/properties`, { tags: { endpoint: 'rental-catalog' } }),
-    'rental catalog',
+    http.get(`${BASE_URL}/api/v1/rental/search`, {
+      tags: { endpoint: 'rental-search', mode: 'BROWSE_ALL' },
+    }),
+    'rental browse-all search',
   );
   sleep(0.2);
 }

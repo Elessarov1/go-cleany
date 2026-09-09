@@ -72,6 +72,7 @@ services:
 
   k6:
     image: grafana/k6:2.1.0
+    user: "${PERF_CONTAINER_USER:-1000:1000}"
     profiles: ["tools"]
     environment:
       BASE_URL: http://frontend
@@ -87,3 +88,9 @@ services:
 
 volumes:
   perf_postgres_data:
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: "${PERF_DOCKER_SUBNET:-10.106.250.0/24}"

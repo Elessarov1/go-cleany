@@ -17,6 +17,7 @@ public record RentalBookingResponse(
         int guests,
         String comment,
         BigDecimal baseDailyPriceSnapshot,
+        BigDecimal baseMonthlyPriceSnapshot,
         BigDecimal monthlyPriceSnapshot,
         BigDecimal longTermDiscountRateSnapshot,
         BigDecimal discountAmount,
@@ -43,6 +44,9 @@ public record RentalBookingResponse(
                 booking.getGuests(),
                 booking.getComment(),
                 booking.getBaseDailyPriceSnapshot(),
+                booking.getTermType() == RentalTermType.MONTHLY
+                        ? booking.getBaseDailyPriceSnapshot().multiply(BigDecimal.valueOf(30))
+                        : null,
                 booking.getMonthlyPriceSnapshot(),
                 booking.getLongTermDiscountRateSnapshot(),
                 booking.getDiscountAmount(),

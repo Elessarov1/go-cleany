@@ -3,7 +3,7 @@ title: Loco Place Analytics
 type: cross-functional
 status: active
 scope: platform
-updated: 2026-09-02
+updated: 2026-09-09
 ---
 
 # Analytics
@@ -68,6 +68,14 @@ shows observed before/after movement only: without a control group it is not a c
 and contribution remains unavailable until Transfer driver cost is trustworthy.
 
 The Smart Reminders section uses reminders whose durable notification was created (`notifiedAt`) in the selected period. Service filters apply to the source vertical. Cleaning repeat and Rental checkout reminders attribute created/completed targets through their existing typed source fields; Transfer operational reminders measure whether the reminded source Transfer completed. Empty denominators return `null`, and Telegram delivery is intentionally not a separate metric until durable external delivery checkpoints exist.
+
+The `ALL` and `RENTAL` views also expose the anonymous Rental search funnel as a total and by
+`DATE_RANGE`, `MONTHLY` and `BROWSE_ALL`. Its cohort is search executions created inside the selected
+period, not users. It reports executions, zero-result rate, property-open rate, created/completed
+booking conversion (both over executions), availability-conflict rate, median API/first-card duration and median time to
+booking. Booking creation and completion count only when observed by the report end. The total
+zero-result denominator excludes browse-all; browse-all remains visible separately. These metrics
+must be described as conversion of search executions, never unique-user conversion.
 
 ## Business Health semantics
 

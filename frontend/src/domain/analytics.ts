@@ -84,6 +84,13 @@ export interface AnalyticsOverview {
       metric: AnalyticsRentalTransferBenefitMetric;
     }>;
   };
+  rentalSearch: {
+    total: AnalyticsRentalSearchFunnel;
+    byMode: Array<{
+      mode: "DATE_RANGE" | "MONTHLY" | "BROWSE_ALL";
+      funnel: AnalyticsRentalSearchFunnel;
+    }>;
+  };
   repeatActions: Array<{
     service: "CLEANING" | "TRANSFER";
     shownSources: number;
@@ -118,6 +125,23 @@ export interface AnalyticsOverview {
     newCustomers: number;
     completedTransactions: number;
   }>;
+}
+
+export interface AnalyticsRentalSearchFunnel {
+  searchExecutions: number;
+  zeroResultSearches: number;
+  openedSearches: number;
+  createdBookingSearches: number;
+  completedBookingSearches: number;
+  conflictSearches: number;
+  zeroResultRate: number | null;
+  openRate: number | null;
+  creationRate: number | null;
+  completionRate: number | null;
+  conflictRate: number | null;
+  medianApiDurationMs: number | null;
+  medianFirstCardDurationMs: number | null;
+  medianHoursToBooking: number | null;
 }
 
 export interface AnalyticsActionFunnel {

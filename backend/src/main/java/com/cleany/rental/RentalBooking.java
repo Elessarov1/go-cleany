@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Objects;
+import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -106,6 +107,9 @@ public class RentalBooking {
     @Column(name = "completed_at")
     private Instant completedAt;
 
+    @Column(name = "search_execution_id")
+    private UUID searchExecutionId;
+
     @Version
     @Column(name = "version", nullable = false)
     private long version;
@@ -119,6 +123,7 @@ public class RentalBooking {
             String phone,
             int guests,
             String comment,
+            UUID searchExecutionId,
             RentalPriceQuote quote,
             Instant createdAt
     ) {
@@ -146,6 +151,7 @@ public class RentalBooking {
         }
         this.guests = guests;
         this.comment = normalizeOptional(comment);
+        this.searchExecutionId = searchExecutionId;
         this.baseDailyPriceSnapshot = requiredQuote.baseDailyPrice();
         this.monthlyPriceSnapshot = requiredQuote.monthlyPrice();
         this.longTermDiscountRateSnapshot = requiredQuote.discountRate();

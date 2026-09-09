@@ -124,22 +124,7 @@ public class RentalPropertyService {
             property.changeDisplayOrder(index);
         }
         propertyRepository.flush();
-        return responses(
-                propertyRepository.findAllByOrderByDisplayOrderAscIdAsc(),
-                true,
-                false
-        );
-    }
-
-    @Transactional(readOnly = true)
-    public List<RentalPropertyResponse> getPublishedProperties() {
-        return responses(
-                propertyRepository.findAllByStatusOrderByDisplayOrderAscIdAsc(
-                        RentalPropertyStatus.PUBLISHED
-                ),
-                false,
-                true
-        );
+        return responses(propertyRepository.findAllByOrderByDisplayOrderAscIdAsc());
     }
 
     @Transactional(readOnly = true)
@@ -152,7 +137,7 @@ public class RentalPropertyService {
 
     @Transactional(readOnly = true)
     public List<RentalPropertyResponse> getAdminProperties() {
-        return responses(propertyRepository.findAllByOrderByDisplayOrderAscIdAsc(), true, false);
+        return responses(propertyRepository.findAllByOrderByDisplayOrderAscIdAsc());
     }
 
     @Transactional(readOnly = true)
@@ -185,18 +170,13 @@ public class RentalPropertyService {
         return response(property, media(property.getId()), false);
     }
 
-    private List<RentalPropertyResponse> responses(
-            List<RentalProperty> properties,
-            boolean admin,
-            boolean coverOnly
-    ) {
+    private List<RentalPropertyResponse> responses(List<RentalProperty> properties) {
         if (properties.isEmpty()) {
             return Collections.emptyList();
         }
         List<Long> propertyIds = properties.stream().map(RentalProperty::getId).toList();
-        List<RentalPropertyMedia> media = coverOnly
-                ? mediaRepository.findAllByProperty_IdInAndCoverTrueOrderByProperty_IdAscIdAsc(propertyIds)
-                : mediaRepository.findAllByProperty_IdInOrderByProperty_IdAscSortOrderAscIdAsc(propertyIds);
+        List<RentalPropertyMedia> media = mediaRepository
+                .findAllByProperty_IdInOrderByProperty_IdAscSortOrderAscIdAsc(propertyIds);
         Map<Long, List<RentalPropertyMedia>> mediaByPropertyId = media
                 .stream()
                 .collect(Collectors.groupingBy(item -> item.getProperty().getId()));
@@ -204,7 +184,7 @@ public class RentalPropertyService {
                 .map(property -> response(
                         property,
                         mediaByPropertyId.getOrDefault(property.getId(), Collections.emptyList()),
-                        admin
+                        true
                 ))
                 .toList();
     }

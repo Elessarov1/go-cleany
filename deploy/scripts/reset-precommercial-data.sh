@@ -55,6 +55,8 @@ select section, table_name, record_count
       ('DELETE', 'customer_notification', (select count(*) from customer_notification)),
       ('DELETE', 'transaction_feedback', (select count(*) from transaction_feedback)),
       ('DELETE', 'support_case', (select count(*) from support_case)),
+      ('DELETE', 'rental_search_event', (select count(*) from rental_search_event)),
+      ('DELETE', 'rental_search_execution', (select count(*) from rental_search_execution)),
       ('DELETE', 'customer_identity_link_request', (select count(*) from customer_identity_link_request)),
       ('DELETE', 'ordinary_customer_account', (
           select count(*) from customer_account account
@@ -132,7 +134,7 @@ for row in "${counts[@]}"; do
 done
 echo
 echo "PURGE: customer analytics and sessions; all Cleaning transactions/history/media;"
-echo "       Rental/Transfer bookings, BOOKING occupancy and booking-derived benefits; ordinary customers."
+echo "       Rental searches/bookings, Transfer bookings, BOOKING occupancy and booking-derived benefits; ordinary customers."
 echo "PRESERVE: ADMIN accounts/identities/roles; Rental catalog/media and non-BOOKING occupancy;"
 echo "          referral partners/partner codes; acquisition campaigns; platform configuration."
 echo "          Transfer airports, vehicles, rates and drivers."
@@ -198,6 +200,8 @@ select 'customer_acquisition', count(*) from customer_acquisition
 union all select 'acquisition_campaign_entry', count(*) from acquisition_campaign_entry
 union all select 'cleaning_order', count(*) from cleaning_order
 union all select 'rental_booking', count(*) from rental_booking
+union all select 'rental_search_event', count(*) from rental_search_event
+union all select 'rental_search_execution', count(*) from rental_search_execution
 union all select 'rental_transfer_benefit', count(*) from rental_transfer_benefit
 union all select 'transfer_booking', count(*) from transfer_booking
 union all select 'customer_notification', count(*) from customer_notification

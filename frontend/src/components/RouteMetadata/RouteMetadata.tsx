@@ -39,7 +39,7 @@ function routeMeta(pathname: string): RouteMeta {
   if (pathname === "/cleaning") {
     return { titleKey: "titles.cleaning", descriptionKey: "titles.cleaningDescription", indexable: true, canonicalPath: "/cleaning" };
   }
-  if (pathname === "/rent" || pathname === "/rent/properties") {
+  if (pathname === "/rent") {
     return { titleKey: "titles.rent", descriptionKey: "titles.rentDescription", indexable: true, canonicalPath: "/rent" };
   }
   if (/^\/rent\/properties\/[^/]+$/.test(pathname)) {

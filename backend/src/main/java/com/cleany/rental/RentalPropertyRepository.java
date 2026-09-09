@@ -14,8 +14,6 @@ public interface RentalPropertyRepository extends JpaRepository<RentalProperty, 
 
     List<RentalProperty> findAllByOrderByDisplayOrderAscIdAsc();
 
-    List<RentalProperty> findAllByStatusOrderByDisplayOrderAscIdAsc(RentalPropertyStatus status);
-
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select property from RentalProperty property order by property.displayOrder, property.id")
     List<RentalProperty> findAllForDisplayOrderUpdate();

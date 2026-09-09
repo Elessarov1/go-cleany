@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260916-01" author="loco-place">
+        <comment>Record anonymous Rental search executions and their bounded funnel events.</comment>
+        <createTable tableName="rental_search_execution">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" primaryKeyName="pk_rental_search_execution" nullable="false"/>
+            </column>
+            <column name="mode" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="result_count" type="INTEGER"><constraints nullable="false"/></column>
+            <column name="api_duration_ms" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="previous_search_id" type="UUID"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="rental_search_execution"
+                                 baseColumnNames="previous_search_id"
+                                 constraintName="fk_rental_search_previous"
+                                 referencedTableName="rental_search_execution"
+                                 referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <createIndex tableName="rental_search_execution" indexName="idx_rental_search_mode_time">
+            <column name="mode"/>
+            <column name="created_at"/>
+        </createIndex>
+        <createIndex tableName="rental_search_execution" indexName="idx_rental_search_created_at">
+            <column name="created_at"/>
+        </createIndex>
+
+        <createTable tableName="rental_search_event">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_rental_search_event" nullable="false"/>
+            </column>
+            <column name="search_execution_id" type="UUID"><constraints nullable="false"/></column>
+            <column name="event_type" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="duration_ms" type="BIGINT"/>
+            <column name="occurred_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="rental_search_event"
+                                 baseColumnNames="search_execution_id"
+                                 constraintName="fk_rental_search_event_execution"
+                                 referencedTableName="rental_search_execution"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addUniqueConstraint tableName="rental_search_event"
+                             columnNames="search_execution_id,event_type"
+                             constraintName="uk_rental_search_event_type"/>
+        <createIndex tableName="rental_search_event" indexName="idx_rental_search_event_type_time">
+            <column name="event_type"/>
+            <column name="occurred_at"/>
+        </createIndex>
+
+        <addColumn tableName="rental_booking">
+            <column name="search_execution_id" type="UUID"/>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="rental_booking"
+                                 baseColumnNames="search_execution_id"
+                                 constraintName="fk_rental_booking_search_execution"
+                                 referencedTableName="rental_search_execution"
+                                 referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <createIndex tableName="rental_booking" indexName="idx_rental_booking_search_execution">
+            <column name="search_execution_id"/>
+        </createIndex>
+
+        <sql dbms="postgresql"><![CDATA[
+            alter table rental_search_execution
+                add constraint ck_rental_search_mode check (
+                    mode in ('DATE_RANGE', 'MONTHLY', 'BROWSE_ALL')
+                ),
+                add constraint ck_rental_search_result_count check (result_count >= 0),
+                add constraint ck_rental_search_api_duration check (api_duration_ms >= 0);
+
+            alter table rental_search_event
+                add constraint ck_rental_search_event_type check (
+                    event_type in ('PROPERTY_OPENED', 'FIRST_CARD_RENDERED', 'BOOKING_CONFLICT')
+                ),
+                add constraint ck_rental_search_event_duration check (
+                    (event_type = 'FIRST_CARD_RENDERED' and duration_ms between 0 and 600000)
+                    or (event_type <> 'FIRST_CARD_RENDERED' and duration_ms is null)
+                );
+        ]]></sql>
+
+        <rollback>
+            <dropIndex tableName="rental_booking" indexName="idx_rental_booking_search_execution"/>
+            <dropForeignKeyConstraint baseTableName="rental_booking"
+                                      constraintName="fk_rental_booking_search_execution"/>
+            <dropColumn tableName="rental_booking" columnName="search_execution_id"/>
+            <dropTable tableName="rental_search_event"/>
+            <dropTable tableName="rental_search_execution"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

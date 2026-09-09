@@ -9,11 +9,13 @@ import type {
   RentalTransferContext,
   RentalTransferContextType,
   RentalTransferPrefill,
-  RentalBookingQuote,
-  RentalBookingQuoteRequest,
+  RentalQuote,
   RentalConfiguration,
   RentalAdminNotificationPreference,
   RentalProperty,
+  RentalSearchRequest,
+  RentalSearchResponse,
+  RentalTermCriteria,
   RentalOccupancy,
   UpdateRentalPropertyRequest,
   UpsertRentalOccupancyRequest,
@@ -26,11 +28,6 @@ export class HttpRentalApi implements RentalApi {
 
   getConfiguration(): Promise<RentalConfiguration> {
     return this.client.request("/api/v1/rental/configuration");
-  }
-
-  async getProperties(): Promise<RentalProperty[]> {
-    const properties = await this.client.request<RentalProperty[]>("/api/v1/rental/properties");
-    return properties.map((property) => this.resolveMedia(property));
   }
 
   async getProperty(slug: string): Promise<RentalProperty> {
@@ -51,10 +48,44 @@ export class HttpRentalApi implements RentalApi {
     );
   }
 
-  quoteBooking(request: RentalBookingQuoteRequest): Promise<RentalBookingQuote> {
-    return this.client.request("/api/v1/rental/bookings/quote", {
+  async search(
+    request: RentalSearchRequest,
+    signal?: AbortSignal,
+    previousSearchId?: string,
+  ): Promise<RentalSearchResponse> {
+    const query = this.searchQuery(request);
+    const response = await this.client.request<RentalSearchResponse>(
+      `/api/v1/rental/search?${query.toString()}`,
+      {
+        signal,
+        headers: previousSearchId ? { "X-Rental-Previous-Search-Id": previousSearchId } : undefined,
+      },
+    );
+    return {
+      ...response,
+      properties: response.properties.map((property) => ({
+        ...property,
+        coverUrl: property.coverUrl ? this.client.resolveUrl(property.coverUrl) : null,
+      })),
+    };
+  }
+
+  quotePublic(propertyId: number, request: RentalTermCriteria): Promise<RentalQuote> {
+    return this.client.request(
+      `/api/v1/rental/properties/${propertyId}/quote?${this.searchQuery(request).toString()}`,
+    );
+  }
+
+  recordPropertyOpened(searchExecutionId: string): Promise<void> {
+    return this.client.request(`/api/v1/rental/searches/${searchExecutionId}/opened`, {
       method: "POST",
-      body: JSON.stringify(request),
+    });
+  }
+
+  recordFirstCardRendered(searchExecutionId: string, durationMs: number): Promise<void> {
+    return this.client.request(`/api/v1/rental/searches/${searchExecutionId}/first-card`, {
+      method: "POST",
+      body: JSON.stringify({ durationMs: Math.max(0, Math.round(durationMs)) }),
     });
   }
 
@@ -243,5 +274,17 @@ export class HttpRentalApi implements RentalApi {
         thumbnailUrl: media.thumbnailUrl ? this.client.resolveUrl(media.thumbnailUrl) : undefined,
       })),
     };
+  }
+
+  private searchQuery(request: RentalSearchRequest): URLSearchParams {
+    if (!("termType" in request) || !request.termType) return new URLSearchParams();
+    const query = new URLSearchParams({
+      termType: request.termType,
+      checkInDate: request.checkInDate,
+      guests: String(request.guests),
+    });
+    if (request.termType === "DATE_RANGE") query.set("checkOutDate", request.checkOutDate);
+    else query.set("months", String(request.months));
+    return query;
   }
 }

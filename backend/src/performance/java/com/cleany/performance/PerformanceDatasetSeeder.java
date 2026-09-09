@@ -241,7 +241,7 @@ final class PerformanceDatasetSeeder {
                 insert into rental_property (
                     id, slug, title_ru, title_en, description_en, area, address, bedrooms,
                     beds, bathrooms, max_guests, area_sqm, floor, base_daily_price,
-                    currency, status, created_at, updated_at
+                    currency, status, display_order, created_at, updated_at
                 )
                 select i,
                        'performance-apartment-' || i,
@@ -259,6 +259,7 @@ final class PerformanceDatasetSeeder {
                        1800 + (i %% 7) * 250,
                        'TRY',
                        'PUBLISHED',
+                       i,
                        ('%1$s'::date - ((i %% 90) * interval '1 day'))::timestamptz,
                        '%1$s'::date::timestamptz
                   from generate_series(1, %2$d) i;
@@ -354,7 +355,7 @@ final class PerformanceDatasetSeeder {
                        customer_id,
                        property_id,
                        check_in_date,
-                       check_in_date + 7,
+                       check_in_date + 6,
                        7,
                        'Performance Customer ' || customer_id,
                        '+90555' || lpad(customer_id::text, 7, '0'),
@@ -381,7 +382,7 @@ final class PerformanceDatasetSeeder {
                 )
                 select id,
                        property_id,
-                       daterange(check_in_date, check_out_date, '[)'),
+                       daterange(check_in_date, check_out_date + 1, '[)'),
                        'BOOKING',
                        id,
                        null,
@@ -457,7 +458,8 @@ final class PerformanceDatasetSeeder {
                     airport_name_ru_snapshot, airport_name_en_snapshot, vehicle_type_id,
                     vehicle_code_snapshot, vehicle_name_ru_snapshot, vehicle_name_en_snapshot,
                     pickup_date, pickup_time, address, passenger_count, luggage_count,
-                    flight_number, scheduled_arrival_time, comment, price_amount, price_currency,
+                    flight_number, scheduled_arrival_time, comment, base_price_amount,
+                    discount_amount, price_amount, price_currency,
                     status, driver_id, created_at, confirmed_at, completed_at, cancelled_at,
                     rejected_at, status_reason, version
                 )
@@ -483,6 +485,8 @@ final class PerformanceDatasetSeeder {
                        case when direction = 'FROM_AIRPORT' then 'PC' || lpad(i::text, 4, '0') else null end,
                        case when direction = 'FROM_AIRPORT' then make_time(5 + (i %% 16), 0, 0) else null end,
                        null,
+                       1200 + (i %% 5) * 150,
+                       0,
                        1200 + (i %% 5) * 150,
                        'TRY',
                        status,

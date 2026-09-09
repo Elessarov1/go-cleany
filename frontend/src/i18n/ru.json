@@ -503,6 +503,20 @@
       "subtitle": "Учитывается только ближайшая следующая задача после первой завершённой.",
       "result": "{{converted}} из {{cohort}} клиентов"
     },
+    "rentalSearch": {
+      "title": "Воронка поиска аренды",
+      "subtitle": "Конверсия поисковых запусков выбранной когорты, а не уникальных пользователей.",
+      "executions": "Запуски поиска",
+      "zeroResult": "Доля пустой выдачи",
+      "openRate": "Открытие квартиры",
+      "createdConversion": "Конверсия в бронь",
+      "completedConversion": "Конверсия в завершённую бронь",
+      "conflictRate": "Конфликты доступности",
+      "apiMedian": "Медиана ответа API",
+      "cardMedian": "Медиана первой полезной карточки",
+      "bookingMedian": "Медиана от поиска до брони",
+      "mode": { "DATE_RANGE": "По датам", "MONTHLY": "Помесячно", "BROWSE_ALL": "Все квартиры" }
+    },
     "rentalToTransfer": {
       "title": "Rental → Transfer",
       "subtitle": "Как контекст заезда и выезда превращается в созданные и завершённые трансферы.",
@@ -867,6 +881,47 @@
       "emptyText": "Загляните позже.",
       "loadError": "Не удалось загрузить каталог квартир."
     },
+    "search": {
+      "title": "Найдите квартиру на свои даты",
+      "subtitle": "Укажите период и число гостей — покажем только квартиры, свободные на всё проживание.",
+      "termLabel": "Срок аренды",
+      "mode": { "DATE_RANGE": "По датам", "MONTHLY": "Помесячно" },
+      "submit": "Найти свободные квартиры",
+      "searching": "Проверяем доступность…",
+      "browseAll": "Посмотреть все квартиры",
+      "allApartments": "Все квартиры",
+      "initialHint": "Начните с дат и гостей. Если пока присматриваетесь, можно открыть весь каталог.",
+      "resultsEyebrow": "Свободны на весь период",
+      "results_one": "{{count}} квартира",
+      "results_few": "{{count}} квартиры",
+      "results_many": "{{count}} квартир",
+      "results_other": "{{count}} квартиры",
+      "guestsSummary_one": "{{count}} гость",
+      "guestsSummary_few": "{{count}} гостя",
+      "guestsSummary_many": "{{count}} гостей",
+      "guestsSummary_other": "{{count}} гостя",
+      "bedroomsSummary_one": "{{count}} спальня",
+      "bedroomsSummary_few": "{{count}} спальни",
+      "bedroomsSummary_many": "{{count}} спален",
+      "bedroomsSummary_other": "{{count}} спальни",
+      "guestCapacity_one": "до {{count}} гостя",
+      "guestCapacity_few": "до {{count}} гостей",
+      "guestCapacity_many": "до {{count}} гостей",
+      "guestCapacity_other": "до {{count}} гостей",
+      "emptyTitle": "На весь период ничего не свободно",
+      "emptyText": "Измените даты, срок или число гостей и повторите поиск.",
+      "loadError": "Не удалось проверить доступность. Повторите поиск.",
+      "backToResults": "К результатам",
+      "errors": {
+        "required": "Заполните это поле.",
+        "outsideHorizon": "Выберите дату в доступном окне бронирования.",
+        "minimum": "Выбранный срок меньше минимального.",
+        "maximum": "Выбранный срок слишком большой.",
+        "months": "Укажите целое число месяцев.",
+        "guests": "Укажите целое число от 1 до 100.",
+        "invalidCombination": "Эти параметры ссылки нельзя использовать вместе."
+      }
+    },
     "property": {
       "capacity": "{{bedrooms}} спальни · до {{guests}} гостей",
       "galleryLabel": "Фотографии квартиры",
@@ -961,6 +1016,7 @@
       "longTermDiscount": "Скидка за длительное проживание {{percent}}%",
       "total": "Итого",
       "confirm": "Забронировать квартиру",
+      "confirmNewPrice": "Подтвердить новую цену и забронировать",
       "submitting": "Бронируем…",
       "noPayment": "Сейчас оплата не списывается. После бронирования мы отправим подтверждение.",
       "errors": {
@@ -974,6 +1030,7 @@
         "monthly_dates_not_available": "Период доступен не полностью. Выберите другую дату начала или срок аренды.",
         "rental_active_booking_limit_exceeded": "Достигнут лимит активных бронирований.",
         "invalid_rental_booking": "Проверьте выбранный срок и даты аренды.",
+        "rental_price_changed": "Цена изменилась во время оформления. Проверьте новую сумму и подтвердите её ещё раз.",
         "notificationAccess": "Разрешите уведомления, чтобы получать подтверждения бронирования."
       }
     },

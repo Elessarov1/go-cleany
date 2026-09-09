@@ -3,7 +3,7 @@ title: Loco Place Current Context
 type: ai-context
 status: active
 scope: platform
-updated: 2026-09-08
+updated: 2026-09-09
 ---
 
 # Loco Place — Current Context
@@ -157,7 +157,7 @@ The same business backend is used across channels. Channel-specific behavior bel
 
 The UI should progressively use known context to reduce friction. New users provide required data; returning users get safe prefill; cross-service flows inherit relevant source context; mature flows can expose an explainable next action.
 
-Unified customer Activity is implemented at `/account/activity`. Its API composes customer-owned Rental, Transfer and Cleaning data at request time into active/upcoming and terminal-history sections while keeping each vertical aggregate and detail workflow independent. Activity and `/notifications` form one visually unified customer section with persistent tabs while remaining separate read models and routes. The shared customer navigation uses Activity as its stable history destination; legacy vertical list routes remain available.
+Unified customer Activity is implemented at `/account/activity`. Its API composes customer-owned Rental, Transfer and Cleaning data at request time into active/upcoming and terminal-history sections while keeping each vertical aggregate and detail workflow independent. Activity and `/notifications` form one visually unified customer section with persistent tabs while remaining separate read models and routes. The shared customer navigation uses Activity as its stable history destination; existing vertical order/booking history routes remain available where still routed, while Rental discovery itself uses only `/rent`.
 
 Same-service repeat is implemented for owned completed Cleaning and Transfer transactions. Their detail pages open safe prefilled forms; the backend rechecks ownership, completed status, service availability and current business configuration at both prefill and creation. Only explicitly reusable fields are copied, current account phone is used, and new scheduling/current price/incentives/assignment/status are never inherited. Typed self-source links preserve attribution without a universal transaction model.
 
@@ -174,6 +174,16 @@ bridge remains separate from `RentalCleaningBenefit`; no generic benefit model i
 The platform home at `/` is contextual for authenticated returning customers and stays a plain catalog for guests/new customers. `GET /api/v1/account/home` composes owned Activity, the nearest currently actionable Rental cross-service context and the latest eligible Cleaning/Transfer repeat without persistence. It exposes no `customerId`, never shows `AVAILABLE_LATER` as a home action, suppresses duplicate target services and continues to show owned active work when a vertical is unavailable for new customer flows. The catalog and personalized context load independently.
 
 Unified Support & Feedback is implemented without modifying vertical aggregates. Every owned Rental, Transfer and Cleaning detail page embeds the shared panel for opening a categorized case in any source status; completed sources additionally accept one immutable `GOOD` or `PROBLEM` feedback. Negative feedback atomically opens or reuses the single open case for that source. Customer ownership is resolved through the vertical repository and unavailable services do not hide support.
+
+Rental now uses a period-first public funnel. `/rent` searches published apartments by inclusive
+dates/months and guests without creating an account; explicit browse-all remains available. Search,
+public detail and quote are the only customer Rental discovery path and share backend
+availability/stay/pricing authority, while booking rechecks all
+conditions and requires the client to confirm expected total/currency. A price change produces an
+explicit re-quote/reconfirmation cycle before persistence. Anonymous search executions link
+idempotent first-card/property-open/conflict events and an optional booking source without placing
+analytics IDs in URLs or introducing a universal order/search aggregate. Admin analytics reports
+execution-level Rental search conversion by mode.
 
 General support is reachable at `hello@loco-place.com`. Standalone web exposes it in the public footer; the public `/support` page explains when to use the transaction-attached support flow and is linked from Telegram Mini App navigation. The Telegram bot is a customer-facing Loco Place entry point: `/start`, `/help`, its web-app buttons and its persistent menu open the application or support page. Driver links and provider/admin commands retain routing priority and remain operational interfaces rather than customer navigation.
 

@@ -77,6 +77,7 @@ class RentalBookingTest {
                 durationDays,
                 new BigDecimal("100.00"),
                 null,
+                null,
                 total,
                 false,
                 BigDecimal.ZERO,
@@ -98,6 +99,7 @@ class RentalBookingTest {
                 "Alex",
                 "+905551234567",
                 2,
+                null,
                 null,
                 quote,
                 NOW

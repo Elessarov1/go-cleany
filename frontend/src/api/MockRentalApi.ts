@@ -11,12 +11,15 @@ import type {
   RentalTransferContextType,
   RentalTransferPrefill,
   RentalBookingProperty,
-  RentalBookingQuote,
-  RentalBookingQuoteRequest,
+  RentalQuote,
   RentalConfiguration,
   RentalAdminNotificationPreference,
   RentalOccupancy,
   RentalProperty,
+  RentalSearchRequest,
+  RentalSearchPrice,
+  RentalSearchResponse,
+  RentalTermCriteria,
   UpdateRentalPropertyRequest,
   UpsertRentalOccupancyRequest,
 } from "../domain/rental";
@@ -37,6 +40,8 @@ export const mockRentalConfiguration: RentalConfiguration = {
   maxStayDays: 365,
   bookingStartMonthsAhead: 6,
   maxActiveBookingsPerCustomer: 3,
+  today: dateFromToday(0),
+  latestCheckInDate: addMonthsToInputValue(dateFromToday(0), 6),
 };
 
 function dateFromToday(offset: number): string {
@@ -174,6 +179,7 @@ function seedBooking(): RentalBooking {
     guests: 2,
     comment: "Позвонить за час до заселения",
     baseDailyPriceSnapshot: property.baseDailyPrice!,
+    baseMonthlyPriceSnapshot: null,
     monthlyPriceSnapshot: null,
     longTermDiscountRateSnapshot: 0,
     discountAmount: 0,
@@ -220,12 +226,6 @@ export class MockRentalApi implements RentalApi {
     return simulateNetwork(mockRentalConfiguration);
   }
 
-  getProperties(): Promise<RentalProperty[]> {
-    return simulateNetwork(properties
-      .filter((property) => property.status === "PUBLISHED")
-      .sort((left, right) => left.displayOrder - right.displayOrder || left.id - right.id));
-  }
-
   getProperty(slug: string): Promise<RentalProperty> {
     const property = properties.find((item) => item.slug === slug && item.status === "PUBLISHED");
     return property
@@ -250,9 +250,88 @@ export class MockRentalApi implements RentalApi {
     return simulateNetwork({ propertyId, fromDate, toDate, unavailableRanges });
   }
 
-  async quoteBooking(request: RentalBookingQuoteRequest): Promise<RentalBookingQuote> {
+  async search(
+    request: RentalSearchRequest,
+    signal?: AbortSignal,
+    _previousSearchId?: string,
+  ): Promise<RentalSearchResponse> {
+    if (signal?.aborted) throw new DOMException("Search aborted", "AbortError");
+    const published = properties
+      .filter((property) => property.status === "PUBLISHED")
+      .sort((left, right) => left.displayOrder - right.displayOrder || left.id - right.id);
+    const executionId = crypto.randomUUID();
+    if (!("termType" in request) || !request.termType) {
+      const response = await simulateNetwork({
+        searchExecutionId: executionId,
+        criteria: {
+          mode: "BROWSE_ALL" as const,
+          termType: null,
+          checkInDate: null,
+          checkOutDate: null,
+          rentalMonths: null,
+          durationDays: null,
+          guests: null,
+        },
+        calculatedAt: new Date().toISOString(),
+        properties: published.map((property) => this.searchProperty(property, null)),
+      });
+      if (signal?.aborted) throw new DOMException("Search aborted", "AbortError");
+      return response;
+    }
+    const found: RentalSearchResponse["properties"] = [];
+    for (const property of published) {
+      if ((property.maxGuests ?? 0) < request.guests) continue;
+      try {
+        const quote = await this.quotePublic(property.id, request);
+        found.push(this.searchProperty(property, quote.price));
+      } catch (error) {
+        if (!(error instanceof ApiError) || error.code !== "dates_not_available") throw error;
+      }
+    }
+    const firstQuote = found[0]?.price ?? null;
+    const checkOutDate = request.termType === "MONTHLY"
+      ? addDays(addMonthsToInputValue(request.checkInDate, request.months), -1)
+      : request.checkOutDate;
+    const response = await simulateNetwork({
+      searchExecutionId: executionId,
+      criteria: {
+        mode: request.termType,
+        termType: request.termType,
+        checkInDate: request.checkInDate,
+        checkOutDate,
+        rentalMonths: request.termType === "MONTHLY" ? request.months : null,
+        durationDays: firstQuote?.durationDays ?? durationDays(request.checkInDate, checkOutDate),
+        guests: request.guests,
+      },
+      calculatedAt: new Date().toISOString(),
+      properties: found,
+    });
+    if (signal?.aborted) throw new DOMException("Search aborted", "AbortError");
+    return response;
+  }
+
+  quotePublic(propertyId: number, request: RentalTermCriteria): Promise<RentalQuote> {
+    return this.calculateQuote({ propertyId, ...request });
+  }
+
+  recordPropertyOpened(_searchExecutionId: string): Promise<void> {
+    return Promise.resolve();
+  }
+
+  recordFirstCardRendered(_searchExecutionId: string, _durationMs: number): Promise<void> {
+    return Promise.resolve();
+  }
+
+  private async calculateQuote(
+    request: RentalTermCriteria & { propertyId: number },
+  ): Promise<RentalQuote> {
     const property = properties.find((item) => item.id === request.propertyId && item.status === "PUBLISHED");
-    if (!property || property.baseDailyPrice === null || !property.currency) {
+    if (
+      !property
+      || property.baseDailyPrice === null
+      || !property.currency
+      || (property.maxGuests ?? 0) < request.guests
+    ) {
       throw new ApiError("Rental property is unavailable", 404, "rental_property_not_available");
     }
     const checkOutDate = request.termType === "MONTHLY"
@@ -292,19 +371,30 @@ export class MockRentalApi implements RentalApi {
     const discountAmount = roundMoney(baseAmount - totalPrice);
     return simulateNetwork({
       property: propertySummary(property),
-      termType: request.termType,
-      checkInDate: request.checkInDate,
-      checkOutDate,
-      rentalMonths: request.termType === "MONTHLY" ? request.months : null,
-      durationDays: duration,
-      baseDailyPrice: property.baseDailyPrice,
-      monthlyPrice,
-      baseAmount,
-      longTermDiscountApplied: discountRate > 0,
-      discountRate,
-      discountAmount,
-      totalPrice,
-      currency: property.currency,
+      criteria: {
+        mode: request.termType,
+        termType: request.termType,
+        checkInDate: request.checkInDate,
+        checkOutDate,
+        rentalMonths: request.termType === "MONTHLY" ? request.months : null,
+        durationDays: duration,
+        guests: request.guests,
+      },
+      price: {
+        baseDailyPrice: property.baseDailyPrice,
+        baseMonthlyPrice: request.termType === "MONTHLY"
+          ? roundMoney(property.baseDailyPrice * 30)
+          : null,
+        monthlyPrice,
+        baseAmount,
+        longTermDiscountApplied: discountRate > 0 && discountAmount > 0,
+        discountRate,
+        discountAmount,
+        totalPrice,
+        currency: property.currency,
+        rentalMonths: request.termType === "MONTHLY" ? request.months : null,
+        durationDays: duration,
+      },
     });
   }
 
@@ -318,33 +408,59 @@ export class MockRentalApi implements RentalApi {
     if (activeBookings.length >= mockRentalConfiguration.maxActiveBookingsPerCustomer) {
       throw new ApiError("Active booking limit exceeded", 409, "rental_active_booking_limit_exceeded");
     }
-    const quote = await this.quoteBooking(request);
+    const quote = await this.calculateQuote(request);
+    if (
+      quote.price.currency !== request.expectedCurrency
+      || quote.price.totalPrice !== request.expectedTotalPrice
+    ) {
+      throw new ApiError("Rental price changed", 409, "rental_price_changed");
+    }
     const user = this.platform.getUser();
     const booking: RentalBooking = {
       id: Date.now(),
       property: quote.property,
-      termType: quote.termType,
-      checkInDate: quote.checkInDate,
-      checkOutDate: quote.checkOutDate,
-      rentalMonths: quote.rentalMonths,
-      durationDays: quote.durationDays,
+      termType: quote.criteria.termType!,
+      checkInDate: quote.criteria.checkInDate!,
+      checkOutDate: quote.criteria.checkOutDate!,
+      rentalMonths: quote.criteria.rentalMonths,
+      durationDays: quote.criteria.durationDays!,
       customerName: user
         ? [user.firstName, user.lastName].filter(Boolean).join(" ")
         : "Browser preview",
       phone: request.phone.trim(),
       guests: request.guests,
       comment: request.comment?.trim() || null,
-      baseDailyPriceSnapshot: quote.baseDailyPrice,
-      monthlyPriceSnapshot: quote.monthlyPrice,
-      longTermDiscountRateSnapshot: quote.discountRate,
-      discountAmount: quote.discountAmount,
-      totalPrice: quote.totalPrice,
-      currency: quote.currency,
+      baseDailyPriceSnapshot: quote.price.baseDailyPrice,
+      baseMonthlyPriceSnapshot: quote.price.baseMonthlyPrice,
+      monthlyPriceSnapshot: quote.price.monthlyPrice,
+      longTermDiscountRateSnapshot: quote.price.discountRate,
+      discountAmount: quote.price.discountAmount,
+      totalPrice: quote.price.totalPrice,
+      currency: quote.price.currency,
       status: "CONFIRMED",
       createdAt: new Date().toISOString(),
     };
     writeBookings([booking, ...readBookings()]);
     return simulateNetwork(booking);
+  }
+
+  private searchProperty(property: RentalProperty, price: RentalSearchPrice | null) {
+    const cover = property.media.find((media) => media.cover) ?? property.media[0];
+    return {
+      id: property.id,
+      slug: property.slug!,
+      titleRu: property.titleRu,
+      titleEn: property.titleEn!,
+      descriptionEn: property.descriptionEn,
+      area: property.area!,
+      bedrooms: property.bedrooms!,
+      maxGuests: property.maxGuests!,
+      areaSqm: property.areaSqm!,
+      baseDailyPrice: property.baseDailyPrice!,
+      currency: property.currency!,
+      coverUrl: cover?.cardUrl ?? cover?.url ?? null,
+      price,
+    };
   }
 
   getBookings(): Promise<RentalBooking[]> {

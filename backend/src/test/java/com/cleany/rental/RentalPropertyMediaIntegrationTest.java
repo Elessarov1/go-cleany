@@ -101,7 +101,6 @@ class RentalPropertyMediaIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertEquals(RentalPropertyStatus.PUBLISHED, published.status()),
                 () -> Assertions.assertEquals(second.id(), published.media().getFirst().id()),
                 () -> Assertions.assertTrue(published.media().getFirst().cover()),
-                () -> Assertions.assertEquals(1, propertyService.getPublishedProperties().size()),
                 () -> Assertions.assertEquals(
                         draft.id(),
                         propertyService.getPublishedProperty("orange-residence").id()
@@ -142,7 +141,10 @@ class RentalPropertyMediaIntegrationTest extends BaseIntegrationTest {
         );
 
         propertyService.archive(draft.id());
-        Assertions.assertTrue(propertyService.getPublishedProperties().isEmpty());
+        Assertions.assertThrows(
+                RentalPropertyNotFoundException.class,
+                () -> propertyService.getPublishedProperty("orange-residence")
+        );
         Assertions.assertThrows(
                 RentalPropertyMediaNotFoundException.class,
                 () -> propertyMediaService.getPublicContent(draft.id(), first.id())

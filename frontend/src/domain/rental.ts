@@ -21,6 +21,8 @@ export interface RentalConfiguration {
   maxStayDays: number;
   bookingStartMonthsAhead: number;
   maxActiveBookingsPerCustomer: number;
+  today: string;
+  latestCheckInDate: string;
 }
 
 export interface RentalPropertyMedia {
@@ -80,48 +82,93 @@ export interface RentalBookingProperty {
 
 export type RentalTermType = "DATE_RANGE" | "MONTHLY";
 
-export interface DateRangeRentalBookingQuoteRequest {
-  propertyId: number;
+export interface DateRangeRentalTermCriteria {
   termType: "DATE_RANGE";
   checkInDate: string;
   checkOutDate: string;
   months?: never;
+  guests: number;
 }
 
-export interface MonthlyRentalBookingQuoteRequest {
-  propertyId: number;
+export interface MonthlyRentalTermCriteria {
   termType: "MONTHLY";
   checkInDate: string;
   checkOutDate?: never;
   months: number;
-}
-
-export type RentalBookingQuoteRequest =
-  | DateRangeRentalBookingQuoteRequest
-  | MonthlyRentalBookingQuoteRequest;
-
-export interface RentalBookingQuote {
-  property: RentalBookingProperty;
-  termType: RentalTermType;
-  checkInDate: string;
-  checkOutDate: string;
-  rentalMonths: number | null;
-  durationDays: number;
-  baseDailyPrice: number;
-  monthlyPrice: number | null;
-  baseAmount: number;
-  longTermDiscountApplied: boolean;
-  discountRate: number;
-  discountAmount: number;
-  totalPrice: number;
-  currency: string;
-}
-
-export type CreateRentalBookingRequest = RentalBookingQuoteRequest & {
   guests: number;
+}
+
+export type RentalTermCriteria =
+  | DateRangeRentalTermCriteria
+  | MonthlyRentalTermCriteria;
+
+export interface RentalQuote {
+  property: RentalBookingProperty;
+  criteria: RentalSearchCriteria;
+  price: RentalSearchPrice;
+}
+
+export type CreateRentalBookingRequest = RentalTermCriteria & {
+  propertyId: number;
   phone: string;
   comment?: string;
+  expectedTotalPrice: number;
+  expectedCurrency: string;
+  searchExecutionId?: string;
 };
+
+export type RentalSearchMode = RentalTermType | "BROWSE_ALL";
+
+export type RentalSearchRequest =
+  | RentalTermCriteria
+  | { termType?: never; view: "all" };
+
+export interface RentalSearchCriteria {
+  mode: RentalSearchMode;
+  termType: RentalTermType | null;
+  checkInDate: string | null;
+  checkOutDate: string | null;
+  rentalMonths: number | null;
+  durationDays: number | null;
+  guests: number | null;
+}
+
+export interface RentalSearchPrice {
+  baseDailyPrice: number;
+  baseMonthlyPrice: number | null;
+  monthlyPrice: number | null;
+  baseAmount: number;
+  discountRate: number;
+  discountAmount: number;
+  longTermDiscountApplied: boolean;
+  totalPrice: number;
+  currency: string;
+  rentalMonths: number | null;
+  durationDays: number;
+}
+
+export interface RentalSearchProperty {
+  id: number;
+  slug: string;
+  titleRu: string | null;
+  titleEn: string;
+  descriptionEn: string | null;
+  area: string;
+  bedrooms: number;
+  maxGuests: number;
+  areaSqm: number;
+  baseDailyPrice: number;
+  currency: string;
+  coverUrl: string | null;
+  price: RentalSearchPrice | null;
+}
+
+export interface RentalSearchResponse {
+  searchExecutionId: string;
+  criteria: RentalSearchCriteria;
+  calculatedAt: string;
+  properties: RentalSearchProperty[];
+}
 
 export type RentalBookingStatus =
   | "CONFIRMED"
@@ -142,6 +189,7 @@ export interface RentalBooking {
   guests: number;
   comment?: string | null;
   baseDailyPriceSnapshot: number;
+  baseMonthlyPriceSnapshot: number | null;
   monthlyPriceSnapshot: number | null;
   longTermDiscountRateSnapshot: number;
   discountAmount: number;

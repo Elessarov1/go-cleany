@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { RentalAvailabilityRange, RentalConfiguration } from "../../domain/rental";
-import { addDaysToInputValue, addMonthsToInputValue, inclusiveDaysBetween, todayAsInputValue } from "../../utils/format";
+import { addDaysToInputValue, inclusiveDaysBetween } from "../../utils/format";
 import { Icon } from "../Icon/Icon";
 
 interface RentalCalendarProps {
@@ -47,10 +47,10 @@ export function RentalCalendar({
   onValidationError,
 }: RentalCalendarProps) {
   const { t, i18n } = useTranslation();
-  const today = todayAsInputValue();
+  const today = configuration.today;
   const [visibleMonth, setVisibleMonth] = useState(() => startOfMonth(today));
   const locale = i18n.resolvedLanguage === "ru" ? "ru-RU" : "en-GB";
-  const maxCheckIn = addMonthsToInputValue(today, configuration.bookingStartMonthsAhead);
+  const maxCheckIn = configuration.latestCheckInDate;
   const maxCalendarDate = addDaysToInputValue(maxCheckIn, configuration.maxStayDays - 1);
   const calendarDays = useMemo(() => {
     const first = new Date(visibleMonth);

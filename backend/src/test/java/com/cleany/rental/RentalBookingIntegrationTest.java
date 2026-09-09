@@ -105,10 +105,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
         LocalDate checkIn = stayPolicy.today().plusDays(1);
         LocalDate checkOut = checkIn.plusMonths(1);
 
-        RentalBookingQuoteResponse quote = bookingService.quote(
-                customer,
-                monthlyQuoteRequest(property.id(), checkIn, 1)
-        );
+        RentalQuoteResponse quote = monthlyQuote(property.id(), checkIn, 1);
         RentalBookingResponse booking = bookingService.create(
                 customer,
                 monthlyRequest(property.id(), checkIn, 1)
@@ -124,9 +121,9 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertEquals(RentalBookingStatus.CONFIRMED, booking.status()),
                 () -> Assertions.assertEquals(RentalTermType.MONTHLY, booking.termType()),
                 () -> Assertions.assertEquals(1, booking.rentalMonths()),
-                () -> Assertions.assertEquals("100.00", quote.baseDailyPrice().toPlainString()),
-                () -> Assertions.assertEquals("300.00", quote.discountAmount().toPlainString()),
-                () -> Assertions.assertEquals("2700.00", quote.totalPrice().toPlainString()),
+                () -> Assertions.assertEquals("100.00", quote.price().baseDailyPrice().toPlainString()),
+                () -> Assertions.assertEquals("300.00", quote.price().discountAmount().toPlainString()),
+                () -> Assertions.assertEquals("2700.00", quote.price().totalPrice().toPlainString()),
                 () -> Assertions.assertEquals("100.00", persisted.getBaseDailyPriceSnapshot().toPlainString()),
                 () -> Assertions.assertEquals("2700.00", persisted.getMonthlyPriceSnapshot().toPlainString()),
                 () -> Assertions.assertEquals("2700.00", persisted.getTotalPrice().toPlainString()),
@@ -164,10 +161,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
         Assertions.assertAll(
                 () -> Assertions.assertThrows(
                         PlatformServiceNotAvailableException.class,
-                        () -> bookingService.quote(
-                                customer,
-                                dateRangeQuoteRequest(property.id(), checkIn, checkOut)
-                        )
+                        () -> dateRangeQuote(property.id(), checkIn, checkOut)
                 ),
                 () -> Assertions.assertThrows(
                         PlatformServiceNotAvailableException.class,
@@ -189,7 +183,6 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void draftAndArchivedProperties_cannotBeQuotedOrBooked() {
-        CurrentCustomer customer = RentalTestFixtures.customer(customerAccountService, "910010");
         RentalPropertyResponse draft = propertyService.createDraft();
         propertyService.update(
                 draft.id(),
@@ -200,7 +193,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
 
         Assertions.assertThrows(
                 RentalPropertyNotAvailableException.class,
-                () -> bookingService.quote(customer, dateRangeQuoteRequest(draft.id(), checkIn, checkOut))
+                () -> dateRangeQuote(draft.id(), checkIn, checkOut)
         );
 
         propertyMediaService.add(
@@ -213,13 +206,12 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
 
         Assertions.assertThrows(
                 RentalPropertyNotAvailableException.class,
-                () -> bookingService.quote(customer, dateRangeQuoteRequest(draft.id(), checkIn, checkOut))
+                () -> dateRangeQuote(draft.id(), checkIn, checkOut)
         );
     }
 
     @Test
     void everyOccupancyType_blocksOverlapAndAdjacentBookingIsAllowed() {
-        CurrentCustomer quoteCustomer = RentalTestFixtures.customer(customerAccountService, "910011");
         RentalPropertyResponse property = publishedProperty("occupancy-types", "100.00");
         LocalDate start = stayPolicy.today().plusDays(10);
         LocalDate end = start.plusDays(6);
@@ -235,10 +227,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
             );
             Assertions.assertThrows(
                     RentalDatesNotAvailableException.class,
-                    () -> bookingService.quote(
-                            quoteCustomer,
-                            dateRangeQuoteRequest(property.id(), start, end)
-                    ),
+                    () -> dateRangeQuote(property.id(), start, end),
                     type.name()
             );
             RentalOccupancyType competingType = type == RentalOccupancyType.MAINTENANCE
@@ -271,9 +260,10 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
         Assertions.assertAll(
                 () -> Assertions.assertThrows(
                         RentalDatesNotAvailableException.class,
-                        () -> bookingService.quote(
-                                firstCustomer,
-                                dateRangeQuoteRequest(property.id(), start.plusDays(1), end.plusDays(1))
+                        () -> dateRangeQuote(
+                                property.id(),
+                                start.plusDays(1),
+                                end.plusDays(1)
                         )
                 ),
                 () -> Assertions.assertThrows(
@@ -302,7 +292,6 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void monthlyQuote_usesDerivedRangeAndRejectsOccupancyOverlap() {
-        CurrentCustomer customer = RentalTestFixtures.customer(customerAccountService, "910012");
         RentalPropertyResponse property = publishedProperty("monthly-overlap", "100.00");
         LocalDate start = stayPolicy.today().plusDays(10);
         LocalDate expectedEnd = start.plusMonths(2).minusDays(1);
@@ -320,7 +309,7 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
         Assertions.assertAll(
                 () -> Assertions.assertThrows(
                         RentalDatesNotAvailableException.class,
-                        () -> bookingService.quote(customer, monthlyQuoteRequest(property.id(), start, 2))
+                        () -> monthlyQuote(property.id(), start, 2)
                 ),
                 () -> Assertions.assertEquals(
                         expectedEnd,
@@ -424,9 +413,10 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
                                 property.id(), checkIn, checkOut
                         ).unavailableRanges().isEmpty()
                 ),
-                () -> Assertions.assertDoesNotThrow(() -> bookingService.quote(
-                        customer,
-                        dateRangeQuoteRequest(property.id(), checkIn, checkOut)
+                () -> Assertions.assertDoesNotThrow(() -> dateRangeQuote(
+                        property.id(),
+                        checkIn,
+                        checkOut
                 ))
         );
     }
@@ -471,16 +461,14 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
                 secondEnd
         );
         Assertions.assertAll(
-                () -> Assertions.assertDoesNotThrow(() -> bookingService.quote(
-                        customer,
-                        dateRangeQuoteRequest(property.id(), firstStart, firstEnd)
+                () -> Assertions.assertDoesNotThrow(() -> dateRangeQuote(
+                        property.id(),
+                        firstStart,
+                        firstEnd
                 )),
                 () -> Assertions.assertThrows(
                         RentalDatesNotAvailableException.class,
-                        () -> bookingService.quote(
-                                customer,
-                                dateRangeQuoteRequest(property.id(), secondStart, secondEnd)
-                        )
+                        () -> dateRangeQuote(property.id(), secondStart, secondEnd)
                 ),
                 () -> Assertions.assertEquals(1, occupancies.size()),
                 () -> Assertions.assertEquals(RentalOccupancyType.OWNER_BLOCK, occupancies.getFirst().type()),
@@ -510,7 +498,12 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
                 null,
                 2,
                 "+90 555 123 45 67",
-                "Late arrival"
+                "Late arrival",
+                new BigDecimal("100.00").multiply(BigDecimal.valueOf(
+                        RentalDateRange.inclusiveDuration(checkIn, checkOut)
+                )),
+                "TRY",
+                null
         );
     }
 
@@ -560,35 +553,40 @@ class RentalBookingIntegrationTest extends BaseIntegrationTest {
                 months,
                 2,
                 "+90 555 123 45 67",
-                "Late arrival"
-        );
-    }
-
-    private static RentalBookingQuoteRequest dateRangeQuoteRequest(
-            long propertyId,
-            LocalDate checkIn,
-            LocalDate checkOut
-    ) {
-        return new RentalBookingQuoteRequest(
-                propertyId,
-                RentalTermType.DATE_RANGE,
-                checkIn,
-                checkOut,
+                "Late arrival",
+                new BigDecimal("2700.00").multiply(BigDecimal.valueOf(months)),
+                "TRY",
                 null
         );
     }
 
-    private static RentalBookingQuoteRequest monthlyQuoteRequest(
+    private RentalQuoteResponse dateRangeQuote(
+            long propertyId,
+            LocalDate checkIn,
+            LocalDate checkOut
+    ) {
+        return bookingService.quote(
+                propertyId,
+                RentalTermType.DATE_RANGE,
+                checkIn,
+                checkOut,
+                null,
+                2
+        );
+    }
+
+    private RentalQuoteResponse monthlyQuote(
             long propertyId,
             LocalDate checkIn,
             int months
     ) {
-        return new RentalBookingQuoteRequest(
+        return bookingService.quote(
                 propertyId,
                 RentalTermType.MONTHLY,
                 checkIn,
                 null,
-                months
+                months,
+                2
         );
     }
 }

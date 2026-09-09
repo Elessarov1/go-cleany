@@ -96,7 +96,7 @@ run_scenario() {
 }
 
 if [ "$SCENARIO" = all ]; then
-    for item in smoke rental-browse image-burst mixed-api stress; do
+    for item in smoke rental-public-flow rental-search image-burst mixed-api stress; do
         run_scenario "$item"
     done
 else

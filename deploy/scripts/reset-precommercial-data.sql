@@ -9,6 +9,7 @@ update cleaning_order
 
 delete from transaction_feedback;
 delete from support_case;
+delete from rental_search_event;
 delete from cleaning_order_issue_photo;
 delete from cleaning_order_issue_report;
 delete from cleaning_order_photo;
@@ -19,6 +20,7 @@ delete from rental_cleaning_benefit;
 delete from rental_transfer_benefit;
 delete from rental_occupancy where type = 'BOOKING';
 delete from rental_booking;
+delete from rental_search_execution;
 delete from transfer_booking;
 delete from cleaning_order;
 
@@ -64,6 +66,7 @@ select setval(pg_get_serial_sequence('partner_payout', 'id'), 1, false);
 select setval(pg_get_serial_sequence('referral_reward', 'id'), 1, false);
 select setval(pg_get_serial_sequence('rental_cleaning_benefit', 'id'), 1, false);
 select setval(pg_get_serial_sequence('rental_booking', 'id'), 1, false);
+select setval(pg_get_serial_sequence('rental_search_event', 'id'), 1, false);
 select setval(pg_get_serial_sequence('transfer_booking', 'id'), 1, false);
 select setval(pg_get_serial_sequence('cleaning_order', 'id'), 1, false);
 select setval(pg_get_serial_sequence('customer_notification', 'id'), 1, false);

@@ -141,7 +141,10 @@ class RentalPropertyLifecycleIntegrationTest extends BaseIntegrationTest {
 
         Assertions.assertAll(
                 () -> Assertions.assertEquals(RentalPropertyStatus.DRAFT, unpublished.status()),
-                () -> Assertions.assertTrue(propertyService.getPublishedProperties().isEmpty()),
+                () -> Assertions.assertThrows(
+                        RentalPropertyNotFoundException.class,
+                        () -> propertyService.getPublishedProperty(published.slug())
+                ),
                 () -> Assertions.assertDoesNotThrow(() -> propertyService.deleteProperty(published.id()))
         );
     }
@@ -185,6 +188,9 @@ class RentalPropertyLifecycleIntegrationTest extends BaseIntegrationTest {
                         null,
                         2,
                         "+90 555 123 45 67",
+                        null,
+                        new BigDecimal("800.00"),
+                        "TRY",
                         null
                 )
         );
@@ -198,7 +204,10 @@ class RentalPropertyLifecycleIntegrationTest extends BaseIntegrationTest {
                 ),
                 () -> Assertions.assertTrue(propertyRepository.existsById(published.id())),
                 () -> Assertions.assertTrue(bookingRepository.existsById(booking.id())),
-                () -> Assertions.assertTrue(propertyService.getPublishedProperties().isEmpty())
+                () -> Assertions.assertThrows(
+                        RentalPropertyNotFoundException.class,
+                        () -> propertyService.getPublishedProperty(published.slug())
+                )
         );
     }
 
@@ -283,12 +292,6 @@ class RentalPropertyLifecycleIntegrationTest extends BaseIntegrationTest {
                         reordered.stream().map(RentalPropertyResponse::displayOrder).toList()
                 ),
                 () -> Assertions.assertEquals("12A", numberedDraft.apartmentNumber()),
-                () -> Assertions.assertEquals(
-                        List.of(second.id(), first.id()),
-                        propertyService.getPublishedProperties().stream()
-                                .map(RentalPropertyResponse::id)
-                                .toList()
-                ),
                 () -> Assertions.assertThrows(
                         InvalidRentalPropertyOrderException.class,
                         () -> propertyService.reorder(List.of(first.id()))

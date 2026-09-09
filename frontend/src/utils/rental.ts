@@ -1,13 +1,17 @@
-import type { RentalBookingProperty, RentalProperty } from "../domain/rental";
+import type { RentalProperty } from "../domain/rental";
 
 type RentalLanguage = "ru" | "en";
+type LocalizedRental = {
+  titleRu: string | null;
+  titleEn: string | null;
+};
 
 export function rentalLanguage(language?: string): RentalLanguage {
   return language === "ru" ? "ru" : "en";
 }
 
 export function rentalPropertyTitle(
-  property: RentalProperty | RentalBookingProperty,
+  property: LocalizedRental,
   language: RentalLanguage,
 ): string {
   return language === "ru"
@@ -16,7 +20,7 @@ export function rentalPropertyTitle(
 }
 
 export function rentalPropertyDescription(
-  property: RentalProperty,
+  property: { descriptionEn: string | null },
   _language: RentalLanguage,
 ): string {
   return property.descriptionEn ?? "";

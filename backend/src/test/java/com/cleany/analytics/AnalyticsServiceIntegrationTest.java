@@ -8,6 +8,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -38,6 +39,7 @@ import com.cleany.rental.RentalBookingService;
 import com.cleany.rental.RentalPropertyDetails;
 import com.cleany.rental.RentalPropertyResponse;
 import com.cleany.rental.RentalPropertyService;
+import com.cleany.rental.RentalSearchMode;
 import com.cleany.rental.RentalStayPolicy;
 import com.cleany.rental.RentalTermType;
 import com.cleany.transfer.CreateTransferBookingRequest;
@@ -103,6 +105,7 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
     @BeforeEach
     @AfterEach
     void cleanDatabase() {
+        jdbcTemplate.update("delete from rental_search_event");
         jdbcTemplate.update("delete from rental_transfer_action_event");
         jdbcTemplate.update("delete from rental_transfer_benefit");
         jdbcTemplate.update("delete from transfer_booking");
@@ -111,6 +114,7 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
         jdbcTemplate.update("delete from rental_occupancy");
         jdbcTemplate.update("delete from rental_cleaning_benefit");
         jdbcTemplate.update("delete from rental_booking");
+        jdbcTemplate.update("delete from rental_search_execution");
         jdbcTemplate.update("delete from rental_property_amenity");
         jdbcTemplate.update("delete from rental_property");
         jdbcTemplate.update("delete from cleaning_order");
@@ -228,6 +232,67 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertNull(empty.retention().medianDaysToSecondTask()),
                 () -> Assertions.assertTrue(empty.averageChecks().isEmpty()),
                 () -> Assertions.assertTrue(empty.acquisition().isEmpty())
+        );
+    }
+
+    @Test
+    void overview_reportsRentalSearchExecutionFunnelAndExcludesBrowseFromZeroResultRate() {
+        UUID dateRangeSearchId = UUID.randomUUID();
+        UUID monthlySearchId = UUID.randomUUID();
+        UUID browseSearchId = UUID.randomUUID();
+        insertRentalSearch(dateRangeSearchId, "DATE_RANGE", 0, 10, PERIOD_EVENT);
+        insertRentalSearch(monthlySearchId, "MONTHLY", 4, 20, PERIOD_EVENT.plusSeconds(600));
+        insertRentalSearch(browseSearchId, "BROWSE_ALL", 0, 30, PERIOD_EVENT.plusSeconds(1200));
+
+        insertRentalSearchEvent(monthlySearchId, "PROPERTY_OPENED", null, PERIOD_EVENT.plusSeconds(900));
+        insertRentalSearchEvent(monthlySearchId, "FIRST_CARD_RENDERED", 120L, PERIOD_EVENT.plusSeconds(901));
+        insertRentalSearchEvent(monthlySearchId, "BOOKING_CONFLICT", null, PERIOD_EVENT.plusSeconds(902));
+        insertRentalSearchEvent(browseSearchId, "PROPERTY_OPENED", null, PERIOD_EVENT.plusSeconds(1300));
+
+        CurrentCustomer customer = customerAt(PERIOD_EVENT.minusSeconds(60));
+        completeRental(customer, PERIOD_EVENT.plusSeconds(7200));
+        jdbcTemplate.update(
+                "update rental_booking set search_execution_id = ?, created_at = ? where customer_id = ?",
+                monthlySearchId,
+                Timestamp.from(PERIOD_EVENT.plusSeconds(3600)),
+                customer.customerId()
+        );
+
+        AnalyticsOverviewResponse rental = analyticsService.overview(
+                PERIOD_DAY,
+                PERIOD_DAY,
+                AnalyticsServiceDimension.RENTAL
+        );
+        AnalyticsRentalSearchFunnelMetric total = rental.rentalSearch().total();
+        Map<RentalSearchMode, AnalyticsRentalSearchFunnelMetric> byMode = rental.rentalSearch().byMode().stream()
+                .collect(Collectors.toMap(
+                        AnalyticsRentalSearchModeMetric::mode,
+                        AnalyticsRentalSearchModeMetric::funnel
+                ));
+        AnalyticsOverviewResponse cleaning = analyticsService.overview(
+                PERIOD_DAY,
+                PERIOD_DAY,
+                AnalyticsServiceDimension.CLEANING
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(3, total.searchExecutions()),
+                () -> Assertions.assertEquals(1, total.zeroResultSearches()),
+                () -> Assertions.assertEquals(new BigDecimal("0.5000"), total.zeroResultRate()),
+                () -> Assertions.assertEquals(2, total.openedSearches()),
+                () -> Assertions.assertEquals(new BigDecimal("0.6667"), total.openRate()),
+                () -> Assertions.assertEquals(1, total.createdBookingSearches()),
+                () -> Assertions.assertEquals(1, total.completedBookingSearches()),
+                () -> Assertions.assertEquals(1, total.conflictSearches()),
+                () -> Assertions.assertEquals(new BigDecimal("20.0"), total.medianApiDurationMs()),
+                () -> Assertions.assertEquals(new BigDecimal("120.0"), total.medianFirstCardDurationMs()),
+                () -> Assertions.assertEquals(new BigDecimal("0.8"), total.medianHoursToBooking()),
+                () -> Assertions.assertEquals(3, byMode.size()),
+                () -> Assertions.assertEquals(1, byMode.get(RentalSearchMode.DATE_RANGE).zeroResultSearches()),
+                () -> Assertions.assertEquals(0, byMode.get(RentalSearchMode.BROWSE_ALL).zeroResultSearches()),
+                () -> Assertions.assertNull(byMode.get(RentalSearchMode.BROWSE_ALL).zeroResultRate()),
+                () -> Assertions.assertEquals(0, cleaning.rentalSearch().total().searchExecutions()),
+                () -> Assertions.assertTrue(cleaning.rentalSearch().byMode().isEmpty())
         );
     }
 
@@ -410,6 +475,9 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
                 null,
                 1,
                 "+905551112233",
+                null,
+                new BigDecimal("800.00"),
+                "TRY",
                 null
         ));
         var airport = transferAirportRepository.findAllByOrderBySortOrderAscIdAsc().getFirst();
@@ -808,12 +876,53 @@ class AnalyticsServiceIntegrationTest extends BaseIntegrationTest {
                 null,
                 1,
                 "+905551112233",
+                null,
+                new BigDecimal("800.00"),
+                "TRY",
                 null
         ));
         jdbcTemplate.update(
                 "update rental_booking set status = 'COMPLETED', completed_at = ? where id = ?",
                 Timestamp.from(completedAt),
                 booking.id()
+        );
+    }
+
+    private void insertRentalSearch(
+            UUID id,
+            String mode,
+            int resultCount,
+            long apiDurationMs,
+            Instant createdAt
+    ) {
+        jdbcTemplate.update("""
+                insert into rental_search_execution (
+                    id, mode, result_count, api_duration_ms, created_at
+                ) values (?, ?, ?, ?, ?)
+                """,
+                id,
+                mode,
+                resultCount,
+                apiDurationMs,
+                Timestamp.from(createdAt)
+        );
+    }
+
+    private void insertRentalSearchEvent(
+            UUID searchExecutionId,
+            String eventType,
+            Long durationMs,
+            Instant occurredAt
+    ) {
+        jdbcTemplate.update("""
+                insert into rental_search_event (
+                    search_execution_id, event_type, duration_ms, occurred_at
+                ) values (?, ?, ?, ?)
+                """,
+                searchExecutionId,
+                eventType,
+                durationMs,
+                Timestamp.from(occurredAt)
         );
     }
 

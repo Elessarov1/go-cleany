@@ -8,6 +8,7 @@ public record RentalPriceQuote(
         Integer rentalMonths,
         int durationDays,
         BigDecimal baseDailyPrice,
+        BigDecimal baseMonthlyPrice,
         BigDecimal monthlyPrice,
         BigDecimal baseAmount,
         boolean longTermDiscountApplied,
@@ -24,7 +25,7 @@ public record RentalPriceQuote(
         }
         baseDailyPrice = requireMoney(baseDailyPrice, "baseDailyPrice");
         if (termType == RentalTermType.DATE_RANGE) {
-            if (rentalMonths != null || monthlyPrice != null) {
+            if (rentalMonths != null || baseMonthlyPrice != null || monthlyPrice != null) {
                 throw new IllegalArgumentException(
                         "DATE_RANGE price must not contain monthly values"
                 );
@@ -33,6 +34,7 @@ public record RentalPriceQuote(
             if (rentalMonths == null || rentalMonths <= 0) {
                 throw new IllegalArgumentException("MONTHLY price requires rentalMonths");
             }
+            baseMonthlyPrice = requireMoney(baseMonthlyPrice, "baseMonthlyPrice");
             monthlyPrice = requireMoney(monthlyPrice, "monthlyPrice");
         }
         baseAmount = requireMoney(baseAmount, "baseAmount");

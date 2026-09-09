@@ -47,6 +47,20 @@ public class PlatformServiceAccessService {
         }
     }
 
+    public void requireCanStartCurrentCustomerFlow(PlatformService service) {
+        PlatformServiceStatus status = requireState(service).status();
+        if (status == PlatformServiceStatus.ENABLED) {
+            return;
+        }
+        Long customerId = currentCustomerId();
+        if (status == PlatformServiceStatus.IN_TEST
+                && customerId != null
+                && roleService.hasRole(customerId, PlatformRole.ADMIN)) {
+            return;
+        }
+        throw new PlatformServiceNotAvailableException(service);
+    }
+
     @Transactional(readOnly = true)
     public List<PlatformServiceStateResponse> currentCustomerCatalog() {
         Long customerId = currentCustomerId();

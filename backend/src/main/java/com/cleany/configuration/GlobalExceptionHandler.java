@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -50,6 +51,7 @@ import com.cleany.rental.RentalBookingCannotBeCompletedException;
 import com.cleany.rental.RentalBookingHorizonExceededException;
 import com.cleany.rental.RentalBookingNotFoundException;
 import com.cleany.rental.RentalDatesNotAvailableException;
+import com.cleany.rental.RentalPriceChangedException;
 import com.cleany.rental.RentalMaximumStayExceededException;
 import com.cleany.rental.RentalMinimumStayNotMetException;
 import com.cleany.rental.RentalOccupancyNotFoundException;
@@ -104,6 +106,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({ConstraintViolationException.class, HttpMessageNotReadableException.class})
     ResponseEntity<ApiError> handleMalformedRequest(Exception exception) {
         return response(HttpStatus.BAD_REQUEST, "invalid_request", "Request body is invalid");
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    ResponseEntity<ApiError> handleMethodNotAllowed(HttpRequestMethodNotSupportedException exception) {
+        return response(
+                HttpStatus.METHOD_NOT_ALLOWED,
+                "method_not_allowed",
+                "Request method is not supported"
+        );
     }
 
     @ExceptionHandler(BookingDateNotAvailableException.class)
@@ -301,6 +312,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RentalDatesNotAvailableException.class)
     ResponseEntity<ApiError> handleRentalDatesNotAvailable(RentalDatesNotAvailableException exception) {
         return response(HttpStatus.CONFLICT, "dates_not_available", exception.getMessage());
+    }
+
+    @ExceptionHandler(RentalPriceChangedException.class)
+    ResponseEntity<ApiError> handleRentalPriceChanged(RentalPriceChangedException exception) {
+        return response(HttpStatus.CONFLICT, "rental_price_changed", exception.getMessage());
     }
 
     @ExceptionHandler(RentalActiveBookingLimitExceededException.class)

@@ -10,6 +10,7 @@ public record AnalyticsOverviewResponse(
         List<AnalyticsTransitionMetric> transitions,
         AnalyticsRentalTransferMetrics rentalToTransfer,
         AnalyticsRentalTransferBenefitMetrics rentalTransferBenefit,
+        AnalyticsRentalSearchMetrics rentalSearch,
         List<AnalyticsRepeatActionMetric> repeatActions,
         List<AnalyticsReminderMetric> reminders,
         List<AverageCheckMetric> averageChecks,

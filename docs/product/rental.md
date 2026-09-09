@@ -3,7 +3,7 @@ title: Loco Rental
 type: vertical-context
 status: active
 scope: rental
-updated: 2026-09-05
+updated: 2026-09-09
 ---
 
 # Loco Rental
@@ -38,6 +38,35 @@ an inclusive `endDate`. A one-month term beginning 1 September ends on 30 Septem
 property on 1 October.
 
 Admin owns property publication, occupancies and operational booking management.
+
+## Period-first public search
+
+`/rent` starts with dates/months and guests rather than loading the whole catalog. A complete,
+shareable query string drives `DATE_RANGE` or `MONTHLY` search; `view=all` remains an explicit
+browse mode. Search and public property quotes work for anonymous visitors without creating a
+`CustomerAccount`. New customer-flow availability still applies: `ENABLED` is public, `IN_TEST`
+requires a persisted ADMIN and `DISABLED` blocks the flow.
+
+The backend resolves inclusive dates once through `RentalStayPolicy`, filters published properties
+against all `RentalOccupancy` types and capacity in one JDBC query, batch-loads versioned card covers
+and calculates every quote through `RentalPriceService`. Results retain `displayOrder, id`; search
+does not create a hold and booking always rechecks publication, policy, capacity and occupancy.
+
+Search cards use the complete stay price for date ranges. Monthly cards make the discounted monthly
+price primary and expose the undiscounted 30-day monthly base, discount and whole-stay total. A
+discount is marked applied only when both its rate and money amount are positive.
+
+Booking creation requires the client's expected total and currency. A changed tariff returns
+`rental_price_changed` before any booking or occupancy is saved; the UI refreshes the public quote
+and requires an explicit second confirmation. Period-first search is the only customer catalog;
+property quotes use the public property quote endpoint and the former catalog-list and authenticated
+quote endpoints are intentionally not retained.
+
+Anonymous funnel linkage is deliberately non-functional metadata. Each successful search gets a
+UUID execution, while first useful card, property open and booking-conflict events are idempotent.
+The ID lives in router state/session storage, never in shared URLs, media URLs, price calculation or
+metric tags. Unknown or mismatched IDs are ignored. A nullable booking FK links conversion without
+changing Rental aggregate ownership.
 
 Property administration uses one explicit global `displayOrder` across drafts, published and
 archived properties. Public catalog filtering keeps the relative order of published properties.

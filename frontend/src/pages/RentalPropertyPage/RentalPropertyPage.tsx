@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ApiError } from "../../api/ApiError";
 import { useCustomerApi } from "../../api/CustomerApiProvider";
@@ -8,11 +8,13 @@ import { Icon } from "../../components/Icon/Icon";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import { RentalCalendar } from "../../components/RentalCalendar/RentalCalendar";
 import { RentalGallery } from "../../components/RentalGallery/RentalGallery";
+import { RentalPricePresentation } from "../../components/RentalPricePresentation/RentalPricePresentation";
 import type {
   RentalAvailability,
-  RentalBookingQuote,
+  RentalQuote,
   RentalConfiguration,
   RentalProperty,
+  RentalTermCriteria,
   RentalTermType,
 } from "../../domain/rental";
 import { formatPrice } from "../../domain/pricing";
@@ -21,12 +23,18 @@ import {
   addMonthsToInputValue,
   formatDate,
   inclusiveDaysBetween,
-  todayAsInputValue,
 } from "../../utils/format";
 import { rentalLanguage, rentalPropertyDescription, rentalPropertyTitle } from "../../utils/rental";
 import { BrandName } from "../../components/BrandName/BrandName";
 import { useAuthentication } from "../../api/AuthApiProvider";
 import { AuthenticationRequiredState } from "../../components/CustomerAccessGate/CustomerAccessGate";
+import {
+  parseRentalSearchQuery,
+  recalledRentalSearchExecution,
+  rentalSearchKey,
+  rentalSearchRequestFromDraft,
+  serializeRentalSearch,
+} from "../../utils/rentalSearch";
 
 function bookingErrorMessage(
   error: unknown,
@@ -58,7 +66,8 @@ export function RentalPropertyPage() {
   const customerApi = useCustomerApi();
   const authentication = useAuthentication();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [property, setProperty] = useState<RentalProperty | null>(null);
   const [configuration, setConfiguration] = useState<RentalConfiguration | null>(null);
   const [availability, setAvailability] = useState<RentalAvailability | null>(null);
@@ -69,13 +78,24 @@ export function RentalPropertyPage() {
   const [checkOutDate, setCheckOutDate] = useState("");
   const [months, setMonths] = useState(1);
   const [calendarError, setCalendarError] = useState<string | null>(null);
-  const [quote, setQuote] = useState<RentalBookingQuote | null>(null);
+  const [quote, setQuote] = useState<RentalQuote | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [guests, setGuests] = useState(1);
   const [phone, setPhone] = useState("");
   const [comment, setComment] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [priceChanged, setPriceChanged] = useState(false);
+  const [searchExecutionId, setSearchExecutionId] = useState<string | null>(() => {
+    const state = location.state as { rentalSearchExecutionId?: string } | null;
+    return state?.rentalSearchExecutionId ?? null;
+  });
+  const executionSourceKey = useRef<string | null>(null);
+  const executionSourceWasBrowseAll = useRef(false);
+  const [openedExecutionId, setOpenedExecutionId] = useState<string | null>(null);
+  const query = searchParams.toString();
+  const queryRef = useRef(query);
+  queryRef.current = query;
   const language = rentalLanguage(i18n.resolvedLanguage);
   const locale = language === "ru" ? "ru-RU" : "en-GB";
 
@@ -83,48 +103,18 @@ export function RentalPropertyPage() {
     let active = true;
     setLoadError(false);
     Promise.all([api.getProperty(slug ?? ""), api.getConfiguration()])
-      .then(async ([loadedProperty, loadedConfiguration]) => {
-        const fromDate = todayAsInputValue();
-        const horizon = addMonthsToInputValue(
-          fromDate,
-          loadedConfiguration.bookingStartMonthsAhead,
-        );
-        const toDate = addDaysToInputValue(horizon, loadedConfiguration.maxStayDays - 1);
-        const loadedAvailability = await api.getAvailability(loadedProperty.id, fromDate, toDate);
+      .then(([loadedProperty, loadedConfiguration]) => {
         if (!active) return;
         setProperty(loadedProperty);
         setConfiguration(loadedConfiguration);
-        setAvailability(loadedAvailability);
-        const scenario = searchParams.get("scenario")?.toUpperCase();
-        if (scenario === "RENT_MONTHLY_EMPTY") {
-          setTermType("MONTHLY");
-          setCheckInDate("");
-          setCheckOutDate("");
-          setMonths(1);
-        } else if (scenario === "RENT_MONTHLY" || scenario === "RENT_MONTHLY_UNAVAILABLE") {
-          const previewCheckIn = addDaysToInputValue(
-            fromDate,
-            scenario === "RENT_MONTHLY_UNAVAILABLE" ? 40 : 80,
-          );
-          setTermType("MONTHLY");
-          setCheckInDate(previewCheckIn);
-          setCheckOutDate("");
-          setMonths(scenario === "RENT_MONTHLY_UNAVAILABLE" ? 2 : 3);
-        } else if (scenario === "RENT_DATE_RANGE_CHECK_IN") {
-          setTermType("DATE_RANGE");
-          setCheckInDate(addDaysToInputValue(fromDate, 25));
-          setCheckOutDate("");
-        } else if (scenario === "RENT_DATE_RANGE") {
-          const previewCheckIn = addDaysToInputValue(fromDate, 50);
-          setTermType("DATE_RANGE");
-          setCheckInDate(previewCheckIn);
-          setCheckOutDate(addDaysToInputValue(previewCheckIn, 10));
-        } else if (scenario === "RENT_PROPERTY" || scenario === "RENT_DATE_RANGE_EMPTY") {
-          setTermType("DATE_RANGE");
-          setCheckInDate("");
-          setCheckOutDate("");
-          setMonths(1);
-        }
+        const fromDate = loadedConfiguration.today;
+        const toDate = addDaysToInputValue(
+          loadedConfiguration.latestCheckInDate,
+          loadedConfiguration.maxStayDays - 1,
+        );
+        void api.getAvailability(loadedProperty.id, fromDate, toDate)
+          .then((value) => { if (active) setAvailability(value); })
+          .catch(() => undefined);
       })
       .catch(() => {
         if (active) setLoadError(true);
@@ -132,7 +122,46 @@ export function RentalPropertyPage() {
     return () => {
       active = false;
     };
-  }, [api, slug, reloadKey, searchParams]);
+  }, [api, slug, reloadKey]);
+
+  useEffect(() => {
+    if (!configuration) return;
+    const parsed = parseRentalSearchQuery(new URLSearchParams(query), configuration);
+    if (!parsed.applied) return;
+    const applied = parsed.applied;
+    const recalled = recalledRentalSearchExecution(applied);
+    const appliedKey = rentalSearchKey(applied);
+    const appliedIsBrowseAll = !("termType" in applied);
+    setSearchExecutionId((current) => {
+      if (recalled) {
+        executionSourceKey.current = appliedKey;
+        executionSourceWasBrowseAll.current = appliedIsBrowseAll;
+        return recalled;
+      }
+      if (!current) return null;
+      if (executionSourceKey.current === null) {
+        executionSourceKey.current = appliedKey;
+        executionSourceWasBrowseAll.current = appliedIsBrowseAll;
+        return current;
+      }
+      if (executionSourceWasBrowseAll.current || executionSourceKey.current === appliedKey) {
+        return current;
+      }
+      return null;
+    });
+    if (!("termType" in applied) || !applied.termType) return;
+    setTermType(applied.termType);
+    setCheckInDate(applied.checkInDate);
+    setCheckOutDate(applied.termType === "DATE_RANGE" ? applied.checkOutDate : "");
+    setMonths(applied.termType === "MONTHLY" ? applied.months : 1);
+    setGuests(applied.guests);
+  }, [configuration, query]);
+
+  useEffect(() => {
+    if (!property || !searchExecutionId || openedExecutionId === searchExecutionId) return;
+    setOpenedExecutionId(searchExecutionId);
+    void api.recordPropertyOpened(searchExecutionId).catch(() => undefined);
+  }, [api, openedExecutionId, property, searchExecutionId]);
 
   useEffect(() => {
     if (!authentication.current.authenticated) {
@@ -151,11 +180,6 @@ export function RentalPropertyPage() {
   }, [authentication.current.authenticated, customerApi]);
 
   useEffect(() => {
-    if (!authentication.current.authenticated) {
-      setQuote(null);
-      setQuoteLoading(false);
-      return;
-    }
     const hasCompleteTerm = termType === "DATE_RANGE"
       ? Boolean(checkInDate && checkOutDate)
       : Boolean(checkInDate && months > 0);
@@ -167,24 +191,29 @@ export function RentalPropertyPage() {
     setQuoteLoading(true);
     setQuote(null);
     setSubmitError(null);
-    const request = termType === "DATE_RANGE"
+    const request: RentalTermCriteria = termType === "DATE_RANGE"
       ? {
-          propertyId: property.id,
           termType,
           checkInDate,
           checkOutDate,
+          guests,
         } as const
       : {
-          propertyId: property.id,
           termType,
           checkInDate,
           months,
+          guests,
         } as const;
-    api.quoteBooking(request)
+    api.quotePublic(property.id, request)
       .then((value) => {
         if (active) {
           setQuote(value);
+          setPriceChanged(false);
           setCalendarError(null);
+          const normalized = serializeRentalSearch(request).toString();
+          if (normalized !== queryRef.current) {
+            setSearchParams(serializeRentalSearch(request), { replace: true });
+          }
         }
       })
       .catch((error) => {
@@ -196,7 +225,7 @@ export function RentalPropertyPage() {
     return () => {
       active = false;
     };
-  }, [api, authentication.current.authenticated, checkInDate, checkOutDate, months, property, t, termType]);
+  }, [api, checkInDate, checkOutDate, guests, months, property, setSearchParams, t, termType]);
 
   const expectedCheckOutDate = termType === "MONTHLY" && checkInDate
     ? addDaysToInputValue(addMonthsToInputValue(checkInDate, months), -1)
@@ -204,16 +233,10 @@ export function RentalPropertyPage() {
   const selectedDays = termType === "DATE_RANGE" && checkInDate && checkOutDate
     ? inclusiveDaysBetween(checkInDate, checkOutDate)
     : null;
-  const maxRentalStartDate = addMonthsToInputValue(
-    todayAsInputValue(),
-    configuration?.bookingStartMonthsAhead ?? 0,
-  );
-
   const selectTermType = (nextTermType: RentalTermType) => {
     if (termType === nextTermType) return;
     setTermType(nextTermType);
-    setCheckInDate("");
-    setCheckOutDate("");
+    if (nextTermType === "MONTHLY") setCheckOutDate("");
     setMonths(1);
     setQuote(null);
     setCalendarError(null);
@@ -235,29 +258,38 @@ export function RentalPropertyPage() {
     }
     try {
       setSubmitting(true);
+      const rentalRequest: RentalTermCriteria = termType === "DATE_RANGE"
+        ? { termType, checkInDate, checkOutDate, guests }
+        : { termType, checkInDate, months, guests };
       const contactDetails = {
-        guests,
         phone: phone.trim(),
         comment: comment.trim() || undefined,
+        expectedTotalPrice: quote.price.totalPrice,
+        expectedCurrency: quote.price.currency,
+        searchExecutionId: searchExecutionId ?? undefined,
       };
-      const booking = termType === "DATE_RANGE"
-        ? await api.createBooking({
-            propertyId: property.id,
-            termType,
-            checkInDate,
-            checkOutDate,
-            ...contactDetails,
-          })
-        : await api.createBooking({
-            propertyId: property.id,
-            termType,
-            checkInDate,
-            months,
-            ...contactDetails,
-          });
+      const booking = await api.createBooking({
+        propertyId: property.id,
+        ...rentalRequest,
+        ...contactDetails,
+      });
       navigate(`/rent/bookings/${booking.id}`, { state: { justCreated: true } });
     } catch (error) {
-      setSubmitError(bookingErrorMessage(error, t, termType));
+      if (error instanceof ApiError && error.code === "rental_price_changed" && property) {
+        const request: RentalTermCriteria = termType === "DATE_RANGE"
+          ? { termType, checkInDate, checkOutDate, guests }
+          : { termType, checkInDate, months, guests };
+        try {
+          const refreshedQuote = await api.quotePublic(property.id, request);
+          setQuote(refreshedQuote);
+          setPriceChanged(true);
+          setSubmitError(t("rental.booking.errors.rental_price_changed"));
+        } catch (quoteError) {
+          setSubmitError(bookingErrorMessage(quoteError, t, termType));
+        }
+      } else {
+        setSubmitError(bookingErrorMessage(error, t, termType));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -266,11 +298,11 @@ export function RentalPropertyPage() {
   if (loadError || !slug) {
     return <ErrorState message={t("rental.property.loadError")} onRetry={() => setReloadKey((key) => key + 1)} />;
   }
-  if (!property || !configuration || !availability) return <LoadingState />;
+  if (!property || !configuration) return <LoadingState />;
 
   return (
     <div className="page page--rental-property">
-      <Link className="back-link" to="/rent"><Icon name="arrow-left" size={17} />{t("common.back")}</Link>
+      <Link className="back-link" to={`/rent${query ? `?${query}` : ""}`}><Icon name="arrow-left" size={17} />{t("rental.search.backToResults")}</Link>
 
       <RentalGallery
         media={property.media}
@@ -315,10 +347,10 @@ export function RentalPropertyPage() {
           <div className="rental-section__heading">
             <div><span className="eyebrow">02</span><h2>{t("rental.booking.termTitle")}</h2></div>
             <strong className="rental-daily-price">
-              {quote?.termType === "MONTHLY" && quote.monthlyPrice !== null
-                ? formatPrice(quote.monthlyPrice, quote.currency, locale)
+              {quote?.criteria.termType === "MONTHLY" && quote.price.monthlyPrice !== null
+                ? formatPrice(quote.price.monthlyPrice, quote.price.currency, locale)
                 : formatPrice(property.baseDailyPrice!, property.currency!, locale)}
-              <small>{quote?.termType === "MONTHLY" ? t("rental.common.perMonth") : t("rental.common.perDay")}</small>
+              <small>{quote?.criteria.termType === "MONTHLY" ? t("rental.common.perMonth") : t("rental.common.perDay")}</small>
             </strong>
           </div>
           <div className="rental-term-selector" role="radiogroup" aria-label={t("rental.booking.termTitle")}>
@@ -358,7 +390,7 @@ export function RentalPropertyPage() {
               </div>
               <RentalCalendar
                 configuration={configuration}
-                unavailableRanges={availability.unavailableRanges}
+                unavailableRanges={availability?.unavailableRanges ?? []}
                 checkInDate={checkInDate}
                 checkOutDate={checkOutDate}
                 onChange={(checkIn, checkOut) => {
@@ -396,8 +428,8 @@ export function RentalPropertyPage() {
                 <input
                   id="rental-monthly-start"
                   type="date"
-                  min={todayAsInputValue()}
-                  max={maxRentalStartDate}
+                  min={configuration.today}
+                  max={configuration.latestCheckInDate}
                   value={checkInDate}
                   onChange={(event) => {
                     setCheckInDate(event.target.value);
@@ -489,30 +521,7 @@ export function RentalPropertyPage() {
         <section className="rental-quote-card">
           {quoteLoading ? <span>{t("rental.booking.quoteLoading")}</span> : null}
           {quote ? (
-            <>
-              <div className="rental-quote-card__line">
-                <span>{quote.termType === "MONTHLY"
-                  ? t("rental.booking.months", { count: quote.rentalMonths })
-                  : t("rental.booking.stay", { count: quote.durationDays })}</span>
-                <strong>{formatPrice(quote.baseAmount, quote.currency, locale)}</strong>
-              </div>
-              {quote.termType === "MONTHLY" && quote.monthlyPrice !== null ? (
-                <div className="rental-quote-card__line">
-                  <span>{t("rental.booking.monthlyPrice")}</span>
-                  <strong>{formatPrice(quote.monthlyPrice, quote.currency, locale)} {t("rental.common.perMonth")}</strong>
-                </div>
-              ) : null}
-              {quote.longTermDiscountApplied ? (
-                <div className="rental-quote-card__discount">
-                  <span>{t("rental.booking.longTermDiscount", { percent: Math.round(quote.discountRate * 100) })}</span>
-                  <strong>−{formatPrice(quote.discountAmount, quote.currency, locale)}</strong>
-                </div>
-              ) : null}
-              <div className="rental-quote-card__total">
-                <span>{t("rental.booking.total")}</span>
-                <strong>{formatPrice(quote.totalPrice, quote.currency, locale)}</strong>
-              </div>
-            </>
+            <RentalPricePresentation price={quote.price} locale={locale} />
           ) : <p>{termType === "MONTHLY" ? t("rental.booking.selectMonthlyStart") : t("rental.booking.selectDates")}</p>}
           {submitError ? <p className="form-alert" role="alert">{submitError}</p> : null}
           {authentication.current.authenticated ? (
@@ -522,7 +531,11 @@ export function RentalPropertyPage() {
                 type="submit"
                 disabled={!quote || quoteLoading || submitting}
               >
-                {submitting ? t("rental.booking.submitting") : t("rental.booking.confirm")}
+                {submitting
+                  ? t("rental.booking.submitting")
+                  : priceChanged
+                    ? t("rental.booking.confirmNewPrice")
+                    : t("rental.booking.confirm")}
               </button>
               <small className="rental-quote-card__note">{t("rental.booking.noPayment")}</small>
             </>

@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('smoke', 'rental-browse', 'image-burst', 'mixed-api', 'stress', 'all')]
+    [ValidateSet('smoke', 'rental-public-flow', 'rental-search', 'image-burst', 'mixed-api', 'stress', 'all')]
     [string]$Scenario = 'smoke',
     [int]$Scale = 1,
     [long]$Seed = 42,
@@ -99,7 +99,7 @@ if (-not (Test-Path -LiteralPath $manifestPath)) {
 }
 
 $scenarios = if ($Scenario -eq 'all') {
-    @('smoke', 'rental-browse', 'image-burst', 'mixed-api', 'stress')
+    @('smoke', 'rental-public-flow', 'rental-search', 'image-burst', 'mixed-api', 'stress')
 } else {
     @($Scenario)
 }

@@ -1,11 +1,15 @@
 package com.cleany.rental;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 public record CreateRentalBookingRequest(
@@ -16,6 +20,9 @@ public record CreateRentalBookingRequest(
         @Positive Integer months,
         @Positive @Max(100) int guests,
         @NotBlank @Size(max = 40) String phone,
-        @Size(max = 1000) String comment
+        @Size(max = 1000) String comment,
+        @NotNull @PositiveOrZero BigDecimal expectedTotalPrice,
+        @NotBlank @Pattern(regexp = "^[A-Z]{3}$") String expectedCurrency,
+        UUID searchExecutionId
 ) {
 }

@@ -19,10 +19,14 @@ public class RentalPriceService {
         if (property.getBaseDailyPrice() == null || property.getCurrency() == null) {
             throw new RentalPropertyNotAvailableException(property.getId());
         }
-        BigDecimal dailyPrice = property.getBaseDailyPrice().setScale(MONEY_SCALE, RoundingMode.HALF_UP);
+        return calculate(RentalPriceInput.from(property), term);
+    }
+
+    RentalPriceQuote calculate(RentalPriceInput input, ResolvedRentalTerm term) {
+        BigDecimal dailyPrice = input.baseDailyPrice().setScale(MONEY_SCALE, RoundingMode.HALF_UP);
         return switch (term.termType()) {
-            case DATE_RANGE -> dateRange(dailyPrice, property.getCurrency(), term);
-            case MONTHLY -> monthly(dailyPrice, property.getCurrency(), term);
+            case DATE_RANGE -> dateRange(dailyPrice, input.currency(), term);
+            case MONTHLY -> monthly(dailyPrice, input.currency(), term);
         };
     }
 
@@ -39,6 +43,7 @@ public class RentalPriceService {
                 null,
                 term.durationDays(),
                 dailyPrice,
+                null,
                 null,
                 baseAmount,
                 false,
@@ -76,9 +81,10 @@ public class RentalPriceService {
                 term.rentalMonths(),
                 term.durationDays(),
                 dailyPrice,
+                monthlyBase,
                 monthlyPrice,
                 baseAmount,
-                discountRate.signum() > 0,
+                discountRate.signum() > 0 && discountAmount.signum() > 0,
                 discountRate,
                 discountAmount,
                 totalPrice,

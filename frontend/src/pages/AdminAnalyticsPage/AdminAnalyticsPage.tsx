@@ -5,6 +5,7 @@ import { BrandName } from "../../components/BrandName/BrandName";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import type {
   AnalyticsOverview,
+  AnalyticsRentalSearchFunnel,
   AnalyticsRentalTransferBenefitMetric,
   AnalyticsService,
 } from "../../domain/analytics";
@@ -194,6 +195,30 @@ export function AdminAnalyticsPage() {
               ))}
             </div>
           </section>
+
+          {service === "ALL" || service === "RENTAL" ? (
+            <section className="admin-analytics__section" aria-labelledby="rental-search-heading">
+              <SectionHeading
+                id="rental-search-heading"
+                title={t("analytics.rentalSearch.title")}
+                subtitle={t("analytics.rentalSearch.subtitle")}
+              />
+              <RentalSearchAnalytics
+                funnel={overview.rentalSearch.total}
+                number={number}
+                percent={percent}
+                decimal={decimal}
+              />
+              <div className="admin-analytics__repeat-grid admin-analytics__rental-search-grid">
+                {overview.rentalSearch.byMode.map(({ mode, funnel }) => (
+                  <article className="admin-analytics__repeat" key={mode}>
+                    <h3>{t(`analytics.rentalSearch.mode.${mode}`)}</h3>
+                    <RentalSearchDetails funnel={funnel} number={number} percent={percent} decimal={decimal} />
+                  </article>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           {service === "ALL" || service === "RENTAL" ? (
             <section className="admin-analytics__section" aria-labelledby="rental-transfer-heading">
@@ -426,6 +451,55 @@ export function AdminAnalyticsPage() {
 
 function MetricCard({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return <article className="admin-analytics__card"><span>{label}</span><strong>{value}</strong>{detail ? <small>{detail}</small> : null}</article>;
+}
+
+function RentalSearchAnalytics({ funnel, number, percent, decimal }: {
+  funnel: AnalyticsRentalSearchFunnel;
+  number: Intl.NumberFormat;
+  percent: Intl.NumberFormat;
+  decimal: Intl.NumberFormat;
+}) {
+  const { t } = useTranslation();
+  const empty = t("analytics.insufficientData");
+  return (
+    <div className="admin-analytics__cards admin-analytics__cards--retention">
+      <MetricCard label={t("analytics.rentalSearch.executions")} value={number.format(funnel.searchExecutions)} />
+      <MetricCard label={t("analytics.rentalSearch.zeroResult")} value={formatRate(funnel.zeroResultRate, percent, empty)} />
+      <MetricCard label={t("analytics.rentalSearch.openRate")} value={formatRate(funnel.openRate, percent, empty)} />
+      <MetricCard label={t("analytics.rentalSearch.createdConversion")} value={formatRate(funnel.creationRate, percent, empty)} />
+      <MetricCard label={t("analytics.rentalSearch.completedConversion")} value={formatRate(funnel.completionRate, percent, empty)} />
+      <MetricCard label={t("analytics.rentalSearch.conflictRate")} value={formatRate(funnel.conflictRate, percent, empty)} />
+      <MetricCard label={t("analytics.rentalSearch.apiMedian")} value={formatMilliseconds(funnel.medianApiDurationMs, decimal, empty)} />
+      <MetricCard label={t("analytics.rentalSearch.cardMedian")} value={formatMilliseconds(funnel.medianFirstCardDurationMs, decimal, empty)} />
+      <MetricCard label={t("analytics.rentalSearch.bookingMedian")} value={funnel.medianHoursToBooking === null ? empty : t("analytics.hours", { count: decimal.format(funnel.medianHoursToBooking) })} />
+    </div>
+  );
+}
+
+function RentalSearchDetails({ funnel, number, percent, decimal }: {
+  funnel: AnalyticsRentalSearchFunnel;
+  number: Intl.NumberFormat;
+  percent: Intl.NumberFormat;
+  decimal: Intl.NumberFormat;
+}) {
+  const { t } = useTranslation();
+  const empty = t("analytics.insufficientData");
+  return (
+    <dl>
+      <div><dt>{t("analytics.rentalSearch.executions")}</dt><dd>{number.format(funnel.searchExecutions)}</dd></div>
+      <div><dt>{t("analytics.rentalSearch.zeroResult")}</dt><dd>{formatRate(funnel.zeroResultRate, percent, empty)}</dd></div>
+      <div><dt>{t("analytics.rentalSearch.openRate")}</dt><dd>{formatRate(funnel.openRate, percent, empty)}</dd></div>
+      <div><dt>{t("analytics.rentalSearch.createdConversion")}</dt><dd>{formatRate(funnel.creationRate, percent, empty)}</dd></div>
+      <div><dt>{t("analytics.rentalSearch.completedConversion")}</dt><dd>{formatRate(funnel.completionRate, percent, empty)}</dd></div>
+      <div><dt>{t("analytics.rentalSearch.conflictRate")}</dt><dd>{formatRate(funnel.conflictRate, percent, empty)}</dd></div>
+      <div><dt>{t("analytics.rentalSearch.apiMedian")}</dt><dd>{formatMilliseconds(funnel.medianApiDurationMs, decimal, empty)}</dd></div>
+      <div><dt>{t("analytics.rentalSearch.cardMedian")}</dt><dd>{formatMilliseconds(funnel.medianFirstCardDurationMs, decimal, empty)}</dd></div>
+    </dl>
+  );
+}
+
+function formatMilliseconds(value: number | null, formatter: Intl.NumberFormat, empty: string): string {
+  return value === null ? empty : `${formatter.format(value)} ms`;
 }
 
 function SectionHeading({ id, title, subtitle, contained = false }: { id?: string; title: string; subtitle: string; contained?: boolean }) {
