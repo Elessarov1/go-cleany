@@ -54,6 +54,9 @@ samp {
   --color-primary: oklch(0.8512 0.1254 73.9788);
   --color-primary-dark: oklch(0.6894 0.1278 71.2857);
   --color-primary-soft: oklch(0.9458 0.0454 76.3285);
+  --color-primary-foreground: #000;
+  --color-primary-hover: oklch(0.7754 0.1355 72.2638);
+  --color-ring: var(--color-primary);
   --color-accent: oklch(0.9197 0.0677 76.0180);
   --color-accent-soft: oklch(0.9593 0.011 76.5971);
   --color-danger: oklch(0.6356 0.2082 25.3782);
@@ -66,21 +69,28 @@ samp {
   --shadow-medium: 0 2px 10px 0 hsl(35 50% 20% / 0.05), 0 4px 6px -1px hsl(35 50% 20% / 0.05);
 }
 
-/* Cleaning keeps its own light-blue identity while sharing the same forms, type and geometry. */
+/* Cleaning keeps its own indigo identity while sharing the same forms, type and geometry. */
 .service-shell[data-service="cleaning"] {
-  --color-canvas: #f3fafe;
-  --color-surface: #fbfdff;
-  --color-surface-strong: #ffffff;
-  --color-ink: #173647;
-  --color-muted: #647f8d;
-  --color-line: #cfe2ea;
-  --color-primary: #1685b3;
-  --color-primary-dark: #0b648b;
-  --color-primary-soft: #dceff7;
-  --color-accent: #36a9c4;
-  --color-accent-soft: #dcf2f7;
-  --shadow-small: 0 2px 10px 0 hsl(198 36% 24% / 0.05), 0 1px 2px -1px hsl(198 36% 24% / 0.05);
-  --shadow-medium: 0 2px 10px 0 hsl(198 36% 24% / 0.06), 0 4px 6px -1px hsl(198 36% 24% / 0.06);
+  --color-canvas: var(--cleaning-background);
+  --color-surface: var(--cleaning-card);
+  --color-surface-strong: var(--cleaning-card);
+  --color-ink: var(--cleaning-foreground);
+  --color-muted: var(--cleaning-muted-foreground);
+  --color-line: var(--cleaning-border);
+  --color-primary: var(--cleaning-primary);
+  --color-primary-dark: var(--cleaning-primary);
+  --color-primary-soft: var(--cleaning-secondary);
+  --color-primary-foreground: var(--cleaning-primary-foreground);
+  --color-primary-hover: color-mix(in oklch, var(--cleaning-primary) 92%, var(--cleaning-foreground));
+  --color-ring: var(--cleaning-ring);
+  --color-accent: var(--cleaning-primary);
+  --color-accent-soft: var(--cleaning-accent);
+  --color-danger: var(--cleaning-destructive);
+  --color-danger-soft: color-mix(in oklch, var(--cleaning-destructive) 10%, var(--cleaning-card));
+  --color-info: var(--cleaning-primary);
+  --color-info-soft: var(--cleaning-secondary);
+  --shadow-small: 0 2px 10px 0 rgb(0 0 0 / 5%), 0 1px 2px -1px rgb(0 0 0 / 5%);
+  --shadow-medium: 0 2px 10px 0 rgb(0 0 0 / 6%), 0 4px 6px -1px rgb(0 0 0 / 6%);
 }
 
 .service-shell {
@@ -157,8 +167,8 @@ samp {
 .service-shell .field select:focus,
 .service-shell .preview-panel select:focus,
 .service-shell .admin-issue-resolution textarea:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
+  border-color: var(--color-ring);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-ring) 18%, transparent);
 }
 
 .service-shell .field input::placeholder,
@@ -174,6 +184,7 @@ samp {
 
 .service-shell .button--primary {
   background: var(--color-primary);
+  color: var(--color-primary-foreground);
 }
 
 .service-shell[data-service="platform"] .button--primary,
@@ -184,7 +195,17 @@ samp {
 .service-shell[data-service="platform"] .button--primary:hover:not(:disabled),
 .service-shell[data-service="rent"] .button--primary:hover:not(:disabled) {
   color: #000;
-  background: oklch(0.7754 0.1355 72.2638);
+  background: var(--color-primary-hover);
+}
+
+.service-shell .rental-cleaning-cta .button--primary {
+  color: var(--cleaning-primary-foreground);
+  background: var(--cleaning-primary);
+}
+
+.service-shell .rental-cleaning-cta .button--primary:hover:not(:disabled) {
+  color: var(--cleaning-primary-foreground);
+  background: color-mix(in oklch, var(--cleaning-primary) 92%, var(--cleaning-foreground));
 }
 
 .service-shell .button--secondary {
@@ -254,12 +275,13 @@ samp {
 }
 
 .service-shell[data-service="platform"] .service-card--cleaning {
-  background: linear-gradient(145deg, #ffffff, #eef8fc);
-  border-color: #cfe2ea;
+  background: linear-gradient(145deg, var(--cleaning-card), var(--cleaning-secondary));
+  border-color: var(--cleaning-border);
 }
 
 .service-shell[data-service="platform"] .service-card--cleaning .service-card__icon {
-  background: #1685b3;
+  color: var(--cleaning-primary-foreground);
+  background: var(--cleaning-primary);
 }
 
 .service-shell .service-card,
@@ -311,16 +333,50 @@ samp {
 }
 
 .service-shell[data-service="cleaning"] .hero {
-  background: linear-gradient(135deg, #0b648b 0%, #1685b3 62%, #36a9c4 100%);
+  color: var(--cleaning-primary-foreground);
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklch, var(--cleaning-primary) 92%, var(--cleaning-foreground)) 0%,
+    var(--cleaning-primary) 62%,
+    color-mix(in oklch, var(--cleaning-primary) 92%, var(--cleaning-background)) 100%
+  );
   border-radius: 0 0 var(--radius-large) var(--radius-large);
 }
 
+.service-shell[data-service="cleaning"] .hero .eyebrow,
+.service-shell[data-service="cleaning"] .hero p {
+  color: color-mix(in oklch, var(--cleaning-primary-foreground) 78%, transparent);
+}
+
+.service-shell[data-service="cleaning"] .hero__art {
+  color: var(--cleaning-primary-foreground);
+  background: color-mix(in oklch, var(--cleaning-primary-foreground) 14%, transparent);
+  border-color: color-mix(in oklch, var(--cleaning-primary-foreground) 24%, transparent);
+}
+
+.service-shell[data-service="cleaning"] :is(
+  .details-card__price,
+  .admin-stat--active,
+  .admin-stat--amount,
+  .admin-filters button.is-active
+) {
+  color: var(--cleaning-primary-foreground);
+}
+
+.service-shell[data-service="cleaning"] :is(
+  .details-card__price span,
+  .admin-stat--active span,
+  .admin-stat--amount span
+) {
+  color: color-mix(in oklch, var(--cleaning-primary-foreground) 70%, transparent);
+}
+
 .service-shell[data-service="cleaning"] .cleaning-card.is-selected {
-  background: color-mix(in srgb, var(--color-primary-soft) 54%, white);
+  background: var(--cleaning-secondary);
 }
 
 .service-shell[data-service="cleaning"] .cleaning-card.is-selected .cleaning-card__radio {
-  box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--color-primary-soft) 54%, white);
+  box-shadow: inset 0 0 0 4px var(--cleaning-secondary);
 }
 
 .service-shell .bottom-nav__link.is-active {

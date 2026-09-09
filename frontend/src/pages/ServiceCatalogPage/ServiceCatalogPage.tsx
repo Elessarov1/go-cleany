@@ -242,7 +242,7 @@ function ActiveTransactionCard({ count, item, locale, russian }: {
         <h2>{t("catalog.home.activeTitle")}</h2>
         <Link to="/account/activity">{t("catalog.home.allActivity", { count })}</Link>
       </div>
-      <Link className="customer-home-card customer-home-card--active" to={item.targetPath}>
+      <Link className="customer-home-card customer-home-card--active" data-service={item.service.toLowerCase()} to={item.targetPath}>
         <span className={`customer-home-card__icon customer-home-card__icon--${item.service.toLowerCase()}`}>
           <Icon name={serviceIcon(item.service)} size={24} />
         </span>
@@ -263,7 +263,7 @@ function ActiveTransactionCard({ count, item, locale, russian }: {
 function PrimaryActionCard({ action, locale }: { action: CustomerHomePrimaryAction; locale: string }) {
   const { t } = useTranslation();
   return (
-    <Link className="customer-home-card customer-home-card--opportunity" to={action.targetPath}>
+    <Link className="customer-home-card customer-home-card--opportunity" data-service={action.targetService.toLowerCase()} to={action.targetPath}>
       <span className={`customer-home-card__icon customer-home-card__icon--${action.targetService.toLowerCase()}`}>
         <Icon name={serviceIcon(action.targetService)} size={24} />
       </span>
@@ -286,7 +286,7 @@ function RepeatCard({ opportunity, locale }: { opportunity: CustomerHomeRepeatOp
   const { t } = useTranslation();
   const completed = new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(opportunity.sourceCompletedAt));
   return (
-    <Link className="customer-home-card customer-home-card--opportunity" to={opportunity.targetPath}>
+    <Link className="customer-home-card customer-home-card--opportunity" data-service={opportunity.service.toLowerCase()} to={opportunity.targetPath}>
       <span className={`customer-home-card__icon customer-home-card__icon--${opportunity.service.toLowerCase()}`}>
         <Icon name={serviceIcon(opportunity.service)} size={24} />
       </span>

@@ -3,12 +3,24 @@ title: Loco Cleaning
 type: vertical-context
 status: active
 scope: cleaning
-updated: 2026-08-30
+updated: 2026-09-09
 ---
 
 # Loco Cleaning
 
 Loco Cleaning is the first implemented Loco Place vertical.
+
+## Visual identity
+
+Cleaning uses a dedicated indigo color system in both light and dark themes. Its customer and admin shells alias shared semantic UI colors to `--cleaning-*` tokens; shared Loco Place and Rental surfaces use the same tokens only for Cleaning markers and contextual Cleaning actions. Neutral account, support, notification and activity shells remain Loco Place surfaces.
+
+The canonical palette was imported from the shadcn registry item named `cleaning`. The reviewed source export has SHA-256:
+
+```text
+FE830FEA69F7FC6026F6EF9CE25314C2D972B5C119D4FCCB1DAC070EBCA965E8
+```
+
+Only color values are adopted. Loco's existing typography, spacing, radii, layout and shadow geometry remain authoritative; the project does not depend on shadcn or Tailwind for this theme.
 
 ## Domain ownership
 

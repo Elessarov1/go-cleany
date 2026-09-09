@@ -97,6 +97,7 @@ export function ServiceSelector({ compact = false }: ServiceSelectorProps) {
         {serviceOrder.map((service) => SERVICES[service]).map((option) => (
           <NavLink
             className={({ isActive }) => `service-selector__item${isActive ? " is-active" : ""}`}
+            data-service={option.service}
             key={option.path}
             to={option.path}
           >

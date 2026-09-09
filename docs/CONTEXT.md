@@ -250,6 +250,8 @@ Multiple cleaners may receive work; first acceptance wins atomically.
 
 Referral financial semantics are currently Cleaning-specific. Do not globalize them because a generic referral abstraction seems attractive.
 
+Cleaning's visual identity uses a dedicated indigo light/dark token set. Cleaning customer/admin shells and Cleaning markers in shared Loco Place or Rental contexts consume the same `--cleaning-*` palette, while neutral account/support/activity shells remain branded as Loco Place. The palette source is the reviewed registry item `cleaning` (SHA-256 `FE830FEA69F7FC6026F6EF9CE25314C2D972B5C119D4FCCB1DAC070EBCA965E8`); its typography, spacing, radii and shadow geometry are intentionally not imported.
+
 ## Loco Rental
 
 Rental owns `RentalProperty`, `RentalBooking`, `RentalOccupancy`, availability, rental pricing/stay rules and rental administration. Rental ranges are public-inclusive: both `checkInDate` and `checkOutDate` are occupied and billable, while PostgreSQL translates the end to an exclusive `daterange` upper bound. Properties have one global admin-managed display order across all lifecycle statuses and an optional public apartment number.

@@ -257,6 +257,28 @@
   border-radius: 10px;
 }
 
+.service-selector__item[data-service="rental"] .service-selector__icon {
+  color: #000;
+  background: oklch(0.8512 0.1254 73.9788);
+  border-color: oklch(0.8978 0.0278 76.4745);
+}
+
+.service-selector__item[data-service="transfer"] .service-selector__icon {
+  color: oklch(0.9169 0.0175 99.616);
+  background: oklch(0.3012 0 0);
+  border-color: oklch(0.3012 0 0);
+}
+
+.service-selector__item[data-service="cleaning"] .service-selector__icon {
+  color: var(--cleaning-primary-foreground);
+  background: var(--cleaning-primary);
+  border-color: var(--cleaning-border);
+}
+
+.service-selector__item[data-service="cleaning"]:is(:hover, :focus-visible, .is-active) {
+  background: var(--cleaning-secondary);
+}
+
 .service-selector__item > span:nth-child(2) {
   display: grid;
   min-width: 0;
