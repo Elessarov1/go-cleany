@@ -1251,6 +1251,7 @@
       "CLEANING_ONSITE_ISSUE_REPORTED": "Your order is paused while the issue is reviewed",
       "RENTAL_BOOKING_CONFIRMED": "Your booking was confirmed",
       "RENTAL_BOOKING_CANCELLED": "Your booking was cancelled",
+      "RENTAL_ADMIN_BOOKING_CHANGED": "Admin booking update",
       "TRANSFER_REQUESTED": "Your transfer request was received",
       "TRANSFER_CONFIRMED": "Your transfer was confirmed",
       "TRANSFER_REJECTED": "Your transfer request was rejected",
@@ -1262,7 +1263,8 @@
       "RENTAL_CLEANING_BENEFIT_AVAILABLE": "Your pre-checkout cleaning discount is available",
       "CLEANING_REPEAT_REMINDER": "Time to repeat your cleaning",
       "RENTAL_CHECKOUT_TRANSFER_REMINDER": "You can arrange a checkout transfer",
-      "TRANSFER_UPCOMING_REMINDER": "Your transfer is coming up"
+      "TRANSFER_UPCOMING_REMINDER": "Your transfer is coming up",
+      "UNKNOWN": "New notification"
     }
   },
   "support": {

@@ -96,7 +96,6 @@ export function AppShell() {
       : t("app.navigation.main");
   const brandService: BrandService | undefined = catalog || neutralCustomer ? undefined : transfer ? "transfer" : rental ? "rental" : "cleaning";
   const showLocalNavigation = (!standaloneWeb && !admin)
-    || customerHub
     || (!catalog && !neutralCustomer && (!admin || rental || transfer));
   const showWebAdminSidebar = standaloneWeb && admin && hasAdminAccess;
   const showSiteFooter = standaloneWeb && !admin;

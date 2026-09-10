@@ -1267,6 +1267,7 @@
       "CLEANING_ONSITE_ISSUE_REPORTED": "Заказ приостановлен для проверки ситуации",
       "RENTAL_BOOKING_CONFIRMED": "Бронирование подтверждено",
       "RENTAL_BOOKING_CANCELLED": "Бронирование отменено",
+      "RENTAL_ADMIN_BOOKING_CHANGED": "Обновление бронирования для администратора",
       "TRANSFER_REQUESTED": "Заявка на трансфер получена",
       "TRANSFER_CONFIRMED": "Ваш трансфер подтверждён",
       "TRANSFER_REJECTED": "Заявка на трансфер отклонена",
@@ -1278,7 +1279,8 @@
       "RENTAL_CLEANING_BENEFIT_AVAILABLE": "Доступна скидка на уборку перед выездом",
       "CLEANING_REPEAT_REMINDER": "Пора повторить уборку",
       "RENTAL_CHECKOUT_TRANSFER_REMINDER": "Можно оформить трансфер к выезду",
-      "TRANSFER_UPCOMING_REMINDER": "Скоро ваш трансфер"
+      "TRANSFER_UPCOMING_REMINDER": "Скоро ваш трансфер",
+      "UNKNOWN": "Новое уведомление"
     }
   },
   "support": {

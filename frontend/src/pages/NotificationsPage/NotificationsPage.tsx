@@ -96,7 +96,9 @@ export function NotificationsPage() {
             >
               <span className="notification-card__icon"><Icon name="bell" size={20} /></span>
               <span className="notification-card__body">
-                <strong>{t(`notifications.types.${notification.type}`)}</strong>
+                <strong>{t(`notifications.types.${notification.type}`, {
+                  defaultValue: t("notifications.types.UNKNOWN"),
+                })}</strong>
                 <time dateTime={notification.createdAt}>{new Intl.DateTimeFormat(i18n.resolvedLanguage === "ru" ? "ru-RU" : "en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(notification.createdAt))}</time>
               </span>
               {!notification.readAt ? <span className="notification-card__dot" aria-label={t("notifications.unread")} /> : null}
