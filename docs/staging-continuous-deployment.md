@@ -209,10 +209,11 @@ Workflow запускается автоматически только на `pu
 | `frontend/**` | пропускаются, если backend не менялся | запускается | запускается после успешной проверки |
 | `deploy/**` | пропускаются | пропускается | запускается |
 | `compose.prod.yaml` | пропускаются | пропускается | запускается |
+| `.dockerignore` | пропускаются | пропускается | запускается |
 | только `docs/**`, README или другие non-runtime файлы | пропускаются | пропускается | пропускается |
 | ручной workflow | запускаются обе проверки | запускаются обе проверки | только если выбран `main` |
 
-Deployment-only изменения раньше могли быть ошибочно классифицированы как `app=false`. Теперь у них отдельный признак `deployment`, а итоговый `deploy` становится true для любого изменения backend, frontend или production deployment configuration.
+Deployment-only изменения раньше могли быть ошибочно классифицированы как `app=false`. Теперь у них отдельный признак `deployment`, а итоговый `deploy` становится true для любого изменения backend, frontend или production deployment configuration. Корневой `.dockerignore` входит в этот контракт, поскольку production Caddy image собирает frontend и generated TypeScript SDK из ограниченного repository-root context.
 
 Изменения `.github/workflows/ci.yml` сами по себе не требуют выкладки runtime. Они применяются в GitHub Actions после push.
 

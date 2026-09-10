@@ -246,7 +246,9 @@ requires the real staging Backend Ready Gate. Customer read models use typed `Ac
 than domain-owned browser paths, and create commands require seven-day idempotency keys. React/TMA
 uses the generated TypeScript client for browser auth, account/home/activity/notifications, support,
 catalog and every customer-facing Cleaning, Rental and Transfer operation; hand-written HTTP remains
-only for internal admin surfaces.
+only for internal admin surfaces. The shared Caddy Dockerfile builds that generated TypeScript client
+before the frontend; its repository-root build context is restricted by `.dockerignore` to the frontend
+and TypeScript SDK sources so local, performance and production images use the same reproducible path.
 
 Preferred boundary:
 

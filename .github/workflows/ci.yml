@@ -72,7 +72,7 @@ jobs:
                 # The React app imports the generated TypeScript package by local file dependency.
                 frontend=true
               fi
-              if grep -Eq '^(deploy/|compose\.prod\.ya?ml$)' /tmp/changed-files; then
+              if grep -Eq '^(deploy/|compose\.prod\.ya?ml$|\.dockerignore$)' /tmp/changed-files; then
                 deployment=true
               fi
             fi

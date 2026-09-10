@@ -55,7 +55,8 @@ services:
       start_period: 20s
   frontend:
     build:
-      context: ../frontend
+      context: ..
+      dockerfile: frontend/Dockerfile
       args:
         VITE_API_BASE_URL: /
         VITE_TELEGRAM_BOT_USERNAME: go_cleany_bot
