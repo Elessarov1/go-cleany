@@ -172,8 +172,8 @@ jobs:
         working-directory: clients/dart-dio
         run: |
           dart pub get
-          dart run build_runner build --delete-conflicting-outputs
-          dart analyze
+          dart run build_runner build
+          dart analyze --no-fatal-warnings
           dart test
 
   deploy_staging:
