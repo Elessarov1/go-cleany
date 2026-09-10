@@ -16,7 +16,7 @@ void main() {
     });
 
     expect(value, isNotNull);
-    expect(value!.tokenType, SessionTokensTokenTypeEnum.Bearer);
+    expect(value!.tokenType, SessionTokensTokenTypeEnum.bearer);
     expect(value.absoluteExpiresAt.toUtc(), DateTime.parse('2026-12-09T10:00:00Z'));
   });
 
