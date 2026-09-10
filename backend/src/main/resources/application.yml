@@ -152,11 +152,6 @@ cleaner:
 admin:
   google-emails: ${ADMIN_GOOGLE_EMAILS:}
 
-account-linking:
-  telegram:
-    mini-app-link-base: ${TELEGRAM_MINI_APP_LINK_BASE:}
-    request-ttl: ${ACCOUNT_LINK_REQUEST_TTL:10m}
-
 public-application:
   base-url: ${PUBLIC_APP_BASE_URL:https://loco-place.com}
 
@@ -169,6 +164,48 @@ web-auth:
     enabled: ${GOOGLE_AUTH_ENABLED:false}
     client-id: ${GOOGLE_CLIENT_ID:}
     client-secret: ${GOOGLE_CLIENT_SECRET:}
+
+native-auth:
+  enabled: ${NATIVE_AUTH_ENABLED:false}
+  access-ttl: ${NATIVE_AUTH_ACCESS_TTL:15m}
+  refresh-ttl: ${NATIVE_AUTH_REFRESH_TTL:30d}
+  absolute-ttl: ${NATIVE_AUTH_ABSOLUTE_TTL:90d}
+  refresh-retry-ttl: ${NATIVE_AUTH_REFRESH_RETRY_TTL:2m}
+  challenge-ttl: ${NATIVE_AUTH_CHALLENGE_TTL:10m}
+  sensitive-proof-ttl: ${NATIVE_AUTH_SENSITIVE_PROOF_TTL:5m}
+  token-encryption-key: ${NATIVE_AUTH_TOKEN_ENCRYPTION_KEY:}
+  google-audiences: ${NATIVE_GOOGLE_AUDIENCES:}
+  apple-audiences: ${NATIVE_APPLE_AUDIENCES:}
+  telegram-bot-username: ${NATIVE_AUTH_TELEGRAM_BOT_USERNAME:${TELEGRAM_BOT_USERNAME:go_cleany_bot}}
+  apple:
+    team-id: ${APPLE_TEAM_ID:}
+    key-id: ${APPLE_KEY_ID:}
+    client-id: ${APPLE_CLIENT_ID:com.locoplace.app}
+    private-key: ${APPLE_PRIVATE_KEY:}
+    token-uri: ${APPLE_TOKEN_URI:https://appleid.apple.com/auth/token}
+    revoke-uri: ${APPLE_REVOKE_URI:https://appleid.apple.com/auth/revoke}
+    revocation-worker-delay: ${APPLE_REVOCATION_WORKER_DELAY:10s}
+
+client-configuration:
+  environment: ${APP_ENVIRONMENT:production}
+  ios-application-id: ${IOS_APPLICATION_ID:com.locoplace.app}
+  android-application-id: ${ANDROID_APPLICATION_ID:com.locoplace.app}
+  apple-team-id: ${APPLE_TEAM_ID:}
+  android-sha256-fingerprints: ${ANDROID_SHA256_FINGERPRINTS:}
+  minimum-ios-version: ${MINIMUM_IOS_VERSION:1.0.0}
+  minimum-android-version: ${MINIMUM_ANDROID_VERSION:1.0.0}
+  api-revision: ${API_REVISION:development}
+
+fcm:
+  enabled: ${FCM_ENABLED:false}
+  project-id: ${FCM_PROJECT_ID:}
+  client-email: ${FCM_CLIENT_EMAIL:}
+  private-key: ${FCM_PRIVATE_KEY:}
+  token-uri: ${FCM_TOKEN_URI:https://oauth2.googleapis.com/token}
+  scope: ${FCM_SCOPE:https://www.googleapis.com/auth/firebase.messaging}
+
+communications:
+  worker-delay: ${COMMUNICATION_WORKER_DELAY:2s}
 
 telegram:
   bot-token: ${TELEGRAM_BOT_TOKEN}

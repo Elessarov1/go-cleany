@@ -3,6 +3,8 @@ package com.cleany.rental;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import com.cleany.configuration.Money;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record RentalBookingResponse(
         long id,
@@ -29,6 +31,11 @@ public record RentalBookingResponse(
         String cancellationReason,
         Instant completedAt
 ) {
+
+    @JsonProperty("money")
+    public Money money() {
+        return Money.of(totalPrice, currency);
+    }
 
     static RentalBookingResponse from(RentalBooking booking) {
         return new RentalBookingResponse(

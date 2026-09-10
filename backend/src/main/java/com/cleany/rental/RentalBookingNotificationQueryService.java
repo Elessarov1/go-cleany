@@ -1,7 +1,6 @@
 package com.cleany.rental;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
@@ -12,7 +11,7 @@ public class RentalBookingNotificationQueryService {
 
     private final RentalBookingRepository bookingRepository;
 
-    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
+    @Transactional(readOnly = true)
     public RentalBookingCustomerNotification confirmed(long bookingId) {
         RentalBooking booking = requireBooking(bookingId);
         RentalProperty property = booking.getProperty();
@@ -27,7 +26,7 @@ public class RentalBookingNotificationQueryService {
         );
     }
 
-    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
+    @Transactional(readOnly = true)
     public RentalBookingCustomerNotification cancelled(long bookingId) {
         RentalBooking booking = requireBooking(bookingId);
         RentalProperty property = booking.getProperty();

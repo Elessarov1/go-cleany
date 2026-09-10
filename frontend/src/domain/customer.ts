@@ -2,10 +2,12 @@ export interface CustomerProfile {
   phone: string | null;
 }
 
-export type ExternalIdentityProvider = "GOOGLE" | "TELEGRAM";
+export type ExternalIdentityProvider = "GOOGLE" | "APPLE" | "TELEGRAM";
 
 export interface AccountIdentity {
+  identityId: number | null;
   provider: ExternalIdentityProvider;
+  issuer: string | null;
   linked: boolean;
   username: string | null;
   writeAccessAllowed: boolean;
@@ -16,6 +18,7 @@ export interface AccountIdentities {
 }
 
 export interface AccountLinkInitiated {
+  id: string;
   deepLink: string;
   expiresAt: string;
 }
@@ -27,6 +30,7 @@ export type CustomerNotificationType =
   | "CLEANING_ONSITE_ISSUE_REPORTED"
   | "RENTAL_BOOKING_CONFIRMED"
   | "RENTAL_BOOKING_CANCELLED"
+  | "RENTAL_ADMIN_BOOKING_CHANGED"
   | "TRANSFER_REQUESTED"
   | "TRANSFER_CONFIRMED"
   | "TRANSFER_REJECTED"
@@ -43,17 +47,15 @@ export type CustomerNotificationType =
 export interface CustomerNotification {
   id: number;
   type: CustomerNotificationType;
-  targetPath: string;
+  action: import("./action").ActionTarget;
   createdAt: string;
   readAt: string | null;
 }
 
 export interface CustomerNotificationPage {
-  content: CustomerNotification[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
+  items: CustomerNotification[];
+  nextCursor: string | null;
+  hasMore: boolean;
 }
 
 export interface CustomerActivityItem {
@@ -68,9 +70,8 @@ export interface CustomerActivityItem {
   scheduledEndDate: string | null;
   scheduledTime: string | null;
   occurredAt: string;
-  amount: number;
-  currency: string;
-  targetPath: string;
+  money: { amount: string; currency: string };
+  action: import("./action").ActionTarget;
 }
 
 export interface CustomerActivity {
@@ -91,7 +92,7 @@ export interface CustomerHomePrimaryAction {
   relevantDate: string;
   eligibleFrom: string | null;
   expiresOn: string | null;
-  targetPath: string;
+  action: import("./action").ActionTarget;
   benefit: import("./rental").RentalTransferBenefit | null;
 }
 
@@ -99,7 +100,7 @@ export interface CustomerHomeRepeatOpportunity {
   service: import("./platformService").PlatformService;
   sourceEntityId: number;
   sourceCompletedAt: string;
-  targetPath: string;
+  action: import("./action").ActionTarget;
 }
 
 export interface CustomerHome {

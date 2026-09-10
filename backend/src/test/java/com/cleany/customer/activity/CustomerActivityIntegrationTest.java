@@ -142,16 +142,19 @@ class CustomerActivityIntegrationTest extends BaseIntegrationTest {
                         result.activeAndUpcoming().stream().map(CustomerActivityItem::service).toList()
                 ),
                 () -> Assertions.assertEquals(activeTransfer.id(), result.activeAndUpcoming().getFirst().entityId()),
-                () -> Assertions.assertEquals("USD", result.activeAndUpcoming().getFirst().currency()),
+                () -> Assertions.assertEquals("USD", result.activeAndUpcoming().getFirst().money().currency()),
                 () -> Assertions.assertEquals(activeRental.id(), result.activeAndUpcoming().get(1).entityId()),
-                () -> Assertions.assertEquals("EUR", result.activeAndUpcoming().get(1).currency()),
+                () -> Assertions.assertEquals("EUR", result.activeAndUpcoming().get(1).money().currency()),
                 () -> Assertions.assertEquals(activeCleaning.getId(), result.activeAndUpcoming().get(2).entityId()),
-                () -> Assertions.assertEquals("TRY", result.activeAndUpcoming().get(2).currency()),
+                () -> Assertions.assertEquals("TRY", result.activeAndUpcoming().get(2).money().currency()),
                 () -> Assertions.assertEquals(
                         java.util.List.of(PlatformService.TRANSFER, PlatformService.RENTAL, PlatformService.CLEANING),
                         result.history().stream().map(CustomerActivityItem::service).toList()
                 ),
-                () -> Assertions.assertEquals("/transfer/bookings/" + rejectedTransfer.id(), result.history().getFirst().targetPath()),
+                () -> Assertions.assertEquals(
+                        new com.cleany.action.ActionTarget.OpenTransaction(
+                                PlatformService.TRANSFER, rejectedTransfer.id()),
+                        result.history().getFirst().action()),
                 () -> Assertions.assertEquals(1, outsiderResult.activeAndUpcoming().size()),
                 () -> Assertions.assertTrue(outsiderResult.history().isEmpty())
         );
@@ -162,8 +165,8 @@ class CustomerActivityIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.activeAndUpcoming.length()").value(3))
                 .andExpect(jsonPath("$.history.length()").value(3))
                 .andExpect(jsonPath("$.history[0].entityId").value(rejectedTransfer.id()))
-                .andExpect(jsonPath("$.activeAndUpcoming[0].amount").value(1800.0))
-                .andExpect(jsonPath("$.activeAndUpcoming[0].currency").value("USD"));
+                .andExpect(jsonPath("$.activeAndUpcoming[0].money.amount").value("1800.00"))
+                .andExpect(jsonPath("$.activeAndUpcoming[0].money.currency").value("USD"));
     }
 
     @Test

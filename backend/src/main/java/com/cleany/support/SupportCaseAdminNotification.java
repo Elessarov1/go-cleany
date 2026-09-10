@@ -1,5 +1,6 @@
 package com.cleany.support;
 
+import com.cleany.action.ActionTarget;
 import com.cleany.catalog.PlatformService;
 import com.cleany.notification.CustomerNotification;
 import com.cleany.notification.CustomerNotificationType;
@@ -17,8 +18,8 @@ public record SupportCaseAdminNotification(
     }
 
     @Override
-    public String targetPath() {
-        return "/admin/support/cases/" + caseId;
+    public ActionTarget action() {
+        return new ActionTarget.OpenSupportCase(caseId);
     }
 
     @Override

@@ -114,6 +114,16 @@ Read:
 - [architecture/overview.md](architecture/overview.md)
 - [architecture/decisions/README.md](architecture/decisions/README.md)
 - [architecture/platform-roadmap.md](architecture/platform-roadmap.md) for detailed historic direction.
+- [architecture/public-api.md](architecture/public-api.md) for OpenAPI, SDK and v1 compatibility.
+
+## Flutter backend readiness
+
+Read:
+
+- [architecture/identity.md](architecture/identity.md)
+- [architecture/public-api.md](architecture/public-api.md)
+- [cross-functional/notifications.md](cross-functional/notifications.md)
+- [operations/backend-ready-gate.md](operations/backend-ready-gate.md)
 
 ## Decision / strategy history
 

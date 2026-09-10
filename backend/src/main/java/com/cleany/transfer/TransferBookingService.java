@@ -80,6 +80,7 @@ public class TransferBookingService {
             CreateTransferBookingRequest request
     ) {
         requireCustomerFlow(customer);
+        customerAccountService.lock(customer.customerId());
         validateSources(request.repeatFromBookingId(), request.rentalSource(), request.benefit());
         TransferBooking repeatSource = request.repeatFromBookingId() == null
                 ? null

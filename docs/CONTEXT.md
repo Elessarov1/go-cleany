@@ -3,7 +3,7 @@ title: Loco Place Current Context
 type: ai-context
 status: active
 scope: platform
-updated: 2026-09-09
+updated: 2026-09-10
 ---
 
 # Loco Place — Current Context
@@ -203,11 +203,16 @@ Canonical internal identity:
 CustomerAccount.id
 ```
 
-External providers are identities/adapters, currently including Google and Telegram.
+External providers are identities/adapters: Google, Apple and Telegram, uniquely identified by
+provider + issuer + subject. `MOBILE_APP` is not an identity provider.
 
 Do not merge identities automatically by email, phone, display name or username.
 
-Google ↔ Telegram linking is explicit and verified.
+LOGIN and LINK are distinct nonce-bound flows. Linking is explicit, freshly reauthenticated and never
+automatically merges occupied accounts. Native clients receive Loco-owned opaque access/refresh
+sessions; browser and TMA retain HttpOnly cookie sessions, with Telegram `initData` accepted only for
+the initial TMA session exchange. Account deletion atomically cancels cancellable active work and
+leaves an anonymized customer tombstone; ADMIN self-deletion is forbidden.
 
 Telegram is optional for customers.
 
@@ -229,7 +234,19 @@ DISABLED
 
 ## Notifications
 
-The durable in-app notification inbox records important updates. The separate unified Activity read model is the customer's cross-service transaction history. External delivery such as Telegram is optional.
+The durable in-app notification inbox records important updates. Delivery jobs for Telegram and FCM
+are committed with the business change and processed later by a leased PostgreSQL worker with bounded
+retry; provider availability never controls the business commit. FCM endpoints are session-bound,
+encrypted at rest and disabled when registration becomes invalid. The separate unified Activity read
+model is the customer's cross-service transaction history.
+
+The Flutter-facing public API is tracked in `api/openapi/loco-place-v1.yaml` and reproducibly generates
+TypeScript Fetch and Dart Dio clients. It is currently release candidate `1.0.0-rc.1`; final `1.0.0`
+requires the real staging Backend Ready Gate. Customer read models use typed `ActionTarget` rather
+than domain-owned browser paths, and create commands require seven-day idempotency keys. React/TMA
+uses the generated TypeScript client for browser auth, account/home/activity/notifications, support,
+catalog and every customer-facing Cleaning, Rental and Transfer operation; hand-written HTTP remains
+only for internal admin surfaces.
 
 Preferred boundary:
 

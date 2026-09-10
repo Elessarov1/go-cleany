@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import com.cleany.action.ActionTarget;
+import com.cleany.catalog.PlatformService;
 import com.cleany.notification.CustomerNotification;
 import com.cleany.notification.CustomerNotificationType;
 
@@ -32,8 +34,8 @@ public record TransferBookingCustomerNotification(
     }
 
     @Override
-    public String targetPath() {
-        return "/transfer/bookings/" + bookingId;
+    public ActionTarget action() {
+        return new ActionTarget.OpenTransaction(PlatformService.TRANSFER, bookingId);
     }
 
     @Override

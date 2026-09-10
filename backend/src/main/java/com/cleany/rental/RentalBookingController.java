@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cleany.crossservice.rentalcleaning.RentalCleaningContextResponse;
@@ -21,6 +23,9 @@ import com.cleany.crossservice.rentaltransfer.RentalTransferContextType;
 import com.cleany.crossservice.rentaltransfer.RentalTransferPrefillResponse;
 
 import lombok.RequiredArgsConstructor;
+import com.cleany.idempotency.IdempotencyService;
+import com.cleany.pagination.CursorPageResponse;
+import com.cleany.pagination.OpaqueCursorPagination;
 
 @RestController
 @RequestMapping(RentalBookingController.BASE_PATH)
@@ -33,13 +38,18 @@ public class RentalBookingController {
     private final RentalCleaningContextService cleaningContextService;
     private final RentalTransferContextService transferContextService;
     private final RentalSearchTrackingService searchTrackingService;
+    private final IdempotencyService idempotencyService;
 
     @PostMapping
     public ResponseEntity<RentalBookingResponse> create(
+            @RequestHeader(name = "Idempotency-Key") String idempotencyKey,
             @Valid @RequestBody CreateRentalBookingRequest request
     ) {
         try {
-            RentalBookingResponse booking = bookingService.create(request);
+            RentalBookingResponse booking = idempotencyService.execute(idempotencyKey,
+                    "CREATE_RENTAL_BOOKING", request, "RENTAL_BOOKING",
+                    () -> bookingService.create(request), RentalBookingResponse::id,
+                    bookingService::currentCustomerBooking);
             return ResponseEntity
                     .created(URI.create(BASE_PATH + "/" + booking.id()))
                     .body(booking);
@@ -50,8 +60,12 @@ public class RentalBookingController {
     }
 
     @GetMapping
-    public List<RentalBookingResponse> getBookings() {
-        return bookingService.currentCustomerBookings();
+    public CursorPageResponse<RentalBookingResponse> getBookings(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) Integer size
+    ) {
+        return OpaqueCursorPagination.descending(bookingService.currentCustomerBookings(), cursor, size,
+                RentalBookingResponse::createdAt, RentalBookingResponse::id, booking -> booking);
     }
 
     @GetMapping("/{bookingId}")

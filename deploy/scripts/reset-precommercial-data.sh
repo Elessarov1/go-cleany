@@ -53,6 +53,15 @@ select section, table_name, record_count
       ('DELETE', 'acquisition_campaign_entry', (select count(*) from acquisition_campaign_entry)),
       ('DELETE', 'customer_acquisition', (select count(*) from customer_acquisition)),
       ('DELETE', 'customer_notification', (select count(*) from customer_notification)),
+      ('DELETE', 'notification_delivery', (select count(*) from notification_delivery)),
+      ('DELETE', 'operational_telegram_delivery', (select count(*) from operational_telegram_delivery)),
+      ('DELETE', 'communication_endpoint', (select count(*) from communication_endpoint)),
+      ('DELETE', 'customer_session', (select count(*) from customer_session)),
+      ('DELETE', 'used_refresh_token', (select count(*) from used_refresh_token)),
+      ('DELETE', 'authentication_challenge', (select count(*) from authentication_challenge)),
+      ('DELETE', 'idempotency_record', (select count(*) from idempotency_record)),
+      ('DELETE', 'external_provider_job', (select count(*) from external_provider_job)),
+      ('DELETE', 'security_audit_event', (select count(*) from security_audit_event)),
       ('DELETE', 'transaction_feedback', (select count(*) from transaction_feedback)),
       ('DELETE', 'support_case', (select count(*) from support_case)),
       ('DELETE', 'rental_search_event', (select count(*) from rental_search_event)),
@@ -205,6 +214,14 @@ union all select 'rental_search_execution', count(*) from rental_search_executio
 union all select 'rental_transfer_benefit', count(*) from rental_transfer_benefit
 union all select 'transfer_booking', count(*) from transfer_booking
 union all select 'customer_notification', count(*) from customer_notification
+union all select 'notification_delivery', count(*) from notification_delivery
+union all select 'communication_endpoint', count(*) from communication_endpoint
+union all select 'customer_session', count(*) from customer_session
+union all select 'used_refresh_token', count(*) from used_refresh_token
+union all select 'authentication_challenge', count(*) from authentication_challenge
+union all select 'idempotency_record', count(*) from idempotency_record
+union all select 'external_provider_job', count(*) from external_provider_job
+union all select 'security_audit_event', count(*) from security_audit_event
 union all select 'transaction_feedback', count(*) from transaction_feedback
 union all select 'support_case', count(*) from support_case
 union all select 'ordinary_customer_account', count(*) from customer_account account

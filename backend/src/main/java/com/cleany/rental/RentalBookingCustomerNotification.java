@@ -3,6 +3,8 @@ package com.cleany.rental;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import com.cleany.action.ActionTarget;
+import com.cleany.catalog.PlatformService;
 import com.cleany.notification.CustomerNotification;
 import com.cleany.notification.CustomerNotificationType;
 
@@ -26,8 +28,8 @@ public sealed interface RentalBookingCustomerNotification extends CustomerNotifi
     }
 
     @Override
-    default String targetPath() {
-        return "/rent/bookings/" + bookingId();
+    default ActionTarget action() {
+        return new ActionTarget.OpenTransaction(PlatformService.RENTAL, bookingId());
     }
 
     @Override

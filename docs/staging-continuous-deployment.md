@@ -151,7 +151,6 @@ Repository → Settings → Environments → staging
 | `STAGING_SSH_USER` | пользователь-владелец `/opt/go-cleany` |
 | `APP_HOST` | `loco-place.com` |
 | `CLEANER_TELEGRAM_IDS` | `123456789,987654321` |
-| `TELEGRAM_MINI_APP_LINK_BASE` | `https://t.me/<bot>/<mini-app>` |
 | `TELEGRAM_BOT_USERNAME` | `go_cleany_bot` без `@` |
 | `TRANSFER_ASSIGNMENT_MODE` | `ADMIN_ASSIGNMENT` или `DRIVER_SELF_ACCEPT` |
 | `GOOGLE_AUTH_ENABLED` | `true` / `false` |
@@ -171,7 +170,7 @@ Repository → Settings → Environments → staging
 | `RENTAL_CLEANING_DISCOUNT_RATE` | `0.10` |
 | `RENTAL_CLEANING_MAX_DISCOUNT` | `2000` |
 
-`CLEANER_TELEGRAM_IDS` содержит numeric Telegram IDs через запятую без пробелов. `TELEGRAM_MINI_APP_LINK_BASE` задаёт deep link без bot token. `TELEGRAM_BOT_USERNAME` используется для одноразовых driver-link URL и передаётся в production Vite build как адрес Telegram-контакта web-футера; отдельная GitHub variable для frontend не нужна.
+`CLEANER_TELEGRAM_IDS` содержит numeric Telegram IDs через запятую без пробелов. `TELEGRAM_BOT_USERNAME` используется для одноразовых driver- и account-link URL и передаётся в production Vite build как адрес Telegram-контакта web-футера; отдельная GitHub variable для frontend не нужна.
 
 Google credentials и admin allowlist должны храниться в Environment **Secrets**, не Variables. При `GOOGLE_AUTH_ENABLED=true` workflow проверяет их наличие и передаёт только в backend runtime. Для canonical host callback должен быть зарегистрирован как:
 

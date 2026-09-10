@@ -12,7 +12,9 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cleany.action.ActionTarget;
 import com.cleany.catalog.PlatformService;
+import com.cleany.configuration.Money;
 import com.cleany.customer.CurrentCustomer;
 import com.cleany.customer.CustomerAccountService;
 import com.cleany.order.CleaningOrder;
@@ -134,9 +136,8 @@ public class CustomerActivityService {
                 null,
                 null,
                 cleaningOccurredAt(order, statusTime),
-                order.getFinalCustomerPrice(),
-                order.getCurrency(),
-                "/cleaning/orders/" + order.getId()
+                Money.of(order.getFinalCustomerPrice(), order.getCurrency()),
+                new ActionTarget.OpenTransaction(PlatformService.CLEANING, order.getId())
         );
     }
 
@@ -153,9 +154,8 @@ public class CustomerActivityService {
                 booking.getCheckOutDate(),
                 null,
                 firstNonNull(booking.getCompletedAt(), booking.getCancelledAt(), booking.getCreatedAt()),
-                booking.getTotalPrice(),
-                booking.getCurrency(),
-                "/rent/bookings/" + booking.getId()
+                Money.of(booking.getTotalPrice(), booking.getCurrency()),
+                new ActionTarget.OpenTransaction(PlatformService.RENTAL, booking.getId())
         );
     }
 
@@ -183,9 +183,8 @@ public class CustomerActivityService {
                         booking.getConfirmedAt(),
                         booking.getCreatedAt()
                 ),
-                booking.getPriceAmount(),
-                booking.getPriceCurrency(),
-                "/transfer/bookings/" + booking.getId()
+                Money.of(booking.getPriceAmount(), booking.getPriceCurrency()),
+                new ActionTarget.OpenTransaction(PlatformService.TRANSFER, booking.getId())
         );
     }
 

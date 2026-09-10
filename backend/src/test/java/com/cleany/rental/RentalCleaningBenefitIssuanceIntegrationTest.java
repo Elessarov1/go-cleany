@@ -281,7 +281,7 @@ class RentalCleaningBenefitIssuanceIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void notificationDeliveryFailure_doesNotRollBackBenefitCreation() {
+    void durableNotificationPersistenceFailureRollsBackBenefitCreation() {
         LocalDate today = stayPolicy.today();
         CurrentCustomer customer = RentalTestFixtures.customer(customerAccountService, "940004");
         RentalBookingResponse booking = futureBooking(customer, "benefit-notification-failure");
@@ -292,9 +292,12 @@ class RentalCleaningBenefitIssuanceIntegrationTest extends BaseIntegrationTest {
                 ArgumentMatchers.any()
         )).thenThrow(new IllegalStateException("channel unavailable"));
 
-        Assertions.assertDoesNotThrow(() -> issuanceService.issueEligible(today, 100));
+        RentalCleaningBenefitIssuanceResult result = issuanceService.issueEligible(today, 100);
 
-        Assertions.assertTrue(benefitRepository.existsByRentalBookingId(booking.id()));
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(1, result.failed()),
+                () -> Assertions.assertFalse(benefitRepository.existsByRentalBookingId(booking.id()))
+        );
     }
 
     private RentalBookingResponse futureBooking(CurrentCustomer customer, String slug) {

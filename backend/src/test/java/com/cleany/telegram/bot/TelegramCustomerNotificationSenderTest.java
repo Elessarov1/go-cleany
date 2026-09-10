@@ -42,6 +42,7 @@ class TelegramCustomerNotificationSenderTest {
         var sender = sender(
                 messageFactory,
                 cleaningMessageFactory,
+                Mockito.mock(TelegramRentalAdminMessageFactory.class),
                 botClient,
                 Mockito.mock(MediaProviderReferenceService.class)
         );
@@ -336,9 +337,22 @@ class TelegramCustomerNotificationSenderTest {
             TelegramBotClient botClient,
             MediaProviderReferenceService mediaProviderReferenceService
     ) {
+        return sender(messageFactory, cleaningMessageFactory,
+                Mockito.mock(TelegramRentalAdminMessageFactory.class),
+                botClient, mediaProviderReferenceService);
+    }
+
+    private static TelegramCustomerNotificationSender sender(
+            TelegramCustomerNotificationMessageFactory messageFactory,
+            CleaningOrderBotMessageFactory cleaningMessageFactory,
+            TelegramRentalAdminMessageFactory rentalAdminMessageFactory,
+            TelegramBotClient botClient,
+            MediaProviderReferenceService mediaProviderReferenceService
+    ) {
         return new TelegramCustomerNotificationSender(
                 messageFactory,
                 cleaningMessageFactory,
+                rentalAdminMessageFactory,
                 botClient,
                 mediaProviderReferenceService,
                 PUBLIC_APPLICATION_PROPERTIES

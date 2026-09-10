@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import com.cleany.action.ActionTargetWebPathResolver;
 import com.cleany.configuration.PublicApplicationProperties;
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitCustomerNotification;
 import com.cleany.customer.ExternalIdentityProvider;
@@ -18,6 +19,7 @@ import com.cleany.notification.CustomerNotificationSender;
 import com.cleany.notification.ReferralUnlockedCustomerNotification;
 import com.cleany.order.CleaningOrderCustomerNotification;
 import com.cleany.reminder.ReminderCustomerNotification;
+import com.cleany.rental.RentalBookingAdminCustomerNotification;
 import com.cleany.rental.RentalBookingCustomerNotification;
 import com.cleany.transfer.TransferAdminNewRequestNotification;
 import com.cleany.transfer.TransferBookingCustomerNotification;
@@ -29,6 +31,7 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
 
     private final TelegramCustomerNotificationMessageFactory messageFactory;
     private final CleaningOrderBotMessageFactory cleaningMessageFactory;
+    private final TelegramRentalAdminMessageFactory rentalAdminMessageFactory;
     private final TelegramBotClient botClient;
     private final MediaProviderReferenceService mediaProviderReferenceService;
     private final PublicApplicationProperties publicApplicationProperties;
@@ -37,12 +40,14 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
     public TelegramCustomerNotificationSender(
             TelegramCustomerNotificationMessageFactory messageFactory,
             CleaningOrderBotMessageFactory cleaningMessageFactory,
+            TelegramRentalAdminMessageFactory rentalAdminMessageFactory,
             TelegramBotClient botClient,
             MediaProviderReferenceService mediaProviderReferenceService,
             PublicApplicationProperties publicApplicationProperties
     ) {
         this.messageFactory = messageFactory;
         this.cleaningMessageFactory = cleaningMessageFactory;
+        this.rentalAdminMessageFactory = rentalAdminMessageFactory;
         this.botClient = botClient;
         this.mediaProviderReferenceService = mediaProviderReferenceService;
         this.publicApplicationProperties = publicApplicationProperties;
@@ -93,7 +98,8 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
                     TelegramBotClient.InlineKeyboard.ofRows(List.of(
                             TelegramBotClient.InlineButton.url(
                                     isEnglish(target.languageCode()) ? "Open" : "Открыть",
-                                    publicApplicationProperties.baseUrl() + reminder.targetPath()
+                                    publicApplicationProperties.baseUrl()
+                                            + ActionTargetWebPathResolver.resolve(reminder.action())
                             )
                     ))
             );
@@ -145,6 +151,20 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
             );
             return;
         }
+        if (notification instanceof RentalBookingAdminCustomerNotification rentalAdmin) {
+            botClient.sendMessage(
+                    telegramUserId,
+                    rentalAdminMessageFactory.format(rentalAdmin.eventType(), rentalAdmin.booking()),
+                    TelegramBotClient.InlineKeyboard.ofRows(List.of(
+                            TelegramBotClient.InlineButton.url(
+                                    isEnglish(target.languageCode()) ? "Open booking" : "Открыть бронь",
+                                    publicApplicationProperties.baseUrl()
+                                            + ActionTargetWebPathResolver.resolve(rentalAdmin.action())
+                            )
+                    ))
+            );
+            return;
+        }
         if (notification instanceof TransferBookingCustomerNotification transfer) {
             sendMessage(
                     telegramUserId,
@@ -159,7 +179,8 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
                     TelegramBotClient.InlineKeyboard.ofRows(List.of(
                             TelegramBotClient.InlineButton.url(
                                     "Открыть заявку",
-                                    publicApplicationProperties.baseUrl() + transferAdmin.targetPath()
+                                    publicApplicationProperties.baseUrl()
+                                            + ActionTargetWebPathResolver.resolve(transferAdmin.action())
                             )
                     ))
             );
@@ -172,7 +193,8 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
                     TelegramBotClient.InlineKeyboard.ofRows(List.of(
                             TelegramBotClient.InlineButton.url(
                                     isEnglish(target.languageCode()) ? "Open case" : "Открыть обращение",
-                                    publicApplicationProperties.baseUrl() + supportCase.targetPath()
+                                    publicApplicationProperties.baseUrl()
+                                            + ActionTargetWebPathResolver.resolve(supportCase.action())
                             )
                     ))
             );

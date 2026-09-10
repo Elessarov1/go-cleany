@@ -3,6 +3,8 @@ package com.cleany.transfer;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import com.cleany.action.ActionTarget;
+import com.cleany.catalog.PlatformService;
 import com.cleany.notification.CustomerNotification;
 import com.cleany.notification.CustomerNotificationType;
 
@@ -20,8 +22,8 @@ public record TransferAdminNewRequestNotification(
     }
 
     @Override
-    public String targetPath() {
-        return "/admin/transfer/bookings/" + bookingId;
+    public ActionTarget action() {
+        return new ActionTarget.OpenAdminTransaction(PlatformService.TRANSFER, bookingId);
     }
 
     @Override

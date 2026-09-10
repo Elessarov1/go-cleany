@@ -201,8 +201,8 @@ class CustomerHomeIntegrationTest extends BaseIntegrationTest {
                 () -> Assertions.assertEquals(today.plusDays(9), cleaningFirst.primaryAction().eligibleFrom()),
                 () -> Assertions.assertEquals(today.plusDays(12), cleaningFirst.primaryAction().expiresOn()),
                 () -> Assertions.assertEquals(
-                        "/cleaning?rentalBooking=" + near.id() + "&promo=RC23456789",
-                        cleaningFirst.primaryAction().targetPath()
+                        new com.cleany.action.ActionTarget.StartRentalCleaning(near.id()),
+                        cleaningFirst.primaryAction().action()
                 ),
                 () -> Assertions.assertEquals(
                         CustomerHomePrimaryActionType.RENTAL_TRANSFER_ARRIVAL,

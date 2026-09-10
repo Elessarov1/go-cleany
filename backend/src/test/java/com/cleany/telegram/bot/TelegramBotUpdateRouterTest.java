@@ -7,6 +7,7 @@ import org.mockito.Mockito;
 class TelegramBotUpdateRouterTest {
 
     private TransferDriverBotService transferDriverBotService;
+    private TelegramNativeLoginBotService nativeLoginBotService;
     private TelegramCustomerBotService customerBotService;
     private TelegramCleanerBotService cleanerBotService;
     private TelegramBotUpdateRouter router;
@@ -15,10 +16,12 @@ class TelegramBotUpdateRouterTest {
     @BeforeEach
     void setUp() {
         transferDriverBotService = Mockito.mock(TransferDriverBotService.class);
+        nativeLoginBotService = Mockito.mock(TelegramNativeLoginBotService.class);
         customerBotService = Mockito.mock(TelegramCustomerBotService.class);
         cleanerBotService = Mockito.mock(TelegramCleanerBotService.class);
         router = new TelegramBotUpdateRouter(
                 transferDriverBotService,
+                nativeLoginBotService,
                 customerBotService,
                 cleanerBotService
         );
@@ -31,7 +34,7 @@ class TelegramBotUpdateRouterTest {
 
         router.handle(update);
 
-        Mockito.verifyNoInteractions(customerBotService, cleanerBotService);
+        Mockito.verifyNoInteractions(nativeLoginBotService, customerBotService, cleanerBotService);
     }
 
     @Test
@@ -41,6 +44,7 @@ class TelegramBotUpdateRouterTest {
         router.handle(update);
 
         Mockito.verify(transferDriverBotService).handleIfSupported(update);
+        Mockito.verify(nativeLoginBotService).handleIfSupported(update);
         Mockito.verify(customerBotService).handleIfSupported(update);
         Mockito.verifyNoInteractions(cleanerBotService);
     }
@@ -50,6 +54,7 @@ class TelegramBotUpdateRouterTest {
         router.handle(update);
 
         Mockito.verify(transferDriverBotService).handleIfSupported(update);
+        Mockito.verify(nativeLoginBotService).handleIfSupported(update);
         Mockito.verify(customerBotService).handleIfSupported(update);
         Mockito.verify(cleanerBotService).handle(update);
     }

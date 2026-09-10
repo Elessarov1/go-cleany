@@ -2,6 +2,7 @@ package com.cleany.crossservice.rentalcleaning;
 
 import java.time.LocalDate;
 
+import com.cleany.action.ActionTarget;
 import com.cleany.notification.CustomerNotification;
 import com.cleany.notification.CustomerNotificationType;
 
@@ -19,8 +20,8 @@ public record RentalCleaningBenefitCustomerNotification(
     }
 
     @Override
-    public String targetPath() {
-        return "/rent/bookings/" + rentalBookingId;
+    public ActionTarget action() {
+        return new ActionTarget.StartRentalCleaning(rentalBookingId);
     }
 
     @Override

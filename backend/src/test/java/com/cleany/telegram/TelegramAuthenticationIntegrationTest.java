@@ -3,6 +3,7 @@ package com.cleany.telegram;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,6 +90,7 @@ class TelegramAuthenticationIntegrationTest extends BaseIntegrationTest {
 
         mvc.perform(post("/api/v1/cleaning/orders")
                         .header("Authorization", "tma " + initData)
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isCreated())
@@ -136,6 +138,7 @@ class TelegramAuthenticationIntegrationTest extends BaseIntegrationTest {
 
         mvc.perform(post("/api/v1/cleaning/orders")
                         .header("Authorization", "tma " + initData)
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isBadRequest())

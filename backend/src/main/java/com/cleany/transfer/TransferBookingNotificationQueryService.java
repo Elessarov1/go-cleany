@@ -1,7 +1,6 @@
 package com.cleany.transfer;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
@@ -12,7 +11,7 @@ public class TransferBookingNotificationQueryService {
 
     private final TransferBookingRepository bookingRepository;
 
-    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
+    @Transactional(readOnly = true)
     public TransferBookingCustomerNotification customer(long bookingId) {
         TransferBooking booking = requireBooking(bookingId);
         return new TransferBookingCustomerNotification(
@@ -23,7 +22,7 @@ public class TransferBookingNotificationQueryService {
         );
     }
 
-    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
+    @Transactional(readOnly = true)
     public TransferAdminNewRequestNotification adminRequested(long bookingId) {
         TransferBooking booking = requireBooking(bookingId);
         return new TransferAdminNewRequestNotification(

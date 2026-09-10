@@ -6,6 +6,7 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.time.Clock;
 import java.time.DateTimeException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Map;
@@ -47,10 +48,14 @@ public class TelegramInitDataValidator {
     }
 
     public TelegramPrincipal validate(String initData) {
+        return validate(initData, properties.initDataMaxAge());
+    }
+
+    public TelegramPrincipal validate(String initData, Duration maximumAge) {
         try {
             Map<String, String> fields = parseFields(initData);
             verifyHash(fields);
-            verifyAuthDate(fields.get("auth_date"));
+            verifyAuthDate(fields.get("auth_date"), maximumAge);
             return parsePrincipal(fields.get("user"));
         } catch (CustomerAuthenticationRequiredException exception) {
             throw exception;
@@ -102,14 +107,17 @@ public class TelegramInitDataValidator {
         }
     }
 
-    private void verifyAuthDate(String authDateValue) {
+    private void verifyAuthDate(String authDateValue, Duration maximumAge) {
         if (authDateValue == null) {
             throw new CustomerAuthenticationRequiredException();
         }
 
         Instant authDate = Instant.ofEpochSecond(Long.parseLong(authDateValue));
         Instant now = clock.instant();
-        if (authDate.isBefore(now.minus(properties.initDataMaxAge()))
+        Duration allowedAge = maximumAge.compareTo(properties.initDataMaxAge()) < 0
+                ? maximumAge
+                : properties.initDataMaxAge();
+        if (authDate.isBefore(now.minus(allowedAge))
                 || authDate.isAfter(now.plus(properties.initDataAllowedClockSkew()))) {
             throw new CustomerAuthenticationRequiredException();
         }

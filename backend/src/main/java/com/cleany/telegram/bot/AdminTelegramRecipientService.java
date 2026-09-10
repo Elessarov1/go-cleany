@@ -3,7 +3,6 @@ package com.cleany.telegram.bot;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.customer.CustomerExternalIdentityRepository;
@@ -16,7 +15,7 @@ public class AdminTelegramRecipientService {
 
     private final CustomerExternalIdentityRepository identityRepository;
 
-    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
+    @Transactional(readOnly = true)
     public List<Long> recipients() {
         return identityRepository.findEligibleAdminTelegramIdentities().stream()
                 .map(identity -> parseTelegramId(identity.getExternalSubject()))

@@ -8,6 +8,11 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
+import com.cleany.action.ActionType;
+import com.cleany.catalog.PlatformService;
+import com.cleany.pagination.CursorPageResponse;
+import com.cleany.pagination.OpaqueCursorPagination;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,22 +30,39 @@ public class CustomerNotificationInboxService {
     private final Clock clock;
 
     @Transactional(readOnly = true)
-    public CustomerNotificationPageResponse current(int page, int size) {
+    public CursorPageResponse<CustomerNotificationResponse> current(String cursor, Integer requestedSize) {
         long customerId = customerAccountService.currentCustomer().customerId();
-        long total = jdbcTemplate.queryForObject(
-                "select count(*) from customer_notification where customer_id = ?",
-                Long.class,
-                customerId
-        );
-        List<CustomerNotificationResponse> content = jdbcTemplate.query("""
-                select id, type, target_path, created_at, read_at
+        int size = requestedSize == null ? OpaqueCursorPagination.DEFAULT_SIZE : requestedSize;
+        if (size < 1 || size > OpaqueCursorPagination.MAXIMUM_SIZE) {
+            throw new com.cleany.pagination.InvalidCursorException();
+        }
+        OpaqueCursorPagination.CursorKey key = OpaqueCursorPagination.decode(cursor);
+        List<CustomerNotificationResponse> content = key == null
+                ? jdbcTemplate.query("""
+                select id, type, target_path, created_at, read_at,
+                       action_type, action_service, action_entity_id, action_context
                   from customer_notification
                  where customer_id = ?
                  order by created_at desc, id desc
-                 limit ? offset ?
-                """, CustomerNotificationInboxService::map, customerId, size, (long) page * size);
-        int totalPages = total == 0 ? 0 : Math.toIntExact((total + size - 1) / size);
-        return new CustomerNotificationPageResponse(content, page, size, total, totalPages);
+                 limit ?
+                """, CustomerNotificationInboxService::map, customerId, size + 1)
+                : jdbcTemplate.query("""
+                select id, type, target_path, created_at, read_at,
+                       action_type, action_service, action_entity_id, action_context
+                  from customer_notification
+                 where customer_id = ?
+                   and (created_at < ? or (created_at = ? and id < ?))
+                 order by created_at desc, id desc
+                 limit ?
+                """, CustomerNotificationInboxService::map, customerId,
+                        key.createdAt().atOffset(ZoneOffset.UTC), key.createdAt().atOffset(ZoneOffset.UTC),
+                        key.id(), size + 1);
+        boolean hasMore = content.size() > size;
+        List<CustomerNotificationResponse> items = hasMore ? content.subList(0, size) : content;
+        CustomerNotificationResponse last = items.isEmpty() ? null : items.getLast();
+        String nextCursor = hasMore && last != null
+                ? OpaqueCursorPagination.encode(last.createdAt(), last.id()) : null;
+        return new CursorPageResponse<>(items, nextCursor, hasMore);
     }
 
     @Transactional(readOnly = true)
@@ -78,10 +100,21 @@ public class CustomerNotificationInboxService {
     private static CustomerNotificationResponse map(ResultSet resultSet, int rowNumber) throws SQLException {
         OffsetDateTime readAtValue = resultSet.getObject("read_at", OffsetDateTime.class);
         Instant readAt = readAtValue == null ? null : readAtValue.toInstant();
+        String actionType = resultSet.getString("action_type");
+        if (actionType == null) {
+            throw new IllegalStateException("Notification has no typed action: " + resultSet.getLong("id"));
+        }
+        String service = resultSet.getString("action_service");
+        Long entityId = resultSet.getObject("action_entity_id", Long.class);
         return new CustomerNotificationResponse(
                 resultSet.getLong("id"),
                 CustomerNotificationType.valueOf(resultSet.getString("type")),
-                resultSet.getString("target_path"),
+                new StoredActionTarget(
+                        ActionType.valueOf(actionType),
+                        service == null ? null : PlatformService.valueOf(service),
+                        entityId,
+                        resultSet.getString("action_context")
+                ).toAction(),
                 resultSet.getObject("created_at", OffsetDateTime.class).toInstant(),
                 readAt
         );

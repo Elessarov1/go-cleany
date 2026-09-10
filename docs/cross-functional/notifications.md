@@ -3,7 +3,7 @@ title: Loco Notifications
 type: cross-functional
 status: active
 scope: platform
-updated: 2026-09-04
+updated: 2026-09-10
 ---
 
 # Notifications
@@ -21,10 +21,23 @@ durable semantic customer notification
         ↓
 optional communication routing
         ↓
-Telegram / future channels
+durable delivery job
+        ↓
+Telegram / FCM
 ```
 
-The durable Loco inbox/history is primary. External delivery failure must not erase the notification fact.
+The inbox record and delivery jobs are committed in the same transaction as the business change.
+Provider I/O runs later through a PostgreSQL worker using a lease and `FOR UPDATE SKIP LOCKED`, so a
+provider outage cannot hold or roll back the business transaction and a process restart cannot lose
+delivery work.
+
+Delivery states are `PENDING`, `PROCESSING`, `RETRY`, `DELIVERED`, `DEAD`, `CANCELLED`. Retries use
+1 minute, 5 minutes, 30 minutes, 2 hours and 8 hours, while honoring provider `Retry-After`. Network
+and 5xx failures retry; permanent 4xx fail. Invalid FCM registrations disable the endpoint.
+
+Cleaner and self-accepting driver broadcasts use the same PostgreSQL lease/retry policy through
+`operational_telegram_delivery`. Their provider call is never made inside the order/booking
+transaction; the event listener persists the deduplicated delivery before commit and a worker sends it.
 
 ## Semantic content
 
@@ -58,8 +71,12 @@ Action reminders obey current `ENABLED`/`IN_TEST`/`DISABLED` customer-flow rules
 
 Do not send a reminder when an equivalent future transaction already exists. Cleaning address comparison and Rental → Transfer matching share the same NFKC/trim/case-fold/whitespace normalization.
 
-Add preferences/rate controls as reminder volume grows.
+Customers have explicit in-app/Telegram/push preferences and session-bound communication endpoints.
+FCM registration tokens are encrypted and deduplicated by hash. Logout, account switch, identity
+unlink and deletion detach affected endpoints.
 
 ## Security/privacy
 
 Notifications and deep links must not authorize access by themselves. Backend resolves authenticated ownership for protected targets.
+Push payloads carry only generic text, notification ID and a safe typed action; private details are
+loaded from an authenticated API.

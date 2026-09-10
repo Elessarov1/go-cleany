@@ -7,6 +7,7 @@ import java.util.Objects;
 
 public record AuthenticatedCustomerIdentity(
         ExternalIdentityProvider provider,
+        String issuer,
         String externalSubject,
         String username,
         String displayName,
@@ -23,7 +24,8 @@ public record AuthenticatedCustomerIdentity(
             String displayName,
             String languageCode
     ) {
-        this(provider, externalSubject, username, displayName, languageCode, null, false, false);
+        this(provider, ExternalIdentityIssuer.canonical(provider), externalSubject, username,
+                displayName, languageCode, null, false, false);
     }
 
     public AuthenticatedCustomerIdentity(
@@ -35,11 +37,27 @@ public record AuthenticatedCustomerIdentity(
             String email,
             boolean emailVerified
     ) {
-        this(provider, externalSubject, username, displayName, languageCode, email, emailVerified, false);
+        this(provider, ExternalIdentityIssuer.canonical(provider), externalSubject, username,
+                displayName, languageCode, email, emailVerified, false);
+    }
+
+    public AuthenticatedCustomerIdentity(
+            ExternalIdentityProvider provider,
+            String externalSubject,
+            String username,
+            String displayName,
+            String languageCode,
+            String email,
+            boolean emailVerified,
+            boolean allowsWriteToPm
+    ) {
+        this(provider, ExternalIdentityIssuer.canonical(provider), externalSubject, username,
+                displayName, languageCode, email, emailVerified, allowsWriteToPm);
     }
 
     public AuthenticatedCustomerIdentity {
         provider = Objects.requireNonNull(provider, "provider");
+        issuer = requireText(issuer, "issuer");
         externalSubject = requireText(externalSubject, "externalSubject");
         username = normalizeOptional(username);
         displayName = requireText(displayName, "displayName");

@@ -1,10 +1,13 @@
 package com.cleany.rental;
 
-import java.util.List;
-
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+
+import com.cleany.authorization.CustomerRoleRepository;
+import com.cleany.authorization.PlatformRole;
+import com.cleany.customer.CustomerExternalIdentityRepository;
+import com.cleany.notification.CustomerNotificationDispatcher;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,39 +18,26 @@ import lombok.extern.slf4j.Slf4j;
 public class RentalBookingAdminNotificationListener {
 
     private final RentalBookingAdminNotificationQueryService queryService;
-    private final List<RentalAdminNotificationSender> senders;
+    private final CustomerRoleRepository roleRepository;
+    private final CustomerExternalIdentityRepository identityRepository;
+    private final CustomerNotificationDispatcher dispatcher;
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void notifyAdmins(RentalBookingAdminEvent event) {
-        if (senders.isEmpty()) {
-            return;
-        }
-        try {
-            RentalBookingAdminNotification notification = queryService.get(event.bookingId());
-            senders.forEach(sender -> send(sender, event, notification));
-        } catch (RuntimeException exception) {
-            log.error(
-                    "Rental admin notification preparation failed for booking {}",
-                    event.bookingId(),
-                    exception
-            );
-        }
+        RentalBookingAdminCustomerNotification notification =
+                new RentalBookingAdminCustomerNotification(event.type(), queryService.get(event.bookingId()));
+        roleRepository.findAllByRole(PlatformRole.ADMIN).stream()
+                .map(role -> role.getCustomerId())
+                .distinct()
+                .forEach(customerId -> notifyAdmin(customerId, notification));
     }
 
-    private static void send(
-            RentalAdminNotificationSender sender,
-            RentalBookingAdminEvent event,
-            RentalBookingAdminNotification notification
-    ) {
-        try {
-            sender.send(event.type(), notification);
-        } catch (RuntimeException exception) {
-            log.error(
-                    "Rental admin notification delivery failed for booking {} via {}",
-                    event.bookingId(),
-                    sender.getClass().getSimpleName(),
-                    exception
-            );
+    private void notifyAdmin(long customerId, RentalBookingAdminCustomerNotification notification) {
+        var identities = identityRepository.findAllByCustomerIdOrderByProvider(customerId);
+        if (identities.isEmpty()) {
+            log.warn("Admin {} has no identity for rental notification", customerId);
+            return;
         }
+        dispatcher.send(customerId, identities.getFirst().getId(), notification);
     }
 }

@@ -3,7 +3,7 @@ title: Telegram Integration Boundaries
 type: architecture
 status: active
 scope: platform
-updated: 2026-09-08
+updated: 2026-09-10
 ---
 
 # Telegram
@@ -12,7 +12,9 @@ Telegram is an adapter/channel, not the canonical location of Loco business stat
 
 ## Customer channel
 
-Telegram Mini App authentication resolves a verified external identity to canonical `CustomerAccount.id`.
+Telegram Mini App exchanges verified `initData` once at `/api/v1/auth/tma/session`, then uses the same
+HttpOnly cookie + CSRF model as standalone web. Business requests must not repeatedly carry `initData`.
+The resolved external identity maps to canonical `CustomerAccount.id`.
 
 Customer business data, order ownership and durable notifications must not exist only inside Telegram.
 
@@ -27,6 +29,9 @@ Public commands remain limited to `/start` and `/help`. Operational `/whoami`, c
 ## Start parameters
 
 Existing acquisition and account-linking semantics may share Telegram start/deep-link handling. New start parameter types must coexist without breaking existing acquisition/link flows.
+
+Native Telegram LOGIN and LINK use one-time `login_` / `link_` bot handoffs. Driver links retain higher
+routing priority. A proof created for LOGIN cannot be consumed as LINK or vice versa.
 
 Routing order is significant: verified provider connection parameters such as `driver_<token>` are handled before the generic customer welcome. Mini App start parameters continue to be interpreted at the frontend boundary; bot presentation must not treat them as authorization.
 

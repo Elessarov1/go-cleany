@@ -25,6 +25,10 @@ public class CustomerAccountService {
         });
     }
 
+    public CustomerContext currentContext() {
+        return currentCustomer().customerContext();
+    }
+
     public CurrentCustomer resolveCustomer(AuthenticatedCustomerIdentity authenticatedIdentity) {
         return resolutionService.resolve(authenticatedIdentity);
     }

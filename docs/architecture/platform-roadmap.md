@@ -360,7 +360,7 @@ External identities may include:
 ```text
 TELEGRAM
 GOOGLE
-MOBILE_APP (future)
+APPLE
 ```
 
 Concept:
@@ -371,7 +371,9 @@ CustomerAccount
 CustomerExternalIdentity
 ```
 
-Do not make Telegram ID, phone number, Google subject or a future mobile-provider ID the primary domain identity.
+Do not make Telegram ID, phone number, Google/Apple subject or the native application channel the
+primary domain identity. Native clients authenticate through a real external provider and then use a
+first-party Loco Place session.
 
 ---
 
@@ -512,10 +514,11 @@ Push
 
 Cleaner-side interaction may remain Telegram-specific while the customer side becomes channel-neutral.
 
-The current rental admin flow follows this boundary: booking creation and customer cancellation
-publish rental events, an `AFTER_COMMIT` listener prepares the operational notification, and the
-Telegram adapter delivers it. Per-admin rental notification preferences belong to the adapter-facing
-rental notification layer; they do not alter booking state or other verticals' notifications.
+The current operational Telegram flows follow this boundary: business events are converted into
+durable delivery records in the same transaction, and a leased PostgreSQL worker invokes the
+Telegram adapter after commit. This includes Rental admin, Cleaning cleaner and Transfer driver
+notifications. Per-admin rental notification preferences belong to the adapter-facing rental
+notification layer; they do not alter booking state or other verticals' notifications.
 
 ---
 

@@ -54,6 +54,7 @@ class CustomerAccountServiceTest {
     void normalizedPhone_isStoredWithoutParsingItAgain() {
         CustomerAccount account = Mockito.mock(CustomerAccount.class);
         Mockito.when(accountRepository.findById(77L)).thenReturn(Optional.of(account));
+        Mockito.when(account.getStatus()).thenReturn(CustomerAccountStatus.ACTIVE);
 
         service.updateNormalizedPhone(77L, "+905551234567");
 
@@ -73,6 +74,7 @@ class CustomerAccountServiceTest {
                 " RU_tr "
         );
         Mockito.when(account.getId()).thenReturn(77L);
+        Mockito.when(account.getStatus()).thenReturn(CustomerAccountStatus.ACTIVE);
         Mockito.when(accountRepository.save(Mockito.any(CustomerAccount.class))).thenReturn(account);
         Mockito.when(identityRepository.save(Mockito.any(CustomerExternalIdentity.class)))
                 .thenReturn(persistedIdentity);
@@ -127,11 +129,13 @@ class CustomerAccountServiceTest {
                 "Alex Updated",
                 "en_US"
         );
-        Mockito.when(identityRepository.findByProviderAndExternalSubject(
+        Mockito.when(identityRepository.findByProviderAndIssuerAndExternalSubject(
                 ExternalIdentityProvider.GOOGLE,
+                "https://accounts.google.com",
                 "905551234567"
         )).thenReturn(Optional.empty(), Optional.of(persistedIdentity));
         Mockito.when(account.getId()).thenReturn(77L);
+        Mockito.when(account.getStatus()).thenReturn(CustomerAccountStatus.ACTIVE);
         Mockito.when(accountRepository.save(Mockito.any(CustomerAccount.class))).thenReturn(account);
         Mockito.when(accountRepository.findById(77L)).thenReturn(Optional.of(account));
         Mockito.when(identityRepository.save(Mockito.any(CustomerExternalIdentity.class)))

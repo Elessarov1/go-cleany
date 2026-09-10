@@ -3,6 +3,8 @@ package com.cleany.order;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.cleany.action.ActionTarget;
+import com.cleany.catalog.PlatformService;
 import com.cleany.notification.CustomerNotification;
 import com.cleany.notification.CustomerNotificationType;
 
@@ -21,8 +23,8 @@ public sealed interface CleaningOrderCustomerNotification extends CustomerNotifi
     }
 
     @Override
-    default String targetPath() {
-        return "/cleaning/orders/" + orderId();
+    default ActionTarget action() {
+        return new ActionTarget.OpenTransaction(PlatformService.CLEANING, orderId());
     }
 
     @Override

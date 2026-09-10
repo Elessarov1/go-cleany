@@ -1,10 +1,12 @@
 package com.cleany.notification;
 
+import com.cleany.action.ActionTarget;
+
 public interface CustomerNotification {
 
     CustomerNotificationType type();
 
-    String targetPath();
+    ActionTarget action();
 
     String deduplicationKey();
 }

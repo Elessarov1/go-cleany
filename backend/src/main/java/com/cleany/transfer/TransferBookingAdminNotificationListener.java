@@ -22,14 +22,14 @@ public class TransferBookingAdminNotificationListener {
     private final CustomerNotificationDispatcher dispatcher;
     private final TransferBookingNotificationQueryService queryService;
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void notifyAdmins(TransferBookingCreatedEvent event) {
         TransferAdminNewRequestNotification notification;
         try {
             notification = queryService.adminRequested(event.booking().id());
         } catch (RuntimeException exception) {
             log.error("Transfer admin notification preparation failed for booking {}", event.booking().id(), exception);
-            return;
+            throw exception;
         }
         roleRepository.findAllByRole(PlatformRole.ADMIN).stream()
                 .map(role -> role.getCustomerId())
@@ -50,6 +50,7 @@ public class TransferBookingAdminNotificationListener {
                     "Transfer admin notification failed for booking {} and admin {}",
                     notification.bookingId(), customerId, exception
             );
+            throw exception;
         }
     }
 }

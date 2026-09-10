@@ -38,8 +38,12 @@ public class RentalBooking {
     @Column(name = "customer_id", nullable = false)
     private long customerId;
 
-    @Column(name = "communication_identity_id", nullable = false)
-    private long communicationIdentityId;
+    @Column(name = "communication_identity_id")
+    private Long communicationIdentityId;
+
+    public long getCommunicationIdentityId() {
+        return communicationIdentityId == null ? 0 : communicationIdentityId;
+    }
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "property_id", nullable = false)

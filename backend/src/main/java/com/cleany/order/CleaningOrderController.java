@@ -7,17 +7,23 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
+import org.springframework.http.CacheControl;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cleany.reminder.CleaningRepeatReminderRequest;
 import com.cleany.reminder.CleaningRepeatReminderResponse;
 import com.cleany.reminder.CleaningRepeatReminderService;
+import com.cleany.idempotency.IdempotencyService;
+import com.cleany.pagination.CursorPageResponse;
+import com.cleany.pagination.OpaqueCursorPagination;
 
 @RestController
 @RequestMapping(CleaningOrderController.BASE_PATH)
@@ -28,25 +34,38 @@ public class CleaningOrderController {
     private final CleaningOrderService orderService;
     private final CustomerCleaningReportService reportService;
     private final CleaningRepeatReminderService repeatReminderService;
+    private final IdempotencyService idempotencyService;
 
     public CleaningOrderController(
             CleaningOrderService orderService,
             CustomerCleaningReportService reportService,
-            CleaningRepeatReminderService repeatReminderService
+            CleaningRepeatReminderService repeatReminderService,
+            IdempotencyService idempotencyService
     ) {
         this.orderService = orderService;
         this.reportService = reportService;
         this.repeatReminderService = repeatReminderService;
+        this.idempotencyService = idempotencyService;
     }
 
     @PostMapping
     public ResponseEntity<CleaningOrderResponse> createOrder(
+            @RequestHeader(name = "Idempotency-Key") String idempotencyKey,
             @Valid @RequestBody CreateCleaningOrderRequest request
     ) {
-        var order = orderService.createOrder(request.toCommand(), request.repeatFromOrderId());
-        var response = CleaningOrderResponse.from(order, reportService.summary(order));
+        var response = idempotencyService.execute(idempotencyKey, "CREATE_CLEANING_ORDER", request,
+                "CLEANING_ORDER",
+                () -> {
+                    var order = orderService.createOrder(request.toCommand(), request.repeatFromOrderId());
+                    return CleaningOrderResponse.from(order, reportService.summary(order));
+                },
+                CleaningOrderResponse::id,
+                id -> {
+                    var order = orderService.getCurrentCustomerOrder(id);
+                    return CleaningOrderResponse.from(order, reportService.summary(order));
+                });
         return ResponseEntity
-                .created(URI.create(BASE_PATH + "/" + order.getId()))
+                .created(URI.create(BASE_PATH + "/" + response.id()))
                 .body(response);
     }
 
@@ -58,10 +77,13 @@ public class CleaningOrderController {
     }
 
     @GetMapping
-    public List<CleaningOrderResponse> getOrders() {
-        return orderService.getCurrentCustomerOrders().stream()
-                .map(order -> CleaningOrderResponse.from(order, reportService.summary(order)))
-                .toList();
+    public CursorPageResponse<CleaningOrderResponse> getOrders(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) Integer size
+    ) {
+        return OpaqueCursorPagination.descending(orderService.getCurrentCustomerOrders(), cursor, size,
+                CleaningOrder::getCreatedAt, CleaningOrder::getId,
+                order -> CleaningOrderResponse.from(order, reportService.summary(order)));
     }
 
     @GetMapping("/{id}")
@@ -113,6 +135,7 @@ public class CleaningOrderController {
         CustomerCleaningReportPhotoContent photo = reportService.currentCustomerPhoto(id, mediaId);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(photo.contentType()))
+                .cacheControl(CacheControl.noStore())
                 .body(photo.content());
     }
 }

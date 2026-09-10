@@ -6,7 +6,6 @@ import java.time.Clock;
 import java.util.Objects;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.authorization.CustomerRoleBootstrapService;
@@ -22,11 +21,12 @@ class CustomerAccountResolutionService {
     private final CustomerRoleBootstrapService roleBootstrapService;
     private final Clock clock;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public CurrentCustomer resolve(AuthenticatedCustomerIdentity authenticatedIdentity) {
         Objects.requireNonNull(authenticatedIdentity, "authenticatedIdentity");
         ResolvedCustomer resolved = resolveAccount(
                 authenticatedIdentity.provider(),
+                authenticatedIdentity.issuer(),
                 authenticatedIdentity.externalSubject(),
                 authenticatedIdentity.username(),
                 authenticatedIdentity.displayName(),
@@ -54,6 +54,7 @@ class CustomerAccountResolutionService {
 
     private ResolvedCustomer resolveAccount(
             ExternalIdentityProvider provider,
+            String issuer,
             String externalSubject,
             String username,
             String displayName,
@@ -62,8 +63,9 @@ class CustomerAccountResolutionService {
             boolean emailVerified
     ) {
         var now = clock.instant();
-        var existingIdentity = externalIdentityRepository.findByProviderAndExternalSubject(
+        var existingIdentity = externalIdentityRepository.findByProviderAndIssuerAndExternalSubject(
                 provider,
+                issuer,
                 externalSubject
         );
         if (existingIdentity.isPresent()) {
@@ -80,6 +82,9 @@ class CustomerAccountResolutionService {
                     .orElseThrow(() -> new IllegalStateException(
                             "Customer account not found: " + identity.getCustomerId()
                     ));
+            if (account.getStatus() != CustomerAccountStatus.ACTIVE) {
+                throw new com.cleany.authentication.CustomerAuthenticationRequiredException();
+            }
             return new ResolvedCustomer(account, identity);
         }
 
@@ -87,6 +92,7 @@ class CustomerAccountResolutionService {
         CustomerExternalIdentity identity = externalIdentityRepository.save(new CustomerExternalIdentity(
                 account.getId(),
                 provider,
+                issuer,
                 externalSubject,
                 normalizeOptional(username),
                 normalizeDisplayName(displayName, externalSubject),

@@ -19,6 +19,12 @@ public interface CustomerExternalIdentityRepository extends JpaRepository<Custom
             String externalSubject
     );
 
+    Optional<CustomerExternalIdentity> findByProviderAndIssuerAndExternalSubject(
+            ExternalIdentityProvider provider,
+            String issuer,
+            String externalSubject
+    );
+
     Optional<CustomerExternalIdentity> findByCustomerIdAndProvider(
             long customerId,
             ExternalIdentityProvider provider
@@ -33,6 +39,19 @@ public interface CustomerExternalIdentityRepository extends JpaRepository<Custom
             """)
     Optional<CustomerExternalIdentity> findByProviderAndExternalSubjectForUpdate(
             @Param("provider") ExternalIdentityProvider provider,
+            @Param("externalSubject") String externalSubject
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select identity from CustomerExternalIdentity identity
+             where identity.provider = :provider
+               and identity.issuer = :issuer
+               and identity.externalSubject = :externalSubject
+            """)
+    Optional<CustomerExternalIdentity> findByProviderAndIssuerAndExternalSubjectForUpdate(
+            @Param("provider") ExternalIdentityProvider provider,
+            @Param("issuer") String issuer,
             @Param("externalSubject") String externalSubject
     );
 

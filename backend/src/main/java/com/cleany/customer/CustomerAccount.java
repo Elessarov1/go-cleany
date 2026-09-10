@@ -5,6 +5,8 @@ import java.util.Objects;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -23,6 +25,13 @@ public class CustomerAccount {
 
     @Column(name = "phone", length = 40)
     private String phone;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 16)
+    private CustomerAccountStatus status = CustomerAccountStatus.ACTIVE;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 
     protected CustomerAccount() {
     }
@@ -43,6 +52,14 @@ public class CustomerAccount {
         return phone;
     }
 
+    public CustomerAccountStatus getStatus() {
+        return status;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
+    }
+
     void updatePhone(String phone) {
         this.phone = Objects.requireNonNull(phone);
     }
@@ -50,5 +67,11 @@ public class CustomerAccount {
     void mergeProfile(Instant earliestCreatedAt, String mergedPhone) {
         createdAt = Objects.requireNonNull(earliestCreatedAt, "earliestCreatedAt");
         phone = mergedPhone;
+    }
+
+    void anonymize(Instant at) {
+        status = CustomerAccountStatus.DELETED;
+        deletedAt = Objects.requireNonNull(at, "at");
+        phone = null;
     }
 }

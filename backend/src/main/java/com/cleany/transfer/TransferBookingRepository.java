@@ -26,6 +26,10 @@ public interface TransferBookingRepository extends JpaRepository<TransferBooking
     @EntityGraph(attributePaths = {"airport", "vehicleType", "driver"})
     List<TransferBooking> findAllByCustomerIdOrderByCreatedAtDesc(long customerId);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select booking from TransferBooking booking where booking.customerId = :customerId order by booking.id")
+    List<TransferBooking> findAllByCustomerIdForUpdate(@Param("customerId") long customerId);
+
     @EntityGraph(attributePaths = {"airport", "vehicleType", "driver"})
     Optional<TransferBooking> findByIdAndCustomerId(long id, long customerId);
 

@@ -1,6 +1,7 @@
 package com.cleany.rental;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -10,17 +11,27 @@ import org.mockito.Mockito;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import com.cleany.authorization.CustomerRole;
+import com.cleany.authorization.CustomerRoleRepository;
+import com.cleany.authorization.PlatformRole;
+import com.cleany.customer.CustomerExternalIdentity;
+import com.cleany.customer.CustomerExternalIdentityRepository;
+import com.cleany.notification.CustomerNotificationDispatcher;
+
 class RentalBookingAdminNotificationListenerTest {
 
     private final RentalBookingAdminNotificationQueryService queryService =
             Mockito.mock(RentalBookingAdminNotificationQueryService.class);
-    private final RentalAdminNotificationSender sender =
-            Mockito.mock(RentalAdminNotificationSender.class);
+    private final CustomerRoleRepository roleRepository = Mockito.mock(CustomerRoleRepository.class);
+    private final CustomerExternalIdentityRepository identityRepository =
+            Mockito.mock(CustomerExternalIdentityRepository.class);
+    private final CustomerNotificationDispatcher dispatcher = Mockito.mock(CustomerNotificationDispatcher.class);
     private final RentalBookingAdminNotificationListener listener =
-            new RentalBookingAdminNotificationListener(queryService, List.of(sender));
+            new RentalBookingAdminNotificationListener(
+                    queryService, roleRepository, identityRepository, dispatcher);
 
     @Test
-    void listener_runsOnlyAfterSuccessfulCommit() throws NoSuchMethodException {
+    void listener_persistsDeliveryBeforeCommit() throws NoSuchMethodException {
         var method = RentalBookingAdminNotificationListener.class.getDeclaredMethod(
                 "notifyAdmins",
                 RentalBookingAdminEvent.class
@@ -29,38 +40,49 @@ class RentalBookingAdminNotificationListenerTest {
 
         Assertions.assertAll(
                 () -> Assertions.assertNotNull(annotation),
-                () -> Assertions.assertEquals(TransactionPhase.AFTER_COMMIT, annotation.phase()),
+                () -> Assertions.assertEquals(TransactionPhase.BEFORE_COMMIT, annotation.phase()),
                 () -> Assertions.assertFalse(annotation.fallbackExecution())
         );
     }
 
     @Test
-    void committedEvent_isResolvedAndSentThroughNeutralBoundary() {
+    void event_isResolvedAndQueuedThroughDurableBoundary() {
         var event = new RentalBookingAdminEvent(
                 42L,
                 RentalBookingAdminEvent.Type.CREATED
         );
         RentalBookingAdminNotification notification = notification(RentalTermType.DATE_RANGE);
         Mockito.when(queryService.get(42L)).thenReturn(notification);
+        CustomerRole role = new CustomerRole(7L, PlatformRole.ADMIN, Instant.EPOCH);
+        CustomerExternalIdentity identity = Mockito.mock(CustomerExternalIdentity.class);
+        Mockito.when(identity.getId()).thenReturn(11L);
+        Mockito.when(roleRepository.findAllByRole(PlatformRole.ADMIN)).thenReturn(List.of(role));
+        Mockito.when(identityRepository.findAllByCustomerIdOrderByProvider(7L)).thenReturn(List.of(identity));
 
         listener.notifyAdmins(event);
 
-        Mockito.verify(sender).send(RentalBookingAdminEvent.Type.CREATED, notification);
+        Mockito.verify(dispatcher).send(
+                Mockito.eq(7L), Mockito.eq(11L),
+                Mockito.eq(new RentalBookingAdminCustomerNotification(event.type(), notification)));
     }
 
     @Test
-    void deliveryFailure_doesNotEscapeAfterCommitListener() {
+    void durablePersistenceFailureEscapesAndCanRollBackBusinessTransaction() {
         var event = new RentalBookingAdminEvent(
                 42L,
                 RentalBookingAdminEvent.Type.CANCELLED_BY_CUSTOMER
         );
         RentalBookingAdminNotification notification = notification(RentalTermType.DATE_RANGE);
         Mockito.when(queryService.get(42L)).thenReturn(notification);
-        Mockito.doThrow(new IllegalStateException("channel unavailable"))
-                .when(sender)
-                .send(event.type(), notification);
+        CustomerRole role = new CustomerRole(7L, PlatformRole.ADMIN, Instant.EPOCH);
+        CustomerExternalIdentity identity = Mockito.mock(CustomerExternalIdentity.class);
+        Mockito.when(identity.getId()).thenReturn(11L);
+        Mockito.when(roleRepository.findAllByRole(PlatformRole.ADMIN)).thenReturn(List.of(role));
+        Mockito.when(identityRepository.findAllByCustomerIdOrderByProvider(7L)).thenReturn(List.of(identity));
+        Mockito.doThrow(new IllegalStateException("database unavailable"))
+                .when(dispatcher).send(Mockito.eq(7L), Mockito.eq(11L), Mockito.any());
 
-        Assertions.assertDoesNotThrow(() -> listener.notifyAdmins(event));
+        Assertions.assertThrows(IllegalStateException.class, () -> listener.notifyAdmins(event));
     }
 
     private static RentalBookingAdminNotification notification(RentalTermType termType) {

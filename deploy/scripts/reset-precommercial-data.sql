@@ -2,6 +2,16 @@
 
 begin;
 
+delete from notification_delivery;
+delete from operational_telegram_delivery;
+delete from communication_endpoint;
+delete from authentication_challenge;
+delete from used_refresh_token;
+delete from customer_session;
+delete from idempotency_record;
+delete from external_provider_job;
+delete from security_audit_event;
+
 -- Break the two intentional reservation cycles before deleting their operational rows.
 update cleaning_order
    set applied_reward_id = null,
@@ -74,5 +84,10 @@ select setval(pg_get_serial_sequence('transaction_feedback', 'id'), 1, false);
 select setval(pg_get_serial_sequence('support_case', 'id'), 1, false);
 select setval(pg_get_serial_sequence('customer_identity_link_request', 'id'), 1, false);
 select setval(pg_get_serial_sequence('acquisition_campaign_entry', 'id'), 1, false);
+select setval(pg_get_serial_sequence('notification_delivery', 'id'), 1, false);
+select setval(pg_get_serial_sequence('operational_telegram_delivery', 'id'), 1, false);
+select setval(pg_get_serial_sequence('idempotency_record', 'id'), 1, false);
+select setval(pg_get_serial_sequence('external_provider_job', 'id'), 1, false);
+select setval(pg_get_serial_sequence('security_audit_event', 'id'), 1, false);
 
 commit;
