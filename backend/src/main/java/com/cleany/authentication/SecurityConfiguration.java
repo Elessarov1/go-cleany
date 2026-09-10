@@ -14,6 +14,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 import com.cleany.configuration.GoogleOidcProperties;
 
@@ -26,6 +27,7 @@ public class SecurityConfiguration {
 
     private final GoogleOidcProperties googleProperties;
     private final TmaAuthenticationFilter tmaAuthenticationFilter;
+    private final BearerAuthenticationFilter bearerAuthenticationFilter;
     private final CurrentCustomerResolutionFilter currentCustomerResolutionFilter;
     private final TmaAuthorizationRequestMatcher tmaRequestMatcher;
     private final SecurityErrorWriter errorWriter;
@@ -45,6 +47,9 @@ public class SecurityConfiguration {
                                 "/oauth2/**",
                                 "/login/**",
                                 "/api/v1/auth/**",
+                                "/api/v1/client/configuration",
+                                "/.well-known/apple-app-site-association",
+                                "/.well-known/assetlinks.json",
                                 "/api/v1/telegram/webhook"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/cleaning/configuration").permitAll()
@@ -60,6 +65,16 @@ public class SecurityConfiguration {
                         .csrfTokenRepository(csrfRepository)
                         .ignoringRequestMatchers(
                                 tmaRequestMatcher,
+                                PathPatternRequestMatcher.pathPattern(HttpMethod.POST,
+                                        "/api/v1/auth/native/**"),
+                                PathPatternRequestMatcher.pathPattern(HttpMethod.POST,
+                                        "/api/v1/auth/sessions/refresh"),
+                                request -> {
+                                    String authorization = request.getHeader("Authorization");
+                                    return authorization != null
+                                            && authorization.regionMatches(true, 0, "Bearer ", 0, 7)
+                                            && authorization.substring(7).trim().startsWith("lp_at_");
+                                },
                                 request -> "/api/v1/telegram/webhook".equals(request.getRequestURI())
                         )
                 )
@@ -89,7 +104,8 @@ public class SecurityConfiguration {
                                 HttpStatus.NO_CONTENT
                         ))
                 )
-                .addFilterBefore(tmaAuthenticationFilter, AnonymousAuthenticationFilter.class)
+                .addFilterBefore(bearerAuthenticationFilter, AnonymousAuthenticationFilter.class)
+                .addFilterAfter(tmaAuthenticationFilter, BearerAuthenticationFilter.class)
                 .addFilterAfter(currentCustomerResolutionFilter, TmaAuthenticationFilter.class);
 
         if (googleProperties.enabled()) {

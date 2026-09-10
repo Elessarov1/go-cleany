@@ -30,6 +30,9 @@ public class CustomerExternalIdentity {
     @Column(name = "provider", nullable = false, length = 32)
     private ExternalIdentityProvider provider;
 
+    @Column(name = "issuer", nullable = false, length = 255)
+    private String issuer;
+
     @Column(name = "external_subject", nullable = false, length = 128)
     private String externalSubject;
 
@@ -72,6 +75,7 @@ public class CustomerExternalIdentity {
         this(
                 customerId,
                 provider,
+                ExternalIdentityIssuer.canonical(provider),
                 externalSubject,
                 username,
                 displayName,
@@ -93,8 +97,25 @@ public class CustomerExternalIdentity {
             boolean emailVerified,
             Instant lastSeenAt
     ) {
+        this(customerId, provider, ExternalIdentityIssuer.canonical(provider), externalSubject,
+                username, displayName, languageCode, email, emailVerified, lastSeenAt);
+    }
+
+    CustomerExternalIdentity(
+            long customerId,
+            ExternalIdentityProvider provider,
+            String issuer,
+            String externalSubject,
+            String username,
+            String displayName,
+            String languageCode,
+            String email,
+            boolean emailVerified,
+            Instant lastSeenAt
+    ) {
         this.customerId = customerId;
         this.provider = Objects.requireNonNull(provider);
+        this.issuer = Objects.requireNonNull(issuer);
         this.externalSubject = Objects.requireNonNull(externalSubject);
         this.username = username;
         this.displayName = Objects.requireNonNull(displayName);
@@ -158,6 +179,10 @@ public class CustomerExternalIdentity {
 
     public ExternalIdentityProvider getProvider() {
         return provider;
+    }
+
+    public String getIssuer() {
+        return issuer;
     }
 
     public String getExternalSubject() {

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useCustomerApi } from "../../api/CustomerApiProvider";
+import { useAuthentication } from "../../api/AuthApiProvider";
+import { ApiError } from "../../api/ApiError";
 import type { AccountIdentities } from "../../domain/customer";
 import { usePlatform } from "../../platform/PlatformProvider";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
@@ -10,12 +12,15 @@ import { Link } from "react-router-dom";
 import "./AccountPage.css";
 
 const TELEGRAM_LINK_PENDING_UNTIL = "loco-place.telegram-link-pending-until";
+const TELEGRAM_LINK_ATTEMPT_ID = "loco-place.telegram-link-attempt-id";
+const TELEGRAM_LINK_AFTER_REAUTH = "loco-place.telegram-link-after-reauth";
 
 function hasPendingTelegramLink(): boolean {
   const value = window.sessionStorage.getItem(TELEGRAM_LINK_PENDING_UNTIL);
   const expiresAt = value ? Date.parse(value) : Number.NaN;
   if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
     window.sessionStorage.removeItem(TELEGRAM_LINK_PENDING_UNTIL);
+    window.sessionStorage.removeItem(TELEGRAM_LINK_ATTEMPT_ID);
     return false;
   }
   return true;
@@ -24,6 +29,7 @@ function hasPendingTelegramLink(): boolean {
 export function AccountPage() {
   const { t } = useTranslation();
   const api = useCustomerApi();
+  const authentication = useAuthentication();
   const platform = usePlatform();
   const [state, setState] = useState<AccountIdentities | null>(null);
   const [error, setError] = useState(false);
@@ -31,6 +37,9 @@ export function AccountPage() {
   const [grantingAccess, setGrantingAccess] = useState(false);
   const [permissionRequested, setPermissionRequested] = useState(false);
   const [pending, setPending] = useState(hasPendingTelegramLink);
+  const [attemptId, setAttemptId] = useState(
+    () => window.sessionStorage.getItem(TELEGRAM_LINK_ATTEMPT_ID) ?? "",
+  );
 
   const load = useCallback(async () => {
     try {
@@ -42,39 +51,72 @@ export function AccountPage() {
   }, [api]);
 
   useEffect(() => { void load(); }, [load]);
-  useEffect(() => {
-    if (!pending) return;
-    const interval = window.setInterval(() => {
-      if (!hasPendingTelegramLink()) {
-        setPending(false);
-        return;
-      }
-      void load();
-    }, 3_000);
-    return () => window.clearInterval(interval);
-  }, [load, pending]);
-
-  const telegram = state?.identities.find((identity) => identity.provider === "TELEGRAM");
-  useEffect(() => {
-    if (telegram?.linked) {
-      window.sessionStorage.removeItem(TELEGRAM_LINK_PENDING_UNTIL);
-      setPending(false);
-    }
-  }, [telegram?.linked]);
-
-  const connect = async () => {
+  const beginTelegramLink = useCallback(async () => {
     try {
       setLinking(true);
       setError(false);
       const request = await api.initiateTelegramLink();
       window.sessionStorage.setItem(TELEGRAM_LINK_PENDING_UNTIL, request.expiresAt);
-      platform.openExternalLink(request.deepLink);
+      window.sessionStorage.setItem(TELEGRAM_LINK_ATTEMPT_ID, request.id);
+      setAttemptId(request.id);
       setPending(true);
+      platform.openExternalLink(request.deepLink);
     } catch {
       setError(true);
     } finally {
       setLinking(false);
     }
+  }, [api, platform]);
+
+  useEffect(() => {
+    if (platform.kind !== "WEB"
+      || !new URLSearchParams(window.location.search).has("linkTelegram")
+      || window.sessionStorage.getItem(TELEGRAM_LINK_AFTER_REAUTH) !== "1") return;
+    window.sessionStorage.removeItem(TELEGRAM_LINK_AFTER_REAUTH);
+    window.history.replaceState({}, "", "/account");
+    void beginTelegramLink();
+  }, [beginTelegramLink, platform.kind]);
+
+  useEffect(() => {
+    if (!pending || !attemptId) return;
+    const interval = window.setInterval(() => {
+      if (!hasPendingTelegramLink()) {
+        setPending(false);
+        return;
+      }
+      void api.confirmTelegramLink(attemptId)
+        .then((identities) => {
+          setState(identities);
+          window.sessionStorage.removeItem(TELEGRAM_LINK_PENDING_UNTIL);
+          window.sessionStorage.removeItem(TELEGRAM_LINK_ATTEMPT_ID);
+          setPending(false);
+        })
+        .catch((failure: unknown) => {
+          if (failure instanceof ApiError
+            && (failure.code === "identity_link_target_not_verified"
+              || failure.code === "identity_link_waiting_for_telegram")) return;
+          setError(true);
+        });
+    }, 3_000);
+    return () => window.clearInterval(interval);
+  }, [api, attemptId, pending]);
+
+  const telegram = state?.identities.find((identity) => identity.provider === "TELEGRAM");
+  useEffect(() => {
+    if (telegram?.linked) {
+      window.sessionStorage.removeItem(TELEGRAM_LINK_PENDING_UNTIL);
+      window.sessionStorage.removeItem(TELEGRAM_LINK_ATTEMPT_ID);
+      setPending(false);
+    }
+  }, [telegram?.linked]);
+
+  const connect = async () => {
+    if (platform.kind === "WEB") {
+      window.sessionStorage.setItem(TELEGRAM_LINK_AFTER_REAUTH, "1");
+      window.location.assign(authentication.googleLoginUrl("/account?linkTelegram=1"));
+      return;
+    }
+    await beginTelegramLink();
   };
 
   const allowNotifications = async () => {

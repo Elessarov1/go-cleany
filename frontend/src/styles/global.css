@@ -4392,17 +4392,6 @@ h3 {
   background: #eaf5fb;
 }
 .account-link-pending p { margin: 0; }
-.account-link-confirm { display: grid; min-height: min(68vh, 620px); place-items: center; }
-.account-link-confirm__card {
-  width: min(100%, 560px);
-  padding: 28px;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-xl);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-card);
-  text-align: center;
-}
-.account-link-confirm__actions { display: flex; justify-content: center; gap: 10px; margin-top: 22px; }
 .telegram-link-nudge {
   position: fixed;
   right: 22px;

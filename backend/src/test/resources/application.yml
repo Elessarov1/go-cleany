@@ -128,13 +128,11 @@ admin:
   google-emails:
     - admin@example.test
 
-account-linking:
-  telegram:
-    mini-app-link-base: https://t.me/test_bot/test_app
-    request-ttl: 10m
-
 public-application:
   base-url: https://loco-place.com
+
+native-auth:
+  telegram-bot-username: test_bot
 
 analytics:
   zone-id: Europe/Istanbul

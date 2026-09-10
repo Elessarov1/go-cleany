@@ -17,5 +17,6 @@ Accepted records:
 3. [0003-managed-service-not-provider-catalog.md](0003-managed-service-not-provider-catalog.md)
 4. [0004-explicit-cross-service-bridges.md](0004-explicit-cross-service-bridges.md)
 5. [0005-automation-follows-measured-operations.md](0005-automation-follows-measured-operations.md)
+6. [0006-first-party-client-auth-and-public-api.md](0006-first-party-client-auth-and-public-api.md)
 
 Create a new record only for a durable decision with meaningful alternatives/consequences. Do not create ADRs for ordinary implementation details.

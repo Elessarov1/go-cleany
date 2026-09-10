@@ -40,8 +40,12 @@ public class TransferBooking {
     @Column(name = "customer_id", nullable = false)
     private long customerId;
 
-    @Column(name = "communication_identity_id", nullable = false)
-    private long communicationIdentityId;
+    @Column(name = "communication_identity_id")
+    private Long communicationIdentityId;
+
+    public long getCommunicationIdentityId() {
+        return communicationIdentityId == null ? 0 : communicationIdentityId;
+    }
 
     @Column(name = "repeat_source_booking_id")
     private Long repeatSourceBookingId;

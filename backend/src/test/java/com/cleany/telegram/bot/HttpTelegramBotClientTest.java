@@ -20,6 +20,9 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class HttpTelegramBotClientTest {
 
@@ -74,6 +77,23 @@ class HttpTelegramBotClientTest {
         );
         client.setDefaultMenuButton("Loco Place", "https://loco-place.com/");
 
+        server.verify();
+    }
+
+    @Test
+    void rateLimitCarriesTelegramRetryAfterWithoutLeakingBotToken() {
+        server.expect(once(), requestTo("https://api.telegram.org/bot123456789:test-token/sendMessage"))
+                .andRespond(withSuccess("""
+                        {"ok":false,"error_code":429,"description":"Too Many Requests",
+                         "parameters":{"retry_after":17}}
+                        """, MediaType.APPLICATION_JSON));
+
+        TelegramBotApiException exception = assertThrows(TelegramBotApiException.class,
+                () -> client.sendMessage(101L, "Update", TelegramBotClient.InlineKeyboard.empty()));
+
+        assertTrue(exception.retryable());
+        assertEquals(Duration.ofSeconds(17), exception.retryAfter());
+        assertTrue(!exception.getMessage().contains("123456789:test-token"));
         server.verify();
     }
 

@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
 import com.cleany.configuration.ApiError;
+import com.cleany.configuration.RequestIdFilter;
 
 import lombok.RequiredArgsConstructor;
 import tools.jackson.databind.ObjectMapper;
@@ -34,7 +35,8 @@ public class SecurityErrorWriter {
                 status,
                 code,
                 message,
-                Collections.emptyMap()
+                Collections.emptyMap(),
+                response.getHeader(RequestIdFilter.HEADER)
         ));
     }
 }

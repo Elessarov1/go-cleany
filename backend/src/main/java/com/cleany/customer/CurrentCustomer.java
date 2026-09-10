@@ -9,4 +9,7 @@ public record CurrentCustomer(
         String displayName,
         String languageCode
 ) {
+    public CustomerContext customerContext() {
+        return new CustomerContext(customerId, displayName, languageCode);
+    }
 }

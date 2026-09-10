@@ -14,6 +14,7 @@ import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
+import com.jayway.jsonpath.JsonPath;
 
 import com.cleany.authorization.CustomerRoleRepository;
 import com.cleany.base.BaseIntegrationTest;
@@ -98,13 +99,21 @@ class CustomerNotificationInboxIntegrationTest extends BaseIntegrationTest {
                 owner.customerId()
         );
 
-        mvc.perform(get("/api/v1/account/notifications?page=0&size=1")
+        String firstPage = mvc.perform(get("/api/v1/account/notifications?size=1")
                         .with(oidcLogin().oidcUser(oidcUser("notification-owner", "owner@example.test"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(2))
-                .andExpect(jsonPath("$.totalPages").value(2))
-                .andExpect(jsonPath("$.content[0].id").value(newestId))
-                .andExpect(jsonPath("$.content[0].targetPath").value("/cleaning/orders/41"));
+                .andExpect(jsonPath("$.hasMore").value(true))
+                .andExpect(jsonPath("$.nextCursor").isString())
+                .andExpect(jsonPath("$.items[0].id").value(newestId))
+                .andExpect(jsonPath("$.items[0].action.type").value("OPEN_TRANSACTION"))
+                .andReturn().getResponse().getContentAsString();
+        String cursor = JsonPath.read(firstPage, "$.nextCursor");
+        mvc.perform(get("/api/v1/account/notifications").param("size", "1").param("cursor", cursor)
+                        .with(oidcLogin().oidcUser(oidcUser("notification-owner", "owner@example.test"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.hasMore").value(false))
+                .andExpect(jsonPath("$.nextCursor").doesNotExist())
+                .andExpect(jsonPath("$.items.length()").value(1));
         mvc.perform(get("/api/v1/account/notifications/unread-count")
                         .with(oidcLogin().oidcUser(oidcUser("notification-owner", "owner@example.test"))))
                 .andExpect(status().isOk())
@@ -153,14 +162,14 @@ class CustomerNotificationInboxIntegrationTest extends BaseIntegrationTest {
         recorder.record(customer.customerId(), new CleaningOrderCustomerNotification.Accepted(52L));
 
         mvc.perform(get("/api/v1/account/notifications")
-                        .with(oidcLogin().oidcUser(oidcUser("linked-google", "linked@example.test"))))
+                .with(oidcLogin().oidcUser(oidcUser("linked-google", "linked@example.test"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(1));
+                .andExpect(jsonPath("$.items.length()").value(1));
         mvc.perform(get("/api/v1/account/notifications")
-                        .header("Authorization", telegramAuthorization()))
+                .header("Authorization", telegramAuthorization()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(1))
-                .andExpect(jsonPath("$.content[0].type").value("CLEANING_ORDER_ACCEPTED"));
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].type").value("CLEANING_ORDER_ACCEPTED"));
     }
 
     private static AuthenticatedCustomerIdentity google(String subject, String email) {

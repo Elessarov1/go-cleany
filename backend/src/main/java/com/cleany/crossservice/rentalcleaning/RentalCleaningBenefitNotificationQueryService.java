@@ -1,7 +1,6 @@
 package com.cleany.crossservice.rentalcleaning;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.rental.RentalBooking;
@@ -17,7 +16,7 @@ public class RentalCleaningBenefitNotificationQueryService {
     private final RentalBookingRepository bookingRepository;
     private final RentalCleaningBenefitProperties properties;
 
-    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
+    @Transactional(readOnly = true)
     public RentalCleaningBenefitCustomerNotification issued(long benefitId) {
         RentalCleaningBenefit benefit = benefitRepository.findById(benefitId)
                 .orElseThrow(() -> new IllegalStateException(

@@ -26,6 +26,7 @@ public class AccountIdentityService {
                 .collect(Collectors.toMap(CustomerExternalIdentity::getProvider, Function.identity()));
         return new AccountIdentitiesResponse(Arrays.stream(ExternalIdentityProvider.values())
                 .filter(provider -> provider == ExternalIdentityProvider.GOOGLE
+                        || provider == ExternalIdentityProvider.APPLE
                         || provider == ExternalIdentityProvider.TELEGRAM)
                 .map(provider -> response(provider, linked.get(provider)))
                 .toList());
@@ -36,7 +37,9 @@ public class AccountIdentityService {
             CustomerExternalIdentity identity
     ) {
         return new AccountIdentityResponse(
+                identity == null ? null : identity.getId(),
                 provider,
+                identity == null ? null : identity.getIssuer(),
                 identity != null,
                 identity == null || provider != ExternalIdentityProvider.TELEGRAM
                         ? null

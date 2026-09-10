@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import com.cleany.configuration.Money;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record TransferBookingResponse(
         long id,
@@ -40,6 +42,11 @@ public record TransferBookingResponse(
         Instant rejectedAt,
         String statusReason
 ) {
+
+    @JsonProperty("money")
+    public Money money() {
+        return Money.of(priceAmount, priceCurrency);
+    }
 
     static TransferBookingResponse from(TransferBooking booking) {
         TransferDriver driver = booking.getDriver();

@@ -54,6 +54,10 @@ public interface RentalBookingRepository extends JpaRepository<RentalBooking, Lo
     @EntityGraph(attributePaths = "property")
     List<RentalBooking> findAllByCustomerIdOrderByCreatedAtDesc(long customerId);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select booking from RentalBooking booking where booking.customerId = :customerId order by booking.id")
+    List<RentalBooking> findAllByCustomerIdForUpdate(@Param("customerId") long customerId);
+
     @EntityGraph(attributePaths = "property")
     Optional<RentalBooking> findByIdAndCustomerId(long id, long customerId);
 

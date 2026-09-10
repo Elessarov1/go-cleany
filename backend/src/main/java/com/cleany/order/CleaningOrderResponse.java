@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 import com.cleany.finance.CustomerDiscountType;
+import com.cleany.configuration.Money;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record CleaningOrderResponse(
         long id,
@@ -32,6 +34,11 @@ public record CleaningOrderResponse(
         Instant completedAt,
         CustomerCleaningReportResponse report
 ) {
+
+    @JsonProperty("money")
+    public Money money() {
+        return Money.of(finalCustomerPrice, currency);
+    }
 
     public static CleaningOrderResponse from(CleaningOrder order) {
         return new CleaningOrderResponse(

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCustomerApi } from "../../api/CustomerApiProvider";
 import type { CustomerNotification, CustomerNotificationPage } from "../../domain/customer";
+import { actionTargetPath } from "../../domain/action";
 import { Icon } from "../../components/Icon/Icon";
 
 const PAGE_SIZE = 20;
@@ -11,17 +12,16 @@ export function NotificationsPage() {
   const { t, i18n } = useTranslation();
   const api = useCustomerApi();
   const navigate = useNavigate();
-  const [pageNumber, setPageNumber] = useState(0);
   const [page, setPage] = useState<CustomerNotificationPage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  const load = async (requestedPage: number) => {
+  const load = async (cursor: string | null = null, append = false) => {
     setLoading(true);
     setError(false);
     try {
-      setPage(await api.getNotifications(requestedPage, PAGE_SIZE));
-      setPageNumber(requestedPage);
+      const next = await api.getNotifications(cursor, PAGE_SIZE);
+      setPage((current) => append && current ? { ...next, items: [...current.items, ...next.items] } : next);
     } catch {
       setError(true);
     } finally {
@@ -29,13 +29,13 @@ export function NotificationsPage() {
     }
   };
 
-  useEffect(() => { void load(0); }, [api]);
+  useEffect(() => { void load(); }, [api]);
 
   const open = async (notification: CustomerNotification) => {
     if (!notification.readAt) {
       setPage((current) => current ? {
         ...current,
-        content: current.content.map((item) => item.id === notification.id
+        items: current.items.map((item) => item.id === notification.id
           ? { ...item, readAt: new Date().toISOString() }
           : item),
       } : current);
@@ -43,11 +43,11 @@ export function NotificationsPage() {
         await api.markNotificationRead(notification.id);
         window.dispatchEvent(new Event("customer-notifications-updated"));
       } finally {
-        void navigate(notification.targetPath);
+        void navigate(actionTargetPath(notification.action));
       }
       return;
     }
-    void navigate(notification.targetPath);
+    void navigate(actionTargetPath(notification.action));
   };
 
   const markAllRead = async () => {
@@ -56,11 +56,11 @@ export function NotificationsPage() {
     const now = new Date().toISOString();
     setPage((current) => current ? {
       ...current,
-      content: current.content.map((item) => ({ ...item, readAt: item.readAt ?? now })),
+      items: current.items.map((item) => ({ ...item, readAt: item.readAt ?? now })),
     } : current);
   };
 
-  const notifications = page?.content ?? [];
+  const notifications = page?.items ?? [];
   const hasUnread = notifications.some((notification) => !notification.readAt);
   return (
     <div className="notifications-page">
@@ -78,7 +78,7 @@ export function NotificationsPage() {
       {loading && !page ? (
         <div className="page-state"><p>{t("common.loading")}</p></div>
       ) : error ? (
-        <div className="page-state"><h2>{t("common.errorTitle")}</h2><button className="button button--secondary" type="button" onClick={() => void load(pageNumber)}>{t("common.retry")}</button></div>
+        <div className="page-state"><h2>{t("common.errorTitle")}</h2><button className="button button--secondary" type="button" onClick={() => void load()}>{t("common.retry")}</button></div>
       ) : notifications.length === 0 ? (
         <section className="empty-state">
           <div className="empty-state__art"><Icon name="bell" size={42} /></div>
@@ -106,11 +106,9 @@ export function NotificationsPage() {
         </div>
       )}
 
-      {!loading && !error && (page?.totalPages ?? 0) > 1 ? (
+      {!loading && !error && page?.hasMore ? (
         <nav className="notifications-pagination" aria-label={t("notifications.pagination")}>
-          <button className="button button--secondary" type="button" disabled={pageNumber === 0} onClick={() => void load(pageNumber - 1)}>{t("common.back")}</button>
-          <span>{pageNumber + 1} / {page?.totalPages}</span>
-          <button className="button button--secondary" type="button" disabled={pageNumber + 1 >= (page?.totalPages ?? 0)} onClick={() => void load(pageNumber + 1)}>{t("notifications.next")}</button>
+          <button className="button button--secondary" type="button" onClick={() => void load(page.nextCursor, true)}>{t("notifications.next")}</button>
         </nav>
       ) : null}
     </div>

@@ -15,6 +15,8 @@ public interface CustomerRoleRepository extends JpaRepository<CustomerRole, Cust
 
     List<CustomerRole> findAllByRole(PlatformRole role);
 
+    void deleteAllByCustomerId(long customerId);
+
     @Modifying(flushAutomatically = true)
     @Query(value = """
             insert into customer_role (customer_id, role, created_at)

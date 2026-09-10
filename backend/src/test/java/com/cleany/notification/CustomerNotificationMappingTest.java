@@ -37,7 +37,8 @@ class CustomerNotificationMappingTest {
     ) {
         Assertions.assertAll(
                 () -> Assertions.assertEquals(expectedType, notification.type()),
-                () -> Assertions.assertEquals(expectedPath, notification.targetPath()),
+                () -> Assertions.assertEquals(expectedPath,
+                        com.cleany.action.ActionTargetWebPathResolver.resolve(notification.action())),
                 () -> Assertions.assertEquals(expectedDeduplicationKey, notification.deduplicationKey())
         );
     }
@@ -86,7 +87,7 @@ class CustomerNotificationMappingTest {
                 Arguments.of(new RentalCleaningBenefitCustomerNotification(
                                 33L, 22L, "CLEAN7", date, date.plusDays(3)),
                         CustomerNotificationType.RENTAL_CLEANING_BENEFIT_AVAILABLE,
-                        "/rent/bookings/22", "rental-cleaning-benefit:33:available"),
+                        "/cleaning?rentalBooking=22", "rental-cleaning-benefit:33:available"),
                 Arguments.of(new SupportCaseAdminNotification(
                                 55L, com.cleany.catalog.PlatformService.CLEANING,
                                 11L, SupportCaseCategory.QUALITY_PROBLEM),

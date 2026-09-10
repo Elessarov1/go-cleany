@@ -1,7 +1,6 @@
 package com.cleany.rental;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
@@ -12,7 +11,7 @@ public class RentalBookingAdminNotificationQueryService {
 
     private final RentalBookingRepository bookingRepository;
 
-    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
+    @Transactional(readOnly = true)
     public RentalBookingAdminNotification get(long bookingId) {
         RentalBooking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RentalBookingNotFoundException(bookingId));

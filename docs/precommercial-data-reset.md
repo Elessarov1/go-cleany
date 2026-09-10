@@ -18,7 +18,11 @@ Telegram identities, роли и настройки административн
 ### PURGE
 
 - analytics outcomes: `customer_acquisition`, `acquisition_campaign_entry`;
-- customer history: `customer_notification`, `customer_identity_link_request`, Spring Session;
+- customer authentication and delivery state: `customer_session`, `used_refresh_token`, `authentication_challenge`,
+  `communication_endpoint`, `notification_delivery`, `operational_telegram_delivery`,
+  `external_provider_job`, `idempotency_record`,
+  `security_audit_event`, legacy `customer_identity_link_request` and Spring Session;
+- customer history: `customer_notification`;
 - platform support history: `transaction_feedback`, then `support_case`, before their source transactions;
 - обычные `customer_account` вместе с identities, roles и preferences по `ON DELETE CASCADE`;
 - customer-owned `referral_code`, все `referral_reward` и `partner_payout`;
@@ -36,7 +40,7 @@ Telegram identities, роли и настройки административн
 
 - Liquibase changelog и техническая конфигурация;
 - `platform_service_state` и deployment/application configuration;
-- ADMIN accounts, identities, roles и admin notification preferences;
+- ADMIN accounts, identities, Apple credentials, roles и admin notification preferences;
 - `rental_property`, amenities, catalog media и соответствующие `media_asset`;
 - occupancy `OWNER_BLOCK`, `MAINTENANCE`, `EXTERNAL_BOOKING` и любые другие не-`BOOKING` типы;
 - `referral_partner` и partner-owned referral codes;

@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="20260917-01" author="loco-place">
+        <comment>Add issuer-aware external identities and deletable customer-account state.</comment>
+        <addColumn tableName="customer_external_identity">
+            <column name="issuer" type="VARCHAR(255)"/>
+        </addColumn>
+        <sql dbms="postgresql"><![CDATA[
+            update customer_external_identity
+               set issuer = case provider
+                   when 'GOOGLE' then 'https://accounts.google.com'
+                   when 'TELEGRAM' then 'https://telegram.org'
+                   else 'legacy:' || lower(provider)
+               end
+             where issuer is null;
+        ]]></sql>
+        <addNotNullConstraint tableName="customer_external_identity"
+                              columnName="issuer" columnDataType="VARCHAR(255)"/>
+        <dropUniqueConstraint tableName="customer_external_identity"
+                              constraintName="uk_customer_external_identity_provider_subject"/>
+        <addUniqueConstraint tableName="customer_external_identity"
+                             columnNames="provider,issuer,external_subject"
+                             constraintName="uk_customer_external_identity_provider_issuer_subject"/>
+
+        <addColumn tableName="customer_account">
+            <column name="status" type="VARCHAR(16)" defaultValue="ACTIVE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="deleted_at" type="TIMESTAMP WITH TIME ZONE"/>
+        </addColumn>
+        <sql dbms="postgresql"><![CDATA[
+            alter table customer_account
+                add constraint ck_customer_account_status check (status in ('ACTIVE', 'DELETED'));
+
+            alter table cleaning_order drop constraint fk_cleaning_order_communication_identity;
+            alter table cleaning_order alter column communication_identity_id drop not null;
+            alter table cleaning_order
+                add constraint fk_cleaning_order_communication_identity
+                foreign key (communication_identity_id) references customer_external_identity(id)
+                on delete set null;
+
+            alter table rental_booking drop constraint fk_rental_booking_communication_identity;
+            alter table rental_booking alter column communication_identity_id drop not null;
+            alter table rental_booking
+                add constraint fk_rental_booking_communication_identity
+                foreign key (communication_identity_id) references customer_external_identity(id)
+                on delete set null;
+
+            alter table transfer_booking drop constraint fk_transfer_booking_communication_identity;
+            alter table transfer_booking alter column communication_identity_id drop not null;
+            alter table transfer_booking
+                add constraint fk_transfer_booking_communication_identity
+                foreign key (communication_identity_id) references customer_external_identity(id)
+                on delete set null;
+        ]]></sql>
+    </changeSet>
+
+    <changeSet id="20260917-02" author="loco-place">
+        <comment>Persist first-party auth sessions and nonce-bound authentication challenges.</comment>
+        <createTable tableName="customer_session">
+            <column name="id" type="UUID"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="customer_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="authentication_identity_id" type="BIGINT"/>
+            <column name="client_type" type="VARCHAR(16)"><constraints nullable="false"/></column>
+            <column name="access_token_hash" type="VARCHAR(64)"><constraints nullable="false"/></column>
+            <column name="refresh_token_hash" type="VARCHAR(64)"><constraints nullable="false"/></column>
+            <column name="previous_refresh_token_hash" type="VARCHAR(64)"/>
+            <column name="refresh_attempt_hash" type="VARCHAR(64)"/>
+            <column name="refresh_response_ciphertext" type="TEXT"/>
+            <column name="refresh_retry_expires_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="authenticated_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="last_seen_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="access_expires_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="refresh_expires_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="absolute_expires_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="revoked_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="revoked_reason" type="VARCHAR(64)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="customer_session" baseColumnNames="customer_id"
+                                 referencedTableName="customer_account" referencedColumnNames="id"
+                                 constraintName="fk_customer_session_customer"/>
+        <addForeignKeyConstraint baseTableName="customer_session" baseColumnNames="authentication_identity_id"
+                                 referencedTableName="customer_external_identity" referencedColumnNames="id"
+                                 constraintName="fk_customer_session_identity" onDelete="SET NULL"/>
+        <addUniqueConstraint tableName="customer_session" columnNames="access_token_hash"
+                             constraintName="uk_customer_session_access_hash"/>
+        <addUniqueConstraint tableName="customer_session" columnNames="refresh_token_hash"
+                             constraintName="uk_customer_session_refresh_hash"/>
+        <createIndex tableName="customer_session" indexName="idx_customer_session_customer">
+            <column name="customer_id"/><column name="revoked_at"/>
+        </createIndex>
+
+        <createTable tableName="used_refresh_token">
+            <column name="token_hash" type="VARCHAR(64)"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="session_id" type="UUID"><constraints nullable="false"/></column>
+            <column name="used_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="used_refresh_token" baseColumnNames="session_id"
+                                 referencedTableName="customer_session" referencedColumnNames="id"
+                                 constraintName="fk_used_refresh_token_session" onDelete="CASCADE"/>
+        <createIndex tableName="used_refresh_token" indexName="idx_used_refresh_token_session">
+            <column name="session_id"/>
+        </createIndex>
+
+        <createTable tableName="authentication_challenge">
+            <column name="id" type="UUID"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="purpose" type="VARCHAR(16)"><constraints nullable="false"/></column>
+            <column name="provider" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="customer_id" type="BIGINT"/>
+            <column name="session_id" type="UUID"/>
+            <column name="nonce_hash" type="VARCHAR(64)"><constraints nullable="false"/></column>
+            <column name="verifier_hash" type="VARCHAR(64)"/>
+            <column name="status" type="VARCHAR(16)"><constraints nullable="false"/></column>
+            <column name="proved_issuer" type="VARCHAR(255)"/>
+            <column name="proved_subject" type="VARCHAR(128)"/>
+            <column name="proved_profile" type="TEXT"/>
+            <column name="proved_credential_ciphertext" type="TEXT"/>
+            <column name="proved_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="expires_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="consumed_at" type="TIMESTAMP WITH TIME ZONE"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="authentication_challenge" baseColumnNames="customer_id"
+                                 referencedTableName="customer_account" referencedColumnNames="id"
+                                 constraintName="fk_authentication_challenge_customer" onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="authentication_challenge" baseColumnNames="session_id"
+                                 referencedTableName="customer_session" referencedColumnNames="id"
+                                 constraintName="fk_authentication_challenge_session" onDelete="CASCADE"/>
+        <createIndex tableName="authentication_challenge" indexName="idx_auth_challenge_expiry">
+            <column name="expires_at"/><column name="status"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260917-03" author="loco-place">
+        <comment>Add customer communication endpoints, delivery outbox, and notification preferences.</comment>
+        <createTable tableName="customer_notification_preference">
+            <column name="customer_id" type="BIGINT"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="telegram_enabled" type="BOOLEAN" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="push_enabled" type="BOOLEAN" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="customer_notification_preference" baseColumnNames="customer_id"
+                                 referencedTableName="customer_account" referencedColumnNames="id"
+                                 constraintName="fk_customer_notification_preference_customer" onDelete="CASCADE"/>
+
+        <createTable tableName="communication_endpoint">
+            <column name="id" type="UUID"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="customer_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="session_id" type="UUID"/>
+            <column name="type" type="VARCHAR(16)"><constraints nullable="false"/></column>
+            <column name="platform" type="VARCHAR(16)"><constraints nullable="false"/></column>
+            <column name="address_hash" type="VARCHAR(64)"><constraints nullable="false"/></column>
+            <column name="address_ciphertext" type="TEXT"><constraints nullable="false"/></column>
+            <column name="installation_id" type="VARCHAR(128)"/>
+            <column name="locale" type="VARCHAR(16)"/>
+            <column name="app_version" type="VARCHAR(32)"/>
+            <column name="status" type="VARCHAR(16)"><constraints nullable="false"/></column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="disabled_at" type="TIMESTAMP WITH TIME ZONE"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="communication_endpoint" baseColumnNames="customer_id"
+                                 referencedTableName="customer_account" referencedColumnNames="id"
+                                 constraintName="fk_communication_endpoint_customer" onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="communication_endpoint" baseColumnNames="session_id"
+                                 referencedTableName="customer_session" referencedColumnNames="id"
+                                 constraintName="fk_communication_endpoint_session" onDelete="SET NULL"/>
+        <addUniqueConstraint tableName="communication_endpoint" columnNames="type,address_hash"
+                             constraintName="uk_communication_endpoint_type_address"/>
+        <createIndex tableName="communication_endpoint" indexName="idx_communication_endpoint_customer">
+            <column name="customer_id"/><column name="status"/>
+        </createIndex>
+
+        <createTable tableName="notification_delivery">
+            <column name="id" type="BIGINT" autoIncrement="true"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="notification_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="endpoint_id" type="UUID"><constraints nullable="false"/></column>
+            <column name="status" type="VARCHAR(16)"><constraints nullable="false"/></column>
+            <column name="attempt_count" type="INTEGER" defaultValueNumeric="0"><constraints nullable="false"/></column>
+            <column name="available_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="lease_until" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="expires_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="last_error_code" type="VARCHAR(64)"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="notification_delivery" baseColumnNames="notification_id"
+                                 referencedTableName="customer_notification" referencedColumnNames="id"
+                                 constraintName="fk_notification_delivery_notification" onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="notification_delivery" baseColumnNames="endpoint_id"
+                                 referencedTableName="communication_endpoint" referencedColumnNames="id"
+                                 constraintName="fk_notification_delivery_endpoint" onDelete="CASCADE"/>
+        <addUniqueConstraint tableName="notification_delivery" columnNames="notification_id,endpoint_id"
+                             constraintName="uk_notification_delivery_target"/>
+        <createIndex tableName="notification_delivery" indexName="idx_notification_delivery_claim">
+            <column name="status"/><column name="available_at"/><column name="lease_until"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260917-04" author="loco-place">
+        <comment>Add idempotent command results, security audit, and typed notification targets.</comment>
+        <createTable tableName="idempotency_record">
+            <column name="id" type="BIGINT" autoIncrement="true"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="customer_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="operation" type="VARCHAR(64)"><constraints nullable="false"/></column>
+            <column name="key_hash" type="VARCHAR(64)"><constraints nullable="false"/></column>
+            <column name="payload_hash" type="VARCHAR(64)"><constraints nullable="false"/></column>
+            <column name="resource_type" type="VARCHAR(32)"/>
+            <column name="resource_id" type="BIGINT"/>
+            <column name="status" type="VARCHAR(16)"><constraints nullable="false"/></column>
+            <column name="response_status" type="INTEGER"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="expires_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="idempotency_record" baseColumnNames="customer_id"
+                                 referencedTableName="customer_account" referencedColumnNames="id"
+                                 constraintName="fk_idempotency_record_customer" onDelete="CASCADE"/>
+        <addUniqueConstraint tableName="idempotency_record" columnNames="customer_id,operation,key_hash"
+                             constraintName="uk_idempotency_record_scope"/>
+        <createIndex tableName="idempotency_record" indexName="idx_idempotency_record_expiry">
+            <column name="expires_at"/>
+        </createIndex>
+
+        <createTable tableName="security_audit_event">
+            <column name="id" type="BIGINT" autoIncrement="true"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="customer_id" type="BIGINT"/>
+            <column name="event_type" type="VARCHAR(64)"><constraints nullable="false"/></column>
+            <column name="provider" type="VARCHAR(32)"/>
+            <column name="identity_id" type="BIGINT"/>
+            <column name="session_id" type="UUID"/>
+            <column name="outcome" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="request_id" type="VARCHAR(128)"/>
+            <column name="occurred_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+        <createIndex tableName="security_audit_event" indexName="idx_security_audit_customer_time">
+            <column name="customer_id"/><column name="occurred_at" descending="true"/>
+        </createIndex>
+
+        <addColumn tableName="customer_notification">
+            <column name="action_type" type="VARCHAR(48)"/>
+            <column name="action_service" type="VARCHAR(16)"/>
+            <column name="action_entity_id" type="BIGINT"/>
+            <column name="action_context" type="VARCHAR(32)"/>
+            <column name="payload_json" type="TEXT"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260917-05" author="loco-place">
+        <comment>Persist Apple refresh credentials and durable provider revocation work.</comment>
+        <createTable tableName="apple_identity_credential">
+            <column name="identity_id" type="BIGINT"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="refresh_token_ciphertext" type="TEXT"><constraints nullable="false"/></column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="apple_identity_credential" baseColumnNames="identity_id"
+                                 referencedTableName="customer_external_identity" referencedColumnNames="id"
+                                 constraintName="fk_apple_identity_credential_identity" onDelete="CASCADE"/>
+
+        <createTable tableName="external_provider_job">
+            <column name="id" type="BIGINT" autoIncrement="true"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="provider" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="job_type" type="VARCHAR(64)"><constraints nullable="false"/></column>
+            <column name="payload_ciphertext" type="TEXT"><constraints nullable="false"/></column>
+            <column name="status" type="VARCHAR(16)"><constraints nullable="false"/></column>
+            <column name="attempt_count" type="INTEGER" defaultValueNumeric="0"><constraints nullable="false"/></column>
+            <column name="available_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="lease_until" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="last_error_code" type="VARCHAR(64)"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+        <createIndex tableName="external_provider_job" indexName="idx_external_provider_job_claim">
+            <column name="status"/><column name="available_at"/><column name="lease_until"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260917-06" author="loco-place">
+        <comment>Make cleaner and transfer-driver Telegram broadcasts durable.</comment>
+        <createTable tableName="operational_telegram_delivery">
+            <column name="id" type="BIGINT" autoIncrement="true"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="deduplication_key" type="VARCHAR(160)"><constraints nullable="false"/></column>
+            <column name="chat_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="message_text" type="TEXT"><constraints nullable="false"/></column>
+            <column name="keyboard_json" type="TEXT"><constraints nullable="false"/></column>
+            <column name="status" type="VARCHAR(16)"><constraints nullable="false"/></column>
+            <column name="attempt_count" type="INTEGER" defaultValueNumeric="0"><constraints nullable="false"/></column>
+            <column name="available_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="lease_until" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="expires_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="last_error_code" type="VARCHAR(64)"/>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="updated_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+        <addUniqueConstraint tableName="operational_telegram_delivery" columnNames="deduplication_key"
+                             constraintName="uk_operational_telegram_delivery_dedupe"/>
+        <createIndex tableName="operational_telegram_delivery"
+                     indexName="idx_operational_telegram_delivery_claim">
+            <column name="status"/><column name="available_at"/><column name="lease_until"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

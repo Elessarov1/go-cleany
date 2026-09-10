@@ -30,7 +30,7 @@ class RentalBookingCustomerNotificationListenerTest {
 
         Assertions.assertAll(
                 () -> Assertions.assertNotNull(annotation),
-                () -> Assertions.assertEquals(TransactionPhase.AFTER_COMMIT, annotation.phase()),
+                () -> Assertions.assertEquals(TransactionPhase.BEFORE_COMMIT, annotation.phase()),
                 () -> Assertions.assertFalse(annotation.fallbackExecution())
         );
     }
@@ -55,7 +55,7 @@ class RentalBookingCustomerNotificationListenerTest {
     }
 
     @Test
-    void deliveryFailure_doesNotEscapeAfterCommitListener() {
+    void durablePersistenceFailureEscapesAndRollsBackBusinessTransaction() {
         var event = new RentalBookingCustomerEvent.Cancelled(
                 43L,
                 77L,
@@ -74,6 +74,6 @@ class RentalBookingCustomerNotificationListenerTest {
         Mockito.when(dispatcher.send(77L, 88L, notification))
                 .thenThrow(new IllegalStateException("channel unavailable"));
 
-        Assertions.assertDoesNotThrow(() -> listener.notifyCustomer(event));
+        Assertions.assertThrows(IllegalStateException.class, () -> listener.notifyCustomer(event));
     }
 }

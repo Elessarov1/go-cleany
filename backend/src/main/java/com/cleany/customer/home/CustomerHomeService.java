@@ -12,6 +12,7 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cleany.action.ActionTarget;
 import com.cleany.catalog.PlatformService;
 import com.cleany.catalog.PlatformServiceAccessService;
 import com.cleany.configuration.CleaningProperties;
@@ -131,7 +132,7 @@ public class CustomerHomeService {
                 relevantDate,
                 context.earliestBenefitCleaningDate(),
                 context.checkOutDate(),
-                "/cleaning?rentalBooking=" + rentalBookingId + "&promo=" + context.promoCode(),
+                new ActionTarget.StartRentalCleaning(rentalBookingId),
                 null
         ));
     }
@@ -152,8 +153,7 @@ public class CustomerHomeService {
                 option.suggestedDate(),
                 null,
                 null,
-                "/transfer?rentalBooking=" + rentalBookingId
-                        + "&rentalContext=" + option.context(),
+                new ActionTarget.StartRentalTransfer(rentalBookingId, option.context()),
                 option.benefit()
         );
     }
@@ -203,7 +203,7 @@ public class CustomerHomeService {
                 PlatformService.CLEANING,
                 order.getId(),
                 order.getCompletedAt(),
-                "/cleaning?repeatFrom=" + order.getId()
+                new ActionTarget.RepeatCleaning(order.getId())
         );
     }
 
@@ -212,7 +212,7 @@ public class CustomerHomeService {
                 PlatformService.TRANSFER,
                 booking.getId(),
                 booking.getCompletedAt(),
-                "/transfer?repeatFrom=" + booking.getId()
+                new ActionTarget.RepeatTransfer(booking.getId())
         );
     }
 }

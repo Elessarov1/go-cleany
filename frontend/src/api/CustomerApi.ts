@@ -7,8 +7,8 @@ export interface CustomerApi {
   getHome(): Promise<CustomerHome>;
   getAccountIdentities(): Promise<AccountIdentities>;
   initiateTelegramLink(): Promise<AccountLinkInitiated>;
-  confirmTelegramLink(token: string): Promise<AccountIdentities>;
-  getNotifications(page?: number, size?: number): Promise<CustomerNotificationPage>;
+  confirmTelegramLink(attemptId: string): Promise<AccountIdentities>;
+  getNotifications(cursor?: string | null, size?: number): Promise<CustomerNotificationPage>;
   getNotificationUnreadCount(): Promise<number>;
   markNotificationRead(notificationId: number): Promise<void>;
   markAllNotificationsRead(): Promise<void>;

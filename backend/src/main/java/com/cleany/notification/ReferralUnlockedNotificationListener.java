@@ -20,7 +20,7 @@ public class ReferralUnlockedNotificationListener {
         this.dispatcher = dispatcher;
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     @Order(10)
     public void notifyCustomer(ReferralUnlockedEvent event) {
         try {
@@ -36,6 +36,7 @@ public class ReferralUnlockedNotificationListener {
                     event.communicationIdentityId(),
                     exception
             );
+            throw exception;
         }
     }
 }

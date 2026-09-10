@@ -1,16 +1,29 @@
 import type { CurrentAuthentication } from "../domain/authentication";
 import type { AuthApi } from "./AuthApi";
-import { HttpApiClient } from "./HttpApiClient";
+import { generatedWire, HttpApiClient } from "./HttpApiClient";
+import {
+  AuthenticationApi as GeneratedAuthenticationApi,
+  Configuration,
+  CurrentAuthenticationToJSON,
+} from "@locoplace/api-client";
 
 export class HttpAuthApi implements AuthApi {
-  constructor(private readonly client: HttpApiClient) {}
+  private readonly generated: GeneratedAuthenticationApi;
+
+  constructor(private readonly client: HttpApiClient) {
+    this.generated = new GeneratedAuthenticationApi(new Configuration({
+      basePath: client.basePath,
+      fetchApi: client.generatedFetch,
+    }));
+  }
 
   getCurrent(): Promise<CurrentAuthentication> {
-    return this.client.request("/api/v1/auth/me");
+    return this.client.generated(this.generated.getCurrentAuthentication())
+      .then((value) => generatedWire<CurrentAuthentication>(CurrentAuthenticationToJSON(value)));
   }
 
   logout(): Promise<void> {
-    return this.client.request("/api/v1/auth/logout", { method: "POST" });
+    return this.client.generated(this.generated.logoutCurrentSession());
   }
 
   googleLoginUrl(returnTo = "/"): string {

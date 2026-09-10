@@ -25,7 +25,7 @@ public class RentalCleaningBenefitNotificationListener {
     private final RentalCleaningBenefitNotificationQueryService queryService;
     private final PlatformServiceAccessService serviceAccessService;
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     @Order(10)
     public void notifyCustomer(RentalCleaningBenefitIssuedEvent event) {
         try {
@@ -55,6 +55,7 @@ public class RentalCleaningBenefitNotificationListener {
                     event.communicationIdentityId(),
                     exception
             );
+            throw exception;
         }
     }
 }

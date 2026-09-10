@@ -32,7 +32,7 @@ public class CleaningOrderCustomerNotificationListener {
     }
 
     @Order(0)
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void notifyCustomer(CleaningOrderCustomerEvent event) {
         try {
             CustomerNotification notification = notification(event);
@@ -54,6 +54,7 @@ public class CleaningOrderCustomerNotificationListener {
                     event.communicationIdentityId(),
                     exception
             );
+            throw exception;
         }
     }
 

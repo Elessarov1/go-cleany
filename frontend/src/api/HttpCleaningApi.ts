@@ -20,10 +20,29 @@ import {
   CleaningApiError,
   type CleaningApi,
 } from "./CleaningApi";
-import { HttpApiClient } from "./HttpApiClient";
+import { generatedWire, HttpApiClient } from "./HttpApiClient";
+import {
+  CleaningApi as GeneratedCleaningApi,
+  CleaningConfigurationToJSON,
+  CleaningOrderQuoteRequestFromJSON,
+  CleaningOrderQuoteToJSON,
+  CleaningOrderToJSON,
+  CleaningRepeatPrefillToJSON,
+  CleaningRepeatReminderToJSON,
+  Configuration,
+  CreateCleaningOrderRequestFromJSON,
+  ReferralSummaryToJSON,
+} from "@locoplace/api-client";
 
 export class HttpCleaningApi implements CleaningApi {
-  constructor(private readonly client: HttpApiClient) {}
+  private readonly generated: GeneratedCleaningApi;
+
+  constructor(private readonly client: HttpApiClient) {
+    this.generated = new GeneratedCleaningApi(new Configuration({
+      basePath: client.basePath,
+      fetchApi: client.generatedFetch,
+    }));
+  }
 
   async hasAdminAccess(): Promise<boolean> {
     try {
@@ -74,63 +93,75 @@ export class HttpCleaningApi implements CleaningApi {
   }
 
   getConfiguration(): Promise<CleaningConfiguration> {
-    return this.request("/api/v1/cleaning/configuration");
+    return this.client.generated(this.generated.getCleaningConfiguration())
+      .then((value) => generatedWire<CleaningConfiguration>(CleaningConfigurationToJSON(value)));
   }
 
   quoteOrder(request: CleaningOrderQuoteRequest): Promise<CleaningOrderQuote> {
-    return this.request("/api/v1/cleaning/orders/quote", {
-      method: "POST",
-      body: JSON.stringify(request),
-    });
+    return this.client.generated(this.generated.quoteCleaningOrder({
+      cleaningOrderQuoteRequest: CleaningOrderQuoteRequestFromJSON(request),
+    })).then((value) => generatedWire<CleaningOrderQuote>(CleaningOrderQuoteToJSON(value)));
   }
 
   createOrder(request: CreateCleaningOrderRequest): Promise<CleaningOrder> {
-    return this.request("/api/v1/cleaning/orders", {
-      method: "POST",
-      body: JSON.stringify(request),
-    });
+    return this.client.generated(this.generated.createCleaningOrder({
+      idempotencyKey: crypto.randomUUID(),
+      createCleaningOrderRequest: CreateCleaningOrderRequestFromJSON(request),
+    })).then((value) => generatedWire<CleaningOrder>(CleaningOrderToJSON(value)));
   }
 
   getReferralSummary(): Promise<ReferralSummary> {
-    return this.request("/api/v1/referrals/me");
+    return this.client.generated(this.generated.getCleaningReferralSummary())
+      .then((value) => generatedWire<ReferralSummary>(ReferralSummaryToJSON(value)));
   }
 
-  getOrders(): Promise<CleaningOrder[]> {
-    return this.request("/api/v1/cleaning/orders");
+  async getOrders(): Promise<CleaningOrder[]> {
+    const orders: CleaningOrder[] = [];
+    let cursor: string | undefined;
+    do {
+      const page = await this.client.generated(this.generated.getCleaningOrders({ cursor, size: 50 }));
+      orders.push(...page.items.map((value) => generatedWire<CleaningOrder>(CleaningOrderToJSON(value))));
+      cursor = page.hasMore ? page.nextCursor ?? undefined : undefined;
+    } while (cursor);
+    return orders;
   }
 
   getOrder(id: number): Promise<CleaningOrder> {
-    return this.request(`/api/v1/cleaning/orders/${id}`);
+    return this.client.generated(this.generated.getCleaningOrder({ orderId: id }))
+      .then((value) => generatedWire<CleaningOrder>(CleaningOrderToJSON(value)));
   }
 
   async recordRepeatShown(id: number): Promise<void> {
-    await this.request(`/api/v1/cleaning/orders/${id}/repeat-shown`, { method: "POST" });
+    await this.client.generated(this.generated.recordCleaningRepeatShown({ orderId: id }));
   }
 
   getRepeatPrefill(id: number): Promise<CleaningRepeatPrefill> {
-    return this.request(`/api/v1/cleaning/orders/${id}/repeat-prefill`, { method: "POST" });
+    return this.client.generated(this.generated.getCleaningRepeatPrefill({ orderId: id }))
+      .then((value) => generatedWire<CleaningRepeatPrefill>(CleaningRepeatPrefillToJSON(value)));
   }
 
   getRepeatReminder(id: number): Promise<CleaningRepeatReminder> {
-    return this.request(`/api/v1/cleaning/orders/${id}/repeat-reminder`);
+    return this.client.generated(this.generated.getCleaningRepeatReminder({ orderId: id }))
+      .then((value) => generatedWire<CleaningRepeatReminder>(CleaningRepeatReminderToJSON(value)));
   }
 
   updateRepeatReminder(
     id: number,
     selection: CleaningRepeatReminderSelection,
   ): Promise<CleaningRepeatReminder> {
-    return this.request(`/api/v1/cleaning/orders/${id}/repeat-reminder`, {
-      method: "PUT",
-      body: JSON.stringify({ selection }),
-    });
+    return this.client.generated(this.generated.updateCleaningRepeatReminder({
+      orderId: id,
+      cleaningRepeatReminderRequest: { selection },
+    })).then((value) => generatedWire<CleaningRepeatReminder>(CleaningRepeatReminderToJSON(value)));
   }
 
   getReportPhoto(orderId: number, mediaId: number): Promise<Blob> {
-    return this.requestBlob(`/api/v1/cleaning/orders/${orderId}/report/photos/${mediaId}`);
+    return this.client.generated(this.generated.getCleaningReportPhoto({ orderId, mediaId }));
   }
 
   cancelOrder(id: number): Promise<CleaningOrder> {
-    return this.request(`/api/v1/cleaning/orders/${id}/cancel`, { method: "POST" });
+    return this.client.generated(this.generated.cancelCleaningOrder({ orderId: id }))
+      .then((value) => generatedWire<CleaningOrder>(CleaningOrderToJSON(value)));
   }
 
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {

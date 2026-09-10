@@ -17,12 +17,12 @@ public class TransferBookingCustomerNotificationListener {
     private final CustomerNotificationDispatcher dispatcher;
     private final TransferBookingNotificationQueryService queryService;
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void requested(TransferBookingCreatedEvent event) {
         send(event.booking().id(), event.customerId(), event.communicationIdentityId());
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void statusChanged(TransferBookingCustomerEvent event) {
         send(event.bookingId(), event.customerId(), event.communicationIdentityId());
     }
@@ -44,6 +44,7 @@ public class TransferBookingCustomerNotificationListener {
                     bookingId,
                     exception
             );
+            throw exception;
         }
     }
 }

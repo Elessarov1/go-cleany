@@ -30,7 +30,7 @@ class CleaningOrderCustomerNotificationListenerTest {
 
         Assertions.assertAll(
                 () -> Assertions.assertNotNull(annotation),
-                () -> Assertions.assertEquals(TransactionPhase.AFTER_COMMIT, annotation.phase()),
+                () -> Assertions.assertEquals(TransactionPhase.BEFORE_COMMIT, annotation.phase()),
                 () -> Assertions.assertFalse(annotation.fallbackExecution())
         );
     }
@@ -69,7 +69,7 @@ class CleaningOrderCustomerNotificationListenerTest {
     }
 
     @Test
-    void failedDelivery_doesNotRecordOnsiteAuditOrEscapeAfterCommitListener() {
+    void durablePersistenceFailureDoesNotRecordOnsiteAuditAndEscapes() {
         var event = new CleaningOrderCustomerEvent.OnsiteIssueReported(43L, 77L, 88L, 101L);
         var notification = new CleaningOrderCustomerNotification.OnsiteIssueReported(
                 43L,
@@ -81,7 +81,7 @@ class CleaningOrderCustomerNotificationListenerTest {
         Mockito.when(dispatcher.send(77L, 88L, notification))
                 .thenThrow(new IllegalStateException("channel unavailable"));
 
-        Assertions.assertDoesNotThrow(() -> listener.notifyCustomer(event));
+        Assertions.assertThrows(IllegalStateException.class, () -> listener.notifyCustomer(event));
 
         Mockito.verify(onsiteIssueService, Mockito.never()).recordCustomerNotified(
                 Mockito.anyLong(),

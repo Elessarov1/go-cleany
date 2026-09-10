@@ -279,6 +279,7 @@ class OnsiteIssueIntegrationTest extends BaseIntegrationTest {
 
         mvc.perform(get(photoUrl).header("Authorization", adminAuth))
                 .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")))
                 .andExpect(content().contentType(MediaType.IMAGE_JPEG))
                 .andExpect(header().longValue("Content-Length", JPEG.length))
                 .andExpect(content().bytes(JPEG));

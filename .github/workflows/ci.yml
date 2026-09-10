@@ -16,6 +16,7 @@ jobs:
     outputs:
       backend: ${{ steps.changes.outputs.backend }}
       frontend: ${{ steps.changes.outputs.frontend }}
+      api: ${{ steps.changes.outputs.api }}
       deployment: ${{ steps.changes.outputs.deployment }}
       deploy: ${{ steps.changes.outputs.deploy }}
 
@@ -36,18 +37,21 @@ jobs:
 
           backend=false
           frontend=false
+          api=false
           deployment=false
 
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             # An explicit manual CI run validates the whole application and may redeploy main.
             backend=true
             frontend=true
+            api=true
             deployment=true
           else
             if [[ -z "$PUSH_BEFORE_SHA" || "$PUSH_BEFORE_SHA" =~ ^0+$ ]]; then
               # Safe fallback for the first push / missing before SHA.
               backend=true
               frontend=true
+              api=true
               deployment=true
             else
               git diff --name-only "$PUSH_BEFORE_SHA..$CURRENT_SHA" > /tmp/changed-files
@@ -63,6 +67,11 @@ jobs:
               if grep -q '^frontend/' /tmp/changed-files; then
                 frontend=true
               fi
+              if grep -Eq '^(api/|clients/|openapitools\.json$|scripts/generate-api-clients\.)' /tmp/changed-files; then
+                api=true
+                # The React app imports the generated TypeScript package by local file dependency.
+                frontend=true
+              fi
               if grep -Eq '^(deploy/|compose\.prod\.ya?ml$)' /tmp/changed-files; then
                 deployment=true
               fi
@@ -76,9 +85,10 @@ jobs:
 
           echo "backend=$backend" >> "$GITHUB_OUTPUT"
           echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
+          echo "api=$api" >> "$GITHUB_OUTPUT"
           echo "deployment=$deployment" >> "$GITHUB_OUTPUT"
           echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
-          echo "backend=$backend frontend=$frontend deployment=$deployment deploy=$deploy"
+          echo "backend=$backend frontend=$frontend api=$api deployment=$deployment deploy=$deploy"
 
   backend:
     name: Backend tests
@@ -120,7 +130,51 @@ jobs:
 
       - name: Build frontend
         working-directory: frontend
+        env:
+          VITE_PREVIEW_MODE: "false"
         run: npm run build
+
+  public_api:
+    name: Public API contract and generated SDKs
+    needs: changes
+    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: clients/typescript-fetch/package-lock.json
+
+      - uses: dart-lang/setup-dart@v1
+
+      - name: Validate and reproduce generated clients
+        run: |
+          npx --yes '@openapitools/openapi-generator-cli@2.41.0' validate -i api/openapi/loco-place-v1.yaml
+          npx --yes '@openapitools/openapi-generator-cli@2.41.0' generate
+          git diff --exit-code -- clients
+
+      - name: Compile TypeScript SDK
+        working-directory: clients/typescript-fetch
+        run: |
+          npm ci
+          npm run build
+
+      - name: Compile and test Dart SDK
+        working-directory: clients/dart-dio
+        run: |
+          dart pub get
+          dart run build_runner build --delete-conflicting-outputs
+          dart analyze
+          dart test
 
   deploy_staging:
     name: Deploy staging
@@ -128,13 +182,15 @@ jobs:
       - changes
       - backend
       - frontend
+      - public_api
     if: >-
       always() &&
       github.ref == 'refs/heads/main' &&
       vars.STAGING_DEPLOY_ENABLED == 'true' &&
       needs.changes.outputs.deploy == 'true' &&
       (needs.backend.result == 'success' || needs.backend.result == 'skipped') &&
-      (needs.frontend.result == 'success' || needs.frontend.result == 'skipped')
+      (needs.frontend.result == 'success' || needs.frontend.result == 'skipped') &&
+      (needs.public_api.result == 'success' || needs.public_api.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
@@ -163,7 +219,6 @@ jobs:
         env:
           APP_HOST: ${{ vars.APP_HOST }}
           CLEANER_TELEGRAM_IDS: ${{ vars.CLEANER_TELEGRAM_IDS }}
-          TELEGRAM_MINI_APP_LINK_BASE: ${{ vars.TELEGRAM_MINI_APP_LINK_BASE }}
           TELEGRAM_BOT_USERNAME: ${{ vars.TELEGRAM_BOT_USERNAME || 'go_cleany_bot' }}
           TRANSFER_ASSIGNMENT_MODE: ${{ vars.TRANSFER_ASSIGNMENT_MODE || 'ADMIN_ASSIGNMENT' }}
           GOOGLE_AUTH_ENABLED: ${{ vars.GOOGLE_AUTH_ENABLED || 'false' }}
@@ -171,6 +226,18 @@ jobs:
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           ADMIN_GOOGLE_EMAILS: ${{ secrets.ADMIN_GOOGLE_EMAILS }}
           WEB_SESSION_TIMEOUT: ${{ vars.WEB_SESSION_TIMEOUT || '12h' }}
+          NATIVE_AUTH_ENABLED: ${{ vars.NATIVE_AUTH_ENABLED || 'false' }}
+          NATIVE_AUTH_TOKEN_ENCRYPTION_KEY: ${{ secrets.NATIVE_AUTH_TOKEN_ENCRYPTION_KEY }}
+          NATIVE_GOOGLE_AUDIENCES: ${{ vars.NATIVE_GOOGLE_AUDIENCES || '' }}
+          NATIVE_APPLE_AUDIENCES: ${{ vars.NATIVE_APPLE_AUDIENCES || 'com.locoplace.app.staging' }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
+          APPLE_PRIVATE_KEY: ${{ secrets.APPLE_PRIVATE_KEY }}
+          FCM_ENABLED: ${{ vars.FCM_ENABLED || 'false' }}
+          FCM_PROJECT_ID: ${{ secrets.FCM_PROJECT_ID }}
+          FCM_CLIENT_EMAIL: ${{ secrets.FCM_CLIENT_EMAIL }}
+          FCM_PRIVATE_KEY: ${{ secrets.FCM_PRIVATE_KEY }}
+          ANDROID_SHA256_FINGERPRINTS: ${{ vars.ANDROID_SHA256_FINGERPRINTS || '' }}
           ANALYTICS_ZONE_ID: ${{ vars.ANALYTICS_ZONE_ID || 'Europe/Istanbul' }}
           COMMERCIAL_LAUNCH_AT: ${{ vars.COMMERCIAL_LAUNCH_AT || '' }}
           RENTAL_MIN_STAY_DAYS: ${{ vars.RENTAL_MIN_STAY_DAYS || '7' }}
@@ -194,7 +261,6 @@ jobs:
             exit 1
           }
           : "${CLEANER_TELEGRAM_IDS:?Missing CLEANER_TELEGRAM_IDS staging variable}"
-          : "${TELEGRAM_MINI_APP_LINK_BASE:?Missing TELEGRAM_MINI_APP_LINK_BASE staging variable}"
           [[ "$GOOGLE_AUTH_ENABLED" == "true" || "$GOOGLE_AUTH_ENABLED" == "false" ]] || {
             echo "GOOGLE_AUTH_ENABLED must be true or false." >&2
             exit 1
@@ -203,6 +269,36 @@ jobs:
             : "${GOOGLE_CLIENT_ID:?Missing GOOGLE_CLIENT_ID staging secret}"
             : "${GOOGLE_CLIENT_SECRET:?Missing GOOGLE_CLIENT_SECRET staging secret}"
             : "${ADMIN_GOOGLE_EMAILS:?Missing ADMIN_GOOGLE_EMAILS staging secret}"
+          fi
+          [[ "$NATIVE_AUTH_ENABLED" == "true" || "$NATIVE_AUTH_ENABLED" == "false" ]] || {
+            echo "NATIVE_AUTH_ENABLED must be true or false." >&2
+            exit 1
+          }
+          if [[ "$NATIVE_AUTH_ENABLED" == "true" ]]; then
+            : "${NATIVE_AUTH_TOKEN_ENCRYPTION_KEY:?Missing NATIVE_AUTH_TOKEN_ENCRYPTION_KEY staging secret}"
+            : "${NATIVE_GOOGLE_AUDIENCES:?Missing NATIVE_GOOGLE_AUDIENCES staging variable}"
+            : "${APPLE_TEAM_ID:?Missing APPLE_TEAM_ID staging secret}"
+            : "${APPLE_KEY_ID:?Missing APPLE_KEY_ID staging secret}"
+            : "${APPLE_PRIVATE_KEY:?Missing APPLE_PRIVATE_KEY staging secret}"
+            decoded_key_length=$(printf '%s' "$NATIVE_AUTH_TOKEN_ENCRYPTION_KEY" | base64 --decode | wc -c)
+            [[ "$decoded_key_length" == "32" ]] || {
+              echo "NATIVE_AUTH_TOKEN_ENCRYPTION_KEY must be base64 for exactly 32 bytes." >&2
+              exit 1
+            }
+          fi
+          [[ "$FCM_ENABLED" == "true" || "$FCM_ENABLED" == "false" ]] || {
+            echo "FCM_ENABLED must be true or false." >&2
+            exit 1
+          }
+          if [[ "$FCM_ENABLED" == "true" ]]; then
+            [[ "$NATIVE_AUTH_ENABLED" == "true" ]] || {
+              echo "FCM_ENABLED requires NATIVE_AUTH_ENABLED=true." >&2
+              exit 1
+            }
+            : "${FCM_PROJECT_ID:?Missing FCM_PROJECT_ID staging secret}"
+            : "${FCM_CLIENT_EMAIL:?Missing FCM_CLIENT_EMAIL staging secret}"
+            : "${FCM_PRIVATE_KEY:?Missing FCM_PRIVATE_KEY staging secret}"
+            : "${ANDROID_SHA256_FINGERPRINTS:?Missing Android release fingerprints staging variable}"
           fi
           [[ "$WEB_SESSION_TIMEOUT" =~ ^[1-9][0-9]*(ms|s|m|h|d)$ ]] || {
             echo "WEB_SESSION_TIMEOUT must be a positive duration such as 30m or 12h." >&2
@@ -220,10 +316,6 @@ jobs:
           fi
           [[ "$CLEANER_TELEGRAM_IDS" =~ ^[0-9]+(,[0-9]+)*$ ]] || {
             echo "CLEANER_TELEGRAM_IDS must be comma-separated numeric Telegram IDs without spaces." >&2
-            exit 1
-          }
-          [[ "$TELEGRAM_MINI_APP_LINK_BASE" == https://t.me/* ]] || {
-            echo "TELEGRAM_MINI_APP_LINK_BASE must be an https://t.me/ Mini App link." >&2
             exit 1
           }
           [[ "$TELEGRAM_BOT_USERNAME" =~ ^[A-Za-z0-9_]{5,32}$ ]] || {
@@ -284,7 +376,6 @@ jobs:
           SSH_USER: ${{ vars.STAGING_SSH_USER }}
           APP_HOST: ${{ vars.APP_HOST }}
           CLEANER_TELEGRAM_IDS: ${{ vars.CLEANER_TELEGRAM_IDS }}
-          TELEGRAM_MINI_APP_LINK_BASE: ${{ vars.TELEGRAM_MINI_APP_LINK_BASE }}
           TELEGRAM_BOT_USERNAME: ${{ vars.TELEGRAM_BOT_USERNAME || 'go_cleany_bot' }}
           TRANSFER_ASSIGNMENT_MODE: ${{ vars.TRANSFER_ASSIGNMENT_MODE || 'ADMIN_ASSIGNMENT' }}
           GOOGLE_AUTH_ENABLED: ${{ vars.GOOGLE_AUTH_ENABLED || 'false' }}
@@ -292,6 +383,18 @@ jobs:
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           ADMIN_GOOGLE_EMAILS: ${{ secrets.ADMIN_GOOGLE_EMAILS }}
           WEB_SESSION_TIMEOUT: ${{ vars.WEB_SESSION_TIMEOUT || '12h' }}
+          NATIVE_AUTH_ENABLED: ${{ vars.NATIVE_AUTH_ENABLED || 'false' }}
+          NATIVE_AUTH_TOKEN_ENCRYPTION_KEY: ${{ secrets.NATIVE_AUTH_TOKEN_ENCRYPTION_KEY }}
+          NATIVE_GOOGLE_AUDIENCES: ${{ vars.NATIVE_GOOGLE_AUDIENCES || '' }}
+          NATIVE_APPLE_AUDIENCES: ${{ vars.NATIVE_APPLE_AUDIENCES || 'com.locoplace.app.staging' }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
+          APPLE_PRIVATE_KEY: ${{ secrets.APPLE_PRIVATE_KEY }}
+          FCM_ENABLED: ${{ vars.FCM_ENABLED || 'false' }}
+          FCM_PROJECT_ID: ${{ secrets.FCM_PROJECT_ID }}
+          FCM_CLIENT_EMAIL: ${{ secrets.FCM_CLIENT_EMAIL }}
+          FCM_PRIVATE_KEY: ${{ secrets.FCM_PRIVATE_KEY }}
+          ANDROID_SHA256_FINGERPRINTS: ${{ vars.ANDROID_SHA256_FINGERPRINTS || '' }}
           ANALYTICS_ZONE_ID: ${{ vars.ANALYTICS_ZONE_ID || 'Europe/Istanbul' }}
           COMMERCIAL_LAUNCH_AT: ${{ vars.COMMERCIAL_LAUNCH_AT || '' }}
           RENTAL_MIN_STAY_DAYS: ${{ vars.RENTAL_MIN_STAY_DAYS || '7' }}
@@ -315,6 +418,13 @@ jobs:
           google_client_id_b64=$(printf '%s' "$GOOGLE_CLIENT_ID" | base64 -w 0)
           google_client_secret_b64=$(printf '%s' "$GOOGLE_CLIENT_SECRET" | base64 -w 0)
           admin_google_emails_b64=$(printf '%s' "$ADMIN_GOOGLE_EMAILS" | base64 -w 0)
+          native_auth_key_b64=$(printf '%s' "$NATIVE_AUTH_TOKEN_ENCRYPTION_KEY" | base64 -w 0)
+          apple_team_id_b64=$(printf '%s' "$APPLE_TEAM_ID" | base64 -w 0)
+          apple_key_id_b64=$(printf '%s' "$APPLE_KEY_ID" | base64 -w 0)
+          apple_private_key_b64=$(printf '%s' "$APPLE_PRIVATE_KEY" | base64 -w 0)
+          fcm_project_id_b64=$(printf '%s' "$FCM_PROJECT_ID" | base64 -w 0)
+          fcm_client_email_b64=$(printf '%s' "$FCM_CLIENT_EMAIL" | base64 -w 0)
+          fcm_private_key_b64=$(printf '%s' "$FCM_PRIVATE_KEY" | base64 -w 0)
           ssh \
             -o BatchMode=yes \
             -o ConnectTimeout=15 \
@@ -327,7 +437,6 @@ jobs:
             "cd /opt/go-cleany && \
             APP_HOST='$APP_HOST' \
             CLEANER_TELEGRAM_IDS='$CLEANER_TELEGRAM_IDS' \
-            TELEGRAM_MINI_APP_LINK_BASE='$TELEGRAM_MINI_APP_LINK_BASE' \
             TELEGRAM_BOT_USERNAME='$TELEGRAM_BOT_USERNAME' \
             TRANSFER_ASSIGNMENT_MODE='$TRANSFER_ASSIGNMENT_MODE' \
             PUBLIC_APP_BASE_URL='https://$APP_HOST' \
@@ -336,6 +445,23 @@ jobs:
             GOOGLE_CLIENT_SECRET=\$(printf '%s' '$google_client_secret_b64' | base64 --decode) \
             ADMIN_GOOGLE_EMAILS=\$(printf '%s' '$admin_google_emails_b64' | base64 --decode) \
             WEB_SESSION_TIMEOUT='$WEB_SESSION_TIMEOUT' \
+            NATIVE_AUTH_ENABLED='$NATIVE_AUTH_ENABLED' \
+            NATIVE_AUTH_TOKEN_ENCRYPTION_KEY=\$(printf '%s' '$native_auth_key_b64' | base64 --decode) \
+            NATIVE_GOOGLE_AUDIENCES='$NATIVE_GOOGLE_AUDIENCES' \
+            NATIVE_APPLE_AUDIENCES='$NATIVE_APPLE_AUDIENCES' \
+            APPLE_TEAM_ID=\$(printf '%s' '$apple_team_id_b64' | base64 --decode) \
+            APPLE_KEY_ID=\$(printf '%s' '$apple_key_id_b64' | base64 --decode) \
+            APPLE_CLIENT_ID='com.locoplace.app.staging' \
+            APPLE_PRIVATE_KEY=\$(printf '%s' '$apple_private_key_b64' | base64 --decode) \
+            FCM_ENABLED='$FCM_ENABLED' \
+            FCM_PROJECT_ID=\$(printf '%s' '$fcm_project_id_b64' | base64 --decode) \
+            FCM_CLIENT_EMAIL=\$(printf '%s' '$fcm_client_email_b64' | base64 --decode) \
+            FCM_PRIVATE_KEY=\$(printf '%s' '$fcm_private_key_b64' | base64 --decode) \
+            APP_ENVIRONMENT='staging' \
+            IOS_APPLICATION_ID='com.locoplace.app.staging' \
+            ANDROID_APPLICATION_ID='com.locoplace.app.staging' \
+            ANDROID_SHA256_FINGERPRINTS='$ANDROID_SHA256_FINGERPRINTS' \
+            API_REVISION='$GITHUB_SHA' \
             ANALYTICS_ZONE_ID='$ANALYTICS_ZONE_ID' \
             COMMERCIAL_LAUNCH_AT='$COMMERCIAL_LAUNCH_AT' \
             RENTAL_MIN_STAY_DAYS='$RENTAL_MIN_STAY_DAYS' \

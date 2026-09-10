@@ -3,6 +3,7 @@ package com.cleany.referral;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
@@ -159,6 +160,7 @@ class ReferralFinancialModelIntegrationTest extends BaseIntegrationTest {
 
         return mvc.perform(post("/api/v1/cleaning/orders")
                 .header("Authorization", "tma " + initData)
+                .header("Idempotency-Key", UUID.randomUUID().toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody));
     }

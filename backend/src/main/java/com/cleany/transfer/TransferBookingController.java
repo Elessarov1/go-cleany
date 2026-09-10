@@ -11,9 +11,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
+import com.cleany.idempotency.IdempotencyService;
+import com.cleany.pagination.CursorPageResponse;
+import com.cleany.pagination.OpaqueCursorPagination;
 
 @RestController
 @RequestMapping(TransferBookingController.BASE_PATH)
@@ -23,6 +28,7 @@ public class TransferBookingController {
     static final String BASE_PATH = "/api/v1/transfer";
 
     private final TransferBookingService bookingService;
+    private final IdempotencyService idempotencyService;
 
     @GetMapping("/configuration")
     public TransferConfigurationResponse configuration() {
@@ -31,9 +37,13 @@ public class TransferBookingController {
 
     @PostMapping("/bookings")
     public ResponseEntity<TransferBookingResponse> create(
+            @RequestHeader(name = "Idempotency-Key") String idempotencyKey,
             @Valid @RequestBody CreateTransferBookingRequest request
     ) {
-        TransferBookingResponse booking = bookingService.create(request);
+        TransferBookingResponse booking = idempotencyService.execute(idempotencyKey,
+                "CREATE_TRANSFER_BOOKING", request, "TRANSFER_BOOKING",
+                () -> bookingService.create(request), TransferBookingResponse::id,
+                bookingService::currentCustomerBooking);
         return ResponseEntity.created(URI.create(BASE_PATH + "/bookings/" + booking.id()))
                 .body(booking);
     }
@@ -44,8 +54,12 @@ public class TransferBookingController {
     }
 
     @GetMapping("/bookings")
-    public List<TransferBookingResponse> bookings() {
-        return bookingService.currentCustomerBookings();
+    public CursorPageResponse<TransferBookingResponse> bookings(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) Integer size
+    ) {
+        return OpaqueCursorPagination.descending(bookingService.currentCustomerBookings(), cursor, size,
+                TransferBookingResponse::createdAt, TransferBookingResponse::id, booking -> booking);
     }
 
     @GetMapping("/bookings/{bookingId}")

@@ -1,7 +1,6 @@
 package com.cleany.order;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.retention.DataRetentionProperties;
@@ -18,15 +17,12 @@ public class CleaningOrderCustomerNotificationQueryService {
     private final CleaningOrderIssuePhotoRepository issuePhotoRepository;
     private final DataRetentionProperties dataRetentionProperties;
 
-    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
+    @Transactional(readOnly = true)
     public CleaningOrderCustomerNotification.Completed completed(long orderId) {
         CleaningOrder order = findOrder(orderId);
         var mediaIds = completionPhotoRepository.findAllByOrderIdOrderByCreatedAt(orderId).stream()
                 .map(CleaningOrderPhoto::getMediaAssetId)
                 .toList();
-        if (mediaIds.isEmpty()) {
-            throw new PhotoReportEmptyException(orderId);
-        }
         return new CleaningOrderCustomerNotification.Completed(
                 order.getId(),
                 order.getApartmentType(),
@@ -39,7 +35,7 @@ public class CleaningOrderCustomerNotificationQueryService {
         );
     }
 
-    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
+    @Transactional(readOnly = true)
     public CleaningOrderCustomerNotification.OnsiteIssueReported onsiteIssue(long orderId) {
         CleaningOrderIssueReport report = issueReportRepository
                 .findByOrder_IdAndSubmittedAtIsNotNull(orderId)

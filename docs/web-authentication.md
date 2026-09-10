@@ -86,20 +86,22 @@ where customer_id = <CUSTOMER_ID>
 страница предлагает **Продолжить через Google**; обычный authenticated customer получает нейтральную
 страницу «не найдено». Backend всё равно отдельно защищает каждый `/api/v1/admin/**` запрос.
 
-Выход выполняется через `POST /api/v1/auth/logout`, инвалидирует JDBC session и удаляет session/CSRF
-cookies. Текущая сессия доступна через `GET /api/v1/auth/me`; DTO содержит только внутренний customer,
-display name, provider, platform roles и признак доступности login provider без его credentials.
+React выполняет выход через общий `DELETE /api/v1/auth/sessions/current`. Для browser/TMA он
+инвалидирует JDBC session и session/CSRF cookies; для bearer-клиента также отзываются текущая
+first-party session и связанный communication endpoint. Текущая сессия доступна через
+`GET /api/v1/auth/me`; DTO содержит только внутренний customer, display name, provider, platform roles
+и признак доступности login provider без его credentials.
 
 ## Явное связывание Google и Telegram
 
-Автоматического слияния Telegram и Google нет. Совпадение email, телефона, имени или username не
-считается доказательством владения. Authenticated Google-пользователь создаёт в `/account` одноразовую ссылку,
-затем владение Telegram подтверждается подписанным TMA init data и явным действием. Raw token содержит 256 бит
-случайности, живёт 10 минут, одноразовый, а в PostgreSQL хранится только SHA-256 hash.
+Автоматического слияния Telegram, Google и Apple нет. Совпадение email, телефона, имени или username
+не считается доказательством владения. Authenticated пользователь начинает отдельный LINK challenge,
+проходит повторную проверку текущей identity не старше пяти минут и отдельно доказывает владение новой
+identity. Для Telegram используется одноразовый bot handoff. Занятая identity возвращает
+`409 identity_already_linked`; данные между двумя существующими аккаунтами не переносятся.
 
-Каноническая цель — инициировавший Google `CustomerAccount`. При слиянии переносятся владение бизнес-данными,
-объединяются роли, сохраняется более ранний `createdAt`, а телефон копируется только в пустой profile. Два разных
-непустых телефона или две разные identity одного provider дают явный conflict. Unlinking в этом этапе не реализован.
+Unlink также требует свежую повторную проверку, отзывает зависимые sessions/endpoints и запрещает удалить
+последний способ входа. Каноническим владельцем остаётся инициировавший `CustomerAccount.id`.
 
 ## Активация постоянного домена и Google Login
 

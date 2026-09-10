@@ -8,27 +8,43 @@ import type {
   TransactionSupport,
 } from "../domain/support";
 import type { SupportApi } from "./SupportApi";
-import { HttpApiClient } from "./HttpApiClient";
+import { generatedWire, HttpApiClient } from "./HttpApiClient";
+import {
+  Configuration,
+  CreateSupportCaseRequestFromJSON,
+  CreateTransactionFeedbackRequestFromJSON,
+  SupportApi as GeneratedSupportApi,
+  SupportCaseToJSON,
+  TransactionSupportToJSON,
+} from "@locoplace/api-client";
 
 export class HttpSupportApi implements SupportApi {
-  constructor(private readonly client: HttpApiClient) {}
+  private readonly generated: GeneratedSupportApi;
+
+  constructor(private readonly client: HttpApiClient) {
+    this.generated = new GeneratedSupportApi(new Configuration({
+      basePath: client.basePath,
+      fetchApi: client.generatedFetch,
+    }));
+  }
 
   getTransactionSupport(service: PlatformService, sourceEntityId: number): Promise<TransactionSupport> {
-    return this.client.request(`/api/v1/account/support/sources/${service}/${sourceEntityId}`);
+    return this.client.generated(this.generated.getTransactionSupport({
+      service: service as Parameters<GeneratedSupportApi["getTransactionSupport"]>[0]["service"],
+      sourceEntityId,
+    })).then((value) => generatedWire<TransactionSupport>(TransactionSupportToJSON(value)));
   }
 
   createCase(request: CreateSupportCaseRequest): Promise<SupportCase> {
-    return this.client.request("/api/v1/account/support/cases", {
-      method: "POST",
-      body: JSON.stringify(request),
-    });
+    return this.client.generated(this.generated.createSupportCase({
+      createSupportCaseRequest: CreateSupportCaseRequestFromJSON(request),
+    })).then((value) => generatedWire<SupportCase>(SupportCaseToJSON(value)));
   }
 
   submitFeedback(request: CreateTransactionFeedbackRequest): Promise<TransactionSupport> {
-    return this.client.request("/api/v1/account/support/feedback", {
-      method: "POST",
-      body: JSON.stringify(request),
-    });
+    return this.client.generated(this.generated.submitTransactionFeedback({
+      createTransactionFeedbackRequest: CreateTransactionFeedbackRequestFromJSON(request),
+    })).then((value) => generatedWire<TransactionSupport>(TransactionSupportToJSON(value)));
   }
 
   getAdminCases(filters: Parameters<SupportApi["getAdminCases"]>[0]): Promise<AdminSupportCasePage> {

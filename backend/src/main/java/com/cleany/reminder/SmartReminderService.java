@@ -269,7 +269,7 @@ public class SmartReminderService {
             ReminderCustomerNotification notification
     ) {
         Objects.requireNonNull(notification, "notification");
-        notificationDispatcher.sendAfterCommit(
+        notificationDispatcher.sendDurably(
                 reminder.getCustomerId(),
                 communicationIdentityId,
                 notification

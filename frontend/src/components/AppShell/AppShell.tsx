@@ -68,10 +68,7 @@ export function AppShell() {
         .catch(() => navigate("/", { replace: true }));
       return;
     }
-    const accountLinkPath = `/account/link/telegram?token=${encodeURIComponent(startParameter)}`;
-    if (`${location.pathname}${location.search}` !== accountLinkPath) {
-      void navigate(accountLinkPath, { replace: true });
-    }
+    void navigate("/", { replace: true });
   }, [customerApi, location.pathname, location.search, navigate, platform]);
 
   const admin = location.pathname.startsWith("/admin");

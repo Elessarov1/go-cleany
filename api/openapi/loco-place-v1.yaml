@@ -1,0 +1,2039 @@
+openapi: 3.1.0
+info:
+  title: Loco Place Public API
+  version: 1.0.0-rc.1
+  description: |
+    Channel-neutral public contract for web, Telegram Mini App and native clients.
+    Unknown enum values must be preserved by generated clients as UNKNOWN rather than causing decoding failure.
+servers:
+  - url: https://loco-place.com
+tags:
+  - name: Authentication
+  - name: Account
+  - name: Client
+  - name: Platform
+  - name: Support
+  - name: Cleaning
+  - name: Rental
+  - name: Transfer
+paths:
+  /api/v1/acquisition/telegram:
+    post:
+      tags: [Client]
+      operationId: captureTelegramAcquisition
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TelegramAcquisitionRequest' }
+      responses:
+        '200':
+          description: Safe local entry target for the captured campaign
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AcquisitionCapture' }
+  /api/v1/auth/tma/session:
+    post:
+      tags: [Authentication]
+      operationId: createTmaSession
+      security: [{ tmaBootstrap: [] }]
+      responses:
+        '204': { description: Cookie session created }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/v1/auth/me:
+    get:
+      tags: [Authentication]
+      operationId: getCurrentAuthentication
+      security: []
+      responses:
+        '200':
+          description: Current first-party or anonymous browser authentication state
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CurrentAuthentication' }
+  /api/v1/auth/csrf:
+    get:
+      tags: [Authentication]
+      operationId: getCsrfToken
+      security: []
+      responses:
+        '200':
+          description: Cookie-session CSRF header and token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CsrfToken' }
+  /api/v1/auth/native/challenges:
+    post:
+      tags: [Authentication]
+      operationId: createNativeChallenge
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateNativeChallengeRequest' }
+      responses:
+        '200':
+          description: Nonce-bound login challenge
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NativeChallenge' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /api/v1/auth/native/google:
+    post:
+      tags: [Authentication]
+      operationId: loginWithGoogle
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NativeProviderLoginRequest' }
+      responses:
+        '200':
+          description: First-party native credentials
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionTokens' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/v1/auth/native/apple:
+    post:
+      tags: [Authentication]
+      operationId: loginWithApple
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NativeProviderLoginRequest' }
+      responses:
+        '200':
+          description: First-party native credentials
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionTokens' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/v1/auth/native/telegram/attempts:
+    post:
+      tags: [Authentication]
+      operationId: createTelegramLoginAttempt
+      security: []
+      responses:
+        '200':
+          description: One-time bot handoff
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TelegramLoginAttempt' }
+  /api/v1/auth/native/telegram/attempts/{attemptId}/exchange:
+    post:
+      tags: [Authentication]
+      operationId: exchangeTelegramLoginAttempt
+      security: []
+      parameters:
+        - name: attemptId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [verifier, clientType]
+              properties:
+                verifier: { type: string, minLength: 1 }
+                clientType: { type: string, enum: [IOS, ANDROID, UNKNOWN] }
+      responses:
+        '200':
+          description: First-party native credentials
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionTokens' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/v1/auth/sessions/refresh:
+    post:
+      tags: [Authentication]
+      operationId: refreshSession
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string, pattern: '^lp_rt_' }
+      responses:
+        '200':
+          description: Rotated credentials
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionTokens' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/v1/auth/sessions/current:
+    delete:
+      tags: [Authentication]
+      operationId: logoutCurrentSession
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      responses:
+        '204': { description: Current session revoked }
+  /api/v1/auth/sessions:
+    delete:
+      tags: [Authentication]
+      operationId: revokeAllSessions
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      responses:
+        '204': { description: Every customer session revoked }
+  /api/v1/account/identities:
+    get:
+      tags: [Account]
+      operationId: getAccountIdentities
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      responses:
+        '200':
+          description: Linked login methods
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccountIdentities' }
+  /api/v1/account/identity-links:
+    post:
+      tags: [Account]
+      operationId: createIdentityLink
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [provider]
+              properties:
+                provider: { $ref: '#/components/schemas/IdentityProvider' }
+      responses:
+        '200':
+          description: Link challenge
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdentityLinkAttempt' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/account/identity-links/{id}/verify:
+    post:
+      tags: [Account]
+      operationId: verifyIdentityLink
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/UuidId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VerifyIdentityLinkRequest' }
+      responses:
+        '204': { description: Target identity proved }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/account/identity-links/{id}/confirm:
+    post:
+      tags: [Account]
+      operationId: confirmIdentityLink
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/UuidId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConfirmIdentityLinkRequest' }
+      responses:
+        '200':
+          description: Identity linked
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccountIdentities' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/account/identities/{identityId}:
+    delete:
+      tags: [Account]
+      operationId: unlinkIdentity
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters:
+        - name: identityId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SensitiveProof' }
+      responses:
+        '200':
+          description: Identity unlinked
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccountIdentities' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/account/deletion-requests:
+    post:
+      tags: [Account]
+      operationId: createAccountDeletionRequest
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      responses:
+        '200':
+          description: Fresh-auth challenge
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReauthenticationChallenge' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/account/deletion-requests/{id}/confirm:
+    post:
+      tags: [Account]
+      operationId: confirmAccountDeletion
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/UuidId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SensitiveProof' }
+      responses:
+        '204': { description: Account tombstoned and PII removed }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/account/notification-preferences:
+    get:
+      tags: [Account]
+      operationId: getNotificationPreferences
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      responses:
+        '200':
+          description: Preferences
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationPreferences' }
+    patch:
+      tags: [Account]
+      operationId: updateNotificationPreferences
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NotificationPreferences' }
+      responses:
+        '200':
+          description: Updated preferences
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationPreferences' }
+  /api/v1/account/communication-endpoints:
+    post:
+      tags: [Account]
+      operationId: registerCommunicationEndpoint
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterCommunicationEndpointRequest' }
+      responses:
+        '200':
+          description: Endpoint registered
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CommunicationEndpoint' }
+    delete:
+      tags: [Account]
+      operationId: unregisterCommunicationEndpoint
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Endpoint detached from current session }
+  /api/v1/account/communication-endpoints/{id}:
+    delete:
+      tags: [Account]
+      operationId: unregisterCommunicationEndpointById
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/UuidId' }]
+      responses:
+        '204': { description: Endpoint detached }
+  /api/v1/account/notifications:
+    get:
+      tags: [Account]
+      operationId: getNotifications
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema: { type: string }
+        - name: size
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        '200':
+          description: Stable newest-first notification page
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationCursorPage' }
+  /api/v1/account/notifications/unread-count:
+    get:
+      tags: [Account]
+      operationId: getNotificationUnreadCount
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      responses:
+        '200':
+          description: Current unread notification count
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationUnreadCount' }
+  /api/v1/account/notifications/{notificationId}/read:
+    post:
+      tags: [Account]
+      operationId: markNotificationRead
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '204': { description: Notification marked read }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/account/notifications/read-all:
+    post:
+      tags: [Account]
+      operationId: markAllNotificationsRead
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      responses:
+        '204': { description: Every customer notification marked read }
+  /api/v1/account/activity:
+    get:
+      tags: [Account]
+      operationId: getCustomerActivity
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      responses:
+        '200':
+          description: Cross-service active tasks and history
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerActivity' }
+  /api/v1/account/home:
+    get:
+      tags: [Account]
+      operationId: getCustomerHome
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      responses:
+        '200':
+          description: Contextual customer home read model
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerHome' }
+  /api/v1/customers/me:
+    get:
+      tags: [Account]
+      operationId: getCustomerProfile
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      responses:
+        '200':
+          description: Current customer profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerProfile' }
+  /api/v1/catalog/services:
+    get:
+      tags: [Platform]
+      operationId: getPlatformServices
+      security: []
+      responses:
+        '200':
+          description: Services visible to the current customer context
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PlatformServiceState' }
+  /api/v1/client/configuration:
+    get:
+      tags: [Client]
+      operationId: getClientConfiguration
+      security: []
+      responses:
+        '200':
+          description: Public client compatibility settings
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClientConfiguration' }
+  /api/v1/cleaning/orders:
+    get:
+      tags: [Cleaning]
+      operationId: getCleaningOrders
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Stable newest-first Cleaning order page
+          content: { application/json: { schema: { $ref: '#/components/schemas/CleaningOrderCursorPage' } } }
+    post:
+      tags: [Cleaning]
+      operationId: createCleaningOrder
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CreateCleaningOrderRequest' } } }
+      responses:
+        '201':
+          description: Cleaning order created
+          content: { application/json: { schema: { $ref: '#/components/schemas/CleaningOrder' } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/cleaning/configuration:
+    get:
+      tags: [Cleaning]
+      operationId: getCleaningConfiguration
+      security: []
+      responses:
+        '200':
+          description: Cleaning form and pricing configuration
+          content: { application/json: { schema: { $ref: '#/components/schemas/CleaningConfiguration' } } }
+  /api/v1/cleaning/orders/quote:
+    post:
+      tags: [Cleaning]
+      operationId: quoteCleaningOrder
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CleaningOrderQuoteRequest' } } }
+      responses:
+        '200':
+          description: Authoritative Cleaning quote
+          content: { application/json: { schema: { $ref: '#/components/schemas/CleaningOrderQuote' } } }
+  /api/v1/cleaning/orders/{orderId}:
+    get:
+      tags: [Cleaning]
+      operationId: getCleaningOrder
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/OrderId' }]
+      responses:
+        '200':
+          description: Customer-owned Cleaning order
+          content: { application/json: { schema: { $ref: '#/components/schemas/CleaningOrder' } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/cleaning/orders/{orderId}/repeat-shown:
+    post:
+      tags: [Cleaning]
+      operationId: recordCleaningRepeatShown
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/OrderId' }]
+      responses: { '204': { description: Repeat opportunity impression recorded } }
+  /api/v1/cleaning/orders/{orderId}/repeat-prefill:
+    post:
+      tags: [Cleaning]
+      operationId: getCleaningRepeatPrefill
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/OrderId' }]
+      responses:
+        '200':
+          description: Verified repeat-order context
+          content: { application/json: { schema: { $ref: '#/components/schemas/CleaningRepeatPrefill' } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/cleaning/orders/{orderId}/repeat-reminder:
+    get:
+      tags: [Cleaning]
+      operationId: getCleaningRepeatReminder
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/OrderId' }]
+      responses:
+        '200':
+          description: Current repeat reminder selection
+          content: { application/json: { schema: { $ref: '#/components/schemas/CleaningRepeatReminder' } } }
+    put:
+      tags: [Cleaning]
+      operationId: updateCleaningRepeatReminder
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/OrderId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CleaningRepeatReminderRequest' } } }
+      responses:
+        '200':
+          description: Updated repeat reminder selection
+          content: { application/json: { schema: { $ref: '#/components/schemas/CleaningRepeatReminder' } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/cleaning/orders/{orderId}/cancel:
+    post:
+      tags: [Cleaning]
+      operationId: cancelCleaningOrder
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/OrderId' }]
+      responses:
+        '200':
+          description: Cancelled Cleaning order
+          content: { application/json: { schema: { $ref: '#/components/schemas/CleaningOrder' } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/cleaning/orders/{orderId}/report:
+    get:
+      tags: [Cleaning]
+      operationId: getCleaningReport
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/OrderId' }]
+      responses:
+        '200':
+          description: Retained completion report metadata
+          content: { application/json: { schema: { $ref: '#/components/schemas/CleaningReport' } } }
+        '410': { $ref: '#/components/responses/Gone' }
+  /api/v1/cleaning/orders/{orderId}/report/photos/{mediaId}:
+    get:
+      tags: [Cleaning]
+      operationId: getCleaningReportPhoto
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+        - $ref: '#/components/parameters/MediaId'
+      responses:
+        '200':
+          description: Customer-owned private report photo; never publicly cacheable
+          headers:
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            image/*: { schema: { type: string, format: binary } }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '410': { $ref: '#/components/responses/Gone' }
+  /api/v1/referrals/me:
+    get:
+      tags: [Cleaning]
+      operationId: getCleaningReferralSummary
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      responses:
+        '200':
+          description: Cleaning referral state for the current customer
+          content: { application/json: { schema: { $ref: '#/components/schemas/ReferralSummary' } } }
+  /api/v1/rental/bookings:
+    get:
+      tags: [Rental]
+      operationId: getRentalBookings
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Stable newest-first Rental booking page
+          content: { application/json: { schema: { $ref: '#/components/schemas/RentalBookingCursorPage' } } }
+    post:
+      tags: [Rental]
+      operationId: createRentalBooking
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CreateRentalBookingRequest' } } }
+      responses:
+        '201':
+          description: Rental booking created
+          content: { application/json: { schema: { $ref: '#/components/schemas/RentalBooking' } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/rental/configuration:
+    get:
+      tags: [Rental]
+      operationId: getRentalConfiguration
+      security: []
+      responses:
+        '200':
+          description: Rental stay policy and client limits
+          content: { application/json: { schema: { $ref: '#/components/schemas/RentalConfiguration' } } }
+  /api/v1/rental/search:
+    get:
+      tags: [Rental]
+      operationId: searchRentalProperties
+      security: []
+      parameters:
+        - { name: termType, in: query, required: false, schema: { $ref: '#/components/schemas/RentalTermType' } }
+        - { name: checkInDate, in: query, required: false, schema: { type: string, format: date } }
+        - { name: checkOutDate, in: query, required: false, schema: { type: string, format: date } }
+        - { name: months, in: query, required: false, schema: { type: integer, minimum: 1 } }
+        - { name: guests, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100 } }
+        - { name: X-Rental-Previous-Search-Id, in: header, required: false, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Public Rental search result; response is not cacheable
+          content: { application/json: { schema: { $ref: '#/components/schemas/RentalSearch' } } }
+  /api/v1/rental/searches/{executionId}/opened:
+    post:
+      tags: [Rental]
+      operationId: recordRentalSearchOpened
+      security: []
+      parameters: [{ $ref: '#/components/parameters/ExecutionId' }]
+      responses: { '204': { description: Search-opened signal accepted } }
+  /api/v1/rental/searches/{executionId}/first-card:
+    post:
+      tags: [Rental]
+      operationId: recordRentalFirstCard
+      security: []
+      parameters: [{ $ref: '#/components/parameters/ExecutionId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/RentalFirstCardRequest' } } }
+      responses: { '204': { description: First-card performance signal accepted } }
+  /api/v1/rental/properties/{slug}:
+    get:
+      tags: [Rental]
+      operationId: getRentalProperty
+      security: []
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Published Rental property
+          content: { application/json: { schema: { $ref: '#/components/schemas/RentalProperty' } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/rental/properties/{propertyId}/availability:
+    get:
+      tags: [Rental]
+      operationId: getRentalAvailability
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/PropertyId'
+        - { name: fromDate, in: query, required: true, schema: { type: string, format: date } }
+        - { name: toDate, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: Unavailable date ranges within the requested interval
+          content: { application/json: { schema: { $ref: '#/components/schemas/RentalAvailability' } } }
+  /api/v1/rental/properties/{propertyId}/quote:
+    get:
+      tags: [Rental]
+      operationId: quoteRentalProperty
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/PropertyId'
+        - { name: termType, in: query, required: true, schema: { $ref: '#/components/schemas/RentalTermType' } }
+        - { name: checkInDate, in: query, required: true, schema: { type: string, format: date } }
+        - { name: checkOutDate, in: query, required: false, schema: { type: string, format: date } }
+        - { name: months, in: query, required: false, schema: { type: integer, minimum: 1 } }
+        - { name: guests, in: query, required: true, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses:
+        '200':
+          description: Authoritative Rental quote; response is not cacheable
+          content: { application/json: { schema: { $ref: '#/components/schemas/RentalQuote' } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/rental/properties/{propertyId}/media/{mediaId}:
+    get:
+      tags: [Rental]
+      operationId: getRentalPropertyMedia
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/PropertyId'
+        - $ref: '#/components/parameters/MediaId'
+        - { name: v, in: query, required: false, schema: { type: integer, format: int64 } }
+      responses:
+        '200':
+          description: Public full-size Rental media
+          content: { image/*: { schema: { type: string, format: binary } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/rental/properties/{propertyId}/media/{mediaId}/{variant}:
+    get:
+      tags: [Rental]
+      operationId: getRentalPropertyMediaVariant
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/PropertyId'
+        - $ref: '#/components/parameters/MediaId'
+        - { name: variant, in: path, required: true, schema: { type: string, enum: [card, thumbnail] } }
+        - { name: v, in: query, required: false, schema: { type: integer, format: int64 } }
+      responses:
+        '200':
+          description: Public card or thumbnail Rental media
+          content: { image/*: { schema: { type: string, format: binary } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/rental/bookings/{bookingId}:
+    get:
+      tags: [Rental]
+      operationId: getRentalBooking
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/BookingId' }]
+      responses:
+        '200':
+          description: Customer-owned Rental booking
+          content: { application/json: { schema: { $ref: '#/components/schemas/RentalBooking' } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/rental/bookings/{bookingId}/cleaning-context:
+    get:
+      tags: [Rental]
+      operationId: getRentalCleaningContext
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/BookingId' }]
+      responses:
+        '200':
+          description: Verified Rental-to-Cleaning context and benefit
+          content: { application/json: { schema: { $ref: '#/components/schemas/RentalCleaningContext' } } }
+  /api/v1/rental/bookings/{bookingId}/transfer-context:
+    get:
+      tags: [Rental]
+      operationId: getRentalTransferContext
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/BookingId' }]
+      responses:
+        '200':
+          description: Verified Rental-to-Transfer options
+          content: { application/json: { schema: { $ref: '#/components/schemas/RentalTransferContext' } } }
+  /api/v1/rental/bookings/{bookingId}/transfer-context/{context}/shown:
+    post:
+      tags: [Rental]
+      operationId: recordRentalTransferContextShown
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+        - $ref: '#/components/parameters/RentalTransferContext'
+      responses: { '204': { description: Contextual action impression recorded } }
+  /api/v1/rental/bookings/{bookingId}/transfer-context/{context}/prefill:
+    post:
+      tags: [Rental]
+      operationId: getRentalTransferPrefill
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+        - $ref: '#/components/parameters/RentalTransferContext'
+      responses:
+        '200':
+          description: Verified Transfer prefill from Rental
+          content: { application/json: { schema: { $ref: '#/components/schemas/RentalTransferPrefill' } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/rental/bookings/{bookingId}/cancel:
+    post:
+      tags: [Rental]
+      operationId: cancelRentalBooking
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/BookingId' }]
+      responses:
+        '200':
+          description: Cancelled Rental booking
+          content: { application/json: { schema: { $ref: '#/components/schemas/RentalBooking' } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/transfer/bookings:
+    get:
+      tags: [Transfer]
+      operationId: getTransferBookings
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Stable newest-first Transfer booking page
+          content: { application/json: { schema: { $ref: '#/components/schemas/TransferBookingCursorPage' } } }
+    post:
+      tags: [Transfer]
+      operationId: createTransferBooking
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CreateTransferBookingRequest' } } }
+      responses:
+        '201':
+          description: Transfer booking created
+          content: { application/json: { schema: { $ref: '#/components/schemas/TransferBooking' } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/transfer/configuration:
+    get:
+      tags: [Transfer]
+      operationId: getTransferConfiguration
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      responses:
+        '200':
+          description: Transfer airports, vehicles, prices and date policy
+          content: { application/json: { schema: { $ref: '#/components/schemas/TransferConfiguration' } } }
+  /api/v1/transfer/quote:
+    post:
+      tags: [Transfer]
+      operationId: quoteTransfer
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/TransferQuoteRequest' } } }
+      responses:
+        '200':
+          description: Authoritative Transfer quote
+          content: { application/json: { schema: { $ref: '#/components/schemas/TransferQuote' } } }
+  /api/v1/transfer/bookings/{bookingId}:
+    get:
+      tags: [Transfer]
+      operationId: getTransferBooking
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/BookingId' }]
+      responses:
+        '200':
+          description: Customer-owned Transfer booking
+          content: { application/json: { schema: { $ref: '#/components/schemas/TransferBooking' } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/transfer/bookings/{bookingId}/repeat-shown:
+    post:
+      tags: [Transfer]
+      operationId: recordTransferRepeatShown
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/BookingId' }]
+      responses: { '204': { description: Repeat opportunity impression recorded } }
+  /api/v1/transfer/bookings/{bookingId}/repeat-prefill:
+    post:
+      tags: [Transfer]
+      operationId: getTransferRepeatPrefill
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/BookingId' }]
+      responses:
+        '200':
+          description: Verified repeat Transfer context
+          content: { application/json: { schema: { $ref: '#/components/schemas/TransferRepeatPrefill' } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/transfer/bookings/{bookingId}/cancel:
+    post:
+      tags: [Transfer]
+      operationId: cancelTransferBooking
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters: [{ $ref: '#/components/parameters/BookingId' }]
+      responses:
+        '200':
+          description: Cancelled Transfer booking
+          content: { application/json: { schema: { $ref: '#/components/schemas/TransferBooking' } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/account/support/sources/{service}/{sourceEntityId}:
+    get:
+      tags: [Support]
+      operationId: getTransactionSupport
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Service'
+        - { name: sourceEntityId, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200':
+          description: Feedback and support state attached to an owned transaction
+          content: { application/json: { schema: { $ref: '#/components/schemas/TransactionSupport' } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/account/support/cases:
+    post:
+      tags: [Support]
+      operationId: createSupportCase
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CreateSupportCaseRequest' } } }
+      responses:
+        '200':
+          description: Existing open support case returned idempotently
+          content: { application/json: { schema: { $ref: '#/components/schemas/SupportCase' } } }
+        '201':
+          description: Support case created
+          content: { application/json: { schema: { $ref: '#/components/schemas/SupportCase' } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/account/support/feedback:
+    post:
+      tags: [Support]
+      operationId: submitTransactionFeedback
+      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CreateTransactionFeedbackRequest' } } }
+      responses:
+        '200':
+          description: Updated transaction support state
+          content: { application/json: { schema: { $ref: '#/components/schemas/TransactionSupport' } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+components:
+  parameters:
+    UuidId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, minLength: 8, maxLength: 200 }
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema: { type: string }
+    PageSize:
+      name: size
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    BookingId:
+      name: bookingId
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    PropertyId:
+      name: propertyId
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    MediaId:
+      name: mediaId
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    ExecutionId:
+      name: executionId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    RentalTransferContext:
+      name: context
+      in: path
+      required: true
+      schema: { type: string, enum: [ARRIVAL, CHECKOUT] }
+    Service:
+      name: service
+      in: path
+      required: true
+      schema: { type: string, enum: [CLEANING, RENTAL, TRANSFER] }
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+      description: First-party opaque access token. Provider credentials are never accepted here.
+    cookieSession:
+      type: apiKey
+      in: cookie
+      name: SESSION
+      description: Browser/TMA HttpOnly session. Mutations also require X-XSRF-TOKEN.
+    tmaBootstrap:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Authorization header uses `tma <initData>` only for the TMA session exchange.
+  responses:
+    BadRequest:
+      description: Invalid request
+      content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+    Unauthorized:
+      description: Authentication failed
+      content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+    Conflict:
+      description: Business or security conflict
+      content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+    NotFound:
+      description: Resource not found
+      content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+    Gone:
+      description: Retained private resource has expired
+      content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+  schemas:
+    TelegramAcquisitionRequest:
+      type: object
+      required: [publicCode]
+      properties:
+        publicCode: { type: string, minLength: 1, maxLength: 64 }
+    AcquisitionCapture:
+      type: object
+      required: [targetPath]
+      properties:
+        targetPath:
+          type: string
+          pattern: '^/(?!/)'
+          description: Legacy channel-entry redirect, not a business read-model action.
+    IdentityProvider:
+      type: string
+      enum: [GOOGLE, APPLE, TELEGRAM, UNKNOWN]
+    CurrentAuthentication:
+      type: object
+      required: [authenticated, roles, loginProviders]
+      properties:
+        authenticated: { type: boolean }
+        customerId: { type: [integer, 'null'], format: int64 }
+        displayName: { type: [string, 'null'] }
+        provider:
+          anyOf:
+            - { $ref: '#/components/schemas/IdentityProvider' }
+            - { type: 'null' }
+        roles:
+          type: array
+          uniqueItems: true
+          items: { type: string, enum: [ADMIN, UNKNOWN] }
+        loginProviders: { $ref: '#/components/schemas/LoginProviders' }
+    LoginProviders:
+      type: object
+      required: [google]
+      properties:
+        google: { $ref: '#/components/schemas/LoginProviderAvailability' }
+    LoginProviderAvailability:
+      type: object
+      required: [available]
+      properties:
+        available: { type: boolean }
+    CsrfToken:
+      type: object
+      required: [headerName, token]
+      properties:
+        headerName: { type: string, minLength: 1 }
+        token: { type: string, minLength: 1 }
+    CreateNativeChallengeRequest:
+      type: object
+      required: [provider, clientType]
+      properties:
+        provider: { $ref: '#/components/schemas/IdentityProvider' }
+        clientType: { type: string, enum: [IOS, ANDROID, UNKNOWN] }
+    NativeChallenge:
+      type: object
+      required: [challengeId, provider, nonce, expiresAt]
+      properties:
+        challengeId: { type: string, format: uuid }
+        provider: { $ref: '#/components/schemas/IdentityProvider' }
+        nonce: { type: string }
+        expiresAt: { type: string, format: date-time }
+    NativeProviderLoginRequest:
+      type: object
+      required: [challengeId, clientType, identityToken]
+      properties:
+        challengeId: { type: string, format: uuid }
+        clientType: { type: string, enum: [IOS, ANDROID, UNKNOWN] }
+        identityToken: { type: string }
+        authorizationCode: { type: [string, 'null'] }
+    SessionTokens:
+      type: object
+      required: [sessionId, tokenType, accessToken, refreshToken, accessExpiresAt, refreshExpiresAt, absoluteExpiresAt]
+      properties:
+        sessionId: { type: string, format: uuid }
+        tokenType: { type: string, const: Bearer }
+        accessToken: { type: string, pattern: '^lp_at_' }
+        refreshToken: { type: string, pattern: '^lp_rt_' }
+        accessExpiresAt: { type: string, format: date-time }
+        refreshExpiresAt: { type: string, format: date-time }
+        absoluteExpiresAt: { type: string, format: date-time }
+    TelegramLoginAttempt:
+      type: object
+      required: [attemptId, botUrl, verifier, expiresAt]
+      properties:
+        attemptId: { type: string, format: uuid }
+        botUrl: { type: string, format: uri }
+        verifier: { type: string }
+        expiresAt: { type: string, format: date-time }
+    AccountIdentity:
+      type: object
+      required: [identityId, provider, issuer, linked, writeAccessAllowed]
+      properties:
+        identityId: { type: integer, format: int64 }
+        provider: { $ref: '#/components/schemas/IdentityProvider' }
+        issuer: { type: string, format: uri }
+        linked: { type: boolean }
+        username: { type: [string, 'null'] }
+        writeAccessAllowed: { type: boolean }
+    AccountIdentities:
+      type: object
+      required: [identities]
+      properties:
+        identities:
+          type: array
+          items: { $ref: '#/components/schemas/AccountIdentity' }
+    IdentityLinkAttempt:
+      type: object
+      required: [id, provider, expiresAt]
+      properties:
+        id: { type: string, format: uuid }
+        provider: { $ref: '#/components/schemas/IdentityProvider' }
+        nonce: { type: [string, 'null'] }
+        reauthenticationNonce: { type: string }
+        telegramDeepLink: { type: [string, 'null'], format: uri }
+        expiresAt: { type: string, format: date-time }
+    VerifyIdentityLinkRequest:
+      type: object
+      properties:
+        identityToken: { type: [string, 'null'] }
+        authorizationCode: { type: [string, 'null'] }
+    ConfirmIdentityLinkRequest:
+      type: object
+      properties:
+        identityToken: { type: [string, 'null'] }
+        telegramInitData: { type: [string, 'null'] }
+    SensitiveProof:
+      type: object
+      required: [challengeId]
+      properties:
+        challengeId: { type: string, format: uuid }
+        identityToken: { type: [string, 'null'] }
+        telegramInitData: { type: [string, 'null'] }
+    ReauthenticationChallenge:
+      type: object
+      required: [id, provider, expiresAt]
+      properties:
+        id: { type: string, format: uuid }
+        provider: { $ref: '#/components/schemas/IdentityProvider' }
+        nonce: { type: [string, 'null'] }
+        expiresAt: { type: string, format: date-time }
+    NotificationPreferences:
+      type: object
+      required: [telegramEnabled, pushEnabled]
+      properties:
+        telegramEnabled: { type: boolean }
+        pushEnabled: { type: boolean }
+    RegisterCommunicationEndpointRequest:
+      type: object
+      required: [platform, registrationToken, installationId]
+      properties:
+        platform: { type: string, enum: [IOS, ANDROID, UNKNOWN] }
+        registrationToken: { type: string, minLength: 1, maxLength: 4096 }
+        installationId: { type: string, minLength: 1, maxLength: 128 }
+        locale: { type: [string, 'null'], maxLength: 16 }
+        appVersion: { type: [string, 'null'], maxLength: 32 }
+    CommunicationEndpoint:
+      type: object
+      required: [id, type, platform, active]
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string, enum: [FCM, TELEGRAM, UNKNOWN] }
+        platform: { type: string, enum: [IOS, ANDROID, TELEGRAM, UNKNOWN] }
+        installationId: { type: [string, 'null'] }
+        active: { type: boolean }
+    ClientConfiguration:
+      type: object
+      required: [environment, iosApplicationId, androidApplicationId, minimumIosVersion, minimumAndroidVersion, apiRevision]
+      properties:
+        environment: { type: string }
+        iosApplicationId: { type: string }
+        androidApplicationId: { type: string }
+        minimumIosVersion: { type: string }
+        minimumAndroidVersion: { type: string }
+        apiRevision: { type: string }
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount: { type: string, pattern: '^-?[0-9]+(?:\.[0-9]{1,2})?$' }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+    CleaningConfiguration:
+      type: object
+      required: [areas, apartmentTypes, duplexSurcharges, bookingDaysAhead, currency]
+      properties:
+        areas:
+          type: array
+          items: { type: string, enum: [MAHMUTLAR, KARGICAK, KESTEL, UNKNOWN] }
+        apartmentTypes:
+          type: array
+          items: { $ref: '#/components/schemas/ApartmentPrice' }
+        duplexSurcharges:
+          type: object
+          additionalProperties: { type: number }
+        bookingDaysAhead: { type: integer, minimum: 1 }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+    ApartmentPrice:
+      type: object
+      required: [type, regularPrice, deepPrice]
+      properties:
+        type: { type: string, enum: [STUDIO, ONE_PLUS_ONE, TWO_PLUS_ONE, THREE_PLUS_ONE, FOUR_PLUS_ONE, UNKNOWN] }
+        regularPrice: { type: number }
+        deepPrice: { type: number }
+    CleaningOrderQuoteRequest:
+      type: object
+      required: [apartmentType, duplex, cleaningType]
+      properties:
+        apartmentType: { type: string, enum: [STUDIO, ONE_PLUS_ONE, TWO_PLUS_ONE, THREE_PLUS_ONE, FOUR_PLUS_ONE, UNKNOWN] }
+        duplex: { type: boolean }
+        cleaningType: { type: string, enum: [REGULAR, DEEP, UNKNOWN] }
+        referralCode: { type: [string, 'null'], maxLength: 32 }
+        requestedDate: { type: [string, 'null'], format: date }
+        rentalCleaningPromoCode: { type: [string, 'null'], maxLength: 32 }
+    CleaningOrderQuote:
+      type: object
+      required: [basePrice, customerDiscount, finalCustomerPrice, customerDiscountType, currency]
+      properties:
+        basePrice: { type: number }
+        customerDiscount: { type: number }
+        finalCustomerPrice: { type: number }
+        customerDiscountType: { type: string }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+    CleaningReportPhoto:
+      type: object
+      required: [id, url]
+      properties:
+        id: { type: integer, format: int64 }
+        url: { type: string }
+    CleaningReport:
+      type: object
+      required: [status, retentionDays, photos]
+      properties:
+        status: { type: string, enum: [NOT_READY, AVAILABLE, EXPIRED, UNKNOWN] }
+        expiresAt: { type: [string, 'null'], format: date-time }
+        retentionDays: { type: integer, minimum: 0 }
+        cleanerComment: { type: [string, 'null'] }
+        photos:
+          type: array
+          items: { $ref: '#/components/schemas/CleaningReportPhoto' }
+    CleaningOrder:
+      type: object
+      required: [id, communicationIdentityId, customerName, phone, area, address, apartmentType,
+                 duplex, cleaningType, price, basePrice, customerDiscount, finalCustomerPrice,
+                 customerDiscountType, currency, requestedDate, status, createdAt, money]
+      properties:
+        id: { type: integer, format: int64 }
+        communicationIdentityId: { type: integer, format: int64 }
+        customerName: { type: string }
+        phone: { type: string }
+        area: { type: string, enum: [MAHMUTLAR, KARGICAK, KESTEL, UNKNOWN] }
+        address: { type: string }
+        apartmentType: { type: string, enum: [STUDIO, ONE_PLUS_ONE, TWO_PLUS_ONE, THREE_PLUS_ONE, FOUR_PLUS_ONE, UNKNOWN] }
+        duplex: { type: boolean }
+        cleaningType: { type: string, enum: [REGULAR, DEEP, UNKNOWN] }
+        price: { type: number }
+        basePrice: { type: number }
+        customerDiscount: { type: number }
+        finalCustomerPrice: { type: number }
+        customerDiscountType: { type: string }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        requestedDate: { type: string, format: date }
+        customerComment: { type: [string, 'null'] }
+        cleanerComment: { type: [string, 'null'] }
+        cleanerTelegramUserId: { type: [integer, 'null'], format: int64 }
+        status:
+          type: string
+          enum: [NEW, ACCEPTED, AWAITING_REPORT, ONSITE_ISSUE_REPORTED, COMPLETED, REJECTED, CANCELLED, UNKNOWN]
+        createdAt: { type: string, format: date-time }
+        acceptedAt: { type: [string, 'null'], format: date-time }
+        completedAt: { type: [string, 'null'], format: date-time }
+        report:
+          oneOf:
+            - $ref: '#/components/schemas/CleaningReport'
+            - type: 'null'
+        money: { $ref: '#/components/schemas/Money' }
+    CleaningOrderCursorPage:
+      type: object
+      required: [items, hasMore]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/CleaningOrder' }
+        nextCursor: { type: [string, 'null'] }
+        hasMore: { type: boolean }
+    CleaningRepeatPrefill:
+      type: object
+      required: [sourceOrderId, area, address, apartmentType, duplex, cleaningType]
+      properties:
+        sourceOrderId: { type: integer, format: int64 }
+        area: { type: string, enum: [MAHMUTLAR, KARGICAK, KESTEL, UNKNOWN] }
+        address: { type: string }
+        apartmentType: { type: string, enum: [STUDIO, ONE_PLUS_ONE, TWO_PLUS_ONE, THREE_PLUS_ONE, FOUR_PLUS_ONE, UNKNOWN] }
+        duplex: { type: boolean }
+        cleaningType: { type: string, enum: [REGULAR, DEEP, UNKNOWN] }
+    CleaningRepeatReminderRequest:
+      type: object
+      required: [selection]
+      properties:
+        selection: { type: string, enum: [IN_14_DAYS, IN_30_DAYS, DO_NOT_REMIND] }
+    CleaningRepeatReminder:
+      type: object
+      required: [editable]
+      properties:
+        selection: { type: [string, 'null'], enum: [IN_14_DAYS, IN_30_DAYS, DO_NOT_REMIND, UNKNOWN, null] }
+        status: { type: [string, 'null'], enum: [PENDING, NOTIFIED, DISABLED, SUPERSEDED, EXPIRED, UNKNOWN, null] }
+        scheduledDate: { type: [string, 'null'], format: date }
+        notifiedAt: { type: [string, 'null'], format: date-time }
+        editable: { type: boolean }
+    ReferralSummary:
+      type: object
+      required: [availableRewards, referralProgramUnlocked]
+      properties:
+        referralCode: { type: [string, 'null'] }
+        availableRewards: { type: integer, format: int64, minimum: 0 }
+        referralProgramUnlocked: { type: boolean }
+    CreateCleaningOrderRequest:
+      type: object
+      required: [area, address, apartmentType, duplex, cleaningType, requestedDate, phone]
+      properties:
+        area: { type: string, enum: [MAHMUTLAR, KARGICAK, KESTEL, UNKNOWN] }
+        address: { type: string, minLength: 1, maxLength: 1000 }
+        apartmentType: { type: string, enum: [STUDIO, ONE_PLUS_ONE, TWO_PLUS_ONE, THREE_PLUS_ONE, FOUR_PLUS_ONE, UNKNOWN] }
+        duplex: { type: boolean }
+        cleaningType: { type: string, enum: [REGULAR, DEEP, UNKNOWN] }
+        requestedDate: { type: string, format: date }
+        phone: { type: string, minLength: 1, maxLength: 40 }
+        comment: { type: [string, 'null'], maxLength: 1000 }
+        referralCode: { type: [string, 'null'], maxLength: 32 }
+        rentalCleaningPromoCode: { type: [string, 'null'], maxLength: 32 }
+        repeatFromOrderId: { type: [integer, 'null'], format: int64, minimum: 1 }
+    CreateRentalBookingRequest:
+      type: object
+      required: [propertyId, termType, checkInDate, guests, phone, expectedTotalPrice, expectedCurrency]
+      properties:
+        propertyId: { type: integer, format: int64, minimum: 1 }
+        termType: { $ref: '#/components/schemas/RentalTermType' }
+        checkInDate: { type: string, format: date }
+        checkOutDate: { type: [string, 'null'], format: date }
+        months: { type: [integer, 'null'], minimum: 1 }
+        guests: { type: integer, minimum: 1, maximum: 100 }
+        phone: { type: string, minLength: 1, maxLength: 40 }
+        comment: { type: [string, 'null'], maxLength: 1000 }
+        expectedTotalPrice:
+          type: number
+          minimum: 0
+          description: Legacy optimistic-price input; response money always uses the Money object.
+        expectedCurrency: { type: string, pattern: '^[A-Z]{3}$' }
+        searchExecutionId: { type: [string, 'null'], format: uuid }
+    RentalTermType:
+      type: string
+      enum: [DATE_RANGE, MONTHLY, UNKNOWN]
+    RentalConfiguration:
+      type: object
+      required: [minStayDays, longTermMinDays, longTermDiscountRate, maxStayDays,
+                 bookingStartMonthsAhead, maxActiveBookingsPerCustomer, today, latestCheckInDate]
+      properties:
+        minStayDays: { type: integer, minimum: 1 }
+        longTermMinDays: { type: integer, minimum: 1 }
+        longTermDiscountRate: { type: number, minimum: 0 }
+        maxStayDays: { type: integer, minimum: 1 }
+        bookingStartMonthsAhead: { type: integer, minimum: 1 }
+        maxActiveBookingsPerCustomer: { type: integer, minimum: 1 }
+        today: { type: string, format: date }
+        latestCheckInDate: { type: string, format: date }
+    RentalFirstCardRequest:
+      type: object
+      required: [durationMs]
+      properties:
+        durationMs: { type: integer, format: int64, minimum: 0, maximum: 600000 }
+    RentalPropertyMedia:
+      type: object
+      required: [id, mediaAssetId, sortOrder, cover, url, cardUrl, thumbnailUrl]
+      properties:
+        id: { type: integer, format: int64 }
+        mediaAssetId: { type: integer, format: int64 }
+        sortOrder: { type: integer }
+        cover: { type: boolean }
+        url: { type: string }
+        cardUrl: { type: string }
+        thumbnailUrl: { type: string }
+    RentalProperty:
+      type: object
+      required: [id, slug, titleRu, titleEn, descriptionEn, area, address, apartmentNumber,
+                 bedrooms, beds, bathrooms, maxGuests, areaSqm, floor, baseDailyPrice, currency,
+                 displayOrder, status, amenities, media, createdAt, updatedAt]
+      properties:
+        id: { type: integer, format: int64 }
+        slug: { type: [string, 'null'] }
+        titleRu: { type: [string, 'null'] }
+        titleEn: { type: [string, 'null'] }
+        descriptionEn: { type: [string, 'null'] }
+        area: { type: [string, 'null'] }
+        address: { type: [string, 'null'] }
+        apartmentNumber: { type: [string, 'null'] }
+        bedrooms: { type: [integer, 'null'] }
+        beds: { type: [integer, 'null'] }
+        bathrooms: { type: [integer, 'null'] }
+        maxGuests: { type: [integer, 'null'] }
+        areaSqm: { type: [number, 'null'] }
+        floor: { type: [integer, 'null'] }
+        baseDailyPrice: { type: [number, 'null'] }
+        currency: { type: [string, 'null'] }
+        displayOrder: { type: integer }
+        status: { type: string, enum: [DRAFT, PUBLISHED, ARCHIVED, UNKNOWN] }
+        amenities:
+          type: array
+          items:
+            type: string
+            enum: [WIFI, AIR_CONDITIONING, WASHING_MACHINE, DISHWASHER, BALCONY, SEA_VIEW,
+                   POOL, PARKING, ELEVATOR, WORKSPACE, TV, KITCHEN, UNKNOWN]
+        media:
+          type: array
+          items: { $ref: '#/components/schemas/RentalPropertyMedia' }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    RentalAvailabilityRange:
+      type: object
+      required: [startDate, endDate]
+      properties:
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+    RentalAvailability:
+      type: object
+      required: [propertyId, fromDate, toDate, unavailableRanges]
+      properties:
+        propertyId: { type: integer, format: int64 }
+        fromDate: { type: string, format: date }
+        toDate: { type: string, format: date }
+        unavailableRanges:
+          type: array
+          items: { $ref: '#/components/schemas/RentalAvailabilityRange' }
+    RentalBookingProperty:
+      type: object
+      required: [id, slug, titleRu, titleEn, area]
+      properties:
+        id: { type: integer, format: int64 }
+        slug: { type: string }
+        titleRu: { type: [string, 'null'] }
+        titleEn: { type: string }
+        area: { type: string }
+    RentalSearchCriteria:
+      type: object
+      required: [mode, termType, checkInDate, checkOutDate, rentalMonths, durationDays, guests]
+      properties:
+        mode: { type: string, enum: [DATE_RANGE, MONTHLY, BROWSE_ALL, UNKNOWN] }
+        termType:
+          oneOf:
+            - $ref: '#/components/schemas/RentalTermType'
+            - type: 'null'
+        checkInDate: { type: [string, 'null'], format: date }
+        checkOutDate: { type: [string, 'null'], format: date }
+        rentalMonths: { type: [integer, 'null'] }
+        durationDays: { type: [integer, 'null'] }
+        guests: { type: [integer, 'null'] }
+    RentalPrice:
+      type: object
+      required: [baseDailyPrice, baseMonthlyPrice, monthlyPrice, baseAmount, discountRate,
+                 discountAmount, longTermDiscountApplied, totalPrice, currency, rentalMonths, durationDays]
+      properties:
+        baseDailyPrice: { type: number }
+        baseMonthlyPrice: { type: [number, 'null'] }
+        monthlyPrice: { type: [number, 'null'] }
+        baseAmount: { type: number }
+        discountRate: { type: number }
+        discountAmount: { type: number }
+        longTermDiscountApplied: { type: boolean }
+        totalPrice: { type: number }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        rentalMonths: { type: [integer, 'null'] }
+        durationDays: { type: integer }
+    RentalQuote:
+      type: object
+      required: [property, criteria, price]
+      properties:
+        property: { $ref: '#/components/schemas/RentalBookingProperty' }
+        criteria: { $ref: '#/components/schemas/RentalSearchCriteria' }
+        price: { $ref: '#/components/schemas/RentalPrice' }
+    RentalSearchProperty:
+      type: object
+      required: [id, slug, titleRu, titleEn, descriptionEn, area, bedrooms, maxGuests,
+                 areaSqm, baseDailyPrice, currency, coverUrl, price]
+      properties:
+        id: { type: integer, format: int64 }
+        slug: { type: string }
+        titleRu: { type: [string, 'null'] }
+        titleEn: { type: string }
+        descriptionEn: { type: [string, 'null'] }
+        area: { type: string }
+        bedrooms: { type: integer }
+        maxGuests: { type: integer }
+        areaSqm: { type: number }
+        baseDailyPrice: { type: number }
+        currency: { type: string }
+        coverUrl: { type: [string, 'null'] }
+        price:
+          oneOf:
+            - $ref: '#/components/schemas/RentalPrice'
+            - type: 'null'
+    RentalSearch:
+      type: object
+      required: [searchExecutionId, criteria, calculatedAt, properties]
+      properties:
+        searchExecutionId: { type: string, format: uuid }
+        criteria: { $ref: '#/components/schemas/RentalSearchCriteria' }
+        calculatedAt: { type: string, format: date-time }
+        properties:
+          type: array
+          items: { $ref: '#/components/schemas/RentalSearchProperty' }
+    RentalBooking:
+      type: object
+      required: [id, property, termType, checkInDate, checkOutDate, rentalMonths, durationDays,
+                 customerName, phone, guests, comment, baseDailyPriceSnapshot,
+                 baseMonthlyPriceSnapshot, monthlyPriceSnapshot, longTermDiscountRateSnapshot,
+                 discountAmount, totalPrice, currency, status, createdAt, cancelledAt,
+                 cancellationReason, completedAt, money]
+      properties:
+        id: { type: integer, format: int64 }
+        property: { $ref: '#/components/schemas/RentalBookingProperty' }
+        termType: { $ref: '#/components/schemas/RentalTermType' }
+        checkInDate: { type: string, format: date }
+        checkOutDate: { type: string, format: date }
+        rentalMonths: { type: [integer, 'null'] }
+        durationDays: { type: integer }
+        customerName: { type: string }
+        phone: { type: string }
+        guests: { type: integer }
+        comment: { type: [string, 'null'] }
+        baseDailyPriceSnapshot: { type: number }
+        baseMonthlyPriceSnapshot: { type: [number, 'null'] }
+        monthlyPriceSnapshot: { type: [number, 'null'] }
+        longTermDiscountRateSnapshot: { type: number }
+        discountAmount: { type: number }
+        totalPrice: { type: number }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        status: { type: string, enum: [CONFIRMED, CANCELLED_BY_CUSTOMER, CANCELLED_BY_ADMIN, COMPLETED, UNKNOWN] }
+        createdAt: { type: string, format: date-time }
+        cancelledAt: { type: [string, 'null'], format: date-time }
+        cancellationReason: { type: [string, 'null'] }
+        completedAt: { type: [string, 'null'], format: date-time }
+        money: { $ref: '#/components/schemas/Money' }
+    RentalBookingCursorPage:
+      type: object
+      required: [items, hasMore]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/RentalBooking' }
+        nextCursor: { type: [string, 'null'] }
+        hasMore: { type: boolean }
+    RentalCleaningContext:
+      type: object
+      required: [rentalBookingId, address, phone, checkOutDate, earliestBenefitCleaningDate,
+                 benefitStatus, promoCode, cleaningFlowAvailable]
+      properties:
+        rentalBookingId: { type: integer, format: int64 }
+        address: { type: string }
+        phone: { type: string }
+        checkOutDate: { type: string, format: date }
+        earliestBenefitCleaningDate: { type: string, format: date }
+        benefitStatus: { type: [string, 'null'], enum: [AVAILABLE, RESERVED, REDEEMED, REVOKED, UNKNOWN, null] }
+        promoCode: { type: [string, 'null'] }
+        cleaningFlowAvailable: { type: boolean }
+    RentalTransferContextOption:
+      type: object
+      required: [context, availability, direction, suggestedDate, address, availableFromDate, benefit]
+      properties:
+        context: { type: string, enum: [ARRIVAL, CHECKOUT, UNKNOWN] }
+        availability: { type: string, enum: [BOOKABLE, AVAILABLE_LATER, UNKNOWN] }
+        direction: { type: string, enum: [TO_AIRPORT, FROM_AIRPORT, UNKNOWN] }
+        suggestedDate: { type: string, format: date }
+        address: { type: string }
+        availableFromDate: { type: [string, 'null'], format: date }
+        benefit:
+          oneOf:
+            - $ref: '#/components/schemas/RentalTransferBenefit'
+            - type: 'null'
+    RentalTransferContext:
+      type: object
+      required: [rentalBookingId, transferFlowAvailable, options]
+      properties:
+        rentalBookingId: { type: integer, format: int64 }
+        transferFlowAvailable: { type: boolean }
+        options:
+          type: array
+          items: { $ref: '#/components/schemas/RentalTransferContextOption' }
+    RentalTransferPrefill:
+      type: object
+      required: [rentalBookingId, context, direction, suggestedDate, address, benefit]
+      properties:
+        rentalBookingId: { type: integer, format: int64 }
+        context: { type: string, enum: [ARRIVAL, CHECKOUT, UNKNOWN] }
+        direction: { type: string, enum: [TO_AIRPORT, FROM_AIRPORT, UNKNOWN] }
+        suggestedDate: { type: string, format: date }
+        address: { type: string }
+        benefit:
+          oneOf:
+            - $ref: '#/components/schemas/RentalTransferBenefit'
+            - type: 'null'
+    RentalTransferSourceRequest:
+      type: object
+      required: [bookingId, context]
+      properties:
+        bookingId: { type: integer, format: int64, minimum: 1 }
+        context: { type: string, enum: [ARRIVAL, CHECKOUT, UNKNOWN] }
+    CreateTransferBookingRequest:
+      type: object
+      required: [direction, airportId, vehicleTypeId, pickupDate, pickupTime, address,
+                 passengerCount, luggageCount, phone]
+      properties:
+        direction: { type: string, enum: [TO_AIRPORT, FROM_AIRPORT, UNKNOWN] }
+        airportId: { type: integer, format: int64, minimum: 1 }
+        vehicleTypeId: { type: integer, format: int64, minimum: 1 }
+        pickupDate: { type: string, format: date }
+        pickupTime: { type: string, format: time }
+        address: { type: string, minLength: 1, maxLength: 1000 }
+        passengerCount: { type: integer, minimum: 1, maximum: 50 }
+        luggageCount: { type: integer, minimum: 0, maximum: 50 }
+        flightNumber: { type: [string, 'null'], maxLength: 64 }
+        scheduledArrivalTime: { type: [string, 'null'], format: time }
+        phone: { type: string, minLength: 1, maxLength: 40 }
+        comment: { type: [string, 'null'], maxLength: 1000 }
+        repeatFromBookingId: { type: [integer, 'null'], format: int64, minimum: 1 }
+        rentalSource:
+          oneOf:
+            - $ref: '#/components/schemas/RentalTransferSourceRequest'
+            - type: 'null'
+        benefit: { type: [string, 'null'], enum: [RENTAL_FIRST_TRANSFER, UNKNOWN, null] }
+    TransferQuoteRequest:
+      type: object
+      required: [direction, airportId, vehicleTypeId]
+      properties:
+        direction: { type: string, enum: [TO_AIRPORT, FROM_AIRPORT, UNKNOWN] }
+        airportId: { type: integer, format: int64, minimum: 1 }
+        vehicleTypeId: { type: integer, format: int64, minimum: 1 }
+        rentalSource:
+          oneOf:
+            - $ref: '#/components/schemas/RentalTransferSourceRequest'
+            - type: 'null'
+        benefit: { type: [string, 'null'], enum: [RENTAL_FIRST_TRANSFER, UNKNOWN, null] }
+    TransferQuote:
+      type: object
+      required: [baseAmount, discountAmount, payableAmount, currency, appliedBenefit]
+      properties:
+        baseAmount: { type: number }
+        discountAmount: { type: number }
+        payableAmount: { type: number }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        appliedBenefit: { type: [string, 'null'], enum: [RENTAL_FIRST_TRANSFER, UNKNOWN, null] }
+    TransferAirport:
+      type: object
+      required: [id, code, nameRu, nameEn]
+      properties:
+        id: { type: integer, format: int64 }
+        code: { type: string }
+        nameRu: { type: string }
+        nameEn: { type: string }
+    TransferVehicleType:
+      type: object
+      required: [id, code, nameRu, nameEn, maxPassengers, maxLuggage]
+      properties:
+        id: { type: integer, format: int64 }
+        code: { type: string }
+        nameRu: { type: string }
+        nameEn: { type: string }
+        maxPassengers: { type: integer }
+        maxLuggage: { type: integer }
+    TransferPrice:
+      type: object
+      required: [airportId, vehicleTypeId, direction, amount, currency]
+      properties:
+        airportId: { type: integer, format: int64 }
+        vehicleTypeId: { type: integer, format: int64 }
+        direction: { type: string, enum: [TO_AIRPORT, FROM_AIRPORT, UNKNOWN] }
+        amount: { type: number }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+    TransferConfiguration:
+      type: object
+      required: [earliestBookingDate, latestBookingDate, timeSlotMinutes, airports, vehicleTypes, prices]
+      properties:
+        earliestBookingDate: { type: string, format: date }
+        latestBookingDate: { type: string, format: date }
+        timeSlotMinutes: { type: integer, minimum: 1 }
+        airports:
+          type: array
+          items: { $ref: '#/components/schemas/TransferAirport' }
+        vehicleTypes:
+          type: array
+          items: { $ref: '#/components/schemas/TransferVehicleType' }
+        prices:
+          type: array
+          items: { $ref: '#/components/schemas/TransferPrice' }
+    TransferBooking:
+      type: object
+      required: [id, direction, airportCode, airportNameRu, airportNameEn, vehicleCode,
+                 vehicleNameRu, vehicleNameEn, pickupDate, pickupTime, address, passengerCount,
+                 luggageCount, flightNumber, scheduledArrivalTime, customerName, phone, comment,
+                 basePriceAmount, discountAmount, priceAmount, priceCurrency, appliedBenefit,
+                 benefitRate, status, driverId, driverName, createdAt, confirmedAt, completedAt,
+                 cancelledAt, rejectedAt, statusReason, money]
+      properties:
+        id: { type: integer, format: int64 }
+        direction: { type: string, enum: [TO_AIRPORT, FROM_AIRPORT, UNKNOWN] }
+        airportCode: { type: string }
+        airportNameRu: { type: string }
+        airportNameEn: { type: string }
+        vehicleCode: { type: string }
+        vehicleNameRu: { type: string }
+        vehicleNameEn: { type: string }
+        pickupDate: { type: string, format: date }
+        pickupTime: { type: string, format: time }
+        address: { type: string }
+        passengerCount: { type: integer }
+        luggageCount: { type: integer }
+        flightNumber: { type: [string, 'null'] }
+        scheduledArrivalTime: { type: [string, 'null'], format: time }
+        customerName: { type: string }
+        phone: { type: string }
+        comment: { type: [string, 'null'] }
+        basePriceAmount: { type: number }
+        discountAmount: { type: number }
+        priceAmount: { type: number }
+        priceCurrency: { type: string, pattern: '^[A-Z]{3}$' }
+        appliedBenefit: { type: [string, 'null'], enum: [RENTAL_FIRST_TRANSFER, UNKNOWN, null] }
+        benefitRate: { type: [number, 'null'] }
+        status: { type: string, enum: [REQUESTED, CONFIRMED, COMPLETED, CANCELLED, REJECTED, UNKNOWN] }
+        driverId: { type: [integer, 'null'], format: int64 }
+        driverName: { type: [string, 'null'] }
+        createdAt: { type: string, format: date-time }
+        confirmedAt: { type: [string, 'null'], format: date-time }
+        completedAt: { type: [string, 'null'], format: date-time }
+        cancelledAt: { type: [string, 'null'], format: date-time }
+        rejectedAt: { type: [string, 'null'], format: date-time }
+        statusReason: { type: [string, 'null'] }
+        money: { $ref: '#/components/schemas/Money' }
+    TransferBookingCursorPage:
+      type: object
+      required: [items, hasMore]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/TransferBooking' }
+        nextCursor: { type: [string, 'null'] }
+        hasMore: { type: boolean }
+    TransferRepeatPrefill:
+      type: object
+      required: [sourceBookingId, direction, airportId, vehicleTypeId, address, passengerCount, luggageCount]
+      properties:
+        sourceBookingId: { type: integer, format: int64 }
+        direction: { type: string, enum: [TO_AIRPORT, FROM_AIRPORT, UNKNOWN] }
+        airportId: { type: [integer, 'null'], format: int64 }
+        vehicleTypeId: { type: [integer, 'null'], format: int64 }
+        address: { type: string }
+        passengerCount: { type: integer }
+        luggageCount: { type: integer }
+    CreateSupportCaseRequest:
+      type: object
+      required: [service, sourceEntityId, category]
+      properties:
+        service: { type: string, enum: [CLEANING, RENTAL, TRANSFER] }
+        sourceEntityId: { type: integer, format: int64, minimum: 1 }
+        category: { type: string, enum: [PROVIDER_LATE, PROVIDER_NO_SHOW, QUALITY_PROBLEM, BOOKING_PROBLEM, OTHER] }
+        description: { type: [string, 'null'], maxLength: 2000 }
+    CreateTransactionFeedbackRequest:
+      type: object
+      required: [service, sourceEntityId, outcome]
+      properties:
+        service: { type: string, enum: [CLEANING, RENTAL, TRANSFER] }
+        sourceEntityId: { type: integer, format: int64, minimum: 1 }
+        outcome: { type: string, enum: [GOOD, PROBLEM] }
+        category: { type: [string, 'null'], enum: [PROVIDER_LATE, PROVIDER_NO_SHOW, QUALITY_PROBLEM, BOOKING_PROBLEM, OTHER, null] }
+        comment: { type: [string, 'null'], maxLength: 2000 }
+    SupportCase:
+      type: object
+      required: [id, service, sourceEntityId, category, status, description, createdAt, resolvedAt, resolutionComment]
+      properties:
+        id: { type: integer, format: int64 }
+        service: { type: string, enum: [CLEANING, RENTAL, TRANSFER, UNKNOWN] }
+        sourceEntityId: { type: integer, format: int64 }
+        category: { type: string, enum: [PROVIDER_LATE, PROVIDER_NO_SHOW, QUALITY_PROBLEM, BOOKING_PROBLEM, OTHER, UNKNOWN] }
+        status: { type: string, enum: [OPEN, RESOLVED, UNKNOWN] }
+        description: { type: [string, 'null'] }
+        createdAt: { type: string, format: date-time }
+        resolvedAt: { type: [string, 'null'], format: date-time }
+        resolutionComment: { type: [string, 'null'] }
+    TransactionFeedback:
+      type: object
+      required: [id, outcome, category, comment, supportCaseId, createdAt]
+      properties:
+        id: { type: integer, format: int64 }
+        outcome: { type: string, enum: [GOOD, PROBLEM, UNKNOWN] }
+        category: { type: [string, 'null'], enum: [PROVIDER_LATE, PROVIDER_NO_SHOW, QUALITY_PROBLEM, BOOKING_PROBLEM, OTHER, UNKNOWN, null] }
+        comment: { type: [string, 'null'] }
+        supportCaseId: { type: [integer, 'null'], format: int64 }
+        createdAt: { type: string, format: date-time }
+    TransactionSupport:
+      type: object
+      required: [service, sourceEntityId, feedbackEligible, feedback, latestCase]
+      properties:
+        service: { type: string, enum: [CLEANING, RENTAL, TRANSFER, UNKNOWN] }
+        sourceEntityId: { type: integer, format: int64 }
+        feedbackEligible: { type: boolean }
+        feedback:
+          oneOf:
+            - $ref: '#/components/schemas/TransactionFeedback'
+            - type: 'null'
+        latestCase:
+          oneOf:
+            - $ref: '#/components/schemas/SupportCase'
+            - type: 'null'
+    ActionTarget:
+      oneOf:
+        - $ref: '#/components/schemas/OpenTransactionAction'
+        - $ref: '#/components/schemas/OpenCleaningHistoryAction'
+        - $ref: '#/components/schemas/RepeatCleaningAction'
+        - $ref: '#/components/schemas/RepeatTransferAction'
+        - $ref: '#/components/schemas/StartRentalCleaningAction'
+        - $ref: '#/components/schemas/StartRentalTransferAction'
+        - $ref: '#/components/schemas/OpenAdminTransactionAction'
+        - $ref: '#/components/schemas/OpenSupportCaseAction'
+      discriminator:
+        propertyName: type
+        mapping:
+          OPEN_TRANSACTION: '#/components/schemas/OpenTransactionAction'
+          OPEN_CLEANING_HISTORY: '#/components/schemas/OpenCleaningHistoryAction'
+          REPEAT_CLEANING: '#/components/schemas/RepeatCleaningAction'
+          REPEAT_TRANSFER: '#/components/schemas/RepeatTransferAction'
+          START_RENTAL_CLEANING: '#/components/schemas/StartRentalCleaningAction'
+          START_RENTAL_TRANSFER: '#/components/schemas/StartRentalTransferAction'
+          OPEN_ADMIN_TRANSACTION: '#/components/schemas/OpenAdminTransactionAction'
+          OPEN_SUPPORT_CASE: '#/components/schemas/OpenSupportCaseAction'
+    OpenTransactionAction:
+      type: object
+      required: [type, service, entityId]
+      properties:
+        type: { type: string, const: OPEN_TRANSACTION }
+        service: { type: string, enum: [CLEANING, RENTAL, TRANSFER, UNKNOWN] }
+        entityId: { type: integer, format: int64 }
+    OpenCleaningHistoryAction:
+      type: object
+      required: [type]
+      properties: { type: { type: string, const: OPEN_CLEANING_HISTORY } }
+    RepeatCleaningAction:
+      type: object
+      required: [type, sourceOrderId]
+      properties:
+        type: { type: string, const: REPEAT_CLEANING }
+        sourceOrderId: { type: integer, format: int64 }
+    RepeatTransferAction:
+      type: object
+      required: [type, sourceBookingId]
+      properties:
+        type: { type: string, const: REPEAT_TRANSFER }
+        sourceBookingId: { type: integer, format: int64 }
+    StartRentalCleaningAction:
+      type: object
+      required: [type, rentalBookingId]
+      properties:
+        type: { type: string, const: START_RENTAL_CLEANING }
+        rentalBookingId: { type: integer, format: int64 }
+    StartRentalTransferAction:
+      type: object
+      required: [type, rentalBookingId, context]
+      properties:
+        type: { type: string, const: START_RENTAL_TRANSFER }
+        rentalBookingId: { type: integer, format: int64 }
+        context: { type: string, enum: [ARRIVAL, CHECKOUT, UNKNOWN] }
+    OpenAdminTransactionAction:
+      type: object
+      required: [type, service, entityId]
+      properties:
+        type: { type: string, const: OPEN_ADMIN_TRANSACTION }
+        service: { type: string, enum: [CLEANING, RENTAL, TRANSFER, UNKNOWN] }
+        entityId: { type: integer, format: int64 }
+    OpenSupportCaseAction:
+      type: object
+      required: [type, caseId]
+      properties:
+        type: { type: string, const: OPEN_SUPPORT_CASE }
+        caseId: { type: integer, format: int64 }
+    CustomerNotification:
+      type: object
+      required: [id, type, action, createdAt]
+      properties:
+        id: { type: integer, format: int64 }
+        type: { type: string }
+        action: { $ref: '#/components/schemas/ActionTarget' }
+        createdAt: { type: string, format: date-time }
+        readAt: { type: [string, 'null'], format: date-time }
+    CustomerActivityItem:
+      type: object
+      required: [service, entityId, status, titleRu, titleEn, subtitleRu, subtitleEn,
+                 scheduledDate, occurredAt, money, action]
+      properties:
+        service: { type: string, enum: [CLEANING, RENTAL, TRANSFER, UNKNOWN] }
+        entityId: { type: integer, format: int64 }
+        status: { type: string }
+        titleRu: { type: string }
+        titleEn: { type: string }
+        subtitleRu: { type: string }
+        subtitleEn: { type: string }
+        scheduledDate: { type: string, format: date }
+        scheduledEndDate: { type: [string, 'null'], format: date }
+        scheduledTime: { type: [string, 'null'], format: time }
+        occurredAt: { type: string, format: date-time }
+        money: { $ref: '#/components/schemas/Money' }
+        action: { $ref: '#/components/schemas/ActionTarget' }
+    CustomerActivity:
+      type: object
+      required: [activeAndUpcoming, history]
+      properties:
+        activeAndUpcoming:
+          type: array
+          items: { $ref: '#/components/schemas/CustomerActivityItem' }
+        history:
+          type: array
+          items: { $ref: '#/components/schemas/CustomerActivityItem' }
+    CustomerProfile:
+      type: object
+      required: [phone]
+      properties:
+        phone: { type: [string, 'null'] }
+    PlatformServiceState:
+      type: object
+      required: [service, status, displayOrder, updatedAt, version]
+      properties:
+        service: { type: string, enum: [CLEANING, RENTAL, TRANSFER, UNKNOWN] }
+        status: { type: string, enum: [ENABLED, IN_TEST, DISABLED, UNKNOWN] }
+        displayOrder: { type: integer }
+        updatedAt: { type: string, format: date-time }
+        updatedByCustomerId: { type: [integer, 'null'], format: int64 }
+        version: { type: integer, format: int64 }
+    RentalTransferBenefit:
+      type: object
+      required: [type, discountRate]
+      properties:
+        type: { type: string, const: RENTAL_FIRST_TRANSFER }
+        discountRate: { type: number }
+    CustomerHomePrimaryAction:
+      type: object
+      required: [type, sourceService, sourceEntityId, targetService, relevantDate, action]
+      properties:
+        type:
+          type: string
+          enum: [RENTAL_TRANSFER_ARRIVAL, RENTAL_TRANSFER_CHECKOUT, RENTAL_CLEANING, UNKNOWN]
+        sourceService: { type: string, enum: [CLEANING, RENTAL, TRANSFER, UNKNOWN] }
+        sourceEntityId: { type: integer, format: int64 }
+        targetService: { type: string, enum: [CLEANING, RENTAL, TRANSFER, UNKNOWN] }
+        relevantDate: { type: string, format: date }
+        eligibleFrom: { type: [string, 'null'], format: date }
+        expiresOn: { type: [string, 'null'], format: date }
+        action: { $ref: '#/components/schemas/ActionTarget' }
+        benefit:
+          oneOf:
+            - $ref: '#/components/schemas/RentalTransferBenefit'
+            - type: 'null'
+    CustomerHomeRepeatOpportunity:
+      type: object
+      required: [service, sourceEntityId, sourceCompletedAt, action]
+      properties:
+        service: { type: string, enum: [CLEANING, RENTAL, TRANSFER, UNKNOWN] }
+        sourceEntityId: { type: integer, format: int64 }
+        sourceCompletedAt: { type: string, format: date-time }
+        action: { $ref: '#/components/schemas/ActionTarget' }
+    CustomerHome:
+      type: object
+      required: [hasActivity, activeTransactionCount]
+      properties:
+        hasActivity: { type: boolean }
+        activeTransaction:
+          oneOf:
+            - $ref: '#/components/schemas/CustomerActivityItem'
+            - type: 'null'
+        activeTransactionCount: { type: integer, minimum: 0 }
+        primaryAction:
+          oneOf:
+            - $ref: '#/components/schemas/CustomerHomePrimaryAction'
+            - type: 'null'
+        repeatOpportunity:
+          oneOf:
+            - $ref: '#/components/schemas/CustomerHomeRepeatOpportunity'
+            - type: 'null'
+    NotificationUnreadCount:
+      type: object
+      required: [unreadCount]
+      properties:
+        unreadCount: { type: integer, minimum: 0 }
+    NotificationCursorPage:
+      type: object
+      required: [items, hasMore]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/CustomerNotification' }
+        nextCursor: { type: [string, 'null'] }
+        hasMore: { type: boolean }
+    ApiError:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        fieldErrors:
+          type: object
+          additionalProperties: { type: string }
+        requestId: { type: string }

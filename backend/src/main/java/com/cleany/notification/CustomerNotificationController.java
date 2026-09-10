@@ -1,8 +1,5 @@
 package com.cleany.notification;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
+import com.cleany.pagination.CursorPageResponse;
 
 @Validated
 @RestController
@@ -23,11 +21,11 @@ public class CustomerNotificationController {
     private final CustomerNotificationInboxService inboxService;
 
     @GetMapping
-    public CustomerNotificationPageResponse notifications(
-            @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size
+    public CursorPageResponse<CustomerNotificationResponse> notifications(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) Integer size
     ) {
-        return inboxService.current(page, size);
+        return inboxService.current(cursor, size);
     }
 
     @GetMapping("/unread-count")

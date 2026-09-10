@@ -6,7 +6,6 @@ import java.time.Clock;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cleany.configuration.CleanerProperties;
@@ -226,7 +225,7 @@ public class OnsiteIssueService {
         return delivery(report);
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void recordCustomerNotified(long orderId, long cleanerTelegramUserId) {
         CleaningOrderIssueReport report = reportRepository.findByOrder_IdAndSubmittedAtIsNotNull(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));

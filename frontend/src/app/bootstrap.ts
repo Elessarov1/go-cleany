@@ -51,6 +51,7 @@ export async function bootstrap(): Promise<AppServices> {
   const baseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
   const normalizedBaseUrl = baseUrl?.replace(/\/$/, "") ?? "";
   const httpClient = new HttpApiClient(normalizedBaseUrl, platform);
+  await httpClient.bootstrapTmaSession();
   const api: CleaningApi = new HttpCleaningApi(httpClient);
   const customerApi: CustomerApi = new HttpCustomerApi(httpClient);
   const rentalApi: RentalApi = new HttpRentalApi(httpClient);

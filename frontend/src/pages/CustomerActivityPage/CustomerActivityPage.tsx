@@ -8,6 +8,7 @@ import { RentalBookingStatus } from "../../components/RentalBookingStatus/Rental
 import { TransferBookingStatus } from "../../components/TransferBookingStatus/TransferBookingStatus";
 import { ErrorState, LoadingState } from "../../components/PageState/PageState";
 import type { CustomerActivity, CustomerActivityItem } from "../../domain/customer";
+import { actionTargetPath } from "../../domain/action";
 import type { CleaningOrderStatus } from "../../domain/order";
 import type { RentalBookingStatus as RentalStatus } from "../../domain/rental";
 import type { TransferBookingStatus as TransferStatus } from "../../domain/transfer";
@@ -39,10 +40,10 @@ function ActivityCard({ item, historical }: { item: CustomerActivityItem; histor
   const date = item.scheduledEndDate
     ? t("activity.dateRange", { from: formatDate(item.scheduledDate, locale), to: formatDate(item.scheduledEndDate, locale) })
     : formatDate(item.scheduledDate, locale);
-  const price = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(item.amount);
+  const price = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(Number(item.money.amount));
 
   return (
-    <Link className="activity-card" to={item.targetPath}>
+    <Link className="activity-card" to={actionTargetPath(item.action)}>
       <span className={`activity-card__service activity-card__service--${item.service.toLowerCase()}`}>
         <Icon name={serviceIcon(item.service)} size={22} />
       </span>
@@ -61,7 +62,7 @@ function ActivityCard({ item, historical }: { item: CustomerActivityItem; histor
       </span>
       <span className="activity-card__aside">
         <ActivityStatus item={item} />
-        <strong>{price} {item.currency}</strong>
+        <strong>{price} {item.money.currency}</strong>
         <span className="activity-card__open">{t("activity.open")} <Icon name="arrow-right" size={17} /></span>
       </span>
     </Link>

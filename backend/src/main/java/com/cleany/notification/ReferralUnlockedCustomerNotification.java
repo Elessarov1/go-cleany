@@ -1,5 +1,7 @@
 package com.cleany.notification;
 
+import com.cleany.action.ActionTarget;
+
 public record ReferralUnlockedCustomerNotification(String referralCode) implements CustomerNotification {
 
     public ReferralUnlockedCustomerNotification {
@@ -15,8 +17,8 @@ public record ReferralUnlockedCustomerNotification(String referralCode) implemen
     }
 
     @Override
-    public String targetPath() {
-        return "/cleaning/orders";
+    public ActionTarget action() {
+        return new ActionTarget.OpenCleaningHistory();
     }
 
     @Override

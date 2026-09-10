@@ -1,5 +1,6 @@
 import type { Platform } from "../platform/Platform";
 import { ApiError } from "./ApiError";
+import { ResponseError } from "@locoplace/api-client";
 
 interface ApiErrorResponse {
   code?: string;
@@ -9,22 +10,43 @@ interface ApiErrorResponse {
 
 export class HttpApiClient {
   private csrfToken: Promise<{ headerName: string; token: string }> | null = null;
+  private tmaSessionEstablished = false;
 
   constructor(
     private readonly baseUrl: string,
     private readonly platform: Platform,
   ) {}
 
+  get basePath(): string {
+    return this.baseUrl;
+  }
+
   resolveUrl(path: string): string {
     return /^(https?:)?\/\//.test(path) ? path : `${this.baseUrl}${path}`;
+  }
+
+  async bootstrapTmaSession(): Promise<void> {
+    const authData = this.platform.getAuthData();
+    if (!authData || this.tmaSessionEstablished) return;
+    const response = await fetch(`${this.baseUrl}/api/v1/auth/tma/session`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `tma ${authData}`,
+      },
+      credentials: "include",
+    });
+    if (!response.ok) {
+      throw new ApiError(`Telegram session bootstrap failed with status ${response.status}`, response.status);
+    }
+    this.tmaSessionEstablished = true;
   }
 
   async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const headers = new Headers(init.headers);
     headers.set("Accept", "application/json");
     if (init.body && !(init.body instanceof FormData)) headers.set("Content-Type", "application/json");
-    const telegramAuthenticated = this.addAuthorization(headers);
-    if (isStateChanging(init.method) && !telegramAuthenticated) {
+    if (isStateChanging(init.method)) {
       const csrf = await this.getCsrfToken();
       headers.set(csrf.headerName, csrf.token);
     }
@@ -54,7 +76,6 @@ export class HttpApiClient {
 
   async requestBlob(path: string): Promise<Blob> {
     const headers = new Headers();
-    this.addAuthorization(headers);
     const response = await fetch(`${this.baseUrl}${path}`, {
       headers,
       credentials: "include",
@@ -63,10 +84,36 @@ export class HttpApiClient {
     return response.blob();
   }
 
-  private addAuthorization(headers: Headers): boolean {
-    const authData = this.platform.getAuthData();
-    if (authData) headers.set("Authorization", `tma ${authData}`);
-    return Boolean(authData);
+  readonly generatedFetch: typeof fetch = async (input, init = {}) => {
+    const headers = new Headers(init.headers);
+    headers.set("Accept", "application/json");
+    if (isStateChanging(init.method)) {
+      const csrf = await this.getCsrfToken();
+      headers.set(csrf.headerName, csrf.token);
+    }
+    return fetch(input, { ...init, headers, credentials: "include" });
+  };
+
+  async generated<T>(operation: Promise<T>): Promise<T> {
+    try {
+      return await operation;
+    } catch (error) {
+      if (error instanceof ResponseError) {
+        let apiError: ApiErrorResponse | null = null;
+        try {
+          apiError = (await error.response.clone().json()) as ApiErrorResponse;
+        } catch {
+          // Preserve the status even when an upstream response is not JSON.
+        }
+        throw new ApiError(
+          apiError?.message ?? `Request failed with status ${error.response.status}`,
+          error.response.status,
+          apiError?.code,
+          apiError?.fieldErrors ?? {},
+        );
+      }
+      throw error;
+    }
   }
 
   private getCsrfToken(): Promise<{ headerName: string; token: string }> {
@@ -89,6 +136,10 @@ export class HttpApiClient {
     }
     return this.csrfToken;
   }
+}
+
+export function generatedWire<T>(value: unknown): T {
+  return value as T;
 }
 
 function isStateChanging(method?: string): boolean {

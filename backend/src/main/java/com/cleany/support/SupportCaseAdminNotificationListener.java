@@ -24,14 +24,14 @@ public class SupportCaseAdminNotificationListener {
     private final CustomerNotificationRecorder recorder;
     private final SupportCaseNotificationQueryService queryService;
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void notifyAdmins(SupportCaseCreatedEvent event) {
         SupportCaseAdminNotification notification;
         try {
             notification = queryService.created(event.caseId());
         } catch (RuntimeException exception) {
             log.error("Support notification preparation failed for case {}", event.caseId(), exception);
-            return;
+            throw exception;
         }
         roleRepository.findAllByRole(PlatformRole.ADMIN).stream()
                 .map(role -> role.getCustomerId())
@@ -52,6 +52,7 @@ public class SupportCaseAdminNotificationListener {
                     "Support notification failed for case {} and admin {}",
                     notification.caseId(), customerId, exception
             );
+            throw exception;
         }
     }
 }

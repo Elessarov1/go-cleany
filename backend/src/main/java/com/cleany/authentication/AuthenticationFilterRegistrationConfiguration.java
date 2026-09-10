@@ -15,4 +15,13 @@ class AuthenticationFilterRegistrationConfiguration {
         registration.setEnabled(false);
         return registration;
     }
+
+    @Bean
+    FilterRegistrationBean<BearerAuthenticationFilter> bearerAuthenticationRegistration(
+            BearerAuthenticationFilter filter
+    ) {
+        var registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
 }

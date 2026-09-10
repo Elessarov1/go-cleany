@@ -22,7 +22,7 @@ public class RentalBookingCustomerNotificationListener {
     private final CustomerNotificationDispatcher dispatcher;
     private final RentalBookingNotificationQueryService queryService;
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void notifyCustomer(RentalBookingCustomerEvent event) {
         try {
             CustomerNotification notification = switch (event) {
@@ -43,6 +43,7 @@ public class RentalBookingCustomerNotificationListener {
                     event.communicationIdentityId(),
                     exception
             );
+            throw exception;
         }
     }
 }

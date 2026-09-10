@@ -1,11 +1,12 @@
 package com.cleany.customer.activity;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import com.cleany.action.ActionTarget;
 import com.cleany.catalog.PlatformService;
+import com.cleany.configuration.Money;
 
 public record CustomerActivityItem(
         PlatformService service,
@@ -19,8 +20,7 @@ public record CustomerActivityItem(
         LocalDate scheduledEndDate,
         LocalTime scheduledTime,
         Instant occurredAt,
-        BigDecimal amount,
-        String currency,
-        String targetPath
+        Money money,
+        ActionTarget action
 ) {
 }

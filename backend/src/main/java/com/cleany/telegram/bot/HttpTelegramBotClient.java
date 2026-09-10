@@ -4,13 +4,17 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.time.Duration;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
+import org.springframework.http.HttpHeaders;
 
 import com.cleany.configuration.TelegramProperties;
 
@@ -171,16 +175,50 @@ public class HttpTelegramBotClient implements TelegramBotClient {
                     .body(responseType);
             if (response == null || !response.ok()) {
                 String description = response == null ? "empty response" : response.description();
-                throw new TelegramBotApiException("Telegram " + method + " failed: " + description);
+                int status = response == null || response.errorCode() == null
+                        ? 0 : response.errorCode();
+                Duration retryAfter = response == null || response.parameters() == null
+                        || response.parameters().retryAfter() == null
+                        ? null : Duration.ofSeconds(response.parameters().retryAfter());
+                throw providerFailure(method, description, status, retryAfter);
             }
             return response;
         } catch (TelegramBotApiException exception) {
             throw exception;
+        } catch (RestClientResponseException exception) {
+            throw providerFailure(method, exception.getStatusText(),
+                    exception.getStatusCode().value(), retryAfter(exception.getResponseHeaders()));
         } catch (RestClientException exception) {
             // RestClient exception messages may contain the request URI, whose path includes the bot token.
             throw new TelegramBotApiException(
                     "Telegram " + method + " request failed: " + exception.getClass().getSimpleName()
             );
+        }
+    }
+
+    private static TelegramBotApiException providerFailure(String method, String description,
+                                                            int status, Duration retryAfter) {
+        boolean retryable = status == 0 || status == 429 || status >= 500;
+        String normalized = description == null ? "" : description.toLowerCase(java.util.Locale.ROOT);
+        boolean invalidRecipient = status == 403 || (status == 400
+                && (normalized.contains("chat not found")
+                || normalized.contains("user not found")
+                || normalized.contains("deactivated")
+                || normalized.contains("blocked")
+                || normalized.contains("kicked")));
+        return new TelegramBotApiException(
+                "Telegram " + method + " failed: " + description,
+                retryable, invalidRecipient, retryAfter);
+    }
+
+    private static Duration retryAfter(HttpHeaders headers) {
+        if (headers == null) return null;
+        String value = headers.getFirst(HttpHeaders.RETRY_AFTER);
+        if (value == null) return null;
+        try {
+            return Duration.ofSeconds(Long.parseLong(value));
+        } catch (NumberFormatException ignored) {
+            return null;
         }
     }
 
@@ -225,7 +263,13 @@ public class HttpTelegramBotClient implements TelegramBotClient {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record TelegramApiResponse(boolean ok, String description) implements ApiResponse {
+    private record TelegramApiResponse(boolean ok, String description,
+                                       @JsonProperty("error_code") Integer errorCode,
+                                       ResponseParameters parameters) implements ApiResponse {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record ResponseParameters(@JsonProperty("retry_after") Long retryAfter) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -255,5 +299,13 @@ public class HttpTelegramBotClient implements TelegramBotClient {
         boolean ok();
 
         String description();
+
+        default Integer errorCode() {
+            return null;
+        }
+
+        default ResponseParameters parameters() {
+            return null;
+        }
     }
 }

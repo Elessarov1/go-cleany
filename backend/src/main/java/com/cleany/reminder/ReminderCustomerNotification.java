@@ -3,6 +3,9 @@ package com.cleany.reminder;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import com.cleany.action.ActionTarget;
+import com.cleany.catalog.PlatformService;
+import com.cleany.crossservice.rentaltransfer.RentalTransferContextType;
 import com.cleany.notification.CustomerNotification;
 import com.cleany.notification.CustomerNotificationType;
 import com.cleany.transfer.TransferDirection;
@@ -20,8 +23,8 @@ public sealed interface ReminderCustomerNotification extends CustomerNotificatio
         }
 
         @Override
-        public String targetPath() {
-            return "/cleaning?repeatFrom=" + orderId;
+        public ActionTarget action() {
+            return new ActionTarget.RepeatCleaning(orderId);
         }
 
         @Override
@@ -41,8 +44,8 @@ public sealed interface ReminderCustomerNotification extends CustomerNotificatio
         }
 
         @Override
-        public String targetPath() {
-            return "/transfer?rentalBooking=" + rentalBookingId + "&rentalContext=CHECKOUT";
+        public ActionTarget action() {
+            return new ActionTarget.StartRentalTransfer(rentalBookingId, RentalTransferContextType.CHECKOUT);
         }
 
         @Override
@@ -65,8 +68,8 @@ public sealed interface ReminderCustomerNotification extends CustomerNotificatio
         }
 
         @Override
-        public String targetPath() {
-            return "/transfer/bookings/" + bookingId;
+        public ActionTarget action() {
+            return new ActionTarget.OpenTransaction(PlatformService.TRANSFER, bookingId);
         }
 
         @Override

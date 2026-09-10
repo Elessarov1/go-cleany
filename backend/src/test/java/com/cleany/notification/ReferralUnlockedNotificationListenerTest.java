@@ -20,13 +20,13 @@ class ReferralUnlockedNotificationListenerTest {
 
         Assertions.assertAll(
                 () -> Assertions.assertNotNull(annotation),
-                () -> Assertions.assertEquals(TransactionPhase.AFTER_COMMIT, annotation.phase()),
+                () -> Assertions.assertEquals(TransactionPhase.BEFORE_COMMIT, annotation.phase()),
                 () -> Assertions.assertFalse(annotation.fallbackExecution())
         );
     }
 
     @Test
-    void dispatcherFailure_doesNotEscapeAfterCommitListener() {
+    void durablePersistenceFailureEscapesAndRollsBackBusinessTransaction() {
         CustomerNotificationDispatcher dispatcher = Mockito.mock(CustomerNotificationDispatcher.class);
         Mockito.when(dispatcher.send(
                         Mockito.eq(77L),
@@ -35,7 +35,7 @@ class ReferralUnlockedNotificationListenerTest {
                 )).thenThrow(new IllegalStateException("Telegram unavailable"));
         var listener = new ReferralUnlockedNotificationListener(dispatcher);
 
-        Assertions.assertDoesNotThrow(
+        Assertions.assertThrows(IllegalStateException.class,
                 () -> listener.notifyCustomer(new ReferralUnlockedEvent(77L, 88L, "ALEX7K2"))
         );
 

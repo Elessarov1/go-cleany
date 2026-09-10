@@ -1,4 +1,4 @@
-export type AuthenticationProvider = "TELEGRAM" | "GOOGLE";
+export type AuthenticationProvider = "TELEGRAM" | "GOOGLE" | "APPLE";
 
 export type PlatformRole = "ADMIN";
 

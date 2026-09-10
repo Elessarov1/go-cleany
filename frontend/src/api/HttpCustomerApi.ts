@@ -1,58 +1,140 @@
 import type { AccountIdentities, AccountLinkInitiated, CustomerActivity, CustomerHome, CustomerNotificationPage, CustomerProfile } from "../domain/customer";
 import type { CustomerApi } from "./CustomerApi";
 import { HttpApiClient } from "./HttpApiClient";
+import { parseActionTarget } from "../domain/action";
+import { AccountApi, ClientApi, Configuration } from "@locoplace/api-client";
 
 export class HttpCustomerApi implements CustomerApi {
-  constructor(private readonly client: HttpApiClient) {}
+  private readonly generated: AccountApi;
+  private readonly generatedClient: ClientApi;
+
+  constructor(private readonly client: HttpApiClient) {
+    const configuration = new Configuration({
+      basePath: client.resolveUrl(""),
+      credentials: "include",
+      fetchApi: client.generatedFetch,
+    });
+    this.generated = new AccountApi(configuration);
+    this.generatedClient = new ClientApi(configuration);
+  }
 
   captureTelegramAcquisition(publicCode: string): Promise<{ targetPath: string }> {
-    return this.client.request("/api/v1/acquisition/telegram", {
-      method: "POST",
-      body: JSON.stringify({ publicCode }),
-    });
+    return this.client.generated(this.generatedClient.captureTelegramAcquisition({
+      telegramAcquisitionRequest: { publicCode },
+    }));
   }
 
   getCurrentProfile(): Promise<CustomerProfile> {
-    return this.client.request("/api/v1/customers/me");
+    return this.client.generated(this.generated.getCustomerProfile());
   }
 
-  getActivity(): Promise<CustomerActivity> {
-    return this.client.request("/api/v1/account/activity");
+  async getActivity(): Promise<CustomerActivity> {
+    const result = await this.client.generated(this.generated.getCustomerActivity());
+    return {
+      activeAndUpcoming: result.activeAndUpcoming.map(parseGeneratedActivityItem),
+      history: result.history.map(parseGeneratedActivityItem),
+    };
   }
 
-  getHome(): Promise<CustomerHome> {
-    return this.client.request("/api/v1/account/home");
+  async getHome(): Promise<CustomerHome> {
+    const result = await this.client.generated(this.generated.getCustomerHome());
+    return {
+      hasActivity: result.hasActivity,
+      activeTransactionCount: result.activeTransactionCount,
+      activeTransaction: result.activeTransaction
+        ? parseGeneratedActivityItem(result.activeTransaction)
+        : null,
+      primaryAction: result.primaryAction
+        ? {
+            ...result.primaryAction,
+            type: result.primaryAction.type as NonNullable<CustomerHome["primaryAction"]>["type"],
+            sourceService: result.primaryAction.sourceService as NonNullable<CustomerHome["primaryAction"]>["sourceService"],
+            targetService: result.primaryAction.targetService as NonNullable<CustomerHome["primaryAction"]>["targetService"],
+            relevantDate: isoDate(result.primaryAction.relevantDate),
+            eligibleFrom: result.primaryAction.eligibleFrom ? isoDate(result.primaryAction.eligibleFrom) : null,
+            expiresOn: result.primaryAction.expiresOn ? isoDate(result.primaryAction.expiresOn) : null,
+            benefit: result.primaryAction.benefit
+              ? { type: "RENTAL_FIRST_TRANSFER", discountRate: result.primaryAction.benefit.discountRate }
+              : null,
+            action: parseActionTarget(result.primaryAction.action),
+          }
+        : null,
+      repeatOpportunity: result.repeatOpportunity
+        ? {
+            ...result.repeatOpportunity,
+            service: result.repeatOpportunity.service as NonNullable<CustomerHome["repeatOpportunity"]>["service"],
+            sourceCompletedAt: result.repeatOpportunity.sourceCompletedAt.toISOString(),
+            action: parseActionTarget(result.repeatOpportunity.action),
+          }
+        : null,
+    };
   }
 
   getAccountIdentities(): Promise<AccountIdentities> {
-    return this.client.request("/api/v1/account/identities");
+    return this.client.generated(this.generated.getAccountIdentities()) as Promise<AccountIdentities>;
   }
 
-  initiateTelegramLink(): Promise<AccountLinkInitiated> {
-    return this.client.request("/api/v1/account/link/telegram", { method: "POST" });
+  async initiateTelegramLink(): Promise<AccountLinkInitiated> {
+    const result = await this.client.generated(this.generated.createIdentityLink({
+      createIdentityLinkRequest: { provider: "TELEGRAM" },
+    }));
+    if (!result.telegramDeepLink) throw new Error("Telegram link is unavailable");
+    return { id: result.id, deepLink: result.telegramDeepLink, expiresAt: result.expiresAt.toISOString() };
   }
 
-  confirmTelegramLink(token: string): Promise<AccountIdentities> {
-    return this.client.request("/api/v1/account/link/telegram/confirm", {
-      method: "POST",
-      body: JSON.stringify({ token }),
-    });
+  async confirmTelegramLink(attemptId: string): Promise<AccountIdentities> {
+    return this.client.generated(this.generated.confirmIdentityLink({
+      id: attemptId,
+      confirmIdentityLinkRequest: {},
+    })) as Promise<AccountIdentities>;
   }
 
-  getNotifications(page = 0, size = 20): Promise<CustomerNotificationPage> {
-    return this.client.request(`/api/v1/account/notifications?page=${page}&size=${size}`);
+  async getNotifications(cursor: string | null = null, size = 20): Promise<CustomerNotificationPage> {
+    const result = await this.client.generated(this.generated.getNotifications({
+      cursor: cursor ?? undefined,
+      size,
+    }));
+    return {
+      ...result,
+      nextCursor: result.nextCursor ?? null,
+      items: result.items.map((item) => ({
+        ...item,
+        type: item.type as CustomerNotificationPage["items"][number]["type"],
+        createdAt: item.createdAt.toISOString(),
+        readAt: item.readAt?.toISOString() ?? null,
+        action: parseActionTarget(item.action),
+      })),
+    };
   }
 
   async getNotificationUnreadCount(): Promise<number> {
-    const response = await this.client.request<{ unreadCount: number }>("/api/v1/account/notifications/unread-count");
+    const response = await this.client.generated(this.generated.getNotificationUnreadCount());
     return response.unreadCount;
   }
 
-  markNotificationRead(notificationId: number): Promise<void> {
-    return this.client.request(`/api/v1/account/notifications/${notificationId}/read`, { method: "POST" });
+  async markNotificationRead(notificationId: number): Promise<void> {
+    await this.client.generated(this.generated.markNotificationRead({ notificationId }));
   }
 
-  markAllNotificationsRead(): Promise<void> {
-    return this.client.request("/api/v1/account/notifications/read-all", { method: "POST" });
+  async markAllNotificationsRead(): Promise<void> {
+    await this.client.generated(this.generated.markAllNotificationsRead());
   }
+}
+
+function isoDate(value: Date): string {
+  return value.toISOString().slice(0, 10);
+}
+
+function parseGeneratedActivityItem(
+  item: Awaited<ReturnType<AccountApi["getCustomerActivity"]>>["activeAndUpcoming"][number],
+): CustomerActivity["activeAndUpcoming"][number] {
+  return {
+    ...item,
+    service: item.service as CustomerActivity["activeAndUpcoming"][number]["service"],
+    scheduledDate: isoDate(item.scheduledDate),
+    scheduledEndDate: item.scheduledEndDate ? isoDate(item.scheduledEndDate) : null,
+    scheduledTime: item.scheduledTime ?? null,
+    occurredAt: item.occurredAt.toISOString(),
+    action: parseActionTarget(item.action),
+  };
 }

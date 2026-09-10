@@ -18,48 +18,75 @@ import type {
   UpsertTransferDriverRequest,
   UpsertTransferPriceRequest,
 } from "../domain/transfer";
-import { HttpApiClient } from "./HttpApiClient";
+import { generatedWire, HttpApiClient } from "./HttpApiClient";
 import type { TransferApi } from "./TransferApi";
+import {
+  Configuration,
+  CreateTransferBookingRequestFromJSON,
+  TransferApi as GeneratedTransferApi,
+  TransferBookingToJSON,
+  TransferConfigurationToJSON,
+  TransferQuoteRequestFromJSON,
+  TransferQuoteToJSON,
+  TransferRepeatPrefillToJSON,
+} from "@locoplace/api-client";
 
 export class HttpTransferApi implements TransferApi {
-  constructor(private readonly client: HttpApiClient) {}
+  private readonly generated: GeneratedTransferApi;
+
+  constructor(private readonly client: HttpApiClient) {
+    this.generated = new GeneratedTransferApi(new Configuration({
+      basePath: client.basePath,
+      fetchApi: client.generatedFetch,
+    }));
+  }
 
   getConfiguration(): Promise<TransferConfiguration> {
-    return this.client.request("/api/v1/transfer/configuration");
+    return this.client.generated(this.generated.getTransferConfiguration())
+      .then((value) => generatedWire<TransferConfiguration>(TransferConfigurationToJSON(value)));
   }
 
   quote(request: TransferQuoteRequest): Promise<TransferQuote> {
-    return this.client.request("/api/v1/transfer/quote", {
-      method: "POST",
-      body: JSON.stringify(request),
-    });
+    return this.client.generated(this.generated.quoteTransfer({
+      transferQuoteRequest: TransferQuoteRequestFromJSON(request),
+    })).then((value) => generatedWire<TransferQuote>(TransferQuoteToJSON(value)));
   }
 
   createBooking(request: CreateTransferBookingRequest): Promise<TransferBooking> {
-    return this.client.request("/api/v1/transfer/bookings", {
-      method: "POST",
-      body: JSON.stringify(request),
-    });
+    return this.client.generated(this.generated.createTransferBooking({
+      idempotencyKey: crypto.randomUUID(),
+      createTransferBookingRequest: CreateTransferBookingRequestFromJSON(request),
+    })).then((value) => generatedWire<TransferBooking>(TransferBookingToJSON(value)));
   }
 
-  getBookings(): Promise<TransferBooking[]> {
-    return this.client.request("/api/v1/transfer/bookings");
+  async getBookings(): Promise<TransferBooking[]> {
+    const bookings: TransferBooking[] = [];
+    let cursor: string | undefined;
+    do {
+      const page = await this.client.generated(this.generated.getTransferBookings({ cursor, size: 50 }));
+      bookings.push(...page.items.map((value) => generatedWire<TransferBooking>(TransferBookingToJSON(value))));
+      cursor = page.hasMore ? page.nextCursor ?? undefined : undefined;
+    } while (cursor);
+    return bookings;
   }
 
   getBooking(id: number): Promise<TransferBooking> {
-    return this.client.request(`/api/v1/transfer/bookings/${id}`);
+    return this.client.generated(this.generated.getTransferBooking({ bookingId: id }))
+      .then((value) => generatedWire<TransferBooking>(TransferBookingToJSON(value)));
   }
 
   async recordRepeatShown(id: number): Promise<void> {
-    await this.client.request(`/api/v1/transfer/bookings/${id}/repeat-shown`, { method: "POST" });
+    await this.client.generated(this.generated.recordTransferRepeatShown({ bookingId: id }));
   }
 
   getRepeatPrefill(id: number): Promise<TransferRepeatPrefill> {
-    return this.client.request(`/api/v1/transfer/bookings/${id}/repeat-prefill`, { method: "POST" });
+    return this.client.generated(this.generated.getTransferRepeatPrefill({ bookingId: id }))
+      .then((value) => generatedWire<TransferRepeatPrefill>(TransferRepeatPrefillToJSON(value)));
   }
 
   cancelBooking(id: number): Promise<TransferBooking> {
-    return this.client.request(`/api/v1/transfer/bookings/${id}/cancel`, { method: "POST" });
+    return this.client.generated(this.generated.cancelTransferBooking({ bookingId: id }))
+      .then((value) => generatedWire<TransferBooking>(TransferBookingToJSON(value)));
   }
 
   getAdminAirports(): Promise<AdminTransferAirport[]> {

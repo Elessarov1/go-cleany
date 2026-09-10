@@ -1,0 +1,32 @@
+{
+  "$schema": "./node_modules/@openapitools/openapi-generator-cli/config.schema.json",
+  "spaces": 2,
+  "generator-cli": {
+    "version": "7.25.0",
+    "generators": {
+      "typescript": {
+        "generatorName": "typescript-fetch",
+        "inputSpec": "api/openapi/loco-place-v1.yaml",
+        "output": "clients/typescript-fetch",
+        "additionalProperties": {
+          "npmName": "@locoplace/api-client",
+          "npmVersion": "1.0.0-rc.1",
+          "supportsES6": true,
+          "withInterfaces": true,
+          "useSingleRequestParameter": true,
+          "enumUnknownDefaultCase": true
+        }
+      },
+      "dart": {
+        "generatorName": "dart-dio",
+        "inputSpec": "api/openapi/loco-place-v1.yaml",
+        "output": "clients/dart-dio",
+        "additionalProperties": {
+          "pubName": "loco_place_api",
+          "pubVersion": "1.0.0-rc.1",
+          "enumUnknownDefaultCase": true
+        }
+      }
+    }
+  }
+}

@@ -18,6 +18,8 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 
 import com.cleany.crossservice.rentalcleaning.RentalCleaningBenefitNotApplicableException;
 import com.cleany.crossservice.rentaltransfer.RentalTransferAlreadyBookedException;
@@ -62,13 +64,14 @@ import com.cleany.rental.RentalPropertyMediaNotFoundException;
 import com.cleany.rental.RentalPropertyNotFoundException;
 import com.cleany.rental.RentalPropertyNotAvailableException;
 import com.cleany.authentication.CustomerAuthenticationRequiredException;
+import com.cleany.authentication.SessionTokenException;
+import com.cleany.authentication.NativeAuthenticationException;
 import com.cleany.telegram.bot.TelegramWebhookAuthenticationException;
 import com.cleany.customer.AccountLinkConflictException;
-import com.cleany.customer.AccountLinkProviderException;
-import com.cleany.customer.AccountLinkTokenConsumedException;
-import com.cleany.customer.AccountLinkTokenExpiredException;
-import com.cleany.customer.AccountLinkTokenInvalidException;
 import com.cleany.customer.TelegramIdentityNotLinkedException;
+import com.cleany.customer.AccountSecurityException;
+import com.cleany.idempotency.IdempotencyException;
+import com.cleany.pagination.InvalidCursorException;
 import com.cleany.notification.CustomerNotificationNotFoundException;
 import com.cleany.transfer.InvalidTransferBookingException;
 import com.cleany.transfer.TransferBookingNotFoundException;
@@ -357,6 +360,16 @@ public class GlobalExceptionHandler {
         return response(HttpStatus.UNAUTHORIZED, "authentication_required", exception.getMessage());
     }
 
+    @ExceptionHandler(SessionTokenException.class)
+    ResponseEntity<ApiError> handleSessionToken(SessionTokenException exception) {
+        return response(HttpStatus.UNAUTHORIZED, exception.code(), exception.getMessage());
+    }
+
+    @ExceptionHandler(NativeAuthenticationException.class)
+    ResponseEntity<ApiError> handleNativeAuthentication(NativeAuthenticationException exception) {
+        return response(HttpStatus.UNAUTHORIZED, exception.code(), exception.getMessage());
+    }
+
     @ExceptionHandler(TelegramWebhookAuthenticationException.class)
     ResponseEntity<ApiError> handleWebhookAuthentication(TelegramWebhookAuthenticationException exception) {
         return response(HttpStatus.UNAUTHORIZED, "invalid_webhook_secret", exception.getMessage());
@@ -382,29 +395,28 @@ public class GlobalExceptionHandler {
         return response(HttpStatus.GONE, "cleaning_report_expired", exception.getMessage());
     }
 
-    @ExceptionHandler(AccountLinkProviderException.class)
-    ResponseEntity<ApiError> handleAccountLinkProvider(AccountLinkProviderException exception) {
-        return response(HttpStatus.FORBIDDEN, "account_link_provider_required", exception.getMessage());
-    }
-
     @ExceptionHandler(AccountLinkConflictException.class)
     ResponseEntity<ApiError> handleAccountLinkConflict(AccountLinkConflictException exception) {
         return response(HttpStatus.CONFLICT, "account_link_conflict", exception.getMessage());
     }
 
-    @ExceptionHandler(AccountLinkTokenExpiredException.class)
-    ResponseEntity<ApiError> handleAccountLinkExpired(AccountLinkTokenExpiredException exception) {
-        return response(HttpStatus.GONE, "account_link_expired", exception.getMessage());
+    @ExceptionHandler(AccountSecurityException.class)
+    ResponseEntity<ApiError> handleAccountSecurity(AccountSecurityException exception) {
+        return response(HttpStatus.CONFLICT, exception.code(), exception.getMessage());
     }
 
-    @ExceptionHandler(AccountLinkTokenConsumedException.class)
-    ResponseEntity<ApiError> handleAccountLinkConsumed(AccountLinkTokenConsumedException exception) {
-        return response(HttpStatus.CONFLICT, "account_link_consumed", exception.getMessage());
+    @ExceptionHandler(IdempotencyException.class)
+    ResponseEntity<ApiError> handleIdempotency(IdempotencyException exception) {
+        HttpStatus status = "idempotency_key_required".equals(exception.code())
+                || "idempotency_key_invalid".equals(exception.code())
+                ? HttpStatus.BAD_REQUEST
+                : HttpStatus.CONFLICT;
+        return response(status, exception.code(), exception.getMessage());
     }
 
-    @ExceptionHandler(AccountLinkTokenInvalidException.class)
-    ResponseEntity<ApiError> handleAccountLinkInvalid(AccountLinkTokenInvalidException exception) {
-        return response(HttpStatus.NOT_FOUND, "account_link_invalid", exception.getMessage());
+    @ExceptionHandler(InvalidCursorException.class)
+    ResponseEntity<ApiError> handleInvalidCursor(InvalidCursorException exception) {
+        return response(HttpStatus.BAD_REQUEST, "invalid_cursor", exception.getMessage());
     }
 
     @ExceptionHandler(TelegramIdentityNotLinkedException.class)
@@ -630,7 +642,15 @@ public class GlobalExceptionHandler {
                 status.value(),
                 code,
                 message,
-                fieldErrors
+                fieldErrors,
+                currentRequestId()
         ));
+    }
+
+    private static String currentRequestId() {
+        RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+        Object value = attributes == null ? null
+                : attributes.getAttribute(RequestIdFilter.ATTRIBUTE, RequestAttributes.SCOPE_REQUEST);
+        return value == null ? "unknown" : value.toString();
     }
 }

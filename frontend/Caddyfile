@@ -11,7 +11,7 @@
 		respond "ok" 200
 	}
 
-	@backend path /api/* /oauth2/* /login/oauth2/*
+	@backend path /api/* /oauth2/* /login/oauth2/* /.well-known/apple-app-site-association /.well-known/assetlinks.json
 	handle @backend {
 		reverse_proxy backend:8080
 	}

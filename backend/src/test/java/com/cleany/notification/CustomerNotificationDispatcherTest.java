@@ -1,13 +1,17 @@
 package com.cleany.notification;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import com.cleany.communication.CommunicationEndpoint;
+import com.cleany.communication.CommunicationEndpointService;
+import com.cleany.communication.NotificationDeliveryQueue;
+import com.cleany.communication.NotificationPreferenceService;
+import com.cleany.communication.NotificationPreferencesResponse;
 import com.cleany.customer.CustomerExternalIdentity;
 import com.cleany.customer.CustomerExternalIdentityRepository;
 import com.cleany.customer.ExternalIdentityProvider;
@@ -15,123 +19,67 @@ import com.cleany.customer.ExternalIdentityProvider;
 class CustomerNotificationDispatcherTest {
 
     @Test
-    void telegramWriteAccessAllowed_recordsAndDeliversOnce() {
-        var repository = Mockito.mock(CustomerExternalIdentityRepository.class);
-        var recorder = Mockito.mock(CustomerNotificationRecorder.class);
-        var sender = Mockito.mock(CustomerNotificationSender.class);
+    void telegramWriteAccessAllowed_recordsInboxAndDurableDeliveryTogether() {
+        Fixture fixture = fixture();
         var identity = telegramIdentity(true);
-        var notification = new ReferralUnlockedCustomerNotification("ALEX7K2");
-        Mockito.when(recorder.record(77L, notification)).thenReturn(true);
-        Mockito.when(sender.provider()).thenReturn(ExternalIdentityProvider.TELEGRAM);
-        Mockito.when(repository.findByIdAndCustomerId(88L, 77L)).thenReturn(Optional.of(identity));
-        Mockito.when(repository.findAllByCustomerIdOrderByProvider(77L)).thenReturn(List.of(identity));
+        var endpoint = Mockito.mock(CommunicationEndpoint.class);
+        Mockito.when(fixture.recorder.recordId(77L, fixture.notification)).thenReturn(101L);
+        Mockito.when(fixture.repository.findAllByCustomerIdOrderByProvider(77L)).thenReturn(List.of(identity));
+        Mockito.when(fixture.preferences.forCustomer(77L))
+                .thenReturn(new NotificationPreferencesResponse(true, true));
+        Mockito.when(fixture.endpoints.ensureTelegram(identity)).thenReturn(endpoint);
+        Mockito.when(fixture.endpoints.active(77L)).thenReturn(Collections.emptyList());
+        Mockito.when(fixture.queue.enqueue(101L, List.of(endpoint))).thenReturn(1);
 
-        boolean delivered = new CustomerNotificationDispatcher(repository, recorder, List.of(sender))
-                .send(77L, 88L, notification);
-
-        Assertions.assertTrue(delivered);
-        Mockito.verify(sender).send(Mockito.any(CommunicationTarget.class), Mockito.eq(notification));
+        Assertions.assertTrue(fixture.dispatcher().send(77L, 88L, fixture.notification));
+        Mockito.verify(fixture.queue).enqueue(101L, List.of(endpoint));
     }
 
     @Test
-    void googleOnlyAndTelegramWithoutWriteAccess_remainPersistedWithoutExternalDelivery() {
-        var repository = Mockito.mock(CustomerExternalIdentityRepository.class);
-        var recorder = Mockito.mock(CustomerNotificationRecorder.class);
-        var sender = Mockito.mock(CustomerNotificationSender.class);
-        var google = Mockito.mock(CustomerExternalIdentity.class);
-        var telegram = telegramIdentity(false);
-        var notification = new ReferralUnlockedCustomerNotification("ALEX7K2");
-        Mockito.when(recorder.record(77L, notification)).thenReturn(true);
-        Mockito.when(sender.provider()).thenReturn(ExternalIdentityProvider.TELEGRAM);
-        Mockito.when(repository.findByIdAndCustomerId(88L, 77L)).thenReturn(Optional.of(google));
-        Mockito.when(repository.findAllByCustomerIdOrderByProvider(77L)).thenReturn(List.of(google, telegram));
-        Mockito.when(google.getProvider()).thenReturn(ExternalIdentityProvider.GOOGLE);
+    void noEnabledEndpoint_stillPersistsInboxWithoutDeliveryJob() {
+        Fixture fixture = fixture();
+        CustomerExternalIdentity identity = telegramIdentity(false);
+        Mockito.when(fixture.recorder.recordId(77L, fixture.notification)).thenReturn(101L);
+        Mockito.when(fixture.repository.findAllByCustomerIdOrderByProvider(77L))
+                .thenReturn(List.of(identity));
+        Mockito.when(fixture.preferences.forCustomer(77L))
+                .thenReturn(new NotificationPreferencesResponse(true, true));
+        Mockito.when(fixture.endpoints.active(77L)).thenReturn(Collections.emptyList());
 
-        boolean delivered = new CustomerNotificationDispatcher(repository, recorder, List.of(sender))
-                .send(77L, 88L, notification);
-
-        Assertions.assertFalse(delivered);
-        Mockito.verify(sender, Mockito.never()).send(Mockito.any(), Mockito.any());
-    }
-
-    @Test
-    void senderFailure_doesNotUndoPersistentNotification() {
-        var repository = Mockito.mock(CustomerExternalIdentityRepository.class);
-        var recorder = Mockito.mock(CustomerNotificationRecorder.class);
-        var sender = Mockito.mock(CustomerNotificationSender.class);
-        var identity = telegramIdentity(true);
-        var notification = new ReferralUnlockedCustomerNotification("ALEX7K2");
-        Mockito.when(recorder.record(77L, notification)).thenReturn(true);
-        Mockito.when(sender.provider()).thenReturn(ExternalIdentityProvider.TELEGRAM);
-        Mockito.when(repository.findAllByCustomerIdOrderByProvider(77L)).thenReturn(List.of(identity));
-        Mockito.doThrow(new IllegalStateException("Telegram unavailable"))
-                .when(sender).send(Mockito.any(), Mockito.eq(notification));
-
-        boolean delivered = new CustomerNotificationDispatcher(repository, recorder, List.of(sender))
-                .send(77L, 88L, notification);
-
-        Assertions.assertFalse(delivered);
-        Mockito.verify(recorder).record(77L, notification);
+        Assertions.assertFalse(fixture.dispatcher().send(77L, 88L, fixture.notification));
+        Mockito.verify(fixture.queue).enqueue(101L, Collections.emptyList());
     }
 
     @Test
     void duplicateNotification_isCompleteNoOp() {
-        var repository = Mockito.mock(CustomerExternalIdentityRepository.class);
-        var recorder = Mockito.mock(CustomerNotificationRecorder.class);
-        var sender = Mockito.mock(CustomerNotificationSender.class);
-        var notification = new ReferralUnlockedCustomerNotification("ALEX7K2");
-        Mockito.when(recorder.record(77L, notification)).thenReturn(false);
-        Mockito.when(sender.provider()).thenReturn(ExternalIdentityProvider.TELEGRAM);
+        Fixture fixture = fixture();
+        Mockito.when(fixture.recorder.recordId(77L, fixture.notification)).thenReturn(null);
 
-        boolean delivered = new CustomerNotificationDispatcher(repository, recorder, List.of(sender))
-                .send(77L, 88L, notification);
-
-        Assertions.assertFalse(delivered);
-        Mockito.verifyNoInteractions(repository);
-        Mockito.verify(sender, Mockito.never()).send(Mockito.any(), Mockito.any());
+        Assertions.assertFalse(fixture.dispatcher().send(77L, 88L, fixture.notification));
+        Mockito.verifyNoInteractions(fixture.repository, fixture.endpoints, fixture.preferences, fixture.queue);
     }
 
     @Test
-    void sendAfterCommit_defersExternalDeliveryUntilDatabaseCommit() {
-        var repository = Mockito.mock(CustomerExternalIdentityRepository.class);
-        var recorder = Mockito.mock(CustomerNotificationRecorder.class);
-        var sender = Mockito.mock(CustomerNotificationSender.class);
-        var identity = telegramIdentity(true);
-        var notification = new ReferralUnlockedCustomerNotification("ALEX7K2");
-        Mockito.when(recorder.record(77L, notification)).thenReturn(true);
-        Mockito.when(sender.provider()).thenReturn(ExternalIdentityProvider.TELEGRAM);
-        Mockito.when(repository.findByIdAndCustomerId(88L, 77L)).thenReturn(Optional.of(identity));
-        Mockito.when(repository.findAllByCustomerIdOrderByProvider(77L)).thenReturn(List.of(identity));
-        var dispatcher = new CustomerNotificationDispatcher(repository, recorder, List.of(sender));
+    void legacySendAfterCommitName_nowEnqueuesInsideCallingTransaction() {
+        Fixture fixture = fixture();
+        Mockito.when(fixture.recorder.recordId(77L, fixture.notification)).thenReturn(101L);
+        Mockito.when(fixture.repository.findAllByCustomerIdOrderByProvider(77L))
+                .thenReturn(Collections.emptyList());
+        Mockito.when(fixture.preferences.forCustomer(77L))
+                .thenReturn(new NotificationPreferencesResponse(false, false));
 
-        TransactionSynchronizationManager.initSynchronization();
-        try {
-            Assertions.assertTrue(dispatcher.sendAfterCommit(77L, 88L, notification));
-            Mockito.verify(sender, Mockito.never()).send(Mockito.any(), Mockito.any());
+        fixture.dispatcher().sendDurably(77L, 88L, fixture.notification);
 
-            TransactionSynchronizationManager.getSynchronizations().getFirst().afterCommit();
-
-            Mockito.verify(sender).send(Mockito.any(CommunicationTarget.class), Mockito.eq(notification));
-        } finally {
-            TransactionSynchronizationManager.clearSynchronization();
-        }
+        Mockito.verify(fixture.queue).enqueue(101L, Collections.emptyList());
     }
 
-    @Test
-    void duplicateProviderSenders_configurationRejected() {
-        CustomerNotificationSender first = Mockito.mock(CustomerNotificationSender.class);
-        CustomerNotificationSender second = Mockito.mock(CustomerNotificationSender.class);
-        Mockito.when(first.provider()).thenReturn(ExternalIdentityProvider.TELEGRAM);
-        Mockito.when(second.provider()).thenReturn(ExternalIdentityProvider.TELEGRAM);
-
-        Assertions.assertThrows(
-                IllegalStateException.class,
-                () -> new CustomerNotificationDispatcher(
-                        Mockito.mock(CustomerExternalIdentityRepository.class),
-                        Mockito.mock(CustomerNotificationRecorder.class),
-                        List.of(first, second)
-                )
-        );
+    private static Fixture fixture() {
+        return new Fixture(Mockito.mock(CustomerExternalIdentityRepository.class),
+                Mockito.mock(CustomerNotificationRecorder.class),
+                Mockito.mock(CommunicationEndpointService.class),
+                Mockito.mock(NotificationPreferenceService.class),
+                Mockito.mock(NotificationDeliveryQueue.class),
+                new ReferralUnlockedCustomerNotification("ALEX7K2"));
     }
 
     private static CustomerExternalIdentity telegramIdentity(boolean writeAccessAllowed) {
@@ -143,5 +91,16 @@ class CustomerNotificationDispatcherTest {
         Mockito.when(identity.getLanguageCode()).thenReturn("ru");
         Mockito.when(identity.isWriteAccessAllowed()).thenReturn(writeAccessAllowed);
         return identity;
+    }
+
+    private record Fixture(CustomerExternalIdentityRepository repository,
+                           CustomerNotificationRecorder recorder,
+                           CommunicationEndpointService endpoints,
+                           NotificationPreferenceService preferences,
+                           NotificationDeliveryQueue queue,
+                           CustomerNotification notification) {
+        CustomerNotificationDispatcher dispatcher() {
+            return new CustomerNotificationDispatcher(repository, recorder, endpoints, preferences, queue);
+        }
     }
 }
