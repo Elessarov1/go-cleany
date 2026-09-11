@@ -41,7 +41,7 @@ import type { CancelRentalBookingRequest } from '@locoplace/api-client';
 
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
-  const config = new Configuration({
+  const config = new Configuration({ 
     // To configure API key authorization: tmaAuth
     apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
@@ -115,7 +115,7 @@ import type { CreateRentalBookingOperationRequest } from '@locoplace/api-client'
 
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
-  const config = new Configuration({
+  const config = new Configuration({ 
     // To configure API key authorization: tmaAuth
     apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
@@ -192,7 +192,7 @@ import type { GetRentalAvailabilityRequest } from '@locoplace/api-client';
 
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
-  const config = new Configuration({
+  const config = new Configuration({ 
     // To configure API key authorization: tmaAuth
     apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
@@ -271,7 +271,7 @@ import type { GetRentalBookingRequest } from '@locoplace/api-client';
 
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
-  const config = new Configuration({
+  const config = new Configuration({ 
     // To configure API key authorization: tmaAuth
     apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
@@ -551,7 +551,7 @@ import type { GetRentalPropertyRequest } from '@locoplace/api-client';
 
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
-  const config = new Configuration({
+  const config = new Configuration({ 
     // To configure API key authorization: tmaAuth
     apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
@@ -922,7 +922,7 @@ import type { QuoteRentalPropertyRequest } from '@locoplace/api-client';
 
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
-  const config = new Configuration({
+  const config = new Configuration({ 
     // To configure API key authorization: tmaAuth
     apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
@@ -1220,7 +1220,7 @@ import type { SearchRentalPropertiesRequest } from '@locoplace/api-client';
 
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
-  const config = new Configuration({
+  const config = new Configuration({ 
     // To configure API key authorization: tmaAuth
     apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
@@ -1296,3 +1296,4 @@ example().catch(console.error);
 | **400** | Invalid request |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+

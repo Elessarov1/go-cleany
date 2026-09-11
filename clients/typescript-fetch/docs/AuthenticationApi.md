@@ -283,7 +283,7 @@ import type { GetCurrentAuthenticationRequest } from '@locoplace/api-client';
 
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
-  const config = new Configuration({
+  const config = new Configuration({ 
     // To configure API key authorization: tmaAuth
     apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
@@ -660,3 +660,4 @@ This endpoint does not need any parameter.
 | **204** | Every customer session revoked |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
