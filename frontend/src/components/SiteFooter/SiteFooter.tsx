@@ -3,14 +3,12 @@ import { useTranslation } from "react-i18next";
 import { BrandName } from "../BrandName/BrandName";
 import { Icon } from "../Icon/Icon";
 import { SUPPORT_EMAIL } from "../../brand/publicContact";
+import { telegramBotUsername } from "../../brand/telegram";
 
 export function SiteFooter() {
   const { t } = useTranslation();
   const year = new Date().getFullYear();
-  const configuredUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME?.trim().replace(/^@/, "");
-  const telegramUsername = configuredUsername && /^[A-Za-z0-9_]{5,32}$/.test(configuredUsername)
-    ? configuredUsername
-    : "go_cleany_bot";
+  const telegramUsername = telegramBotUsername();
 
   return (
     <footer className="site-footer">

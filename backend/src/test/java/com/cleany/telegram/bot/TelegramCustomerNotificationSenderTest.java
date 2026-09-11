@@ -124,7 +124,7 @@ class TelegramCustomerNotificationSenderTest {
     }
 
     @Test
-    void completedCleaningReport_sendsPlatformLinkWithoutDuplicatingPhotos() {
+    void completedCleaningReport_sendsMiniAppLinkWithoutDuplicatingPhotos() {
         TelegramCustomerNotificationMessageFactory messageFactory =
                 Mockito.mock(TelegramCustomerNotificationMessageFactory.class);
         CleaningOrderBotMessageFactory cleaningMessageFactory =
@@ -156,7 +156,8 @@ class TelegramCustomerNotificationSenderTest {
                 Mockito.eq(900001L),
                 Mockito.eq("report ready"),
                 Mockito.argThat(keyboard -> keyboard.rows().stream().flatMap(List::stream)
-                        .anyMatch(button -> "https://loco-place.com/cleaning/orders/43".equals(button.url())))
+                        .anyMatch(button -> "https://loco-place.com/cleaning/orders/43"
+                                .equals(button.webAppUrl())))
         );
         Mockito.verify(botClient, Mockito.never()).sendPhoto(Mockito.anyLong(), Mockito.anyString());
         Mockito.verifyNoInteractions(mediaProviderReferenceService);
@@ -327,7 +328,8 @@ class TelegramCustomerNotificationSenderTest {
                 Mockito.eq(900001L),
                 Mockito.eq("new support case"),
                 Mockito.argThat(keyboard -> keyboard.rows().stream().flatMap(List::stream)
-                        .anyMatch(button -> "https://loco-place.com/admin/support/cases/73".equals(button.url())))
+                        .anyMatch(button -> "https://loco-place.com/admin/support/cases/73"
+                                .equals(button.webAppUrl())))
         );
     }
 

@@ -46,8 +46,9 @@
     "customerTitle": "Sign in to continue",
     "customerText": "Sign in with Google to create and manage your orders and bookings.",
     "googleUnavailable": "Google sign-in is temporarily unavailable. Please try again later.",
-    "telegramSessionTitle": "We could not confirm your sign-in",
-    "telegramSessionText": "Close and reopen the Mini App from the bot chat. Google sign-in is not required inside Telegram.",
+    "telegramSessionTitle": "Open Loco Place as a Mini App",
+    "telegramSessionText": "This link opened in Telegram's embedded browser without sign-in data. Launch the Mini App through the bot to confirm your account automatically.",
+    "openTelegramMiniApp": "Open Loco Place",
     "closeMiniApp": "Close Mini App",
     "loadError": "We could not verify the current session. Please try again."
   },

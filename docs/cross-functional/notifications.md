@@ -3,7 +3,7 @@ title: Loco Notifications
 type: cross-functional
 status: active
 scope: platform
-updated: 2026-09-10
+updated: 2026-09-11
 ---
 
 # Notifications
@@ -48,6 +48,11 @@ Store/route stable notification meaning and safe application targets. Avoid maki
 Telegram is optional for customers. Google-only web customers must remain functional.
 
 Do not call Telegram directly from reusable vertical business services when a platform notification/event boundary is appropriate.
+
+Buttons that open an internal Loco customer/admin route from a private Telegram bot message use the
+Bot API `web_app` action. An ordinary URL opens Telegram's embedded browser without Mini App
+`initData`, so it cannot establish the customer's Loco session. Previously delivered URL buttons are
+recovered by the frontend through the bot's configured Main Mini App `startapp` link.
 
 ## Operational actors
 

@@ -38,4 +38,8 @@ export class WebPlatform implements Platform {
   openExternalLink(url: string): void {
     window.open(url, "_blank", "noopener,noreferrer");
   }
+
+  openTelegramLink(url: string): void {
+    window.location.assign(url);
+  }
 }

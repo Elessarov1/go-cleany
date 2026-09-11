@@ -46,8 +46,9 @@
     "customerTitle": "Войдите, чтобы продолжить",
     "customerText": "Войдите через Google, чтобы создавать заказы и бронирования и управлять ими.",
     "googleUnavailable": "Вход через Google временно недоступен. Попробуйте позже.",
-    "telegramSessionTitle": "Не удалось подтвердить вход",
-    "telegramSessionText": "Закройте и снова откройте Mini App из чата с ботом. Вход через Google внутри Telegram не требуется.",
+    "telegramSessionTitle": "Откройте Loco Place как Mini App",
+    "telegramSessionText": "Эта ссылка открылась во встроенном браузере Telegram без данных входа. Запустите Mini App через бота — аккаунт подтвердится автоматически.",
+    "openTelegramMiniApp": "Открыть Loco Place",
     "closeMiniApp": "Закрыть Mini App",
     "loadError": "Не удалось проверить текущую сессию. Попробуйте ещё раз."
   },

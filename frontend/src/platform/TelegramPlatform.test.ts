@@ -3,18 +3,17 @@ import { isTelegramWebAppAvailable, TelegramPlatform } from "./TelegramPlatform"
 
 describe("TelegramPlatform", () => {
   afterEach(() => {
-    vi.useRealTimers();
     delete window.Telegram;
     window.history.replaceState({}, "", "/");
   });
 
-  it("does not classify an ordinary browser as Telegram when the public SDK is loaded", async () => {
+  it("does not classify an ordinary browser as Telegram when the public SDK is loaded", () => {
     window.Telegram = { WebApp: webApp({ platform: "unknown" }) };
 
-    await expect(isTelegramWebAppAvailable(0)).resolves.toBe(false);
+    expect(isTelegramWebAppAvailable()).toBe(false);
   });
 
-  it("uses launch data from the URL when Telegram Desktop has not populated the SDK yet", async () => {
+  it("uses signed launch data from a real Mini App URL", () => {
     const initData = "query_id=query-1&user=%7B%22id%22%3A42%7D&auth_date=123&hash=signed";
     window.history.replaceState(
       {},
@@ -22,29 +21,24 @@ describe("TelegramPlatform", () => {
       `/#tgWebAppPlatform=tdesktop&tgWebAppData=${encodeURIComponent(initData)}`,
     );
 
-    await expect(isTelegramWebAppAvailable(0)).resolves.toBe(true);
+    expect(isTelegramWebAppAvailable()).toBe(true);
     expect(new TelegramPlatform().getAuthData()).toBe(initData);
   });
 
-  it("waits for delayed Telegram Desktop initialization", async () => {
-    vi.useFakeTimers();
+  it("keeps the Telegram shell for its embedded browser without treating it as authenticated", () => {
+    window.Telegram = { WebApp: webApp({ platform: "tdesktop" }) };
+
+    expect(isTelegramWebAppAvailable()).toBe(true);
+    expect(new TelegramPlatform().getAuthData()).toBeNull();
+  });
+
+  it("uses Telegram native navigation to relaunch the Main Mini App", () => {
     const sdk = webApp({ platform: "tdesktop" });
     window.Telegram = { WebApp: sdk };
 
-    const available = isTelegramWebAppAvailable(100);
-    window.setTimeout(() => {
-      sdk.initData = "auth_date=123&hash=signed";
-    }, 40);
+    new TelegramPlatform().openTelegramLink("https://t.me/go_cleany_bot?startapp");
 
-    await vi.advanceTimersByTimeAsync(50);
-    await expect(available).resolves.toBe(true);
-  });
-
-  it("keeps the Telegram shell when the client is known but auth data is missing", async () => {
-    window.Telegram = { WebApp: webApp({ platform: "tdesktop" }) };
-
-    await expect(isTelegramWebAppAvailable(0)).resolves.toBe(true);
-    expect(new TelegramPlatform().getAuthData()).toBeNull();
+    expect(sdk.openTelegramLink).toHaveBeenCalledWith("https://t.me/go_cleany_bot?startapp");
   });
 });
 
@@ -56,5 +50,6 @@ function webApp({ platform }: { platform: string }) {
     ready: vi.fn(),
     close: vi.fn(),
     openLink: vi.fn(),
+    openTelegramLink: vi.fn(),
   };
 }

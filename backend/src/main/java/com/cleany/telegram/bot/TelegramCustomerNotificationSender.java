@@ -96,7 +96,7 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
                     telegramUserId,
                     messageFactory.reminder(reminder, target.languageCode()),
                     TelegramBotClient.InlineKeyboard.ofRows(List.of(
-                            TelegramBotClient.InlineButton.url(
+                            TelegramBotClient.InlineButton.webApp(
                                     isEnglish(target.languageCode()) ? "Open" : "Открыть",
                                     publicApplicationProperties.baseUrl()
                                             + ActionTargetWebPathResolver.resolve(reminder.action())
@@ -118,7 +118,7 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
                     telegramUserId,
                     cleaningMessageFactory.customerReportReady(completed),
                     TelegramBotClient.InlineKeyboard.ofRows(List.of(
-                            TelegramBotClient.InlineButton.url(
+                            TelegramBotClient.InlineButton.webApp(
                                     "Открыть отчёт",
                                     publicApplicationProperties.baseUrl()
                                             + "/cleaning/orders/" + completed.orderId()
@@ -156,7 +156,7 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
                     telegramUserId,
                     rentalAdminMessageFactory.format(rentalAdmin.eventType(), rentalAdmin.booking()),
                     TelegramBotClient.InlineKeyboard.ofRows(List.of(
-                            TelegramBotClient.InlineButton.url(
+                            TelegramBotClient.InlineButton.webApp(
                                     isEnglish(target.languageCode()) ? "Open booking" : "Открыть бронь",
                                     publicApplicationProperties.baseUrl()
                                             + ActionTargetWebPathResolver.resolve(rentalAdmin.action())
@@ -177,7 +177,7 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
                     telegramUserId,
                     messageFactory.transferAdminRequested(transferAdmin, target.languageCode()),
                     TelegramBotClient.InlineKeyboard.ofRows(List.of(
-                            TelegramBotClient.InlineButton.url(
+                            TelegramBotClient.InlineButton.webApp(
                                     "Открыть заявку",
                                     publicApplicationProperties.baseUrl()
                                             + ActionTargetWebPathResolver.resolve(transferAdmin.action())
@@ -191,7 +191,7 @@ public class TelegramCustomerNotificationSender implements CustomerNotificationS
                     telegramUserId,
                     messageFactory.supportCaseCreated(supportCase, target.languageCode()),
                     TelegramBotClient.InlineKeyboard.ofRows(List.of(
-                            TelegramBotClient.InlineButton.url(
+                            TelegramBotClient.InlineButton.webApp(
                                     isEnglish(target.languageCode()) ? "Open case" : "Открыть обращение",
                                     publicApplicationProperties.baseUrl()
                                             + ActionTargetWebPathResolver.resolve(supportCase.action())

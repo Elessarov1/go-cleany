@@ -18,4 +18,5 @@ export interface Platform {
   ready(): void;
   close(): void;
   openExternalLink(url: string): void;
+  openTelegramLink(url: string): void;
 }

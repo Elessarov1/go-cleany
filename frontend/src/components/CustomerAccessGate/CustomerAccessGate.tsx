@@ -2,6 +2,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthentication } from "../../api/AuthApiProvider";
 import { usePlatform } from "../../platform/PlatformProvider";
+import { telegramMainMiniAppUrl } from "../../brand/telegram";
 import { Icon } from "../Icon/Icon";
 import { ErrorState, LoadingState } from "../PageState/PageState";
 
@@ -30,9 +31,18 @@ export function AuthenticationRequiredState({ compact = false }: { compact?: boo
         <span className="page-state__symbol"><Icon name="user" size={25} /></span>
         {compact ? <h2>{t("auth.telegramSessionTitle")}</h2> : <h1>{t("auth.telegramSessionTitle")}</h1>}
         <p>{t("auth.telegramSessionText")}</p>
-        <button className="button button--primary" type="button" onClick={() => platform.close()}>
-          {t("auth.closeMiniApp")}
-        </button>
+        <div className="action-stack">
+          <button
+            className="button button--primary"
+            type="button"
+            onClick={() => platform.openTelegramLink(telegramMainMiniAppUrl())}
+          >
+            {t("auth.openTelegramMiniApp")}
+          </button>
+          <button className="button button--secondary" type="button" onClick={() => platform.close()}>
+            {t("auth.closeMiniApp")}
+          </button>
+        </div>
       </div>
     );
   }

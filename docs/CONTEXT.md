@@ -217,9 +217,9 @@ Do not merge identities automatically by email, phone, display name or username.
 LOGIN and LINK are distinct nonce-bound flows. Linking is explicit, freshly reauthenticated and never
 automatically merges occupied accounts. Native clients receive Loco-owned opaque access/refresh
 sessions; browser and TMA retain HttpOnly cookie sessions, with Telegram `initData` accepted only for
-the initial TMA session exchange. TMA bootstrap tolerates delayed Telegram Desktop SDK initialization
-and falls back to launch data from the Telegram URL, while the backend remains the authority that
-validates its signature. A recognized TMA never offers embedded Google OAuth. Account deletion
+the initial TMA session exchange. TMA bootstrap accepts SDK or URL launch data while the backend
+remains the signature-validation authority. A Telegram embedded-browser launch without proof never
+offers Google OAuth and instead opens the configured Main Mini App through the bot. Account deletion
 atomically cancels cancellable active work and
 leaves an anonymized customer tombstone; ADMIN self-deletion is forbidden. Web and TMA expose the
 public `/account/delete` flow with fresh provider proof and a separate final confirmation. A new login

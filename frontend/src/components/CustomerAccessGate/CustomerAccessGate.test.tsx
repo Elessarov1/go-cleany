@@ -11,6 +11,7 @@ import { AuthenticationRequiredState } from "./CustomerAccessGate";
 describe("AuthenticationRequiredState", () => {
   it("never offers embedded Google login inside Telegram", async () => {
     const close = vi.fn();
+    const openTelegramLink = vi.fn();
     const authApi = {
       getCurrent: vi.fn().mockResolvedValue({
         authenticated: false,
@@ -24,7 +25,7 @@ describe("AuthenticationRequiredState", () => {
       googleLoginUrl: vi.fn(() => "/google-login"),
       googleAdminLoginUrl: vi.fn(() => "/google-admin"),
     } as AuthApi;
-    const platform = { kind: "TELEGRAM", close } as unknown as Platform;
+    const platform = { kind: "TELEGRAM", close, openTelegramLink } as unknown as Platform;
     const router = createMemoryRouter([
       { path: "/", element: <AuthenticationRequiredState /> },
     ]);
@@ -37,8 +38,11 @@ describe("AuthenticationRequiredState", () => {
       </PlatformProvider>,
     );
 
-    expect(await screen.findByRole("heading", { name: "We could not confirm your sign-in" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Open Loco Place as a Mini App" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Continue with Google" })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Open Loco Place" }));
+    expect(openTelegramLink).toHaveBeenCalledWith("https://t.me/go_cleany_bot?startapp");
 
     await userEvent.click(screen.getByRole("button", { name: "Close Mini App" }));
     expect(close).toHaveBeenCalledOnce();

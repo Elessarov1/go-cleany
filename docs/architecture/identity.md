@@ -92,11 +92,11 @@ fresh Google login; TMA submits fresh Telegram `initData`. The route explains ca
 anti-fraud data before a separate final confirmation. Success invalidates local authentication state
 and lands on the public `/account/deleted`; ADMIN self-deletion remains forbidden.
 
-The frontend detects TMA from raw Telegram launch-data candidates and Telegram platform launch hints,
-not from a one-time assumption that SDK `initData` is already populated. URL launch data is only a
-transport fallback and is still validated by the backend during the session exchange. A recognized
-TMA never starts embedded Google OAuth; if Telegram launch data is unavailable, it asks the customer
-to close and reopen the Mini App from the bot chat.
+The frontend reads TMA proof from SDK `initData` or the equivalent `tgWebAppData` launch parameter;
+the backend still validates its signature during the session exchange. A Telegram platform hint
+without this proof identifies Telegram's embedded browser, not an authenticated Mini App. It never
+starts embedded Google OAuth: the recovery action opens the bot's configured Main Mini App through a
+`startapp` link, where Telegram issues fresh launch data.
 
 ## Web
 

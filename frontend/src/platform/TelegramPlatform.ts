@@ -21,10 +21,8 @@ interface TelegramWebApp {
   ready(): void;
   close(): void;
   openLink(url: string): void;
+  openTelegramLink?(url: string): void;
 }
-
-const TELEGRAM_BOOTSTRAP_WAIT_MS = 1_000;
-const TELEGRAM_BOOTSTRAP_POLL_MS = 25;
 
 declare global {
   interface Window {
@@ -175,27 +173,20 @@ export class TelegramPlatform implements Platform {
     }
     window.open(url, "_blank", "noopener,noreferrer");
   }
+
+  openTelegramLink(url: string): void {
+    const webApp = getWebApp();
+    if (typeof webApp?.openTelegramLink === "function") {
+      webApp.openTelegramLink(url);
+      return;
+    }
+    window.location.assign(url);
+  }
 }
 
-export async function isTelegramWebAppAvailable(
-  waitMs = TELEGRAM_BOOTSTRAP_WAIT_MS,
-): Promise<boolean> {
-  if (telegramAuthData()) {
-    return true;
-  }
-  if (!hasTelegramContextHint()) {
-    return false;
-  }
-
-  const deadline = Date.now() + Math.max(0, waitMs);
-  while (Date.now() < deadline) {
-    await new Promise((resolve) => window.setTimeout(resolve, TELEGRAM_BOOTSTRAP_POLL_MS));
-    if (telegramAuthData()) {
-      return true;
-    }
-  }
-
-  // Keep the Telegram shell even when launch data never arrives. This prevents
-  // an embedded Google OAuth flow and lets the UI explain how to reopen the TMA.
+export function isTelegramWebAppAvailable(): boolean {
+  // Telegram's embedded browser exposes the platform launch hint without user
+  // proof. Keep its shell so Google OAuth is never opened inside Telegram; the
+  // authentication gate will relaunch the real Main Mini App in this case.
   return hasTelegramContextHint();
 }
