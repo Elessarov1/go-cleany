@@ -4,6 +4,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
@@ -12,7 +16,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.cleany.base.BaseIntegrationTest;
 import com.cleany.customer.CustomerAccount;
@@ -63,6 +69,12 @@ class ReferralFinancialModelIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private ReferralService referralService;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     @BeforeEach
     @AfterEach
@@ -135,6 +147,45 @@ class ReferralFinancialModelIntegrationTest extends BaseIntegrationTest {
         );
     }
 
+    @Test
+    void completionRacingReferrerDeletionCannotLeaveAnAvailableReward() throws Exception {
+        CustomerAccount referrer = customerRepository.save(new CustomerAccount(Instant.now()));
+        codeRepository.save(ReferralCode.customer("RACE10", referrer.getId(), Instant.now()));
+        createOrder(800003L, "RACE10").andExpect(status().isCreated());
+        CleaningOrder referredOrder = orderRepository.findAll().getFirst();
+        orderService.acceptOrder(referredOrder.getId(), CLEANER_ID);
+        orderService.markAwaitingReport(referredOrder.getId(), CLEANER_ID);
+
+        var completionStarted = new CountDownLatch(1);
+        var completion = new AtomicReference<java.util.concurrent.Future<?>>();
+        var executor = Executors.newSingleThreadExecutor();
+        try {
+            transactionTemplate.executeWithoutResult(ignored -> {
+                customerRepository.findByIdForUpdate(referrer.getId()).orElseThrow();
+                completion.set(executor.submit(() -> {
+                    completionStarted.countDown();
+                    orderService.completeOrder(referredOrder.getId(), CLEANER_ID, null);
+                }));
+                await(completionStarted);
+                jdbcTemplate.update("""
+                        update customer_account
+                           set status = 'DELETED', deleted_at = ?, phone = null
+                         where id = ?
+                        """, java.sql.Timestamp.from(Instant.now()), referrer.getId());
+            });
+            completion.get().get(10, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdownNow();
+        }
+
+        Assertions.assertEquals(
+                0L,
+                rewardRepository.countByCustomerIdAndStatus(
+                        referrer.getId(), ReferralRewardStatus.AVAILABLE
+                )
+        );
+    }
+
     private org.springframework.test.web.servlet.ResultActions createOrder(
             long telegramUserId,
             String referralCode
@@ -169,5 +220,16 @@ class ReferralFinancialModelIntegrationTest extends BaseIntegrationTest {
         orderService.acceptOrder(order.getId(), CLEANER_ID);
         orderService.markAwaitingReport(order.getId(), CLEANER_ID);
         orderService.completeOrder(order.getId(), CLEANER_ID, null);
+    }
+
+    private static void await(CountDownLatch latch) {
+        try {
+            if (!latch.await(10, TimeUnit.SECONDS)) {
+                throw new AssertionError("Timed out waiting for concurrent completion");
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError("Interrupted while waiting for concurrent completion", exception);
+        }
     }
 }

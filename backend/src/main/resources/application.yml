@@ -76,6 +76,9 @@ cleaning:
       duplex-surcharge: ${CLEANING_PRICES_DEEP_DUPLEX_SURCHARGE}
 
 referral:
+  anti-abuse:
+    hmac-key: ${REFERRAL_ELIGIBILITY_HMAC_KEY:}
+    marker-retention: ${REFERRAL_ELIGIBILITY_MARKER_RETENTION:365d}
   financial:
     commission-rate: ${REFERRAL_COMMISSION_RATE:0.15}
     customer:

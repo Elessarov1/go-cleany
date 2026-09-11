@@ -11,6 +11,7 @@ delete from customer_session;
 delete from idempotency_record;
 delete from external_provider_job;
 delete from security_audit_event;
+delete from referral_eligibility_marker;
 
 -- Break the two intentional reservation cycles before deleting their operational rows.
 update cleaning_order
@@ -74,6 +75,7 @@ select setval(pg_get_serial_sequence('cleaning_order_photo', 'id'), 1, false);
 select setval(pg_get_serial_sequence('cleaning_order_event', 'id'), 1, false);
 select setval(pg_get_serial_sequence('partner_payout', 'id'), 1, false);
 select setval(pg_get_serial_sequence('referral_reward', 'id'), 1, false);
+select setval(pg_get_serial_sequence('referral_eligibility_marker', 'id'), 1, false);
 select setval(pg_get_serial_sequence('rental_cleaning_benefit', 'id'), 1, false);
 select setval(pg_get_serial_sequence('rental_booking', 'id'), 1, false);
 select setval(pg_get_serial_sequence('rental_search_event', 'id'), 1, false);

@@ -54,6 +54,12 @@ function routeMeta(pathname: string): RouteMeta {
   if (pathname === "/account/activity") {
     return { titleKey: "titles.activity", descriptionKey: "titles.activityDescription", indexable: false };
   }
+  if (pathname === "/account/delete") {
+    return { titleKey: "titles.accountDeletion", descriptionKey: "titles.accountDeletionDescription", indexable: true, canonicalPath: "/account/delete" };
+  }
+  if (pathname === "/account/deleted") {
+    return { titleKey: "titles.accountDeleted", descriptionKey: "titles.privateDescription", indexable: false };
+  }
   if (pathname === "/account" || pathname.startsWith("/account/")) {
     return { titleKey: "titles.account", descriptionKey: "titles.accountDescription", indexable: false };
   }

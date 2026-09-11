@@ -19,6 +19,25 @@ fi
 
 require_production_env "${env_file}"
 
+referral_eligibility_hmac_key=${REFERRAL_ELIGIBILITY_HMAC_KEY:-}
+if [[ -z ${referral_eligibility_hmac_key} ]]; then
+  referral_eligibility_hmac_key=$(read_env_value "${env_file}" REFERRAL_ELIGIBILITY_HMAC_KEY)
+fi
+if [[ -z ${referral_eligibility_hmac_key} ]]; then
+  echo "REFERRAL_ELIGIBILITY_HMAC_KEY is required and must remain stable for at least one year." >&2
+  exit 1
+fi
+if ! referral_eligibility_hmac_key_length=$(
+  printf '%s' "${referral_eligibility_hmac_key}" | base64 --decode 2>/dev/null | wc -c
+); then
+  echo "REFERRAL_ELIGIBILITY_HMAC_KEY must be valid Base64 for exactly 32 bytes." >&2
+  exit 1
+fi
+if [[ ${referral_eligibility_hmac_key_length} -ne 32 ]]; then
+  echo "REFERRAL_ELIGIBILITY_HMAC_KEY must be valid Base64 for exactly 32 bytes." >&2
+  exit 1
+fi
+
 compose_command "${root}" "${env_file}"
 
 mkdir -p -- "${root}/.deploy-state"

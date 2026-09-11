@@ -3,7 +3,7 @@ title: Customer Identity
 type: architecture
 status: active
 scope: platform
-updated: 2026-09-10
+updated: 2026-09-11
 ---
 
 # Identity
@@ -65,6 +65,38 @@ then cancels all of them atomically. Any non-cancellable operation returns
 The account row remains as an anonymized tombstone so required operational and financial history can
 keep its internal customer ID; PII, identities, roles, sessions, endpoints, inbox and user comments are
 removed.
+
+Deletion does not freeze an account and a later login never restores the old profile or history. A
+later provider login creates a clean `CustomerAccount`. If the deleted customer had a completed
+Cleaning order, a separate ledger retains `HmacSHA256(provider + issuer + subject)` markers for all
+identities linked at deletion time for one year. The HMAC key is a dedicated backend secret and must
+remain stable for at least that period. The ledger has no customer or transaction FK and contains no
+raw provider subject, email, phone, device or payment identifier. It is pseudonymous retained data,
+not anonymous data, and is used only to deny another first-order Cleaning referral benefit.
+
+The deletion transaction first verifies every vertical, then cancels all cancellable operations, then
+runs referral cleanup. Customer referral codes are deactivated; `AVAILABLE` and `RESERVED` rewards
+become `REVOKED` with reservations cleared; `REDEEMED` rewards and required financial snapshots stay
+in retained history. Any cancellation blocker rolls back all phases. A pending referred order that is
+completed after its referrer was deleted cannot create a new reward for that deleted account.
+
+Provider-only matching intentionally cannot recognize a customer who returns exclusively through a
+completely new, never-linked provider. v1 accepts that bypass rather than collecting broader identity
+signals. Retention cleanup physically removes expired markers, and the pre-commercial reset removes
+all markers.
+The public privacy notice discloses the marker category, anti-fraud purpose and one-year duration;
+those words and the duration still require legal review before a store submission.
+
+Web and Telegram Mini App expose self-service deletion at `/account/delete`. Web deletion requires a
+fresh Google login; TMA submits fresh Telegram `initData`. The route explains cancellation and retained
+anti-fraud data before a separate final confirmation. Success invalidates local authentication state
+and lands on the public `/account/deleted`; ADMIN self-deletion remains forbidden.
+
+The frontend detects TMA from raw Telegram launch-data candidates and Telegram platform launch hints,
+not from a one-time assumption that SDK `initData` is already populated. URL launch data is only a
+transport fallback and is still validated by the backend during the session exchange. A recognized
+TMA never starts embedded Google OAuth; if Telegram launch data is unavailable, it asks the customer
+to close and reopen the Mini App from the bot chat.
 
 ## Web
 

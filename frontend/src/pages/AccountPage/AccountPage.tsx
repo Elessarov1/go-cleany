@@ -217,6 +217,16 @@ export function AccountPage() {
         </section>
       ) : null}
       {error ? <p className="form-alert" role="alert">{t("account.linkError")}</p> : null}
+
+      <section className="account-danger-zone">
+        <div>
+          <h2>{t("account.dangerTitle")}</h2>
+          <p>{t("account.dangerText")}</p>
+        </div>
+        <Link className="button button--danger" to="/account/delete">
+          {t("account.deleteAccount")}
+        </Link>
+      </section>
     </div>
   );
 }

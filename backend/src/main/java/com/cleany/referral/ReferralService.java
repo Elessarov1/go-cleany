@@ -7,6 +7,8 @@ import java.util.Locale;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cleany.customer.CustomerAccountRepository;
+import com.cleany.customer.CustomerAccountStatus;
 import com.cleany.finance.OrderFinancialCalculator;
 import com.cleany.order.CleaningOrder;
 import com.cleany.order.CleaningOrderRepository;
@@ -20,6 +22,8 @@ public class ReferralService {
     private final ReferralRewardRepository rewardRepository;
     private final PartnerPayoutRepository payoutRepository;
     private final CleaningOrderRepository orderRepository;
+    private final CustomerAccountRepository customerAccountRepository;
+    private final ReferralEligibilityService eligibilityService;
     private final OrderFinancialCalculator financialCalculator;
     private final ReferralCodeGenerator codeGenerator;
     private final Clock clock;
@@ -30,6 +34,8 @@ public class ReferralService {
             ReferralRewardRepository rewardRepository,
             PartnerPayoutRepository payoutRepository,
             CleaningOrderRepository orderRepository,
+            CustomerAccountRepository customerAccountRepository,
+            ReferralEligibilityService eligibilityService,
             OrderFinancialCalculator financialCalculator,
             ReferralCodeGenerator codeGenerator,
             Clock clock
@@ -39,6 +45,8 @@ public class ReferralService {
         this.rewardRepository = rewardRepository;
         this.payoutRepository = payoutRepository;
         this.orderRepository = orderRepository;
+        this.customerAccountRepository = customerAccountRepository;
+        this.eligibilityService = eligibilityService;
         this.financialCalculator = financialCalculator;
         this.codeGenerator = codeGenerator;
         this.clock = clock;
@@ -168,6 +176,7 @@ public class ReferralService {
                         "Referral code can only be applied to the customer's first order"
                 );
             }
+            eligibilityService.requireFirstOrderReferralEligible(customerId);
             ReferralCode code = codeRepository.findByCodeIgnoreCaseAndActiveTrue(referralCode)
                     .orElseThrow(() -> new ReferralNotApplicableException("Referral code is invalid"));
             return switch (code.getOwnerType()) {
@@ -231,6 +240,12 @@ public class ReferralService {
 
     private void createReferrerReward(CleaningOrder order) {
         if (order.getReferrerCustomerId() == null || rewardRepository.existsBySourceOrderId(order.getId())) {
+            return;
+        }
+        boolean activeReferrer = customerAccountRepository.findByIdForUpdate(order.getReferrerCustomerId())
+                .map(account -> account.getStatus() == CustomerAccountStatus.ACTIVE)
+                .orElse(false);
+        if (!activeReferrer) {
             return;
         }
         rewardRepository.save(new ReferralReward(

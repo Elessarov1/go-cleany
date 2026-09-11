@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260918-01" author="loco-place">
+        <comment>Retain pseudonymous first-order referral eligibility after account deletion.</comment>
+        <createTable tableName="referral_eligibility_marker">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_referral_eligibility_marker" nullable="false"/>
+            </column>
+            <column name="provider" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="identity_digest" type="CHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="scope" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint tableName="referral_eligibility_marker"
+                             columnNames="provider, identity_digest, scope"
+                             constraintName="uk_referral_eligibility_marker_identity_scope"/>
+        <createIndex tableName="referral_eligibility_marker" indexName="idx_referral_eligibility_marker_expiry">
+            <column name="expires_at"/>
+            <column name="id"/>
+        </createIndex>
+
+        <addColumn tableName="referral_reward">
+            <column name="revoked_at" type="TIMESTAMP WITH TIME ZONE"/>
+        </addColumn>
+
+        <sql dbms="postgresql"><![CDATA[
+            alter table referral_eligibility_marker
+                add constraint ck_referral_eligibility_marker_provider
+                    check (provider in ('GOOGLE', 'APPLE', 'TELEGRAM')),
+                add constraint ck_referral_eligibility_marker_digest
+                    check (identity_digest ~ '^[0-9a-f]{64}$'),
+                add constraint ck_referral_eligibility_marker_scope
+                    check (scope = 'CLEANING_FIRST_ORDER_REFERRAL'),
+                add constraint ck_referral_eligibility_marker_expiry
+                    check (expires_at > created_at);
+
+            alter table referral_reward drop constraint ck_referral_reward_status;
+            alter table referral_reward
+                add constraint ck_referral_reward_status
+                    check (status in ('AVAILABLE', 'RESERVED', 'REDEEMED', 'REVOKED')),
+                add constraint ck_referral_reward_revocation
+                    check (
+                        (status = 'REVOKED' and revoked_at is not null and reserved_order_id is null)
+                        or
+                        (status <> 'REVOKED' and revoked_at is null)
+                    );
+        ]]></sql>
+
+        <rollback>
+            <sql dbms="postgresql"><![CDATA[
+                alter table referral_reward drop constraint ck_referral_reward_revocation;
+                alter table referral_reward drop constraint ck_referral_reward_status;
+                delete from referral_reward where status = 'REVOKED';
+                alter table referral_reward
+                    add constraint ck_referral_reward_status
+                        check (status in ('AVAILABLE', 'RESERVED', 'REDEEMED'));
+            ]]></sql>
+            <dropColumn tableName="referral_reward" columnName="revoked_at"/>
+            <dropTable tableName="referral_eligibility_marker"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

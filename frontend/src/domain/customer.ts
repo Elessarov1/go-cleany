@@ -1,3 +1,5 @@
+import type { AuthenticationProvider } from "./authentication";
+
 export interface CustomerProfile {
   phone: string | null;
 }
@@ -112,4 +114,11 @@ export interface CustomerHome {
   activeTransactionCount: number;
   primaryAction: CustomerHomePrimaryAction | null;
   repeatOpportunity: CustomerHomeRepeatOpportunity | null;
+}
+
+export interface AccountDeletionChallenge {
+  id: string;
+  provider: AuthenticationProvider;
+  nonce: string | null;
+  expiresAt: string;
 }

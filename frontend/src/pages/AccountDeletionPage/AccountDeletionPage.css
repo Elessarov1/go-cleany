@@ -1,0 +1,76 @@
+.account-deletion-page {
+  width: 100%;
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+.account-deletion-card,
+.account-deletion-action,
+.account-deletion-notice,
+.account-deletion-error {
+  padding: 18px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+}
+
+.account-deletion-card h2,
+.account-deletion-notice h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+
+.account-deletion-card ul {
+  display: grid;
+  margin: 0;
+  padding-left: 20px;
+  gap: 10px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.account-deletion-action,
+.account-deletion-notice,
+.account-deletion-error {
+  display: grid;
+  margin-top: 16px;
+  gap: 14px;
+}
+
+.account-deletion-action p,
+.account-deletion-notice p,
+.account-deletion-error p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.account-deletion-notice,
+.account-deletion-error {
+  background: var(--color-danger-soft);
+  border-color: color-mix(in srgb, var(--color-danger) 28%, var(--color-line));
+}
+
+.account-deletion-error .button {
+  justify-self: start;
+}
+
+.account-deleted-page {
+  max-width: 560px;
+  margin-inline: auto;
+}
+
+@media (max-width: 480px) {
+  .account-deletion-card,
+  .account-deletion-action,
+  .account-deletion-notice,
+  .account-deletion-error {
+    padding: 16px;
+  }
+
+  .account-deletion-error .button {
+    width: 100%;
+  }
+}

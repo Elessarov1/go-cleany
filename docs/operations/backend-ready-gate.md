@@ -20,6 +20,9 @@ Required evidence:
 - iOS AASA for `com.locoplace.app.staging` and Android `assetlinks.json` matching the release key;
 - generated Dart headless configuration and authenticated business read flow, using a short-lived
   first-party access token obtained by the separately recorded provider login smoke;
+- an in-app account deletion entry in every shipped Flutter application, exercising the generated
+  create/confirm deletion operations with fresh provider proof and clearing local credentials after
+  success; a public web deletion URL alone does not satisfy this client requirement;
 - migration and pre-commercial reset rehearsal on a controlled copy;
 - local `loco-perf` Caddy mixed-profile before/after comparison when the release candidate is fixed.
 

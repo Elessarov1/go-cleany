@@ -42,8 +42,11 @@ export class MockAuthApi implements AuthApi {
       ? GOOGLE_UNAVAILABLE
       : normalized === "WEB_UNAUTHENTICATED"
         ? ANONYMOUS
+      : normalized === "ACCOUNT_DELETE_ADMIN"
+        ? ADMIN
       : normalized === "WEB_CUSTOMER"
         || normalized?.startsWith("HOME_")
+        || normalized?.startsWith("ACCOUNT_DELETE_")
         || normalized === "SERVICE_CATALOG_CLEANING_IN_TEST_CUSTOMER"
         ? CUSTOMER
         : ADMIN;

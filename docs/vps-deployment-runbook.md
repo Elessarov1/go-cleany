@@ -113,6 +113,9 @@ nano .env.production
 - `CLEANING_PRICES_*` — утверждённые цены в TRY.
 - `REFERRAL_*` — ставки и денежные caps реферальной модели; безопасные значения v1 уже находятся
   в `.env.production.example`.
+- `REFERRAL_ELIGIBILITY_HMAC_KEY` — отдельные 32 random bytes в Base64 для provider-identity
+  anti-abuse markers; обязателен и не ротируется минимум один год;
+- `REFERRAL_ELIGIBILITY_MARKER_RETENTION` — срок marker, по умолчанию `365d`;
 - `RENTAL_*` — минимальный/максимальный срок, long-term скидка, горизонт начала бронирования и
   лимит активных броней клиента. Суточные цены квартир задаются в `/admin/rent`, а не в `.env`;
 - `RENTAL_MEDIA_CACHE_ENABLED` и `RENTAL_MEDIA_CACHE_MAX_SIZE` — общий для пользователей

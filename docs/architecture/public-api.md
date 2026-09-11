@@ -37,5 +37,14 @@ serializes generated `Date` values back to their canonical ISO wire strings befo
 the existing UI domain types and follows cursor pages until the former list-shaped interface is
 complete.
 
+Account deletion uses the generated `createAccountDeletionRequest` and
+`confirmAccountDeletion` operations without a React-only wire contract. The public web deletion URL
+is `/account/delete`; Web confirms through a freshly issued Google OIDC session without sending an ID
+token to the deletion operation, while TMA sends fresh `telegramInitData`. Native clients use the same
+operations with their provider proof. A successful client must immediately discard its local auth
+state and stop customer requests. The generated Dart API already includes these operations; every
+future Flutter application must also provide a discoverable in-app deletion entry, not only link to
+the public website.
+
 The current contract is `1.0.0-rc.1`. Promotion to `1.0.0` belongs to the Backend Ready Gate. After
 promotion, breaking wire changes require `/api/v2`.

@@ -39,6 +39,9 @@ public class ReferralReward {
     @Column(name = "redeemed_at")
     private Instant redeemedAt;
 
+    @Column(name = "revoked_at")
+    private Instant revokedAt;
+
     protected ReferralReward() {
     }
 
@@ -73,7 +76,28 @@ public class ReferralReward {
         redeemedAt = Objects.requireNonNull(at);
     }
 
+    void revoke(Instant at) {
+        if (status == ReferralRewardStatus.REDEEMED || status == ReferralRewardStatus.REVOKED) {
+            return;
+        }
+        status = ReferralRewardStatus.REVOKED;
+        reservedOrderId = null;
+        revokedAt = Objects.requireNonNull(at);
+    }
+
     public Long getId() {
         return id;
+    }
+
+    public ReferralRewardStatus getStatus() {
+        return status;
+    }
+
+    public Long getReservedOrderId() {
+        return reservedOrderId;
+    }
+
+    public Instant getRevokedAt() {
+        return revokedAt;
     }
 }

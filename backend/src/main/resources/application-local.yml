@@ -53,6 +53,9 @@ cleaning:
       duplex-surcharge: 450
 
 referral:
+  anti-abuse:
+    hmac-key: ${REFERRAL_ELIGIBILITY_HMAC_KEY:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
+    marker-retention: ${REFERRAL_ELIGIBILITY_MARKER_RETENTION:365d}
   financial:
     commission-rate: ${REFERRAL_COMMISSION_RATE:0.15}
     customer:

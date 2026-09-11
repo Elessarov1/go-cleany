@@ -34,6 +34,17 @@ Referral-код клиента становится доступен после 
 пригласившему создаётся отдельный reward 10% на один будущий заказ. Несколько rewards используются
 по одному; reward резервируется заказом и возвращается при отмене.
 
+Повторная first-order выгода после удаления аккаунта защищена отдельным псевдонимным ledger. Если у
+удаляемого клиента была завершённая Cleaning, для каждого связанного Google / Apple / Telegram
+identity сохраняется только HMAC-маркер со сроком один год. При quote и create customer- и
+partner-referral проверяются одинаково; совпадение возвращает общий `referral_not_applicable`, не
+раскрывая распознавание прежнего аккаунта. Полностью новый, ранее не связанный provider остаётся
+допустимым ограничением v1; телефон, email, IP, device ID и payment fingerprint не используются.
+
+При удалении клиентские коды деактивируются, `AVAILABLE` / `RESERVED` rewards переводятся в
+`REVOKED` с очисткой reservation, а `REDEEMED` и финансовые snapshots сохраняются. Завершение уже
+созданного referral-заказа не выдаёт новый reward referrer-аккаунту со статусом `DELETED`.
+
 ## Partner referral
 
 Администратор создаёт партнёра в web-админке и передаёт ему универсальный код. Первый заказ нового
@@ -55,7 +66,11 @@ REFERRAL_PARTNER_CUSTOMER_DISCOUNT_RATE=0.05
 REFERRAL_PARTNER_CUSTOMER_MAX_DISCOUNT=2000
 REFERRAL_PARTNER_PAYOUT_RATE=0.10
 REFERRAL_PARTNER_MAX_PAYOUT=2000
+REFERRAL_ELIGIBILITY_HMAC_KEY=<32 random bytes encoded as Base64>
+REFERRAL_ELIGIBILITY_MARKER_RETENTION=365d
 ```
 
 Backend проверяет комбинацию ставок при запуске. Конфигурация, способная потратить больше 15%
 базовой цены одного заказа, считается ошибочной и останавливает запуск приложения.
+HMAC secret также обязателен для запуска, хранится только на backend и должен оставаться стабильным
+не меньше максимального срока жизни marker.

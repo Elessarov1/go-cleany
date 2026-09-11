@@ -31,6 +31,7 @@ export function SiteFooter() {
           <strong>{t("footer.legal")}</strong>
           <Link to="/privacy">{t("footer.privacy")}</Link>
           <Link to="/terms">{t("footer.terms")}</Link>
+          <Link to="/account/delete">{t("footer.deleteAccount")}</Link>
         </nav>
 
         <nav className="site-footer__group" aria-label={t("footer.contacts")}>

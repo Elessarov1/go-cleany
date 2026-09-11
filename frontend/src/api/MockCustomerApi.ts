@@ -1,4 +1,5 @@
-import type { AccountIdentities, AccountLinkInitiated, CustomerActivity, CustomerActivityItem, CustomerHome, CustomerHomePrimaryAction, CustomerHomeRepeatOpportunity, CustomerNotification, CustomerNotificationPage, CustomerProfile } from "../domain/customer";
+import type { AccountDeletionChallenge, AccountIdentities, AccountLinkInitiated, CustomerActivity, CustomerActivityItem, CustomerHome, CustomerHomePrimaryAction, CustomerHomeRepeatOpportunity, CustomerNotification, CustomerNotificationPage, CustomerProfile } from "../domain/customer";
+import { ApiError } from "./ApiError";
 import type { CustomerApi } from "./CustomerApi";
 
 export class MockCustomerApi implements CustomerApi {
@@ -7,6 +8,7 @@ export class MockCustomerApi implements CustomerApi {
   }
 
   private linked = false;
+  private deletionChallenge: AccountDeletionChallenge | null = null;
   private notifications: CustomerNotification[] = [
     { id: 3, type: "SUPPORT_CASE_CREATED", action: { type: "OPEN_SUPPORT_CASE", caseId: 701 }, createdAt: new Date().toISOString(), readAt: null },
     { id: 2, type: "RENTAL_BOOKING_CONFIRMED", action: { type: "OPEN_TRANSACTION", service: "RENTAL", entityId: 2 }, createdAt: new Date().toISOString(), readAt: null },
@@ -158,6 +160,37 @@ export class MockCustomerApi implements CustomerApi {
   async confirmTelegramLink(): Promise<AccountIdentities> {
     this.linked = true;
     return this.getAccountIdentities();
+  }
+
+  async createAccountDeletionRequest(): Promise<AccountDeletionChallenge> {
+    const scenario = new URLSearchParams(window.location.search).get("scenario")?.toUpperCase();
+    if (scenario === "ACCOUNT_DELETE_ADMIN") {
+      throw new ApiError("Administrator accounts cannot be deleted", 409, "admin_account_self_deletion_forbidden");
+    }
+    this.deletionChallenge = {
+      id: crypto.randomUUID(),
+      provider: scenario === "ACCOUNT_DELETE_TMA" ? "TELEGRAM" : "GOOGLE",
+      nonce: null,
+      expiresAt: new Date(Date.now() + 300_000).toISOString(),
+    };
+    return this.deletionChallenge;
+  }
+
+  async confirmAccountDeletion(challengeId: string): Promise<void> {
+    const scenario = new URLSearchParams(window.location.search).get("scenario")?.toUpperCase();
+    if (!this.deletionChallenge || this.deletionChallenge.id !== challengeId) {
+      throw new ApiError("Challenge expired", 409, "auth_challenge_expired");
+    }
+    if (scenario === "ACCOUNT_DELETE_BLOCKED") {
+      throw new ApiError("Deletion is blocked", 409, "account_deletion_blocked_by_active_operation");
+    }
+    if (scenario === "ACCOUNT_DELETE_EXPIRED") {
+      throw new ApiError("Proof expired", 401, "auth_challenge_expired");
+    }
+    if (scenario === "ACCOUNT_DELETE_NETWORK") {
+      throw new TypeError("Network request failed");
+    }
+    this.deletionChallenge = null;
   }
 
   async getNotifications(cursor: string | null = null, size = 20): Promise<CustomerNotificationPage> {

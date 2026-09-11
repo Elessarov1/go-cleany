@@ -141,6 +141,7 @@ Repository → Settings → Environments → staging
 | `GOOGLE_CLIENT_ID` | Google OAuth web client ID для staging |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth web client secret |
 | `ADMIN_GOOGLE_EMAILS` | allowlist verified Google emails через запятую |
+| `REFERRAL_ELIGIBILITY_HMAC_KEY` | отдельные 32 random bytes в Base64; не менять минимум один год |
 
 ### Environment variables
 
@@ -177,6 +178,10 @@ Google credentials и admin allowlist должны храниться в Environ
 ```text
 https://loco-place.com/login/oauth2/code/google
 ```
+
+`REFERRAL_ELIGIBILITY_HMAC_KEY` обязателен независимо от provider configuration. Он создаёт только
+псевдонимные referral anti-abuse markers и должен оставаться стабильным не меньше одного года;
+ротация до истечения marker сделает прежние записи несопоставимыми.
 
 `RENTAL_MEDIA_CACHE_*` управляют общим для backend-instance weighted cache публичных Rental-фотографий. `64MB` — pilot default.
 
@@ -303,6 +308,7 @@ cd /opt/go-cleany
 | --- | --- |
 | `Missing CLEANER_TELEGRAM_IDS staging variable` | variable в environment `staging` |
 | `Missing ADMIN_GOOGLE_EMAILS staging secret` | secret в environment при включённом Google login |
+| `Missing REFERRAL_ELIGIBILITY_HMAC_KEY staging secret` | создать 32 random bytes, сохранить Base64 в environment secret |
 | `must be comma-separated numeric Telegram IDs` | убрать пробелы и посторонние символы |
 | `Host key verification failed` | `STAGING_SSH_KNOWN_HOSTS`, host и SSH port |
 | `Permission denied (publickey)` | Actions private key, `authorized_keys`, SSH user |

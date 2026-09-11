@@ -1,5 +1,6 @@
 package com.cleany.retention;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -12,6 +13,7 @@ import com.cleany.order.CleaningOrderEventRepository;
 import com.cleany.order.CleaningOrderIssuePhotoRepository;
 import com.cleany.order.CleaningOrderPhotoRepository;
 import com.cleany.order.CleaningOrderRepository;
+import com.cleany.referral.ReferralEligibilityService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,6 +26,8 @@ public class DataRetentionCleanupService {
     private final CleaningOrderPhotoRepository completionPhotoRepository;
     private final CleaningOrderEventRepository eventRepository;
     private final MediaOrphanCleanupService mediaOrphanCleanupService;
+    private final ReferralEligibilityService referralEligibilityService;
+    private final Clock clock;
 
     @Transactional
     public DataRetentionCleanupResult cleanupBatch(Instant cutoff, int batchSize) {
@@ -41,6 +45,8 @@ public class DataRetentionCleanupService {
             auditEvents = eventRepository.deleteByOrderIds(orderIds);
         }
         int mediaAssets = mediaOrphanCleanupService.deleteUnreferencedBatch(batchSize);
+        int referralEligibilityMarkers = referralEligibilityService.deleteExpiredMarkers(
+                clock.instant(), batchSize);
         return new DataRetentionCleanupResult(
                 cutoff,
                 orderIds.size(),
@@ -48,7 +54,10 @@ public class DataRetentionCleanupService {
                 completionPhotos,
                 auditEvents,
                 mediaAssets,
-                orderIds.size() == batchSize || mediaAssets == batchSize
+                referralEligibilityMarkers,
+                orderIds.size() == batchSize
+                        || mediaAssets == batchSize
+                        || referralEligibilityMarkers == batchSize
         );
     }
 }

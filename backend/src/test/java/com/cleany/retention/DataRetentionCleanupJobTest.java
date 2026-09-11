@@ -90,6 +90,6 @@ class DataRetentionCleanupJobTest {
     }
 
     private static DataRetentionCleanupResult result(Instant cutoff, boolean hasMoreWork) {
-        return new DataRetentionCleanupResult(cutoff, 0, 0, 0, 0, 0, hasMoreWork);
+        return new DataRetentionCleanupResult(cutoff, 0, 0, 0, 0, 0, 0, hasMoreWork);
     }
 }

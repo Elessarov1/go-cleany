@@ -1,0 +1,46 @@
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { createMemoryRouter, RouterProvider } from "react-router-dom";
+import { describe, expect, it, vi } from "vitest";
+import type { AuthApi } from "../../api/AuthApi";
+import { AuthApiProvider } from "../../api/AuthApiProvider";
+import type { Platform } from "../../platform/Platform";
+import { PlatformProvider } from "../../platform/PlatformProvider";
+import { AuthenticationRequiredState } from "./CustomerAccessGate";
+
+describe("AuthenticationRequiredState", () => {
+  it("never offers embedded Google login inside Telegram", async () => {
+    const close = vi.fn();
+    const authApi = {
+      getCurrent: vi.fn().mockResolvedValue({
+        authenticated: false,
+        customerId: null,
+        displayName: null,
+        provider: null,
+        roles: [],
+        loginProviders: { google: { available: true } },
+      }),
+      logout: vi.fn(),
+      googleLoginUrl: vi.fn(() => "/google-login"),
+      googleAdminLoginUrl: vi.fn(() => "/google-admin"),
+    } as AuthApi;
+    const platform = { kind: "TELEGRAM", close } as unknown as Platform;
+    const router = createMemoryRouter([
+      { path: "/", element: <AuthenticationRequiredState /> },
+    ]);
+
+    render(
+      <PlatformProvider platform={platform}>
+        <AuthApiProvider api={authApi}>
+          <RouterProvider router={router} />
+        </AuthApiProvider>
+      </PlatformProvider>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "We could not confirm your sign-in" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Continue with Google" })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Close Mini App" }));
+    expect(close).toHaveBeenCalledOnce();
+  });
+});

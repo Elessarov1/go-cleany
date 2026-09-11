@@ -1,9 +1,11 @@
 package com.cleany.authentication;
 
 import java.time.LocalDate;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.nio.charset.StandardCharsets;
 import java.net.URI;
+import java.sql.Timestamp;
 import java.util.Base64;
 import com.jayway.jsonpath.JsonPath;
 
@@ -36,7 +38,10 @@ import com.cleany.customer.CustomerExternalIdentityRepository;
 import com.cleany.order.CleaningOrderRepository;
 import com.cleany.order.CleaningOrderService;
 import com.cleany.order.CleaningOrderStatus;
+import com.cleany.referral.ReferralEligibilityService;
+import com.cleany.referral.ReferralService;
 import com.cleany.telegram.bot.TelegramUpdate;
+import com.cleany.telegram.TelegramInitDataTestFactory;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
@@ -97,6 +102,12 @@ class WebSecurityIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private TelegramNativeLoginService telegramNativeLoginService;
 
+    @Autowired
+    private ReferralService referralService;
+
+    @Autowired
+    private ReferralEligibilityService referralEligibilityService;
+
     @BeforeEach
     @AfterEach
     void cleanDatabase() {
@@ -115,7 +126,15 @@ class WebSecurityIntegrationTest extends BaseIntegrationTest {
         jdbcTemplate.update("delete from rental_search_event");
         jdbcTemplate.update("update rental_booking set search_execution_id = null");
         jdbcTemplate.update("delete from rental_search_execution");
+        jdbcTemplate.update("delete from customer_reminder");
+        jdbcTemplate.update("delete from customer_acquisition");
+        jdbcTemplate.update("delete from partner_payout");
+        jdbcTemplate.update("update cleaning_order set applied_reward_id = null");
+        jdbcTemplate.update("delete from referral_reward");
         orderRepository.deleteAll();
+        jdbcTemplate.update("delete from referral_code");
+        jdbcTemplate.update("delete from referral_partner");
+        jdbcTemplate.update("delete from referral_eligibility_marker");
         roleRepository.deleteAll();
         identityRepository.deleteAll();
         accountRepository.deleteAll();
@@ -180,6 +199,215 @@ class WebSecurityIntegrationTest extends BaseIntegrationTest {
         org.assertj.core.api.Assertions.assertThat(tombstone.getPhone()).isNull();
         org.assertj.core.api.Assertions.assertThat(tombstone.getDeletedAt()).isNotNull();
         org.assertj.core.api.Assertions.assertThat(identityRepository.count()).isZero();
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "select count(*) from referral_eligibility_marker", Long.class)).isZero();
+    }
+
+    @Test
+    void telegramMiniAppDeletionUsesFreshInitDataProof() throws Exception {
+        long telegramId = 88119900L;
+        String initData = TelegramInitDataTestFactory.signed(
+                "123456789:test-token", Instant.now(), telegramUser(telegramId));
+        String created = mvc.perform(post("/api/v1/account/deletion-requests")
+                        .header("Authorization", "tma " + initData))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.provider").value("TELEGRAM"))
+                .andReturn().getResponse().getContentAsString();
+        String requestId = JsonPath.read(created, "$.id");
+
+        mvc.perform(post("/api/v1/account/deletion-requests/{id}/confirm", requestId)
+                        .header("Authorization", "tma " + initData)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"challengeId":"%s","telegramInitData":"%s"}
+                                """.formatted(requestId, initData)))
+                .andExpect(status().isNoContent());
+
+        org.assertj.core.api.Assertions.assertThat(accountRepository.findAll()).singleElement()
+                .extracting(account -> account.getStatus()).isEqualTo(CustomerAccountStatus.DELETED);
+        org.assertj.core.api.Assertions.assertThat(identityRepository.count()).isZero();
+    }
+
+    @Test
+    void administratorCannotCreateSelfDeletionRequest() throws Exception {
+        mvc.perform(post("/api/v1/account/deletion-requests")
+                        .with(oidcLogin().oidcUser(freshUser(
+                                "google-admin-delete", "admin@example.test", true)))
+                        .with(csrf()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("admin_account_self_deletion_forbidden"));
+    }
+
+    @Test
+    void completedCustomerDeletionRetainsOnlyProviderMarkersAndBlocksReferralReuse() throws Exception {
+        String subject = "google-referral-deletion";
+        String email = "referral-deletion@example.test";
+        OidcUser user = freshUser(subject, email, true);
+        String orderJson = mvc.perform(post("/api/v1/cleaning/orders")
+                        .with(oidcLogin().oidcUser(user))
+                        .with(csrf())
+                        .header("Idempotency-Key", "referral-deletion-completed")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cleaningOrderBody()))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long orderId = ((Number) JsonPath.read(orderJson, "$.id")).longValue();
+        long customerId = orderRepository.findById(orderId).orElseThrow().getCustomerId();
+        completeCleaning(orderId);
+        String customerCode = jdbcTemplate.queryForObject(
+                "select code from referral_code where customer_id = ? and active = true",
+                String.class, customerId);
+        long otherReferrerId = accountRepository.save(new com.cleany.customer.CustomerAccount(Instant.now()))
+                .getId();
+        jdbcTemplate.update("""
+                insert into referral_code (
+                    code, owner_type, customer_id, active, created_at
+                ) values ('OTHER10', 'CUSTOMER', ?, true, ?)
+                """, otherReferrerId, Timestamp.from(Instant.now()));
+        var partner = referralService.createPartner("Deletion guard partner");
+
+        long linkedTelegramSubject = 88110022L;
+        jdbcTemplate.update("""
+                insert into customer_external_identity (
+                    customer_id, provider, issuer, external_subject, username, display_name,
+                    language_code, email_verified, write_access_allowed, last_seen_at
+                ) values (?, 'TELEGRAM', 'https://telegram.org', ?, ?, 'Linked customer',
+                          'ru', false, false, ?)
+                """, customerId, Long.toString(linkedTelegramSubject), "linked_customer",
+                Timestamp.from(Instant.now()));
+        jdbcTemplate.update("""
+                insert into referral_reward (customer_id, source_order_id, status, created_at)
+                values (?, ?, 'AVAILABLE', ?)
+                """, customerId, orderId, Timestamp.from(Instant.now()));
+
+        deleteGoogleAccount(subject, email);
+
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "select count(*) from referral_eligibility_marker", Long.class)).isEqualTo(2L);
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "select extract(epoch from (expires_at - created_at))::bigint "
+                        + "from referral_eligibility_marker limit 1", Long.class))
+                .isEqualTo(365L * 24 * 60 * 60);
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForList(
+                "select identity_digest from referral_eligibility_marker", String.class))
+                .allSatisfy(digest -> {
+                    org.assertj.core.api.Assertions.assertThat(digest).hasSize(64);
+                    org.assertj.core.api.Assertions.assertThat(digest).doesNotContain(subject);
+                    org.assertj.core.api.Assertions.assertThat(digest)
+                            .doesNotContain(Long.toString(linkedTelegramSubject));
+                });
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "select active from referral_code where code = ?", Boolean.class, customerCode)).isFalse();
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "select status from referral_reward where source_order_id = ?", String.class, orderId))
+                .isEqualTo("REVOKED");
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "select revoked_at is not null and reserved_order_id is null "
+                        + "from referral_reward where source_order_id = ?", Boolean.class, orderId)).isTrue();
+
+        mvc.perform(post("/api/v1/cleaning/orders/quote")
+                        .with(oidcLogin().oidcUser(freshUser(subject, email, true)))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cleaningQuoteBody(partner.referralCode())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("referral_not_applicable"));
+        mvc.perform(post("/api/v1/cleaning/orders/quote")
+                        .with(oidcLogin().oidcUser(freshUser(subject, email, true)))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cleaningQuoteBody("OTHER10")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("referral_not_applicable"));
+        mvc.perform(post("/api/v1/cleaning/orders")
+                        .with(oidcLogin().oidcUser(freshUser(subject, email, true)))
+                        .with(csrf())
+                        .header("Idempotency-Key", "same-google-after-deletion")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cleaningOrderBody(partner.referralCode())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("referral_not_applicable"));
+
+        String linkedTelegram = TelegramInitDataTestFactory.signed(
+                "123456789:test-token", Instant.now(), telegramUser(linkedTelegramSubject));
+        mvc.perform(post("/api/v1/cleaning/orders")
+                        .header("Authorization", "tma " + linkedTelegram)
+                        .header("Idempotency-Key", "same-telegram-after-deletion")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cleaningOrderBody(partner.referralCode())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("referral_not_applicable"));
+
+        String newTelegram = TelegramInitDataTestFactory.signed(
+                "123456789:test-token", Instant.now(), telegramUser(linkedTelegramSubject + 1));
+        mvc.perform(post("/api/v1/cleaning/orders")
+                        .header("Authorization", "tma " + newTelegram)
+                        .header("Idempotency-Key", "new-telegram-after-deletion")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cleaningOrderBody(partner.referralCode())))
+                .andExpect(status().isCreated());
+
+        jdbcTemplate.update("update referral_eligibility_marker set created_at = ?, expires_at = ?",
+                Timestamp.from(Instant.now().minusSeconds(2)),
+                Timestamp.from(Instant.now().minusSeconds(1)));
+        org.assertj.core.api.Assertions.assertThat(
+                referralEligibilityService.deleteExpiredMarkers(Instant.now(), 100)).isEqualTo(2);
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "select count(*) from referral_eligibility_marker", Long.class)).isZero();
+    }
+
+    @Test
+    void blockedDeletionRollsBackReferralCleanupAndMarkers() throws Exception {
+        String subject = "google-referral-deletion-blocked";
+        String email = "referral-deletion-blocked@example.test";
+        OidcUser user = freshUser(subject, email, true);
+        String completedJson = mvc.perform(post("/api/v1/cleaning/orders")
+                        .with(oidcLogin().oidcUser(user)).with(csrf())
+                        .header("Idempotency-Key", "deletion-rollback-completed")
+                        .contentType(MediaType.APPLICATION_JSON).content(cleaningOrderBody()))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        long completedId = ((Number) JsonPath.read(completedJson, "$.id")).longValue();
+        long customerId = orderRepository.findById(completedId).orElseThrow().getCustomerId();
+        completeCleaning(completedId);
+        String code = jdbcTemplate.queryForObject(
+                "select code from referral_code where customer_id = ? and active = true",
+                String.class, customerId);
+        jdbcTemplate.update("""
+                insert into referral_reward (customer_id, source_order_id, status, created_at)
+                values (?, ?, 'AVAILABLE', ?)
+                """, customerId, completedId, Timestamp.from(Instant.now()));
+
+        String activeJson = mvc.perform(post("/api/v1/cleaning/orders")
+                        .with(oidcLogin().oidcUser(freshUser(subject, email, true))).with(csrf())
+                        .header("Idempotency-Key", "deletion-rollback-active")
+                        .contentType(MediaType.APPLICATION_JSON).content(cleaningOrderBody()))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        long activeId = ((Number) JsonPath.read(activeJson, "$.id")).longValue();
+        orderService.acceptOrder(activeId, 123456789L);
+
+        String request = mvc.perform(post("/api/v1/account/deletion-requests")
+                        .with(oidcLogin().oidcUser(freshUser(subject, email, true))).with(csrf()))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        String requestId = JsonPath.read(request, "$.id");
+        mvc.perform(post("/api/v1/account/deletion-requests/{id}/confirm", requestId)
+                        .with(oidcLogin().oidcUser(freshUser(subject, email, true))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"challengeId\":\"" + requestId + "\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("account_deletion_blocked_by_active_operation"));
+
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "select count(*) from referral_eligibility_marker", Long.class)).isZero();
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "select active from referral_code where code = ?", Boolean.class, code)).isTrue();
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "select status from referral_reward where source_order_id = ?", String.class, completedId))
+                .isEqualTo("RESERVED");
+        org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+                "select reserved_order_id from referral_reward where source_order_id = ?",
+                Long.class, completedId)).isEqualTo(activeId);
+        org.assertj.core.api.Assertions.assertThat(orderRepository.findById(activeId).orElseThrow().getStatus())
+                .isEqualTo(CleaningOrderStatus.ACCEPTED);
     }
 
     @Test
@@ -514,7 +742,7 @@ class WebSecurityIntegrationTest extends BaseIntegrationTest {
                 .claim("email", email)
                 .claim("email_verified", verified)
                 .build();
-        return new DefaultOidcUser(java.util.List.of(), token);
+        return new DefaultOidcUser(java.util.Collections.emptyList(), token);
     }
 
     private static OidcUser freshUser(String subject, String email, boolean verified) {
@@ -527,10 +755,14 @@ class WebSecurityIntegrationTest extends BaseIntegrationTest {
                 .claim("email", email)
                 .claim("email_verified", verified)
                 .build();
-        return new DefaultOidcUser(java.util.List.of(), token);
+        return new DefaultOidcUser(java.util.Collections.emptyList(), token);
     }
 
     private static String cleaningOrderBody() {
+        return cleaningOrderBody(null);
+    }
+
+    private static String cleaningOrderBody(String referralCode) {
         LocalDate requestedDate = LocalDate.now(ZoneId.of("Europe/Istanbul")).plusDays(1);
         return """
                 {
@@ -541,8 +773,50 @@ class WebSecurityIntegrationTest extends BaseIntegrationTest {
                   "cleaningType": "REGULAR",
                   "requestedDate": "%s",
                   "phone": "+90 555 123 45 67",
-                  "comment": null
+                  "comment": null,
+                  "referralCode": %s
                 }
-                """.formatted(requestedDate);
+                """.formatted(
+                requestedDate,
+                referralCode == null ? "null" : "\"" + referralCode + "\""
+        );
+    }
+
+    private static String cleaningQuoteBody(String referralCode) {
+        return """
+                {
+                  "apartmentType": "TWO_PLUS_ONE",
+                  "duplex": false,
+                  "cleaningType": "REGULAR",
+                  "referralCode": "%s"
+                }
+                """.formatted(referralCode);
+    }
+
+    private static String telegramUser(long id) {
+        return """
+                {"id":%d,"first_name":"Deleted","last_name":"Customer","username":"customer%d"}
+                """.formatted(id, id).strip();
+    }
+
+    private void completeCleaning(long orderId) {
+        orderService.acceptOrder(orderId, 123456789L);
+        orderService.markAwaitingReport(orderId, 123456789L);
+        orderService.completeOrder(orderId, 123456789L, null);
+    }
+
+    private void deleteGoogleAccount(String subject, String email) throws Exception {
+        String created = mvc.perform(post("/api/v1/account/deletion-requests")
+                        .with(oidcLogin().oidcUser(freshUser(subject, email, true)))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String requestId = JsonPath.read(created, "$.id");
+        mvc.perform(post("/api/v1/account/deletion-requests/{id}/confirm", requestId)
+                        .with(oidcLogin().oidcUser(freshUser(subject, email, true)))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"challengeId\":\"" + requestId + "\"}"))
+                .andExpect(status().isNoContent());
     }
 }

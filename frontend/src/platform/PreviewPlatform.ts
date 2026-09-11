@@ -13,8 +13,8 @@ export class PreviewPlatform implements Platform {
     return PREVIEW_USER;
   }
 
-  getAuthData(): null {
-    return null;
+  getAuthData(): string | null {
+    return this.kind === "TELEGRAM" ? "preview-telegram-init-data" : null;
   }
 
   getLanguage(): string {

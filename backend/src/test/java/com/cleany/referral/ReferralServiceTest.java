@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
+import com.cleany.customer.CustomerAccount;
+import com.cleany.customer.CustomerAccountRepository;
 import com.cleany.finance.AcquisitionSource;
 import com.cleany.finance.OrderFinancialCalculator;
 import com.cleany.finance.ReferralFinancialProperties;
@@ -27,6 +29,8 @@ class ReferralServiceTest {
     private ReferralRewardRepository rewardRepository;
     private PartnerPayoutRepository payoutRepository;
     private CleaningOrderRepository orderRepository;
+    private CustomerAccountRepository customerAccountRepository;
+    private ReferralEligibilityService eligibilityService;
     private ReferralService service;
 
     @BeforeEach
@@ -36,12 +40,16 @@ class ReferralServiceTest {
         rewardRepository = Mockito.mock(ReferralRewardRepository.class);
         payoutRepository = Mockito.mock(PartnerPayoutRepository.class);
         orderRepository = Mockito.mock(CleaningOrderRepository.class);
+        customerAccountRepository = Mockito.mock(CustomerAccountRepository.class);
+        eligibilityService = Mockito.mock(ReferralEligibilityService.class);
         service = new ReferralService(
                 codeRepository,
                 partnerRepository,
                 rewardRepository,
                 payoutRepository,
                 orderRepository,
+                customerAccountRepository,
+                eligibilityService,
                 new OrderFinancialCalculator(properties()),
                 Mockito.mock(ReferralCodeGenerator.class),
                 Clock.fixed(NOW, ZoneOffset.UTC)
@@ -99,6 +107,8 @@ class ReferralServiceTest {
     void completedCustomerReferral_rewardCreatedForReferrerOnlyAfterCompletion() {
         CleaningOrder order = completedOrder(AcquisitionSource.CUSTOMER_REFERRAL);
         Mockito.when(order.getReferrerCustomerId()).thenReturn(10L);
+        Mockito.when(customerAccountRepository.findByIdForUpdate(10L))
+                .thenReturn(Optional.of(new CustomerAccount(NOW)));
         Mockito.when(codeRepository.findFirstByCustomerIdAndActiveTrueOrderByCreatedAtAsc(11L))
                 .thenReturn(Optional.of(Mockito.mock(ReferralCode.class)));
 
@@ -107,6 +117,19 @@ class ReferralServiceTest {
         ArgumentCaptor<ReferralReward> reward = ArgumentCaptor.forClass(ReferralReward.class);
         Mockito.verify(rewardRepository).save(reward.capture());
         Mockito.verifyNoInteractions(payoutRepository);
+    }
+
+    @Test
+    void completedCustomerReferral_deletedReferrerReceivesNoReward() {
+        CleaningOrder order = completedOrder(AcquisitionSource.CUSTOMER_REFERRAL);
+        Mockito.when(order.getReferrerCustomerId()).thenReturn(10L);
+        Mockito.when(codeRepository.findFirstByCustomerIdAndActiveTrueOrderByCreatedAtAsc(11L))
+                .thenReturn(Optional.of(Mockito.mock(ReferralCode.class)));
+        Mockito.when(customerAccountRepository.findByIdForUpdate(10L)).thenReturn(Optional.empty());
+
+        service.completeOrder(order);
+
+        Mockito.verify(rewardRepository, Mockito.never()).save(Mockito.any());
     }
 
     @Test

@@ -26,6 +26,7 @@ Telegram identities, роли и настройки административн
 - platform support history: `transaction_feedback`, then `support_case`, before their source transactions;
 - обычные `customer_account` вместе с identities, roles и preferences по `ON DELETE CASCADE`;
 - customer-owned `referral_code`, все `referral_reward` и `partner_payout`;
+- все псевдонимные `referral_eligibility_marker`;
 - все Cleaning orders, events, completion photos, onsite issues и их platform media;
 - все Rental search events/executions, bookings, только occupancy типа `BOOKING`, booking-derived Cleaning/Transfer benefits;
 - все Transfer bookings и связанные с ними notification/analytics outcomes;

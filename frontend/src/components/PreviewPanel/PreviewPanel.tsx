@@ -37,7 +37,13 @@ type PreviewScenario = CleaningOrderStatus
   | "WEB_UNAUTHENTICATED"
   | "WEB_GOOGLE_UNAVAILABLE"
   | "WEB_CUSTOMER"
-  | "WEB_ADMIN";
+  | "WEB_ADMIN"
+  | "ACCOUNT_DELETE_WEB"
+  | "ACCOUNT_DELETE_TMA"
+  | "ACCOUNT_DELETE_BLOCKED"
+  | "ACCOUNT_DELETE_EXPIRED"
+  | "ACCOUNT_DELETE_NETWORK"
+  | "ACCOUNT_DELETE_ADMIN";
 
 const scenarios: PreviewScenario[] = [
   "empty",
@@ -75,6 +81,12 @@ const scenarios: PreviewScenario[] = [
   "WEB_GOOGLE_UNAVAILABLE",
   "WEB_CUSTOMER",
   "WEB_ADMIN",
+  "ACCOUNT_DELETE_WEB",
+  "ACCOUNT_DELETE_TMA",
+  "ACCOUNT_DELETE_BLOCKED",
+  "ACCOUNT_DELETE_EXPIRED",
+  "ACCOUNT_DELETE_NETWORK",
+  "ACCOUNT_DELETE_ADMIN",
 ];
 
 export function PreviewPanel() {
@@ -152,10 +164,16 @@ export function PreviewPanel() {
       WEB_GOOGLE_UNAVAILABLE: "/?preview=true&scenario=web_google_unavailable",
       WEB_CUSTOMER: "/admin?preview=true&scenario=web_customer",
       WEB_ADMIN: "/admin?preview=true&scenario=web_admin",
+      ACCOUNT_DELETE_WEB: "/account/delete?preview=true&scenario=account_delete_web",
+      ACCOUNT_DELETE_TMA: "/account/delete?preview=true&scenario=account_delete_tma&platform=telegram",
+      ACCOUNT_DELETE_BLOCKED: "/account/delete?preview=true&scenario=account_delete_blocked&platform=telegram",
+      ACCOUNT_DELETE_EXPIRED: "/account/delete?preview=true&scenario=account_delete_expired&platform=telegram",
+      ACCOUNT_DELETE_NETWORK: "/account/delete?preview=true&scenario=account_delete_network&platform=telegram",
+      ACCOUNT_DELETE_ADMIN: "/account/delete?preview=true&scenario=account_delete_admin",
     };
     const rentalRoute = rentalRoutes[nextScenario];
     if (rentalRoute) {
-      if (nextScenario.startsWith("WEB_")) {
+      if (nextScenario.startsWith("WEB_") || nextScenario.startsWith("ACCOUNT_DELETE_")) {
         window.location.assign(rentalRoute);
         return;
       }

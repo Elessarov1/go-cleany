@@ -217,8 +217,18 @@ Do not merge identities automatically by email, phone, display name or username.
 LOGIN and LINK are distinct nonce-bound flows. Linking is explicit, freshly reauthenticated and never
 automatically merges occupied accounts. Native clients receive Loco-owned opaque access/refresh
 sessions; browser and TMA retain HttpOnly cookie sessions, with Telegram `initData` accepted only for
-the initial TMA session exchange. Account deletion atomically cancels cancellable active work and
-leaves an anonymized customer tombstone; ADMIN self-deletion is forbidden.
+the initial TMA session exchange. TMA bootstrap tolerates delayed Telegram Desktop SDK initialization
+and falls back to launch data from the Telegram URL, while the backend remains the authority that
+validates its signature. A recognized TMA never offers embedded Google OAuth. Account deletion
+atomically cancels cancellable active work and
+leaves an anonymized customer tombstone; ADMIN self-deletion is forbidden. Web and TMA expose the
+public `/account/delete` flow with fresh provider proof and a separate final confirmation. A new login
+after deletion creates a clean account and never restores profile/history. For customers with a
+completed Cleaning, a detached one-year HMAC ledger over identities linked at deletion time blocks
+repeat customer/partner first-order referral benefits without retaining raw provider identifiers;
+completely new never-linked providers remain an accepted v1 limitation. Customer referral codes and
+unused rewards are revoked during the same post-cancellation transaction, while redeemed financial
+history is preserved.
 
 Telegram is optional for customers.
 

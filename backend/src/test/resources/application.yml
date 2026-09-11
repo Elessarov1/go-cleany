@@ -53,6 +53,9 @@ cleaning:
       duplex-surcharge: 450
 
 referral:
+  anti-abuse:
+    hmac-key: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+    marker-retention: 365d
   financial:
     commission-rate: 0.15
     customer:

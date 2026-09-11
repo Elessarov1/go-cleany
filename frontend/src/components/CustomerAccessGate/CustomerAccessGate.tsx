@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthentication } from "../../api/AuthApiProvider";
+import { usePlatform } from "../../platform/PlatformProvider";
 import { Icon } from "../Icon/Icon";
 import { ErrorState, LoadingState } from "../PageState/PageState";
 
@@ -8,6 +9,7 @@ export function AuthenticationRequiredState({ compact = false }: { compact?: boo
   const { t } = useTranslation();
   const location = useLocation();
   const authentication = useAuthentication();
+  const platform = usePlatform();
   const returnTo = `${location.pathname}${location.search}`;
 
   if (authentication.status === "LOADING") {
@@ -20,6 +22,19 @@ export function AuthenticationRequiredState({ compact = false }: { compact?: boo
   }
   if (authentication.status === "ERROR") {
     return <ErrorState message={t("auth.loadError")} onRetry={authentication.reload} />;
+  }
+
+  if (platform.kind === "TELEGRAM") {
+    return (
+      <div className={`page-state auth-required${compact ? " auth-required--compact" : ""}`}>
+        <span className="page-state__symbol"><Icon name="user" size={25} /></span>
+        {compact ? <h2>{t("auth.telegramSessionTitle")}</h2> : <h1>{t("auth.telegramSessionTitle")}</h1>}
+        <p>{t("auth.telegramSessionText")}</p>
+        <button className="button button--primary" type="button" onClick={() => platform.close()}>
+          {t("auth.closeMiniApp")}
+        </button>
+      </div>
+    );
   }
 
   return (

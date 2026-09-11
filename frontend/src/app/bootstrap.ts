@@ -41,7 +41,7 @@ export async function bootstrap(): Promise<AppServices> {
     return bootstrapPreview();
   }
 
-  const platform: Platform = isTelegramWebAppAvailable()
+  const platform: Platform = await isTelegramWebAppAvailable()
     ? new TelegramPlatform()
     : new WebPlatform();
 

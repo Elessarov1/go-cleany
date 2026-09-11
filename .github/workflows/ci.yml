@@ -225,6 +225,7 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           ADMIN_GOOGLE_EMAILS: ${{ secrets.ADMIN_GOOGLE_EMAILS }}
+          REFERRAL_ELIGIBILITY_HMAC_KEY: ${{ secrets.REFERRAL_ELIGIBILITY_HMAC_KEY }}
           WEB_SESSION_TIMEOUT: ${{ vars.WEB_SESSION_TIMEOUT || '12h' }}
           NATIVE_AUTH_ENABLED: ${{ vars.NATIVE_AUTH_ENABLED || 'false' }}
           NATIVE_AUTH_TOKEN_ENCRYPTION_KEY: ${{ secrets.NATIVE_AUTH_TOKEN_ENCRYPTION_KEY }}
@@ -261,6 +262,12 @@ jobs:
             exit 1
           }
           : "${CLEANER_TELEGRAM_IDS:?Missing CLEANER_TELEGRAM_IDS staging variable}"
+          : "${REFERRAL_ELIGIBILITY_HMAC_KEY:?Missing REFERRAL_ELIGIBILITY_HMAC_KEY staging secret}"
+          referral_key_length=$(printf '%s' "$REFERRAL_ELIGIBILITY_HMAC_KEY" | base64 --decode | wc -c)
+          [[ "$referral_key_length" == "32" ]] || {
+            echo "REFERRAL_ELIGIBILITY_HMAC_KEY must be base64 for exactly 32 bytes." >&2
+            exit 1
+          }
           [[ "$GOOGLE_AUTH_ENABLED" == "true" || "$GOOGLE_AUTH_ENABLED" == "false" ]] || {
             echo "GOOGLE_AUTH_ENABLED must be true or false." >&2
             exit 1
@@ -382,6 +389,7 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           ADMIN_GOOGLE_EMAILS: ${{ secrets.ADMIN_GOOGLE_EMAILS }}
+          REFERRAL_ELIGIBILITY_HMAC_KEY: ${{ secrets.REFERRAL_ELIGIBILITY_HMAC_KEY }}
           WEB_SESSION_TIMEOUT: ${{ vars.WEB_SESSION_TIMEOUT || '12h' }}
           NATIVE_AUTH_ENABLED: ${{ vars.NATIVE_AUTH_ENABLED || 'false' }}
           NATIVE_AUTH_TOKEN_ENCRYPTION_KEY: ${{ secrets.NATIVE_AUTH_TOKEN_ENCRYPTION_KEY }}
@@ -418,6 +426,7 @@ jobs:
           google_client_id_b64=$(printf '%s' "$GOOGLE_CLIENT_ID" | base64 -w 0)
           google_client_secret_b64=$(printf '%s' "$GOOGLE_CLIENT_SECRET" | base64 -w 0)
           admin_google_emails_b64=$(printf '%s' "$ADMIN_GOOGLE_EMAILS" | base64 -w 0)
+          referral_eligibility_key_b64=$(printf '%s' "$REFERRAL_ELIGIBILITY_HMAC_KEY" | base64 -w 0)
           native_auth_key_b64=$(printf '%s' "$NATIVE_AUTH_TOKEN_ENCRYPTION_KEY" | base64 -w 0)
           apple_team_id_b64=$(printf '%s' "$APPLE_TEAM_ID" | base64 -w 0)
           apple_key_id_b64=$(printf '%s' "$APPLE_KEY_ID" | base64 -w 0)
@@ -444,6 +453,7 @@ jobs:
             GOOGLE_CLIENT_ID=\$(printf '%s' '$google_client_id_b64' | base64 --decode) \
             GOOGLE_CLIENT_SECRET=\$(printf '%s' '$google_client_secret_b64' | base64 --decode) \
             ADMIN_GOOGLE_EMAILS=\$(printf '%s' '$admin_google_emails_b64' | base64 --decode) \
+            REFERRAL_ELIGIBILITY_HMAC_KEY=\$(printf '%s' '$referral_eligibility_key_b64' | base64 --decode) \
             WEB_SESSION_TIMEOUT='$WEB_SESSION_TIMEOUT' \
             NATIVE_AUTH_ENABLED='$NATIVE_AUTH_ENABLED' \
             NATIVE_AUTH_TOKEN_ENCRYPTION_KEY=\$(printf '%s' '$native_auth_key_b64' | base64 --decode) \

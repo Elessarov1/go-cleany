@@ -44,6 +44,7 @@ const footerTranslations = {
     legal: "Legal",
     privacy: "Privacy",
     terms: "Terms of Use",
+    deleteAccount: "Delete account",
   },
   ru: {
     tagline: "Сервисы в Аланье.",
@@ -53,6 +54,7 @@ const footerTranslations = {
     legal: "Правовая информация",
     privacy: "Конфиденциальность",
     terms: "Условия использования",
+    deleteAccount: "Удалить аккаунт",
   },
 } as const;
 
@@ -73,7 +75,7 @@ const legalTranslations = {
         },
         third: {
           title: "Retention",
-          text: "Operational media is retained only for the configured service period. Other pilot data may be retained while the pilot is running and may be cleared before the commercial launch.",
+          text: "Operational media is retained only for the configured service period. After account deletion, Loco Place retains pseudonymous markers derived from known Google, Apple or Telegram identities for one year solely to prevent repeated first-order referral benefits. They cannot restore an account or its history.",
         },
         fourth: {
           title: "Third-party services",
@@ -120,7 +122,7 @@ const legalTranslations = {
         },
         third: {
           title: "Срок хранения",
-          text: "Операционные медиафайлы хранятся только в течение настроенного для сервиса периода. Другие данные пилота могут храниться до завершения тестового периода и могут быть очищены перед коммерческим запуском.",
+          text: "Операционные медиафайлы хранятся только в течение настроенного для сервиса периода. После удаления аккаунта Loco Place один год хранит псевдонимные маркеры, полученные из известных идентификаторов Google, Apple или Telegram, только для предотвращения повторной скидки на первый заказ. По ним нельзя восстановить аккаунт или его историю.",
         },
         fourth: {
           title: "Сторонние сервисы",

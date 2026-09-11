@@ -46,6 +46,9 @@
     "customerTitle": "Sign in to continue",
     "customerText": "Sign in with Google to create and manage your orders and bookings.",
     "googleUnavailable": "Google sign-in is temporarily unavailable. Please try again later.",
+    "telegramSessionTitle": "We could not confirm your sign-in",
+    "telegramSessionText": "Close and reopen the Mini App from the bot chat. Google sign-in is not required inside Telegram.",
+    "closeMiniApp": "Close Mini App",
     "loadError": "We could not verify the current session. Please try again."
   },
   "create": {
@@ -1210,7 +1213,46 @@
     "linkInvalid": "This link is invalid, already used or expired. Create a new link in your web account.",
     "nudgeTitle": "Receive important Telegram notifications",
     "nudgeText": "Get order updates in Telegram.",
-    "notNow": "Not now"
+    "notNow": "Not now",
+    "dangerTitle": "Delete account",
+    "dangerText": "Permanently remove your profile and sign-in methods.",
+    "deleteAccount": "Delete account"
+  },
+  "accountDeletion": {
+    "title": "Delete your account",
+    "subtitle": "This page is available from the web and the Telegram Mini App.",
+    "effectsTitle": "What will happen",
+    "effects": {
+      "cancel": "Cancellable active tasks will be cancelled. An operation that has already started may block deletion.",
+      "data": "Your profile, sign-in methods, sessions, notifications and customer comments will be removed. Required operational and financial records remain anonymized.",
+      "referral": "Your referral codes are disabled and unused referral rewards are revoked. Redeemed financial records are retained.",
+      "marker": "If you completed a Cleaning order, pseudonymous markers for known sign-in providers are kept for one year to prevent repeated first-order referral benefits. They do not restore your account or history."
+    },
+    "signInText": "Sign in with Google to verify that this account belongs to you. You will review the deletion once more before anything is removed.",
+    "signInGoogle": "Continue with Google",
+    "reauthenticateText": "For your security, sign in with Google again. Nothing is deleted during sign-in.",
+    "reauthenticateGoogle": "Verify with Google",
+    "finalText": "Your identity was freshly verified. Review the consequences above, then confirm permanent deletion.",
+    "deleteAction": "Continue to deletion",
+    "confirmTitle": "Permanently delete this account?",
+    "confirmText": "This cannot be undone. Your old profile and history will not return if you register again.",
+    "confirmAction": "Delete permanently",
+    "deleting": "Deleting…",
+    "adminTitle": "Administrator account",
+    "adminText": "Administrator accounts cannot be deleted through self-service. Remove operational access through the controlled administration process first.",
+    "telegramReopen": "Open this page from your Loco Place Mini App account to continue.",
+    "openActivity": "Open activity",
+    "closeMiniApp": "Close Mini App",
+    "homeAction": "Go to home page",
+    "authError": "We could not check your current sign-in state.",
+    "errors": {
+      "blocked": "One of your active tasks has already reached a stage where it cannot be cancelled automatically. Open Activity and contact support from that task.",
+      "telegramExpired": "Telegram verification is no longer fresh. Close and reopen the Mini App, then repeat the deletion flow.",
+      "webExpired": "Google verification expired. Verify with Google again and retry.",
+      "network": "The deletion request could not be completed. No partial deletion was applied; check your connection and try again."
+    },
+    "successTitle": "Account deleted",
+    "successText": "Your profile and sign-in methods have been removed. A future sign-in creates a new account without restoring old history."
   },
   "customerHub": {
     "label": "Activity and notifications",
@@ -1360,6 +1402,9 @@
     "transferPageDescription": "Manage your transfer request between Alanya and the airport.",
     "account": "Account | Loco Place",
     "accountDescription": "Manage your Loco Place account and notification channels.",
+    "accountDeletion": "Delete Account | Loco Place",
+    "accountDeletionDescription": "Request permanent deletion of your Loco Place account and associated customer data.",
+    "accountDeleted": "Account Deleted | Loco Place",
     "activity": "My Tasks | Loco Place",
     "activityDescription": "Your cleaning orders, apartment bookings and transfers in Loco Place.",
     "notifications": "Notifications | Loco Place",
@@ -1415,7 +1460,13 @@
       "WEB_UNAUTHENTICATED": "web: signed out",
       "WEB_GOOGLE_UNAVAILABLE": "web: Google unavailable",
       "WEB_CUSTOMER": "web: customer",
-      "WEB_ADMIN": "web: administrator"
+      "WEB_ADMIN": "web: administrator",
+      "ACCOUNT_DELETE_WEB": "Account deletion: Web",
+      "ACCOUNT_DELETE_TMA": "Account deletion: Mini App",
+      "ACCOUNT_DELETE_BLOCKED": "Account deletion: active task",
+      "ACCOUNT_DELETE_EXPIRED": "Account deletion: expired proof",
+      "ACCOUNT_DELETE_NETWORK": "Account deletion: network error",
+      "ACCOUNT_DELETE_ADMIN": "Account deletion: administrator"
     }
   }
 }

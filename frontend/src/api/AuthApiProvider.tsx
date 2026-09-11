@@ -20,6 +20,7 @@ interface AuthenticationContextValue {
   googleAdminLoginUrl: string;
   logout(): Promise<void>;
   reload(): Promise<void>;
+  invalidate(): void;
 }
 
 const ANONYMOUS: CurrentAuthentication = {
@@ -75,6 +76,10 @@ export function AuthApiProvider({ api, children }: AuthApiProviderProps) {
       }
     },
     reload,
+    invalidate: () => {
+      setCurrent(ANONYMOUS);
+      setStatus("READY");
+    },
   }), [api, current, status]);
 
   return (

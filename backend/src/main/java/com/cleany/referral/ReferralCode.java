@@ -65,6 +65,10 @@ public class ReferralCode {
         return new ReferralCode(code, ReferralCodeOwnerType.PARTNER, null, partnerId, createdAt);
     }
 
+    void deactivate() {
+        active = false;
+    }
+
     public Long getId() {
         return id;
     }
@@ -83,5 +87,9 @@ public class ReferralCode {
 
     public Long getPartnerId() {
         return partnerId;
+    }
+
+    public boolean isActive() {
+        return active;
     }
 }

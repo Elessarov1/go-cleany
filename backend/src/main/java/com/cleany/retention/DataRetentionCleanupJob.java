@@ -44,6 +44,7 @@ public class DataRetentionCleanupJob {
         long deletedCompletionPhotos = 0;
         long deletedAuditEvents = 0;
         long deletedMediaAssets = 0;
+        long deletedReferralEligibilityMarkers = 0;
         try {
             for (int batch = 0; batch < properties.maxBatchesPerRun(); batch++) {
                 DataRetentionCleanupResult result = cleanupService.cleanupBatch(
@@ -56,20 +57,22 @@ public class DataRetentionCleanupJob {
                 deletedCompletionPhotos += result.deletedCompletionPhotoCount();
                 deletedAuditEvents += result.deletedAuditEventCount();
                 deletedMediaAssets += result.deletedMediaAssetCount();
+                deletedReferralEligibilityMarkers += result.deletedReferralEligibilityMarkerCount();
                 if (!result.hasMoreWork()) {
                     break;
                 }
             }
             log.info(
                     "data_retention_result cutoff={} batches={} eligibleOrders={} issuePhotos={} "
-                            + "completionPhotos={} auditEvents={} mediaAssets={}",
+                            + "completionPhotos={} auditEvents={} mediaAssets={} referralEligibilityMarkers={}",
                     cutoff,
                     batchesExecuted,
                     eligibleOrders,
                     deletedIssuePhotos,
                     deletedCompletionPhotos,
                     deletedAuditEvents,
-                    deletedMediaAssets
+                    deletedMediaAssets,
+                    deletedReferralEligibilityMarkers
             );
             telemetry.completed(
                     JOB_NAME,

@@ -174,6 +174,7 @@ public class AccountSecurityLifecycleService {
         proofService.consumePreparedReauthentication(prepared, current);
         deletionParticipants.forEach(participant -> participant.verifyCancellable(current.customerId()));
         deletionParticipants.forEach(participant -> participant.cancel(current.customerId()));
+        deletionParticipants.forEach(participant -> participant.afterCancellation(current.customerId()));
 
         long customerId = current.customerId();
         entityManager.flush();

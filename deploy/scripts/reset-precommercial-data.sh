@@ -75,6 +75,7 @@ select section, table_name, record_count
            )
       )),
       ('DELETE', 'customer_referral_code', (select count(*) from referral_code where customer_id is not null)),
+      ('DELETE', 'referral_eligibility_marker', (select count(*) from referral_eligibility_marker)),
       ('DELETE', 'cleaning_order', (select count(*) from cleaning_order)),
       ('DELETE', 'cleaning_order_event', (select count(*) from cleaning_order_event)),
       ('DELETE', 'cleaning_order_photo', (select count(*) from cleaning_order_photo)),
@@ -224,6 +225,7 @@ union all select 'external_provider_job', count(*) from external_provider_job
 union all select 'security_audit_event', count(*) from security_audit_event
 union all select 'transaction_feedback', count(*) from transaction_feedback
 union all select 'support_case', count(*) from support_case
+union all select 'referral_eligibility_marker', count(*) from referral_eligibility_marker
 union all select 'ordinary_customer_account', count(*) from customer_account account
  where not exists (
      select 1 from customer_role role

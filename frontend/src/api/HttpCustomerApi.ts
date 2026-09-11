@@ -1,4 +1,4 @@
-import type { AccountIdentities, AccountLinkInitiated, CustomerActivity, CustomerHome, CustomerNotificationPage, CustomerProfile } from "../domain/customer";
+import type { AccountDeletionChallenge, AccountIdentities, AccountLinkInitiated, CustomerActivity, CustomerHome, CustomerNotificationPage, CustomerProfile } from "../domain/customer";
 import type { CustomerApi } from "./CustomerApi";
 import { HttpApiClient } from "./HttpApiClient";
 import { parseActionTarget } from "../domain/action";
@@ -87,6 +87,26 @@ export class HttpCustomerApi implements CustomerApi {
       id: attemptId,
       confirmIdentityLinkRequest: {},
     })) as Promise<AccountIdentities>;
+  }
+
+  async createAccountDeletionRequest(): Promise<AccountDeletionChallenge> {
+    const result = await this.client.generated(this.generated.createAccountDeletionRequest());
+    return {
+      id: result.id,
+      provider: result.provider as AccountDeletionChallenge["provider"],
+      nonce: result.nonce ?? null,
+      expiresAt: result.expiresAt.toISOString(),
+    };
+  }
+
+  async confirmAccountDeletion(challengeId: string, telegramInitData?: string | null): Promise<void> {
+    await this.client.generated(this.generated.confirmAccountDeletion({
+      id: challengeId,
+      sensitiveProof: {
+        challengeId,
+        telegramInitData: telegramInitData ?? undefined,
+      },
+    }));
   }
 
   async getNotifications(cursor: string | null = null, size = 20): Promise<CustomerNotificationPage> {

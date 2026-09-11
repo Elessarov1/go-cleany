@@ -25,6 +25,8 @@ const AdminRentalCalendarPage = lazy(() => import("../pages/AdminRentalCalendarP
 const AdminRentalBookingsPage = lazy(() => import("../pages/AdminRentalBookingsPage/AdminRentalBookingsPage").then((module) => ({ default: module.AdminRentalBookingsPage })));
 const AdminRentalBookingPage = lazy(() => import("../pages/AdminRentalBookingPage/AdminRentalBookingPage").then((module) => ({ default: module.AdminRentalBookingPage })));
 const AccountPage = lazy(() => import("../pages/AccountPage/AccountPage").then((module) => ({ default: module.AccountPage })));
+const AccountDeletionPage = lazy(() => import("../pages/AccountDeletionPage/AccountDeletionPage").then((module) => ({ default: module.AccountDeletionPage })));
+const AccountDeletedPage = lazy(() => import("../pages/AccountDeletionPage/AccountDeletionPage").then((module) => ({ default: module.AccountDeletedPage })));
 const NotificationsPage = lazy(() => import("../pages/NotificationsPage/NotificationsPage").then((module) => ({ default: module.NotificationsPage })));
 const AdminAnalyticsPage = lazy(() => import("../pages/AdminAnalyticsPage/AdminAnalyticsPage").then((module) => ({ default: module.AdminAnalyticsPage })));
 const LegalPage = lazy(() => import("../pages/LegalPage/LegalPage").then((module) => ({ default: module.LegalPage })));
@@ -57,6 +59,8 @@ export const router = createBrowserRouter([
       { path: "/privacy", element: <LegalPage kind="privacy" /> },
       { path: "/terms", element: <LegalPage kind="terms" /> },
       { path: "/support", element: <SupportPage /> },
+      { path: "/account/delete", element: <AccountDeletionPage /> },
+      { path: "/account/deleted", element: <AccountDeletedPage /> },
       { path: "/cleaning", element: <ServiceAvailabilityGate service="CLEANING"><CreateOrderPage /></ServiceAvailabilityGate> },
       { path: "/transfer", element: <ServiceAvailabilityGate service="TRANSFER"><TransferEntryPage /></ServiceAvailabilityGate> },
       {
