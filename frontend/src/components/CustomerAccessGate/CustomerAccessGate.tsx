@@ -26,6 +26,18 @@ export function AuthenticationRequiredState({ compact = false }: { compact?: boo
   }
 
   if (platform.kind === "TELEGRAM") {
+    if (platform.getAuthData()) {
+      return (
+        <div className={`page-state auth-required${compact ? " auth-required--compact" : ""}`}>
+          <span className="page-state__symbol"><Icon name="user" size={25} /></span>
+          {compact ? <h2>{t("auth.telegramAuthenticationFailedTitle")}</h2> : <h1>{t("auth.telegramAuthenticationFailedTitle")}</h1>}
+          <p>{t("auth.telegramAuthenticationFailedText")}</p>
+          <button className="button button--primary" type="button" onClick={() => void authentication.reload()}>
+            {t("common.retry")}
+          </button>
+        </div>
+      );
+    }
     return (
       <div className={`page-state auth-required${compact ? " auth-required--compact" : ""}`}>
         <span className="page-state__symbol"><Icon name="user" size={25} /></span>

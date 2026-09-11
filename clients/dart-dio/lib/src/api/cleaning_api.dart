@@ -63,6 +63,11 @@ class CleaningApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',
@@ -152,6 +157,11 @@ class CleaningApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',
@@ -331,6 +341,11 @@ class CleaningApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',
@@ -419,6 +434,11 @@ class CleaningApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',
@@ -509,6 +529,11 @@ class CleaningApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',
@@ -595,6 +620,11 @@ class CleaningApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',
@@ -681,6 +711,11 @@ class CleaningApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',
@@ -767,6 +802,11 @@ class CleaningApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',
@@ -856,6 +896,11 @@ class CleaningApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',
@@ -939,6 +984,11 @@ class CleaningApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',
@@ -1045,6 +1095,11 @@ class CleaningApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',
@@ -1105,6 +1160,11 @@ class CleaningApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',

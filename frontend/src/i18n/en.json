@@ -48,6 +48,8 @@
     "googleUnavailable": "Google sign-in is temporarily unavailable. Please try again later.",
     "telegramSessionTitle": "Open Loco Place as a Mini App",
     "telegramSessionText": "This link opened in Telegram's embedded browser without sign-in data. Launch the Mini App through the bot to confirm your account automatically.",
+    "telegramAuthenticationFailedTitle": "Couldn't confirm your Telegram sign-in",
+    "telegramAuthenticationFailedText": "Telegram supplied sign-in data, but Loco Place could not authenticate it. Try the request again.",
     "openTelegramMiniApp": "Open Loco Place",
     "closeMiniApp": "Close Mini App",
     "loadError": "We could not verify the current session. Please try again."

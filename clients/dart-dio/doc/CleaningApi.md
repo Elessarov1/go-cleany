@@ -32,6 +32,10 @@ Method | HTTP request | Description
 ### Example
 ```dart
 import 'package:loco_place_api/api.dart';
+// TODO Configure API key authorization: tmaAuth
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKey = 'YOUR_API_KEY';
+// uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKeyPrefix = 'Bearer';
 // TODO Configure API key authorization: cookieSession
 //defaultApiClient.getAuthentication<ApiKeyAuth>('cookieSession').apiKey = 'YOUR_API_KEY';
 // uncomment below to setup prefix (e.g. Bearer) for API key, if needed
@@ -60,7 +64,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -77,6 +81,10 @@ Name | Type | Description  | Notes
 ### Example
 ```dart
 import 'package:loco_place_api/api.dart';
+// TODO Configure API key authorization: tmaAuth
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKey = 'YOUR_API_KEY';
+// uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKeyPrefix = 'Bearer';
 // TODO Configure API key authorization: cookieSession
 //defaultApiClient.getAuthentication<ApiKeyAuth>('cookieSession').apiKey = 'YOUR_API_KEY';
 // uncomment below to setup prefix (e.g. Bearer) for API key, if needed
@@ -107,7 +115,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -161,6 +169,10 @@ No authorization required
 ### Example
 ```dart
 import 'package:loco_place_api/api.dart';
+// TODO Configure API key authorization: tmaAuth
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKey = 'YOUR_API_KEY';
+// uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKeyPrefix = 'Bearer';
 // TODO Configure API key authorization: cookieSession
 //defaultApiClient.getAuthentication<ApiKeyAuth>('cookieSession').apiKey = 'YOUR_API_KEY';
 // uncomment below to setup prefix (e.g. Bearer) for API key, if needed
@@ -189,7 +201,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -206,6 +218,10 @@ Name | Type | Description  | Notes
 ### Example
 ```dart
 import 'package:loco_place_api/api.dart';
+// TODO Configure API key authorization: tmaAuth
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKey = 'YOUR_API_KEY';
+// uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKeyPrefix = 'Bearer';
 // TODO Configure API key authorization: cookieSession
 //defaultApiClient.getAuthentication<ApiKeyAuth>('cookieSession').apiKey = 'YOUR_API_KEY';
 // uncomment below to setup prefix (e.g. Bearer) for API key, if needed
@@ -236,7 +252,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -253,6 +269,10 @@ Name | Type | Description  | Notes
 ### Example
 ```dart
 import 'package:loco_place_api/api.dart';
+// TODO Configure API key authorization: tmaAuth
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKey = 'YOUR_API_KEY';
+// uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKeyPrefix = 'Bearer';
 // TODO Configure API key authorization: cookieSession
 //defaultApiClient.getAuthentication<ApiKeyAuth>('cookieSession').apiKey = 'YOUR_API_KEY';
 // uncomment below to setup prefix (e.g. Bearer) for API key, if needed
@@ -277,7 +297,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -294,6 +314,10 @@ This endpoint does not need any parameter.
 ### Example
 ```dart
 import 'package:loco_place_api/api.dart';
+// TODO Configure API key authorization: tmaAuth
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKey = 'YOUR_API_KEY';
+// uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKeyPrefix = 'Bearer';
 // TODO Configure API key authorization: cookieSession
 //defaultApiClient.getAuthentication<ApiKeyAuth>('cookieSession').apiKey = 'YOUR_API_KEY';
 // uncomment below to setup prefix (e.g. Bearer) for API key, if needed
@@ -322,7 +346,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -339,6 +363,10 @@ Name | Type | Description  | Notes
 ### Example
 ```dart
 import 'package:loco_place_api/api.dart';
+// TODO Configure API key authorization: tmaAuth
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKey = 'YOUR_API_KEY';
+// uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKeyPrefix = 'Bearer';
 // TODO Configure API key authorization: cookieSession
 //defaultApiClient.getAuthentication<ApiKeyAuth>('cookieSession').apiKey = 'YOUR_API_KEY';
 // uncomment below to setup prefix (e.g. Bearer) for API key, if needed
@@ -367,7 +395,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -384,6 +412,10 @@ Name | Type | Description  | Notes
 ### Example
 ```dart
 import 'package:loco_place_api/api.dart';
+// TODO Configure API key authorization: tmaAuth
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKey = 'YOUR_API_KEY';
+// uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKeyPrefix = 'Bearer';
 // TODO Configure API key authorization: cookieSession
 //defaultApiClient.getAuthentication<ApiKeyAuth>('cookieSession').apiKey = 'YOUR_API_KEY';
 // uncomment below to setup prefix (e.g. Bearer) for API key, if needed
@@ -412,7 +444,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -429,6 +461,10 @@ Name | Type | Description  | Notes
 ### Example
 ```dart
 import 'package:loco_place_api/api.dart';
+// TODO Configure API key authorization: tmaAuth
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKey = 'YOUR_API_KEY';
+// uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKeyPrefix = 'Bearer';
 // TODO Configure API key authorization: cookieSession
 //defaultApiClient.getAuthentication<ApiKeyAuth>('cookieSession').apiKey = 'YOUR_API_KEY';
 // uncomment below to setup prefix (e.g. Bearer) for API key, if needed
@@ -459,7 +495,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -476,6 +512,10 @@ Name | Type | Description  | Notes
 ### Example
 ```dart
 import 'package:loco_place_api/api.dart';
+// TODO Configure API key authorization: tmaAuth
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKey = 'YOUR_API_KEY';
+// uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKeyPrefix = 'Bearer';
 // TODO Configure API key authorization: cookieSession
 //defaultApiClient.getAuthentication<ApiKeyAuth>('cookieSession').apiKey = 'YOUR_API_KEY';
 // uncomment below to setup prefix (e.g. Bearer) for API key, if needed
@@ -504,7 +544,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -521,6 +561,10 @@ Name | Type | Description  | Notes
 ### Example
 ```dart
 import 'package:loco_place_api/api.dart';
+// TODO Configure API key authorization: tmaAuth
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKey = 'YOUR_API_KEY';
+// uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKeyPrefix = 'Bearer';
 // TODO Configure API key authorization: cookieSession
 //defaultApiClient.getAuthentication<ApiKeyAuth>('cookieSession').apiKey = 'YOUR_API_KEY';
 // uncomment below to setup prefix (e.g. Bearer) for API key, if needed
@@ -548,7 +592,7 @@ void (empty response body)
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -565,6 +609,10 @@ void (empty response body)
 ### Example
 ```dart
 import 'package:loco_place_api/api.dart';
+// TODO Configure API key authorization: tmaAuth
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKey = 'YOUR_API_KEY';
+// uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKeyPrefix = 'Bearer';
 // TODO Configure API key authorization: cookieSession
 //defaultApiClient.getAuthentication<ApiKeyAuth>('cookieSession').apiKey = 'YOUR_API_KEY';
 // uncomment below to setup prefix (e.g. Bearer) for API key, if needed
@@ -595,7 +643,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 

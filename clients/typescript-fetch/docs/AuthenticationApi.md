@@ -6,7 +6,6 @@ All URIs are relative to *https://loco-place.com*
 |------------- | ------------- | -------------|
 | [**createNativeChallenge**](AuthenticationApi.md#createnativechallengeoperation) | **POST** /api/v1/auth/native/challenges |  |
 | [**createTelegramLoginAttempt**](AuthenticationApi.md#createtelegramloginattempt) | **POST** /api/v1/auth/native/telegram/attempts |  |
-| [**createTmaSession**](AuthenticationApi.md#createtmasession) | **POST** /api/v1/auth/tma/session |  |
 | [**exchangeTelegramLoginAttempt**](AuthenticationApi.md#exchangetelegramloginattemptoperation) | **POST** /api/v1/auth/native/telegram/attempts/{attemptId}/exchange |  |
 | [**getCsrfToken**](AuthenticationApi.md#getcsrftoken) | **GET** /api/v1/auth/csrf |  |
 | [**getCurrentAuthentication**](AuthenticationApi.md#getcurrentauthentication) | **GET** /api/v1/auth/me |  |
@@ -137,68 +136,6 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | One-time bot handoff |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
-
-
-## createTmaSession
-
-> createTmaSession()
-
-
-
-### Example
-
-```ts
-import {
-  Configuration,
-  AuthenticationApi,
-} from '@locoplace/api-client';
-import type { CreateTmaSessionRequest } from '@locoplace/api-client';
-
-async function example() {
-  console.log("🚀 Testing @locoplace/api-client SDK...");
-  const config = new Configuration({ 
-    // To configure API key authorization: tmaBootstrap
-    apiKey: "YOUR API KEY",
-  });
-  const api = new AuthenticationApi(config);
-
-  try {
-    const data = await api.createTmaSession();
-    console.log(data);
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-// Run the test
-example().catch(console.error);
-```
-
-### Parameters
-
-This endpoint does not need any parameter.
-
-### Return type
-
-`void` (Empty response body)
-
-### Authorization
-
-[tmaBootstrap](../README.md#tmaBootstrap)
-
-### HTTP request headers
-
-- **Content-Type**: Not defined
-- **Accept**: `application/json`
-
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-| **204** | Cookie session created |  -  |
-| **401** | Authentication failed |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 
@@ -346,7 +283,15 @@ import type { GetCurrentAuthenticationRequest } from '@locoplace/api-client';
 
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
-  const api = new AuthenticationApi();
+  const config = new Configuration({
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
+    // Configure HTTP bearer authorization: bearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+    // To configure API key authorization: cookieSession
+    apiKey: "YOUR API KEY",
+  });
+  const api = new AuthenticationApi(config);
 
   try {
     const data = await api.getCurrentAuthentication();
@@ -370,7 +315,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-No authorization required
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -536,6 +481,8 @@ import type { LogoutCurrentSessionRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -565,7 +512,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -668,6 +615,8 @@ import type { RevokeAllSessionsRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -697,7 +646,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -711,4 +660,3 @@ This endpoint does not need any parameter.
 | **204** | Every customer session revoked |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
-

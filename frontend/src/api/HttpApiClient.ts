@@ -10,7 +10,6 @@ interface ApiErrorResponse {
 
 export class HttpApiClient {
   private csrfToken: Promise<{ headerName: string; token: string }> | null = null;
-  private tmaSessionEstablished = false;
 
   constructor(
     private readonly baseUrl: string,
@@ -25,28 +24,12 @@ export class HttpApiClient {
     return /^(https?:)?\/\//.test(path) ? path : `${this.baseUrl}${path}`;
   }
 
-  async bootstrapTmaSession(): Promise<void> {
-    const authData = this.platform.getAuthData();
-    if (!authData || this.tmaSessionEstablished) return;
-    const response = await fetch(`${this.baseUrl}/api/v1/auth/tma/session`, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        Authorization: `tma ${authData}`,
-      },
-      credentials: "include",
-    });
-    if (!response.ok) {
-      throw new ApiError(`Telegram session bootstrap failed with status ${response.status}`, response.status);
-    }
-    this.tmaSessionEstablished = true;
-  }
-
   async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const headers = new Headers(init.headers);
     headers.set("Accept", "application/json");
     if (init.body && !(init.body instanceof FormData)) headers.set("Content-Type", "application/json");
-    if (isStateChanging(init.method)) {
+    const telegramAuthenticated = this.addTelegramAuthorization(headers);
+    if (isStateChanging(init.method) && !telegramAuthenticated) {
       const csrf = await this.getCsrfToken();
       headers.set(csrf.headerName, csrf.token);
     }
@@ -76,6 +59,7 @@ export class HttpApiClient {
 
   async requestBlob(path: string): Promise<Blob> {
     const headers = new Headers();
+    this.addTelegramAuthorization(headers);
     const response = await fetch(`${this.baseUrl}${path}`, {
       headers,
       credentials: "include",
@@ -87,7 +71,8 @@ export class HttpApiClient {
   readonly generatedFetch: typeof fetch = async (input, init = {}) => {
     const headers = new Headers(init.headers);
     headers.set("Accept", "application/json");
-    if (isStateChanging(init.method)) {
+    const telegramAuthenticated = this.addTelegramAuthorization(headers);
+    if (isStateChanging(init.method) && !telegramAuthenticated) {
       const csrf = await this.getCsrfToken();
       headers.set(csrf.headerName, csrf.token);
     }
@@ -114,6 +99,13 @@ export class HttpApiClient {
       }
       throw error;
     }
+  }
+
+  private addTelegramAuthorization(headers: Headers): boolean {
+    const authData = this.platform.getAuthData();
+    if (!authData) return false;
+    headers.set("Authorization", `tma ${authData}`);
+    return true;
   }
 
   private getCsrfToken(): Promise<{ headerName: string; token: string }> {

@@ -48,6 +48,8 @@
     "googleUnavailable": "Вход через Google временно недоступен. Попробуйте позже.",
     "telegramSessionTitle": "Откройте Loco Place как Mini App",
     "telegramSessionText": "Эта ссылка открылась во встроенном браузере Telegram без данных входа. Запустите Mini App через бота — аккаунт подтвердится автоматически.",
+    "telegramAuthenticationFailedTitle": "Не удалось подтвердить вход через Telegram",
+    "telegramAuthenticationFailedText": "Telegram передал данные входа, но Loco Place не смог их подтвердить. Повторите запрос.",
     "openTelegramMiniApp": "Открыть Loco Place",
     "closeMiniApp": "Закрыть Mini App",
     "loadError": "Не удалось проверить текущую сессию. Попробуйте ещё раз."

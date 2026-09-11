@@ -17,11 +17,6 @@ void main() {
       // TODO
     });
 
-    //Future createTmaSession() async
-    test('test createTmaSession', () async {
-      // TODO
-    });
-
     //Future<SessionTokens> exchangeTelegramLoginAttempt(String id, ExchangeTelegramLoginAttemptRequest exchangeTelegramLoginAttemptRequest) async
     test('test exchangeTelegramLoginAttempt', () async {
       // TODO

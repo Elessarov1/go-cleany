@@ -16,7 +16,7 @@ Google OIDC sub
 
 Токены Google не возвращаются frontend и не сохраняются в `localStorage`. Production-cookie имеет
 `HttpOnly`, `Secure` и `SameSite=Lax`. Изменяющие web-запросы используют Spring CSRF token; Telegram
-Mini App продолжает передавать явный `Authorization: tma ...` и не создаёт browser session.
+Mini App продолжает передавать явный `Authorization: tma ...` и не полагается на browser session.
 
 ## Google OAuth Console
 
@@ -86,9 +86,10 @@ where customer_id = <CUSTOMER_ID>
 страница предлагает **Продолжить через Google**; обычный authenticated customer получает нейтральную
 страницу «не найдено». Backend всё равно отдельно защищает каждый `/api/v1/admin/**` запрос.
 
-React выполняет выход через общий `DELETE /api/v1/auth/sessions/current`. Для browser/TMA он
+React выполняет выход через общий `DELETE /api/v1/auth/sessions/current`. Для standalone browser он
 инвалидирует JDBC session и session/CSRF cookies; для bearer-клиента также отзываются текущая
-first-party session и связанный communication endpoint. Текущая сессия доступна через
+first-party session и связанный communication endpoint. TMA остаётся аутентифицированным текущим
+Telegram launch proof до закрытия Mini App или истечения `initData`. Текущая identity доступна через
 `GET /api/v1/auth/me`; DTO содержит только внутренний customer, display name, provider, platform roles
 и признак доступности login provider без его credentials.
 

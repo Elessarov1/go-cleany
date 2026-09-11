@@ -66,6 +66,11 @@ class RentalApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',
@@ -155,6 +160,11 @@ class RentalApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',
@@ -263,7 +273,23 @@ class RentalApi {
         ...?headers,
       },
       extra: <String, dynamic>{
-        'secure': <Map<String, String>>[],
+        'secure': <Map<String, String>>[
+          {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },{
+            'type': 'apiKey',
+            'name': 'cookieSession',
+            'keyName': 'SESSION',
+            'where': '',
+          },
+        ],
         ...?extra,
       },
       validateStatus: validateStatus,
@@ -346,6 +372,11 @@ class RentalApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',
@@ -434,6 +465,11 @@ class RentalApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',
@@ -526,6 +562,11 @@ class RentalApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',
@@ -683,7 +724,23 @@ class RentalApi {
         ...?headers,
       },
       extra: <String, dynamic>{
-        'secure': <Map<String, String>>[],
+        'secure': <Map<String, String>>[
+          {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },{
+            'type': 'apiKey',
+            'name': 'cookieSession',
+            'keyName': 'SESSION',
+            'where': '',
+          },
+        ],
         ...?extra,
       },
       validateStatus: validateStatus,
@@ -926,6 +983,11 @@ class RentalApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',
@@ -1014,6 +1076,11 @@ class RentalApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',
@@ -1108,7 +1175,23 @@ class RentalApi {
         ...?headers,
       },
       extra: <String, dynamic>{
-        'secure': <Map<String, String>>[],
+        'secure': <Map<String, String>>[
+          {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },{
+            'type': 'apiKey',
+            'name': 'cookieSession',
+            'keyName': 'SESSION',
+            'where': '',
+          },
+        ],
         ...?extra,
       },
       validateStatus: validateStatus,
@@ -1312,6 +1395,11 @@ class RentalApi {
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
             'type': 'http',
             'scheme': 'bearer',
             'name': 'bearerAuth',
@@ -1383,7 +1471,23 @@ class RentalApi {
         ...?headers,
       },
       extra: <String, dynamic>{
-        'secure': <Map<String, String>>[],
+        'secure': <Map<String, String>>[
+          {
+            'type': 'apiKey',
+            'name': 'tmaAuth',
+            'keyName': 'Authorization',
+            'where': 'header',
+          },{
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },{
+            'type': 'apiKey',
+            'name': 'cookieSession',
+            'keyName': 'SESSION',
+            'where': '',
+          },
+        ],
         ...?extra,
       },
       validateStatus: validateStatus,

@@ -23,6 +23,8 @@ import type { ConfirmAccountDeletionRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -79,7 +81,6 @@ All URIs are relative to *https://loco-place.com*
 *AccountApi* | [**verifyIdentityLink**](docs/AccountApi.md#verifyidentitylinkoperation) | **POST** /api/v1/account/identity-links/{id}/verify | 
 *AuthenticationApi* | [**createNativeChallenge**](docs/AuthenticationApi.md#createnativechallengeoperation) | **POST** /api/v1/auth/native/challenges | 
 *AuthenticationApi* | [**createTelegramLoginAttempt**](docs/AuthenticationApi.md#createtelegramloginattempt) | **POST** /api/v1/auth/native/telegram/attempts | 
-*AuthenticationApi* | [**createTmaSession**](docs/AuthenticationApi.md#createtmasession) | **POST** /api/v1/auth/tma/session | 
 *AuthenticationApi* | [**exchangeTelegramLoginAttempt**](docs/AuthenticationApi.md#exchangetelegramloginattemptoperation) | **POST** /api/v1/auth/native/telegram/attempts/{attemptId}/exchange | 
 *AuthenticationApi* | [**getCsrfToken**](docs/AuthenticationApi.md#getcsrftoken) | **GET** /api/v1/auth/csrf | 
 *AuthenticationApi* | [**getCurrentAuthentication**](docs/AuthenticationApi.md#getcurrentauthentication) | **GET** /api/v1/auth/me | 
@@ -250,8 +251,8 @@ Authentication schemes defined for the API:
 - **Type**: API key
 - **API key parameter name**: `SESSION`
 - **Location**: 
-<a id="tmaBootstrap"></a>
-#### tmaBootstrap
+<a id="tmaAuth"></a>
+#### tmaAuth
 
 
 - **Type**: API key

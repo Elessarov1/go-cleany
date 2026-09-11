@@ -88,7 +88,6 @@ Class | Method | HTTP request | Description
 [*AccountApi*](doc/AccountApi.md) | [**verifyIdentityLink**](doc/AccountApi.md#verifyidentitylink) | **POST** /api/v1/account/identity-links/{id}/verify | 
 [*AuthenticationApi*](doc/AuthenticationApi.md) | [**createNativeChallenge**](doc/AuthenticationApi.md#createnativechallenge) | **POST** /api/v1/auth/native/challenges | 
 [*AuthenticationApi*](doc/AuthenticationApi.md) | [**createTelegramLoginAttempt**](doc/AuthenticationApi.md#createtelegramloginattempt) | **POST** /api/v1/auth/native/telegram/attempts | 
-[*AuthenticationApi*](doc/AuthenticationApi.md) | [**createTmaSession**](doc/AuthenticationApi.md#createtmasession) | **POST** /api/v1/auth/tma/session | 
 [*AuthenticationApi*](doc/AuthenticationApi.md) | [**exchangeTelegramLoginAttempt**](doc/AuthenticationApi.md#exchangetelegramloginattempt) | **POST** /api/v1/auth/native/telegram/attempts/{attemptId}/exchange | 
 [*AuthenticationApi*](doc/AuthenticationApi.md) | [**getCsrfToken**](doc/AuthenticationApi.md#getcsrftoken) | **GET** /api/v1/auth/csrf | 
 [*AuthenticationApi*](doc/AuthenticationApi.md) | [**getCurrentAuthentication**](doc/AuthenticationApi.md#getcurrentauthentication) | **GET** /api/v1/auth/me | 
@@ -258,7 +257,7 @@ Authentication schemes defined for the API:
 - **API key parameter name**: SESSION
 - **Location**: 
 
-### tmaBootstrap
+### tmaAuth
 
 - **Type**: API key
 - **API key parameter name**: Authorization

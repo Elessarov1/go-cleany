@@ -155,25 +155,6 @@ export interface AuthenticationApiInterface {
     createTelegramLoginAttempt(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TelegramLoginAttempt>;
 
     /**
-     * Creates request options for createTmaSession without sending the request
-     * @throws {RequiredError}
-     * @memberof AuthenticationApiInterface
-     */
-    createTmaSessionRequestOpts(): Promise<runtime.RequestOpts>;
-
-    /**
-     * 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof AuthenticationApiInterface
-     */
-    createTmaSessionRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>>;
-
-    /**
-     */
-    createTmaSession(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void>;
-
-    /**
      * Creates request options for exchangeTelegramLoginAttempt without sending the request
      * @param {string} attemptId 
      * @param {ExchangeTelegramLoginAttemptRequest} exchangeTelegramLoginAttemptRequest 
@@ -425,44 +406,6 @@ export class AuthenticationApi extends runtime.BaseAPI implements Authentication
     }
 
     /**
-     * Creates request options for createTmaSession without sending the request
-     */
-    async createTmaSessionRequestOpts(): Promise<runtime.RequestOpts> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.apiKey) {
-            headerParameters["Authorization"] = await this.configuration.apiKey("Authorization"); // tmaBootstrap authentication
-        }
-
-
-        let urlPath = `/api/v1/auth/tma/session`;
-
-        return {
-            path: urlPath,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-        };
-    }
-
-    /**
-     */
-    async createTmaSessionRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
-        const requestOptions = await this.createTmaSessionRequestOpts();
-        const response = await this.request(requestOptions, initOverrides);
-
-        return new runtime.VoidApiResponse(response);
-    }
-
-    /**
-     */
-    async createTmaSession(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.createTmaSessionRaw(initOverrides);
-    }
-
-    /**
      * Creates request options for exchangeTelegramLoginAttempt without sending the request
      */
     async exchangeTelegramLoginAttemptRequestOpts(requestParameters: ExchangeTelegramLoginAttemptOperationRequest): Promise<runtime.RequestOpts> {
@@ -558,6 +501,18 @@ export class AuthenticationApi extends runtime.BaseAPI implements Authentication
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.apiKey) {
+            headerParameters["Authorization"] = await this.configuration.apiKey("Authorization"); // tmaAuth authentication
+        }
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/api/v1/auth/me`;
 
@@ -683,6 +638,10 @@ export class AuthenticationApi extends runtime.BaseAPI implements Authentication
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.apiKey) {
+            headerParameters["Authorization"] = await this.configuration.apiKey("Authorization"); // tmaAuth authentication
+        }
+
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
             const tokenString = await token("bearerAuth", []);
@@ -780,6 +739,10 @@ export class AuthenticationApi extends runtime.BaseAPI implements Authentication
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.apiKey) {
+            headerParameters["Authorization"] = await this.configuration.apiKey("Authorization"); // tmaAuth authentication
+        }
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;

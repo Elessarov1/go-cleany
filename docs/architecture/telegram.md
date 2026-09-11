@@ -3,7 +3,7 @@ title: Telegram Integration Boundaries
 type: architecture
 status: active
 scope: platform
-updated: 2026-09-10
+updated: 2026-09-11
 ---
 
 # Telegram
@@ -12,9 +12,11 @@ Telegram is an adapter/channel, not the canonical location of Loco business stat
 
 ## Customer channel
 
-Telegram Mini App exchanges verified `initData` once at `/api/v1/auth/tma/session`, then uses the same
-HttpOnly cookie + CSRF model as standalone web. Business requests must not repeatedly carry `initData`.
-The resolved external identity maps to canonical `CustomerAccount.id`.
+Telegram Mini App sends signed `initData` as `Authorization: tma ...` on each API request. The
+Telegram authentication filter validates its signature and age, then maps the resolved external
+identity to canonical `CustomerAccount.id`; reusable business services remain channel-neutral.
+TMA intentionally does not depend on browser cookies: Telegram Desktop's external Linux Mini App
+shell does not provide the same cookie semantics as standalone browsers and mobile clients.
 
 Customer business data, order ownership and durable notifications must not exist only inside Telegram.
 

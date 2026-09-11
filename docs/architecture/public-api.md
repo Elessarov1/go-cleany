@@ -29,7 +29,7 @@ The shared wire rules are decimal-string `Money`, ISO date/time/date-time, opaqu
 requires `Idempotency-Key`, retained for seven days. A same-key/same-payload retry returns the original
 resource; a changed payload conflicts.
 
-The contract covers browser/TMA bootstrap, native authentication and account security, client
+The contract covers browser and TMA authentication, native authentication and account security, client
 configuration, Home, Activity, notifications, support, and the complete customer-facing Cleaning,
 Rental and Transfer flows. React/TMA consumes these operations through the generated TypeScript
 client; only internal admin APIs remain on the legacy hand-written transport. The React adapter

@@ -41,7 +41,9 @@ import type { CancelRentalBookingRequest } from '@locoplace/api-client';
 
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
-  const config = new Configuration({ 
+  const config = new Configuration({
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -79,7 +81,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -113,7 +115,9 @@ import type { CreateRentalBookingOperationRequest } from '@locoplace/api-client'
 
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
-  const config = new Configuration({ 
+  const config = new Configuration({
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -154,7 +158,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -188,7 +192,15 @@ import type { GetRentalAvailabilityRequest } from '@locoplace/api-client';
 
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
-  const api = new RentalApi();
+  const config = new Configuration({
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
+    // Configure HTTP bearer authorization: bearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+    // To configure API key authorization: cookieSession
+    apiKey: "YOUR API KEY",
+  });
+  const api = new RentalApi(config);
 
   const body = {
     // number
@@ -226,7 +238,7 @@ example().catch(console.error);
 
 ### Authorization
 
-No authorization required
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -259,7 +271,9 @@ import type { GetRentalBookingRequest } from '@locoplace/api-client';
 
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
-  const config = new Configuration({ 
+  const config = new Configuration({
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -297,7 +311,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -332,6 +346,8 @@ import type { GetRentalBookingsRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -372,7 +388,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -406,6 +422,8 @@ import type { GetRentalCleaningContextRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -443,7 +461,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -533,7 +551,15 @@ import type { GetRentalPropertyRequest } from '@locoplace/api-client';
 
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
-  const api = new RentalApi();
+  const config = new Configuration({
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
+    // Configure HTTP bearer authorization: bearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+    // To configure API key authorization: cookieSession
+    apiKey: "YOUR API KEY",
+  });
+  const api = new RentalApi(config);
 
   const body = {
     // string
@@ -565,7 +591,7 @@ example().catch(console.error);
 
 ### Authorization
 
-No authorization required
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -747,6 +773,8 @@ import type { GetRentalTransferContextRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -784,7 +812,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -818,6 +846,8 @@ import type { GetRentalTransferPrefillRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -858,7 +888,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -892,7 +922,15 @@ import type { QuoteRentalPropertyRequest } from '@locoplace/api-client';
 
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
-  const api = new RentalApi();
+  const config = new Configuration({
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
+    // Configure HTTP bearer authorization: bearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+    // To configure API key authorization: cookieSession
+    apiKey: "YOUR API KEY",
+  });
+  const api = new RentalApi(config);
 
   const body = {
     // number
@@ -939,7 +977,7 @@ example().catch(console.error);
 
 ### Authorization
 
-No authorization required
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -1107,6 +1145,8 @@ import type { RecordRentalTransferContextShownRequest } from '@locoplace/api-cli
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -1147,7 +1187,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -1180,7 +1220,15 @@ import type { SearchRentalPropertiesRequest } from '@locoplace/api-client';
 
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
-  const api = new RentalApi();
+  const config = new Configuration({
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
+    // Configure HTTP bearer authorization: bearerAuth
+    accessToken: "YOUR BEARER TOKEN",
+    // To configure API key authorization: cookieSession
+    apiKey: "YOUR API KEY",
+  });
+  const api = new RentalApi(config);
 
   const body = {
     // RentalTermType (optional)
@@ -1233,7 +1281,7 @@ example().catch(console.error);
 
 ### Authorization
 
-No authorization required
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -1248,4 +1296,3 @@ No authorization required
 | **400** | Invalid request |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
-

@@ -72,6 +72,24 @@ class TelegramAuthenticationIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void currentAuthenticationUsesTmaCredentialWithoutDependingOnCookieSession() throws Exception {
+        String initData = TelegramInitDataTestFactory.signed(BOT_TOKEN, Instant.now(), USER_JSON);
+
+        mvc.perform(get("/api/v1/auth/me")
+                        .header("Authorization", "tma " + initData))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.authenticated").value(true))
+                .andExpect(jsonPath("$.provider").value("TELEGRAM"))
+                .andExpect(jsonPath("$.displayName").value("Alex Cleaner"));
+
+        mvc.perform(get("/api/v1/auth/me")
+                        .header("Authorization", "tma " + initData))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.authenticated").value(true))
+                .andExpect(jsonPath("$.provider").value("TELEGRAM"));
+    }
+
+    @Test
     void orderWithValidInitData_verifiedTelegramIdentityStored() throws Exception {
         String initData = TelegramInitDataTestFactory.signed(BOT_TOKEN, Instant.now(), USER_JSON);
         LocalDate requestedDate = LocalDate.now(ZoneId.of("Europe/Istanbul")).plusDays(1);

@@ -21,7 +21,7 @@ paths:
     post:
       tags: [Client]
       operationId: captureTelegramAcquisition
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       requestBody:
         required: true
         content:
@@ -33,19 +33,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/AcquisitionCapture' }
-  /api/v1/auth/tma/session:
-    post:
-      tags: [Authentication]
-      operationId: createTmaSession
-      security: [{ tmaBootstrap: [] }]
-      responses:
-        '204': { description: Cookie session created }
-        '401': { $ref: '#/components/responses/Unauthorized' }
   /api/v1/auth/me:
     get:
       tags: [Authentication]
       operationId: getCurrentAuthentication
-      security: []
+      security: [{}, { bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       responses:
         '200':
           description: Current first-party or anonymous browser authentication state
@@ -179,21 +171,21 @@ paths:
     delete:
       tags: [Authentication]
       operationId: logoutCurrentSession
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       responses:
         '204': { description: Current session revoked }
   /api/v1/auth/sessions:
     delete:
       tags: [Authentication]
       operationId: revokeAllSessions
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       responses:
         '204': { description: Every customer session revoked }
   /api/v1/account/identities:
     get:
       tags: [Account]
       operationId: getAccountIdentities
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       responses:
         '200':
           description: Linked login methods
@@ -204,7 +196,7 @@ paths:
     post:
       tags: [Account]
       operationId: createIdentityLink
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       requestBody:
         required: true
         content:
@@ -225,7 +217,7 @@ paths:
     post:
       tags: [Account]
       operationId: verifyIdentityLink
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/UuidId' }]
       requestBody:
         required: true
@@ -239,7 +231,7 @@ paths:
     post:
       tags: [Account]
       operationId: confirmIdentityLink
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/UuidId' }]
       requestBody:
         required: true
@@ -257,7 +249,7 @@ paths:
     delete:
       tags: [Account]
       operationId: unlinkIdentity
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters:
         - name: identityId
           in: path
@@ -279,7 +271,7 @@ paths:
     post:
       tags: [Account]
       operationId: createAccountDeletionRequest
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       responses:
         '200':
           description: Fresh-auth challenge
@@ -291,7 +283,7 @@ paths:
     post:
       tags: [Account]
       operationId: confirmAccountDeletion
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/UuidId' }]
       requestBody:
         required: true
@@ -305,7 +297,7 @@ paths:
     get:
       tags: [Account]
       operationId: getNotificationPreferences
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       responses:
         '200':
           description: Preferences
@@ -315,7 +307,7 @@ paths:
     patch:
       tags: [Account]
       operationId: updateNotificationPreferences
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       requestBody:
         required: true
         content:
@@ -361,7 +353,7 @@ paths:
     get:
       tags: [Account]
       operationId: getNotifications
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters:
         - name: cursor
           in: query
@@ -381,7 +373,7 @@ paths:
     get:
       tags: [Account]
       operationId: getNotificationUnreadCount
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       responses:
         '200':
           description: Current unread notification count
@@ -392,7 +384,7 @@ paths:
     post:
       tags: [Account]
       operationId: markNotificationRead
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters:
         - name: notificationId
           in: path
@@ -405,14 +397,14 @@ paths:
     post:
       tags: [Account]
       operationId: markAllNotificationsRead
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       responses:
         '204': { description: Every customer notification marked read }
   /api/v1/account/activity:
     get:
       tags: [Account]
       operationId: getCustomerActivity
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       responses:
         '200':
           description: Cross-service active tasks and history
@@ -423,7 +415,7 @@ paths:
     get:
       tags: [Account]
       operationId: getCustomerHome
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       responses:
         '200':
           description: Contextual customer home read model
@@ -434,7 +426,7 @@ paths:
     get:
       tags: [Account]
       operationId: getCustomerProfile
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       responses:
         '200':
           description: Current customer profile
@@ -469,7 +461,7 @@ paths:
     get:
       tags: [Cleaning]
       operationId: getCleaningOrders
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/PageSize'
@@ -480,7 +472,7 @@ paths:
     post:
       tags: [Cleaning]
       operationId: createCleaningOrder
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
         required: true
@@ -503,7 +495,7 @@ paths:
     post:
       tags: [Cleaning]
       operationId: quoteCleaningOrder
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/CleaningOrderQuoteRequest' } } }
@@ -515,7 +507,7 @@ paths:
     get:
       tags: [Cleaning]
       operationId: getCleaningOrder
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/OrderId' }]
       responses:
         '200':
@@ -526,14 +518,14 @@ paths:
     post:
       tags: [Cleaning]
       operationId: recordCleaningRepeatShown
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/OrderId' }]
       responses: { '204': { description: Repeat opportunity impression recorded } }
   /api/v1/cleaning/orders/{orderId}/repeat-prefill:
     post:
       tags: [Cleaning]
       operationId: getCleaningRepeatPrefill
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/OrderId' }]
       responses:
         '200':
@@ -544,7 +536,7 @@ paths:
     get:
       tags: [Cleaning]
       operationId: getCleaningRepeatReminder
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/OrderId' }]
       responses:
         '200':
@@ -553,7 +545,7 @@ paths:
     put:
       tags: [Cleaning]
       operationId: updateCleaningRepeatReminder
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/OrderId' }]
       requestBody:
         required: true
@@ -567,7 +559,7 @@ paths:
     post:
       tags: [Cleaning]
       operationId: cancelCleaningOrder
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/OrderId' }]
       responses:
         '200':
@@ -578,7 +570,7 @@ paths:
     get:
       tags: [Cleaning]
       operationId: getCleaningReport
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/OrderId' }]
       responses:
         '200':
@@ -589,7 +581,7 @@ paths:
     get:
       tags: [Cleaning]
       operationId: getCleaningReportPhoto
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/OrderId'
         - $ref: '#/components/parameters/MediaId'
@@ -607,7 +599,7 @@ paths:
     get:
       tags: [Cleaning]
       operationId: getCleaningReferralSummary
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       responses:
         '200':
           description: Cleaning referral state for the current customer
@@ -616,7 +608,7 @@ paths:
     get:
       tags: [Rental]
       operationId: getRentalBookings
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/PageSize'
@@ -627,7 +619,7 @@ paths:
     post:
       tags: [Rental]
       operationId: createRentalBooking
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
         required: true
@@ -650,7 +642,7 @@ paths:
     get:
       tags: [Rental]
       operationId: searchRentalProperties
-      security: []
+      security: [{}, { bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters:
         - { name: termType, in: query, required: false, schema: { $ref: '#/components/schemas/RentalTermType' } }
         - { name: checkInDate, in: query, required: false, schema: { type: string, format: date } }
@@ -686,7 +678,7 @@ paths:
     get:
       tags: [Rental]
       operationId: getRentalProperty
-      security: []
+      security: [{}, { bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters:
         - { name: slug, in: path, required: true, schema: { type: string } }
       responses:
@@ -698,7 +690,7 @@ paths:
     get:
       tags: [Rental]
       operationId: getRentalAvailability
-      security: []
+      security: [{}, { bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/PropertyId'
         - { name: fromDate, in: query, required: true, schema: { type: string, format: date } }
@@ -711,7 +703,7 @@ paths:
     get:
       tags: [Rental]
       operationId: quoteRentalProperty
-      security: []
+      security: [{}, { bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/PropertyId'
         - { name: termType, in: query, required: true, schema: { $ref: '#/components/schemas/RentalTermType' } }
@@ -757,7 +749,7 @@ paths:
     get:
       tags: [Rental]
       operationId: getRentalBooking
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/BookingId' }]
       responses:
         '200':
@@ -768,7 +760,7 @@ paths:
     get:
       tags: [Rental]
       operationId: getRentalCleaningContext
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/BookingId' }]
       responses:
         '200':
@@ -778,7 +770,7 @@ paths:
     get:
       tags: [Rental]
       operationId: getRentalTransferContext
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/BookingId' }]
       responses:
         '200':
@@ -788,7 +780,7 @@ paths:
     post:
       tags: [Rental]
       operationId: recordRentalTransferContextShown
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/BookingId'
         - $ref: '#/components/parameters/RentalTransferContext'
@@ -797,7 +789,7 @@ paths:
     post:
       tags: [Rental]
       operationId: getRentalTransferPrefill
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/BookingId'
         - $ref: '#/components/parameters/RentalTransferContext'
@@ -810,7 +802,7 @@ paths:
     post:
       tags: [Rental]
       operationId: cancelRentalBooking
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/BookingId' }]
       responses:
         '200':
@@ -821,7 +813,7 @@ paths:
     get:
       tags: [Transfer]
       operationId: getTransferBookings
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/PageSize'
@@ -832,7 +824,7 @@ paths:
     post:
       tags: [Transfer]
       operationId: createTransferBooking
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
         required: true
@@ -846,7 +838,7 @@ paths:
     get:
       tags: [Transfer]
       operationId: getTransferConfiguration
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       responses:
         '200':
           description: Transfer airports, vehicles, prices and date policy
@@ -855,7 +847,7 @@ paths:
     post:
       tags: [Transfer]
       operationId: quoteTransfer
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/TransferQuoteRequest' } } }
@@ -867,7 +859,7 @@ paths:
     get:
       tags: [Transfer]
       operationId: getTransferBooking
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/BookingId' }]
       responses:
         '200':
@@ -878,14 +870,14 @@ paths:
     post:
       tags: [Transfer]
       operationId: recordTransferRepeatShown
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/BookingId' }]
       responses: { '204': { description: Repeat opportunity impression recorded } }
   /api/v1/transfer/bookings/{bookingId}/repeat-prefill:
     post:
       tags: [Transfer]
       operationId: getTransferRepeatPrefill
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/BookingId' }]
       responses:
         '200':
@@ -896,7 +888,7 @@ paths:
     post:
       tags: [Transfer]
       operationId: cancelTransferBooking
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/BookingId' }]
       responses:
         '200':
@@ -907,7 +899,7 @@ paths:
     get:
       tags: [Support]
       operationId: getTransactionSupport
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       parameters:
         - $ref: '#/components/parameters/Service'
         - { name: sourceEntityId, in: path, required: true, schema: { type: integer, format: int64 } }
@@ -920,7 +912,7 @@ paths:
     post:
       tags: [Support]
       operationId: createSupportCase
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/CreateSupportCaseRequest' } } }
@@ -936,7 +928,7 @@ paths:
     post:
       tags: [Support]
       operationId: submitTransactionFeedback
-      security: [{ bearerAuth: [] }, { cookieSession: [] }]
+      security: [{ bearerAuth: [] }, { cookieSession: [] }, { tmaAuth: [] }]
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/CreateTransactionFeedbackRequest' } } }
@@ -1012,12 +1004,12 @@ components:
       type: apiKey
       in: cookie
       name: SESSION
-      description: Browser/TMA HttpOnly session. Mutations also require X-XSRF-TOKEN.
-    tmaBootstrap:
+      description: Standalone browser HttpOnly session. Mutations also require X-XSRF-TOKEN.
+    tmaAuth:
       type: apiKey
       in: header
       name: Authorization
-      description: Authorization header uses `tma <initData>` only for the TMA session exchange.
+      description: "Telegram Mini App requests use `Authorization: tma <initData>`; the backend validates it on every request."
   responses:
     BadRequest:
       description: Invalid request

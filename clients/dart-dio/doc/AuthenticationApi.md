@@ -11,7 +11,6 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**createNativeChallenge**](AuthenticationApi.md#createnativechallenge) | **POST** /api/v1/auth/native/challenges | 
 [**createTelegramLoginAttempt**](AuthenticationApi.md#createtelegramloginattempt) | **POST** /api/v1/auth/native/telegram/attempts | 
-[**createTmaSession**](AuthenticationApi.md#createtmasession) | **POST** /api/v1/auth/tma/session | 
 [**exchangeTelegramLoginAttempt**](AuthenticationApi.md#exchangetelegramloginattempt) | **POST** /api/v1/auth/native/telegram/attempts/{attemptId}/exchange | 
 [**getCsrfToken**](AuthenticationApi.md#getcsrftoken) | **GET** /api/v1/auth/csrf | 
 [**getCurrentAuthentication**](AuthenticationApi.md#getcurrentauthentication) | **GET** /api/v1/auth/me | 
@@ -92,46 +91,6 @@ This endpoint does not need any parameter.
 ### Authorization
 
 No authorization required
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-# **createTmaSession**
-> createTmaSession()
-
-
-
-### Example
-```dart
-import 'package:loco_place_api/api.dart';
-// TODO Configure API key authorization: tmaBootstrap
-//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaBootstrap').apiKey = 'YOUR_API_KEY';
-// uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaBootstrap').apiKeyPrefix = 'Bearer';
-
-final api = LocoPlaceApi().getAuthenticationApi();
-
-try {
-    api.createTmaSession();
-} on DioException catch (e) {
-    print('Exception when calling AuthenticationApi->createTmaSession: $e\n');
-}
-```
-
-### Parameters
-This endpoint does not need any parameter.
-
-### Return type
-
-void (empty response body)
-
-### Authorization
-
-[tmaBootstrap](../README.md#tmaBootstrap)
 
 ### HTTP request headers
 
@@ -228,6 +187,14 @@ No authorization required
 ### Example
 ```dart
 import 'package:loco_place_api/api.dart';
+// TODO Configure API key authorization: tmaAuth
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKey = 'YOUR_API_KEY';
+// uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKeyPrefix = 'Bearer';
+// TODO Configure API key authorization: cookieSession
+//defaultApiClient.getAuthentication<ApiKeyAuth>('cookieSession').apiKey = 'YOUR_API_KEY';
+// uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+//defaultApiClient.getAuthentication<ApiKeyAuth>('cookieSession').apiKeyPrefix = 'Bearer';
 
 final api = LocoPlaceApi().getAuthenticationApi();
 
@@ -248,7 +215,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-No authorization required
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -347,6 +314,10 @@ No authorization required
 ### Example
 ```dart
 import 'package:loco_place_api/api.dart';
+// TODO Configure API key authorization: tmaAuth
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKey = 'YOUR_API_KEY';
+// uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKeyPrefix = 'Bearer';
 // TODO Configure API key authorization: cookieSession
 //defaultApiClient.getAuthentication<ApiKeyAuth>('cookieSession').apiKey = 'YOUR_API_KEY';
 // uncomment below to setup prefix (e.g. Bearer) for API key, if needed
@@ -370,7 +341,7 @@ void (empty response body)
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -430,6 +401,10 @@ No authorization required
 ### Example
 ```dart
 import 'package:loco_place_api/api.dart';
+// TODO Configure API key authorization: tmaAuth
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKey = 'YOUR_API_KEY';
+// uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+//defaultApiClient.getAuthentication<ApiKeyAuth>('tmaAuth').apiKeyPrefix = 'Bearer';
 // TODO Configure API key authorization: cookieSession
 //defaultApiClient.getAuthentication<ApiKeyAuth>('cookieSession').apiKey = 'YOUR_API_KEY';
 // uncomment below to setup prefix (e.g. Bearer) for API key, if needed
@@ -453,7 +428,7 @@ void (empty response body)
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 

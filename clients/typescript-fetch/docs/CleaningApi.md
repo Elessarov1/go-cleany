@@ -38,6 +38,8 @@ import type { CancelCleaningOrderRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -75,7 +77,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -110,6 +112,8 @@ import type { CreateCleaningOrderOperationRequest } from '@locoplace/api-client'
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -150,7 +154,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -242,6 +246,8 @@ import type { GetCleaningOrderRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -279,7 +285,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -314,6 +320,8 @@ import type { GetCleaningOrdersRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -354,7 +362,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -388,6 +396,8 @@ import type { GetCleaningReferralSummaryRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -417,7 +427,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -451,6 +461,8 @@ import type { GetCleaningRepeatPrefillRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -488,7 +500,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -523,6 +535,8 @@ import type { GetCleaningRepeatReminderRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -560,7 +574,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -594,6 +608,8 @@ import type { GetCleaningReportRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -631,7 +647,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -666,6 +682,8 @@ import type { GetCleaningReportPhotoRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -706,7 +724,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -742,6 +760,8 @@ import type { QuoteCleaningOrderRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -779,7 +799,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -813,6 +833,8 @@ import type { RecordCleaningRepeatShownRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -850,7 +872,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -884,6 +906,8 @@ import type { UpdateCleaningRepeatReminderRequest } from '@locoplace/api-client'
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -924,7 +948,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 

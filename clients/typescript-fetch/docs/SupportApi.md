@@ -28,6 +28,8 @@ import type { CreateSupportCaseOperationRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -65,7 +67,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -101,6 +103,8 @@ import type { GetTransactionSupportRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -141,7 +145,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
@@ -176,6 +180,8 @@ import type { SubmitTransactionFeedbackRequest } from '@locoplace/api-client';
 async function example() {
   console.log("🚀 Testing @locoplace/api-client SDK...");
   const config = new Configuration({ 
+    // To configure API key authorization: tmaAuth
+    apiKey: "YOUR API KEY",
     // Configure HTTP bearer authorization: bearerAuth
     accessToken: "YOUR BEARER TOKEN",
     // To configure API key authorization: cookieSession
@@ -213,7 +219,7 @@ example().catch(console.error);
 
 ### Authorization
 
-[bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
+[tmaAuth](../README.md#tmaAuth), [bearerAuth](../README.md#bearerAuth), [cookieSession](../README.md#cookieSession)
 
 ### HTTP request headers
 
