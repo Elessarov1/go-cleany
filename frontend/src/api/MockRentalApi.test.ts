@@ -28,6 +28,19 @@ describe("MockRentalApi period-first quote", () => {
     });
     expect(result?.price).toEqual(quote.price);
   });
+
+  it("uses the same execution for cursor pages", async () => {
+    const api = new MockRentalApi({} as Platform);
+    const first = await api.search({ view: "all" }, { size: 1 });
+    const second = await api.search(
+      { view: "all" },
+      { size: 1, cursor: first.nextCursor ?? undefined },
+    );
+
+    expect(first.hasMore).toBe(true);
+    expect(second.searchExecutionId).toBe(first.searchExecutionId);
+    expect(second.properties[0]?.id).not.toBe(first.properties[0]?.id);
+  });
 });
 
 function addDays(value: string, days: number): string {

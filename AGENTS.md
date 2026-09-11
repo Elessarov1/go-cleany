@@ -151,6 +151,12 @@ Transfer is implemented. Manual driver assignment supports phone-only drivers; T
 
 Backend remains authoritative for authenticated identity, prices, discounts, availability, ownership, eligibility and status transitions. Never trust client/agent-supplied customer IDs, calculated price, discount, availability or business status.
 
+### Analytics is subordinate to business flows
+
+Analytics must never be a prerequisite for successful customer or operator business logic. Tracking failures, unavailable analytics storage and unknown tracking identifiers must not block or change an otherwise valid search, booking, order, support or admin operation.
+
+When analytics requirements materially complicate, weaken or delay the business flow, simplify or defer the analytics design first. Keep only best-effort linkage that can fail independently; do not add holds, snapshots, transactions or persistence dependencies solely to preserve analytics continuity.
+
 ---
 
 ## Technical stack

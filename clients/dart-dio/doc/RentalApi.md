@@ -744,7 +744,7 @@ void (empty response body)
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **searchRentalProperties**
-> RentalSearch searchRentalProperties(termType, checkInDate, checkOutDate, months, guests, xRentalPreviousSearchId)
+> RentalSearch searchRentalProperties(termType, checkInDate, checkOutDate, months, guests, cursor, size, xRentalPreviousSearchId)
 
 
 
@@ -758,10 +758,12 @@ final Date checkInDate = 2013-10-20; // Date |
 final Date checkOutDate = 2013-10-20; // Date | 
 final int months = 56; // int | 
 final int guests = 56; // int | 
+final String cursor = cursor_example; // String | 
+final int size = 56; // int | 
 final String xRentalPreviousSearchId = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
 
 try {
-    final response = api.searchRentalProperties(termType, checkInDate, checkOutDate, months, guests, xRentalPreviousSearchId);
+    final response = api.searchRentalProperties(termType, checkInDate, checkOutDate, months, guests, cursor, size, xRentalPreviousSearchId);
     print(response);
 } on DioException catch (e) {
     print('Exception when calling RentalApi->searchRentalProperties: $e\n');
@@ -777,6 +779,8 @@ Name | Type | Description  | Notes
  **checkOutDate** | **Date**|  | [optional] 
  **months** | **int**|  | [optional] 
  **guests** | **int**|  | [optional] 
+ **cursor** | **String**|  | [optional] 
+ **size** | **int**|  | [optional] [default to 20]
  **xRentalPreviousSearchId** | **String**|  | [optional] 
 
 ### Return type

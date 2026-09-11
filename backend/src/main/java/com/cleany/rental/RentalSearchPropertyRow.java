@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 record RentalSearchPropertyRow(
         long id,
+        int displayOrder,
         String slug,
         String titleRu,
         String titleEn,

@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('smoke', 'rental-public-flow', 'rental-search', 'image-burst', 'mixed-api', 'stress', 'all')]
+    [ValidateSet('smoke', 'rental-public-flow', 'rental-search', 'rental-search-cursor', 'image-burst', 'mixed-api', 'stress', 'all')]
     [string]$Scenario = 'smoke',
     [int]$Scale = 1,
     [long]$Seed = 42,

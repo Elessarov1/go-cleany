@@ -21,7 +21,7 @@ import type {
   UpsertRentalOccupancyRequest,
 } from "../domain/rental";
 import { generatedWire, HttpApiClient } from "./HttpApiClient";
-import type { RentalApi } from "./RentalApi";
+import type { RentalApi, RentalSearchPageOptions } from "./RentalApi";
 import {
   Configuration,
   CreateRentalBookingRequestFromJSON,
@@ -73,8 +73,7 @@ export class HttpRentalApi implements RentalApi {
 
   async search(
     request: RentalSearchRequest,
-    signal?: AbortSignal,
-    previousSearchId?: string,
+    options: RentalSearchPageOptions = {},
   ): Promise<RentalSearchResponse> {
     const criteria = "termType" in request && request.termType ? {
       termType: request.termType as GeneratedRentalTermType,
@@ -82,10 +81,16 @@ export class HttpRentalApi implements RentalApi {
       checkOutDate: request.termType === "DATE_RANGE" ? apiDate(request.checkOutDate) : undefined,
       months: request.termType === "MONTHLY" ? request.months : undefined,
       guests: request.guests,
-    } : {};
+      cursor: options.cursor,
+      size: options.size,
+      xRentalPreviousSearchId: options.previousSearchId,
+    } : {
+      cursor: options.cursor,
+      size: options.size,
+      xRentalPreviousSearchId: options.previousSearchId,
+    };
     const value = await this.client.generated(this.generated.searchRentalProperties(criteria, {
-      signal,
-      headers: previousSearchId ? { "X-Rental-Previous-Search-Id": previousSearchId } : undefined,
+      signal: options.signal,
     }));
     const response = generatedWire<RentalSearchResponse>(RentalSearchToJSON(value));
     return {

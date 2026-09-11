@@ -10,6 +10,8 @@ Name | Type
 `criteria` | [RentalSearchCriteria](RentalSearchCriteria.md)
 `calculatedAt` | Date
 `properties` | [Array&lt;RentalSearchProperty&gt;](RentalSearchProperty.md)
+`nextCursor` | string
+`hasMore` | boolean
 
 ## Example
 
@@ -22,6 +24,8 @@ const example = {
   "criteria": null,
   "calculatedAt": null,
   "properties": null,
+  "nextCursor": null,
+  "hasMore": null,
 } satisfies RentalSearch
 
 console.log(example)

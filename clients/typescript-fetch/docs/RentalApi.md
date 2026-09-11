@@ -1165,7 +1165,7 @@ example().catch(console.error);
 
 ## searchRentalProperties
 
-> RentalSearch searchRentalProperties(termType, checkInDate, checkOutDate, months, guests, xRentalPreviousSearchId)
+> RentalSearch searchRentalProperties(termType, checkInDate, checkOutDate, months, guests, cursor, size, xRentalPreviousSearchId)
 
 
 
@@ -1194,6 +1194,10 @@ async function example() {
     // number (optional)
     guests: 56,
     // string (optional)
+    cursor: cursor_example,
+    // number (optional)
+    size: 56,
+    // string (optional)
     xRentalPreviousSearchId: 38400000-8cf0-11bd-b23e-10b96e4ef00d,
   } satisfies SearchRentalPropertiesRequest;
 
@@ -1219,6 +1223,8 @@ example().catch(console.error);
 | **checkOutDate** | `Date` |  | [Optional] [Defaults to `undefined`] |
 | **months** | `number` |  | [Optional] [Defaults to `undefined`] |
 | **guests** | `number` |  | [Optional] [Defaults to `undefined`] |
+| **cursor** | `string` |  | [Optional] [Defaults to `undefined`] |
+| **size** | `number` |  | [Optional] [Defaults to `20`] |
 | **xRentalPreviousSearchId** | `string` |  | [Optional] [Defaults to `undefined`] |
 
 ### Return type
@@ -1239,6 +1245,7 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | Public Rental search result; response is not cacheable |  -  |
+| **400** | Invalid request |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 

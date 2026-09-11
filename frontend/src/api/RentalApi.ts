@@ -21,14 +21,20 @@ import type {
   UpsertRentalOccupancyRequest,
 } from "../domain/rental";
 
+export interface RentalSearchPageOptions {
+  signal?: AbortSignal;
+  previousSearchId?: string;
+  cursor?: string;
+  size?: number;
+}
+
 export interface RentalApi {
   getConfiguration(): Promise<RentalConfiguration>;
   getProperty(slug: string): Promise<RentalProperty>;
   getAvailability(propertyId: number, fromDate: string, toDate: string): Promise<RentalAvailability>;
   search(
     request: RentalSearchRequest,
-    signal?: AbortSignal,
-    previousSearchId?: string,
+    options?: RentalSearchPageOptions,
   ): Promise<RentalSearchResponse>;
   quotePublic(propertyId: number, request: RentalTermCriteria): Promise<RentalQuote>;
   recordPropertyOpened(searchExecutionId: string): Promise<void>;

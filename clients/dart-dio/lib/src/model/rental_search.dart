@@ -18,6 +18,8 @@ part 'rental_search.g.dart';
 /// * [criteria] 
 /// * [calculatedAt] 
 /// * [properties] 
+/// * [nextCursor] 
+/// * [hasMore] 
 @BuiltValue()
 abstract class RentalSearch implements Built<RentalSearch, RentalSearchBuilder> {
   @BuiltValueField(wireName: r'searchExecutionId')
@@ -31,6 +33,12 @@ abstract class RentalSearch implements Built<RentalSearch, RentalSearchBuilder> 
 
   @BuiltValueField(wireName: r'properties')
   BuiltList<RentalSearchProperty> get properties;
+
+  @BuiltValueField(wireName: r'nextCursor')
+  String? get nextCursor;
+
+  @BuiltValueField(wireName: r'hasMore')
+  bool get hasMore;
 
   RentalSearch._();
 
@@ -74,6 +82,16 @@ class _$RentalSearchSerializer implements PrimitiveSerializer<RentalSearch> {
     yield serializers.serialize(
       object.properties,
       specifiedType: const FullType(BuiltList, [FullType(RentalSearchProperty)]),
+    );
+    yield r'nextCursor';
+    yield object.nextCursor == null ? null : serializers.serialize(
+      object.nextCursor,
+      specifiedType: const FullType.nullable(String),
+    );
+    yield r'hasMore';
+    yield serializers.serialize(
+      object.hasMore,
+      specifiedType: const FullType(bool),
     );
   }
 
@@ -125,6 +143,21 @@ class _$RentalSearchSerializer implements PrimitiveSerializer<RentalSearch> {
             specifiedType: const FullType(BuiltList, [FullType(RentalSearchProperty)]),
           ) as BuiltList<RentalSearchProperty>;
           result.properties.replace(valueDes);
+          break;
+        case r'nextCursor':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.nextCursor = valueDes;
+          break;
+        case r'hasMore':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(bool),
+          ) as bool;
+          result.hasMore = valueDes;
           break;
         default:
           unhandled.add(key);

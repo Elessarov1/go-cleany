@@ -35,6 +35,8 @@ public class RentalSearchController {
             @RequestParam(required = false) LocalDate checkOutDate,
             @RequestParam(required = false) Integer months,
             @RequestParam(required = false) Integer guests,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) Integer size,
             @RequestHeader(name = PREVIOUS_SEARCH_HEADER, required = false) UUID previousSearchId
     ) {
         RentalSearchResponse response = searchService.search(
@@ -43,6 +45,8 @@ public class RentalSearchController {
                 checkOutDate,
                 months,
                 guests,
+                cursor,
+                size,
                 previousSearchId
         );
         return ResponseEntity.ok()

@@ -130,6 +130,52 @@ so the net production reduction in these measured scopes is 152 lines. Removed p
 includes two HTTP endpoints, one frontend route alias, two legacy quote records and the
 intermediate search-result record.
 
+### Cursor pagination follow-up
+
+Measured on 2026-09-11 from the working tree based on commit `cb04fc6`, using the dedicated local
+`loco-perf` Compose project through Caddy, scale `2`, seed `42`, anchor date `2026-09-11`, eight VUs
+and 45-second runs. The scale-2 dataset contained 40 published Rental properties and 320 occupancy
+rows. A reset/seed run warmed the rebuilt stack; the next same-stack first-page run is the measured
+comparison. No remote environment was used.
+
+| First-page Rental search | RPS | p50 | p95 | p99 | Error rate | Received bytes | Representative payload |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| unbounded baseline warm | 25.46 | 15.52 ms | 17.79 ms | 18.83 ms | 0% | 19 MB | 24,687 B / 40 properties |
+| paginated warm-up | 25.21 | 16.49 ms | 23.36 ms | 34.62 ms | 0% | 9.6 MB | at most 20 properties |
+| paginated measured warm | 25.50 | 15.42 ms | 17.90 ms | 19.66 ms | 0% | 9.8 MB | 12,625 B / 20 properties |
+| measured delta | +0.14% | -0.64% | +0.62% | +4.41% | unchanged | about -48% | -48.86% |
+
+The measured first-page run completed 1,152 searches and all 3,456 checks passed. Throughput and
+p50/p95 are effectively unchanged; the p99 increase is 0.83 ms and does not justify JFR. The
+material outcome is bounded work and transfer: the representative first response fell by 12,062
+bytes, and total received traffic was approximately halved.
+
+A separate warm cursor-only contour reused one first-page execution across every request. It
+completed 1,184 cursor iterations plus one setup request with 0% errors: 26.21 RPS, 4.37 ms p50,
+5.64 ms p95 and 6.34 ms p99. The representative second page was 12,556 bytes / 20 properties,
+retained the same execution ID and had no duplicates with the first page. This contour is reported
+separately rather than mixed into the comparable first-page measurement.
+
+`EXPLAIN (ANALYZE, BUFFERS)` used `idx_rental_property_status_order` for both requests. The bounded
+first query completed in 0.544 ms and stopped after the `LIMIT 21` probe; the cursor query applied
+`ROW(display_order, id) > ROW(20, 20)` as an index condition and completed in 1.067 ms in the single
+diagnostic sample. Each non-empty application page still performs one property/availability query
+and one batched cover query, prices only its returned 20 items, and performs no `COUNT` or `OFFSET`.
+No new index is justified by this evidence.
+
+An exact production build from the pre-change `cb04fc6` tree was compared with the changed build;
+no runtime dependency was added:
+
+| Production artifact | Before raw / gzip | After raw / gzip | Delta |
+|---|---:|---:|---:|
+| Rental search route | 9.05 / 2.94 KB | 10.33 / 3.30 KB | +1.28 / +0.36 KB |
+| Shared CSS | 170.16 / 27.86 KB | 170.43 / 27.89 KB | +0.27 / +0.03 KB |
+| EN locale | 47.26 / 15.52 KB | 47.44 / 15.58 KB | +0.18 / +0.06 KB |
+| RU locale | 72.90 / 20.03 KB | 73.18 / 20.11 KB | +0.28 / +0.08 KB |
+
+The route-level increase is the load-more state, retry/race protection and deduplication; it remains
+lazy-loaded and does not affect routes that never open Rental search.
+
 ## Runtime and database observations
 
 ### Confirmed before optimization

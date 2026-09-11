@@ -8,6 +8,8 @@ public record RentalSearchResponse(
         UUID searchExecutionId,
         RentalSearchCriteriaResponse criteria,
         Instant calculatedAt,
-        List<RentalSearchPropertyResponse> properties
+        List<RentalSearchPropertyResponse> properties,
+        String nextCursor,
+        boolean hasMore
 ) {
 }

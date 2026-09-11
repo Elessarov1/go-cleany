@@ -3,7 +3,7 @@ title: Loco Rental
 type: vertical-context
 status: active
 scope: rental
-updated: 2026-09-09
+updated: 2026-09-11
 ---
 
 # Loco Rental
@@ -52,6 +52,14 @@ against all `RentalOccupancy` types and capacity in one JDBC query, batch-loads 
 and calculates every quote through `RentalPriceService`. Results retain `displayOrder, id`; search
 does not create a hold and booking always rechecks publication, policy, capacity and occupancy.
 
+All three search modes return at most 20 properties per request. Continuation uses an opaque keyset
+cursor over `displayOrder ASC, id ASC`, without `COUNT` or `OFFSET`; cover loading and pricing apply
+only to the returned page. The cursor is UI state rather than shareable URL state, so reload and
+sharing start from the first page. Pages read the current catalog instead of a saved result snapshot:
+rare admin reordering can skip an item between requests, while the client removes duplicate property
+IDs. The UI reports loaded counts as `20+`, `40+` while more pages exist and an exact loaded count on
+the final page.
+
 Search cards use the complete stay price for date ranges. Monthly cards make the discounted monthly
 price primary and expose the undiscounted 30-day monthly base, discount and whole-stay total. A
 discount is marked applied only when both its rate and money amount are positive.
@@ -66,7 +74,10 @@ Anonymous funnel linkage is deliberately non-functional metadata. Each successfu
 UUID execution, while first useful card, property open and booking-conflict events are idempotent.
 The ID lives in router state/session storage, never in shared URLs, media URLs, price calculation or
 metric tags. Unknown or mismatched IDs are ignored. A nullable booking FK links conversion without
-changing Rental aggregate ownership.
+changing Rental aggregate ownership. Only the first result page creates an execution; continuation
+cursors carry that same ID and never make analytics persistence a condition of pagination. If
+execution tracking fails, the anonymous ID still supports functional cursor continuation while
+events and booking linkage remain best-effort.
 
 Property administration uses one explicit global `displayOrder` across drafts, published and
 archived properties. Public catalog filtering keeps the relative order of published properties.

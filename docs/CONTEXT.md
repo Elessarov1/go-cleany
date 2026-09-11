@@ -3,7 +3,7 @@ title: Loco Place Current Context
 type: ai-context
 status: active
 scope: platform
-updated: 2026-09-10
+updated: 2026-09-11
 ---
 
 # Loco Place — Current Context
@@ -184,6 +184,12 @@ explicit re-quote/reconfirmation cycle before persistence. Anonymous search exec
 idempotent first-card/property-open/conflict events and an optional booking source without placing
 analytics IDs in URLs or introducing a universal order/search aggregate. Admin analytics reports
 execution-level Rental search conversion by mode.
+
+Rental search is keyset-paginated in every mode: each response contains at most 20 properties in
+`displayOrder, id` order plus an opaque continuation cursor. Pagination performs no total `COUNT`
+and stores no result snapshot; the browser keeps the cursor out of the URL and deduplicates current
+catalog pages by property ID. One execution covers all pages, and failed analytics persistence never
+blocks search, continuation or booking.
 
 General support is reachable at `hello@loco-place.com`. Standalone web exposes it in the public footer; the public `/support` page explains when to use the transaction-attached support flow and is linked from Telegram Mini App navigation. The Telegram bot is a customer-facing Loco Place entry point: `/start`, `/help`, its web-app buttons and its persistent menu open the application or support page. Driver links and provider/admin commands retain routing priority and remain operational interfaces rather than customer navigation.
 

@@ -3,12 +3,18 @@ title: Loco Place Analytics
 type: cross-functional
 status: active
 scope: platform
-updated: 2026-09-09
+updated: 2026-09-11
 ---
 
 # Analytics
 
 Analytics is a platform capability, not a fourth vertical.
+
+Analytics is subordinate to customer and operator business flows. Tracking is best-effort and must
+not become a transactional prerequisite for search, booking, orders, support or administration. If
+continuity of a metric would require a hold, result snapshot, extra authoritative persistence or a
+weaker business guarantee, simplify or defer the metric instead. Unknown IDs and analytics-storage
+failures must leave the business operation unchanged.
 
 For exact implemented acquisition rules and API semantics read [../acquisition-analytics.md](../acquisition-analytics.md).
 
@@ -76,6 +82,10 @@ booking conversion (both over executions), availability-conflict rate, median AP
 booking. Booking creation and completion count only when observed by the report end. The total
 zero-result denominator excludes browse-all; browse-all remains visible separately. These metrics
 must be described as conversion of search executions, never unique-user conversion.
+Cursor continuation pages reuse the first page's execution and do not create additional executions;
+`resultCount` stores the returned first-page size, which preserves exact zero-result semantics without
+an unbounded count. A generated but unpersisted execution ID may still support functional pagination,
+while its events and booking attribution are intentionally absent.
 
 ## Business Health semantics
 

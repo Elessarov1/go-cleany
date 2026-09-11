@@ -127,13 +127,14 @@ final class PerformanceDatasetSeeder {
                   from generate_series(1, %2$d) i;
 
                 insert into customer_external_identity (
-                    id, customer_id, provider, external_subject, username, display_name,
+                    id, customer_id, provider, issuer, external_subject, username, display_name,
                     language_code, email, email_verified, write_access_allowed,
                     write_access_updated_at, last_seen_at
                 )
                 select i,
                        i,
                        'TELEGRAM',
+                       'https://telegram.org',
                        case when i = 1 then '990000001' else (990000000 + i)::text end,
                        'perf_customer_' || i,
                        'Performance Customer ' || i,

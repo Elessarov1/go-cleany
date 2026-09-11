@@ -27,7 +27,7 @@ import type { TransferBooking, TransferDirection } from "../domain/transfer";
 import type { Platform } from "../platform/Platform";
 import { addMonthsToInputValue } from "../utils/format";
 import { ApiError } from "./ApiError";
-import type { RentalApi } from "./RentalApi";
+import type { RentalApi, RentalSearchPageOptions } from "./RentalApi";
 
 const STORAGE_KEY = "cleany.mock.rental-bookings.v2";
 const TRANSFER_STORAGE_KEY = "cleany.mock.transfer-bookings.v1";
@@ -252,17 +252,21 @@ export class MockRentalApi implements RentalApi {
 
   async search(
     request: RentalSearchRequest,
-    signal?: AbortSignal,
-    _previousSearchId?: string,
+    options: RentalSearchPageOptions = {},
   ): Promise<RentalSearchResponse> {
+    const { signal } = options;
     if (signal?.aborted) throw new DOMException("Search aborted", "AbortError");
     const published = properties
       .filter((property) => property.status === "PUBLISHED")
       .sort((left, right) => left.displayOrder - right.displayOrder || left.id - right.id);
-    const executionId = crypto.randomUUID();
     if (!("termType" in request) || !request.termType) {
+      const page = mockSearchPage(
+        request,
+        published.map((property) => this.searchProperty(property, null)),
+        options,
+      );
       const response = await simulateNetwork({
-        searchExecutionId: executionId,
+        searchExecutionId: page.searchExecutionId,
         criteria: {
           mode: "BROWSE_ALL" as const,
           termType: null,
@@ -273,7 +277,9 @@ export class MockRentalApi implements RentalApi {
           guests: null,
         },
         calculatedAt: new Date().toISOString(),
-        properties: published.map((property) => this.searchProperty(property, null)),
+        properties: page.properties,
+        nextCursor: page.nextCursor,
+        hasMore: page.hasMore,
       });
       if (signal?.aborted) throw new DOMException("Search aborted", "AbortError");
       return response;
@@ -292,8 +298,9 @@ export class MockRentalApi implements RentalApi {
     const checkOutDate = request.termType === "MONTHLY"
       ? addDays(addMonthsToInputValue(request.checkInDate, request.months), -1)
       : request.checkOutDate;
+    const page = mockSearchPage(request, found, options);
     const response = await simulateNetwork({
-      searchExecutionId: executionId,
+      searchExecutionId: page.searchExecutionId,
       criteria: {
         mode: request.termType,
         termType: request.termType,
@@ -304,7 +311,9 @@ export class MockRentalApi implements RentalApi {
         guests: request.guests,
       },
       calculatedAt: new Date().toISOString(),
-      properties: found,
+      properties: page.properties,
+      nextCursor: page.nextCursor,
+      hasMore: page.hasMore,
     });
     if (signal?.aborted) throw new DOMException("Search aborted", "AbortError");
     return response;
@@ -880,5 +889,78 @@ export class MockRentalApi implements RentalApi {
 
   private adminBooking(booking: RentalBooking): AdminRentalBooking {
     return { customerId: booking.id + 1_000, communicationIdentityId: booking.id + 2_000, booking };
+  }
+}
+
+interface MockRentalSearchCursor {
+  version: 1;
+  searchExecutionId: string;
+  criteriaKey: string;
+  displayOrder: number;
+  propertyId: number;
+}
+
+function mockSearchPage(
+  request: RentalSearchRequest,
+  results: RentalSearchResponse["properties"],
+  options: RentalSearchPageOptions,
+): Pick<RentalSearchResponse, "searchExecutionId" | "properties" | "nextCursor" | "hasMore"> {
+  const size = options.size ?? 20;
+  if (!Number.isInteger(size) || size < 1 || size > 20) {
+    throw new ApiError("Cursor is invalid", 400, "invalid_cursor");
+  }
+  if (options.cursor && options.previousSearchId) {
+    throw new ApiError("Cursor is invalid", 400, "invalid_cursor");
+  }
+  const criteriaKey = JSON.stringify(request);
+  const cursor = options.cursor ? decodeMockSearchCursor(options.cursor) : null;
+  if (cursor && cursor.criteriaKey !== criteriaKey) {
+    throw new ApiError("Cursor is invalid", 400, "invalid_cursor");
+  }
+  const executionId = cursor?.searchExecutionId ?? crypto.randomUUID();
+  const remaining = cursor ? results.filter((result) => {
+    const property = properties.find((item) => item.id === result.id);
+    return property !== undefined && (
+      property.displayOrder > cursor.displayOrder
+      || property.displayOrder === cursor.displayOrder && property.id > cursor.propertyId
+    );
+  }) : results;
+  const page = remaining.slice(0, size);
+  const hasMore = remaining.length > size;
+  const last = page.at(-1);
+  const lastProperty = last ? properties.find((property) => property.id === last.id) : undefined;
+  const nextCursor = hasMore && lastProperty ? encodeMockSearchCursor({
+    version: 1,
+    searchExecutionId: executionId,
+    criteriaKey,
+    displayOrder: lastProperty.displayOrder,
+    propertyId: lastProperty.id,
+  }) : null;
+  return { searchExecutionId: executionId, properties: page, nextCursor, hasMore };
+}
+
+function encodeMockSearchCursor(cursor: MockRentalSearchCursor): string {
+  return btoa(JSON.stringify(cursor))
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replace(/=+$/, "");
+}
+
+function decodeMockSearchCursor(value: string): MockRentalSearchCursor {
+  try {
+    const base64 = value.replaceAll("-", "+").replaceAll("_", "/");
+    const cursor = JSON.parse(atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, "="))) as MockRentalSearchCursor;
+    if (
+      cursor.version !== 1
+      || !cursor.searchExecutionId
+      || !cursor.criteriaKey
+      || !Number.isInteger(cursor.displayOrder)
+      || !Number.isInteger(cursor.propertyId)
+    ) {
+      throw new Error("invalid cursor");
+    }
+    return cursor;
+  } catch {
+    throw new ApiError("Cursor is invalid", 400, "invalid_cursor");
   }
 }

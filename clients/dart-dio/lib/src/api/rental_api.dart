@@ -1347,6 +1347,8 @@ class RentalApi {
   /// * [checkOutDate] 
   /// * [months] 
   /// * [guests] 
+  /// * [cursor] 
+  /// * [size] 
   /// * [xRentalPreviousSearchId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
@@ -1363,6 +1365,8 @@ class RentalApi {
     Date? checkOutDate,
     int? months,
     int? guests,
+    String? cursor,
+    int? size = 20,
     String? xRentalPreviousSearchId,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -1391,6 +1395,8 @@ class RentalApi {
       if (checkOutDate != null) r'checkOutDate': encodeQueryParameter(_serializers, checkOutDate, const FullType(Date)),
       if (months != null) r'months': encodeQueryParameter(_serializers, months, const FullType(int)),
       if (guests != null) r'guests': encodeQueryParameter(_serializers, guests, const FullType(int)),
+      if (cursor != null) r'cursor': encodeQueryParameter(_serializers, cursor, const FullType(String)),
+      if (size != null) r'size': encodeQueryParameter(_serializers, size, const FullType(int)),
     };
 
     final _response = await _dio.request<Object>(

@@ -12,6 +12,8 @@ Name | Type | Description | Notes
 **criteria** | [**RentalSearchCriteria**](RentalSearchCriteria.md) |  | 
 **calculatedAt** | [**DateTime**](DateTime.md) |  | 
 **properties** | [**BuiltList&lt;RentalSearchProperty&gt;**](RentalSearchProperty.md) |  | 
+**nextCursor** | **String** |  | 
+**hasMore** | **bool** |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

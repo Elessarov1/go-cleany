@@ -17,6 +17,7 @@ public class RentalSearchRepository {
 
     private static final String SELECT_PROPERTY = """
             property.id,
+            property.display_order,
             property.slug,
             property.title_ru,
             property.title_en,
@@ -34,10 +35,14 @@ public class RentalSearchRepository {
     public List<RentalSearchPropertyRow> findAvailable(
             LocalDate checkInDate,
             LocalDate checkOutDate,
-            int guests
+            int guests,
+            Integer afterDisplayOrder,
+            Long afterPropertyId,
+            int limit
     ) {
-        return jdbcTemplate.query(
-                """
+        if (afterDisplayOrder == null || afterPropertyId == null) {
+            return jdbcTemplate.query(
+                    """
                 select %s
                   from rental_property property
                  where property.status = 'PUBLISHED'
@@ -49,23 +54,72 @@ public class RentalSearchRepository {
                           and occupancy.date_range && daterange(?, ?, '[)')
                    )
                  order by property.display_order, property.id
-                """.formatted(SELECT_PROPERTY),
-                RentalSearchRepository::mapProperty,
-                guests,
-                checkInDate,
-                RentalDateRange.exclusiveEnd(checkOutDate)
-        );
-    }
-
-    public List<RentalSearchPropertyRow> findPublished() {
+                 limit ?
+                    """.formatted(SELECT_PROPERTY),
+                    RentalSearchRepository::mapProperty,
+                    guests,
+                    checkInDate,
+                    RentalDateRange.exclusiveEnd(checkOutDate),
+                    limit
+            );
+        }
         return jdbcTemplate.query(
                 """
                 select %s
                   from rental_property property
                  where property.status = 'PUBLISHED'
+                   and property.max_guests >= ?
+                   and (property.display_order, property.id) > (?, ?)
+                   and not exists (
+                       select 1
+                         from rental_occupancy occupancy
+                        where occupancy.property_id = property.id
+                          and occupancy.date_range && daterange(?, ?, '[)')
+                   )
                  order by property.display_order, property.id
+                 limit ?
                 """.formatted(SELECT_PROPERTY),
-                RentalSearchRepository::mapProperty
+                RentalSearchRepository::mapProperty,
+                guests,
+                afterDisplayOrder,
+                afterPropertyId,
+                checkInDate,
+                RentalDateRange.exclusiveEnd(checkOutDate),
+                limit
+        );
+    }
+
+    public List<RentalSearchPropertyRow> findPublished(
+            Integer afterDisplayOrder,
+            Long afterPropertyId,
+            int limit
+    ) {
+        if (afterDisplayOrder == null || afterPropertyId == null) {
+            return jdbcTemplate.query(
+                    """
+                    select %s
+                      from rental_property property
+                     where property.status = 'PUBLISHED'
+                     order by property.display_order, property.id
+                     limit ?
+                    """.formatted(SELECT_PROPERTY),
+                    RentalSearchRepository::mapProperty,
+                    limit
+            );
+        }
+        return jdbcTemplate.query(
+                """
+                select %s
+                  from rental_property property
+                 where property.status = 'PUBLISHED'
+                   and (property.display_order, property.id) > (?, ?)
+                 order by property.display_order, property.id
+                 limit ?
+                """.formatted(SELECT_PROPERTY),
+                RentalSearchRepository::mapProperty,
+                afterDisplayOrder,
+                afterPropertyId,
+                limit
         );
     }
 
@@ -99,6 +153,7 @@ public class RentalSearchRepository {
     ) throws SQLException {
         return new RentalSearchPropertyRow(
                 resultSet.getLong("id"),
+                resultSet.getInt("display_order"),
                 resultSet.getString("slug"),
                 resultSet.getString("title_ru"),
                 resultSet.getString("title_en"),

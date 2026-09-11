@@ -75,6 +75,7 @@ The seeder refuses to run unless the `performance` profile is active and `DB_URL
 ```powershell
 .\performance\scripts\run-local.ps1 -Scenario rental-public-flow -SkipSeed -ReuseStack
 .\performance\scripts\run-local.ps1 -Scenario rental-search -SkipSeed -ReuseStack
+.\performance\scripts\run-local.ps1 -Scenario rental-search-cursor -SkipSeed -ReuseStack
 .\performance\scripts\run-local.ps1 -Scenario image-burst -SkipSeed -ReuseStack
 .\performance\scripts\run-local.ps1 -Scenario mixed-api -SkipSeed -ReuseStack
 .\performance\scripts\run-local.ps1 -Scenario stress -SkipSeed -ReuseStack

@@ -310,8 +310,17 @@ class WebSecurityIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CACHE_CONTROL, containsString("no-store")))
                 .andExpect(jsonPath("$.searchExecutionId").isString())
-                .andExpect(jsonPath("$.criteria.mode").value("BROWSE_ALL"));
+                .andExpect(jsonPath("$.criteria.mode").value("BROWSE_ALL"))
+                .andExpect(jsonPath("$.hasMore").value(false))
+                .andExpect(jsonPath("$.nextCursor").value(org.hamcrest.Matchers.nullValue()));
         org.assertj.core.api.Assertions.assertThat(accountRepository.count()).isEqualTo(accountsBefore);
+
+        mvc.perform(get("/api/v1/rental/search").param("size", "0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("invalid_cursor"));
+        mvc.perform(get("/api/v1/rental/search").param("cursor", "damaged"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("invalid_cursor"));
 
         jdbcTemplate.update(
                 "update platform_service_state set status = 'IN_TEST' where service = 'RENTAL'"

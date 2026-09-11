@@ -281,6 +281,14 @@ export interface SearchRentalPropertiesRequest {
     /**
      * 
      */
+    cursor?: string;
+    /**
+     * 
+     */
+    size?: number;
+    /**
+     * 
+     */
     xRentalPreviousSearchId?: string;
 }
 
@@ -666,6 +674,8 @@ export interface RentalApiInterface {
      * @param {Date} [checkOutDate] 
      * @param {number} [months] 
      * @param {number} [guests] 
+     * @param {string} [cursor] 
+     * @param {number} [size] 
      * @param {string} [xRentalPreviousSearchId] 
      * @throws {RequiredError}
      * @memberof RentalApiInterface
@@ -679,6 +689,8 @@ export interface RentalApiInterface {
      * @param {Date} [checkOutDate] 
      * @param {number} [months] 
      * @param {number} [guests] 
+     * @param {string} [cursor] 
+     * @param {number} [size] 
      * @param {string} [xRentalPreviousSearchId] 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -1596,6 +1608,14 @@ export class RentalApi extends runtime.BaseAPI implements RentalApiInterface {
 
         if (requestParameters['guests'] != null) {
             queryParameters['guests'] = requestParameters['guests'];
+        }
+
+        if (requestParameters['cursor'] != null) {
+            queryParameters['cursor'] = requestParameters['cursor'];
+        }
+
+        if (requestParameters['size'] != null) {
+            queryParameters['size'] = requestParameters['size'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

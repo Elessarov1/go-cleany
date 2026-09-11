@@ -168,6 +168,8 @@ export interface RentalSearchResponse {
   criteria: RentalSearchCriteria;
   calculatedAt: string;
   properties: RentalSearchProperty[];
+  nextCursor: string | null;
+  hasMore: boolean;
 }
 
 export type RentalBookingStatus =

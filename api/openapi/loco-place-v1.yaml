@@ -657,11 +657,14 @@ paths:
         - { name: checkOutDate, in: query, required: false, schema: { type: string, format: date } }
         - { name: months, in: query, required: false, schema: { type: integer, minimum: 1 } }
         - { name: guests, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100 } }
+        - { name: cursor, in: query, required: false, schema: { type: string } }
+        - { name: size, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 20, default: 20 } }
         - { name: X-Rental-Previous-Search-Id, in: header, required: false, schema: { type: string, format: uuid } }
       responses:
         '200':
           description: Public Rental search result; response is not cacheable
           content: { application/json: { schema: { $ref: '#/components/schemas/RentalSearch' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
   /api/v1/rental/searches/{executionId}/opened:
     post:
       tags: [Rental]
@@ -1532,7 +1535,7 @@ components:
             - type: 'null'
     RentalSearch:
       type: object
-      required: [searchExecutionId, criteria, calculatedAt, properties]
+      required: [searchExecutionId, criteria, calculatedAt, properties, nextCursor, hasMore]
       properties:
         searchExecutionId: { type: string, format: uuid }
         criteria: { $ref: '#/components/schemas/RentalSearchCriteria' }
@@ -1540,6 +1543,8 @@ components:
         properties:
           type: array
           items: { $ref: '#/components/schemas/RentalSearchProperty' }
+        nextCursor: { type: [string, 'null'] }
+        hasMore: { type: boolean }
     RentalBooking:
       type: object
       required: [id, property, termType, checkInDate, checkOutDate, rentalMonths, durationDays,

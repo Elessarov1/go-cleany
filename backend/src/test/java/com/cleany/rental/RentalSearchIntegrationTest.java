@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -19,6 +20,7 @@ import com.cleany.customer.CustomerAccountService;
 import com.cleany.customer.CustomerExternalIdentityRepository;
 import com.cleany.media.MediaAssetRepository;
 import com.cleany.media.MediaProviderReferenceRepository;
+import com.cleany.pagination.InvalidCursorException;
 
 class RentalSearchIntegrationTest extends BaseIntegrationTest {
 
@@ -119,14 +121,18 @@ class RentalSearchIntegrationTest extends BaseIntegrationTest {
                 checkOut,
                 null,
                 2,
+                null,
+                null,
                 null
         );
-        RentalSearchResponse browseAll = searchService.search(null, null, null, null, null, null);
+        RentalSearchResponse browseAll = searchService.search(
+                null, null, null, null, null, null, null, null
+        );
         RentalSearchResponse atCapacity = searchService.search(
-                RentalTermType.DATE_RANGE, checkIn, checkOut, null, 5, null
+                RentalTermType.DATE_RANGE, checkIn, checkOut, null, 5, null, null, null
         );
         RentalSearchResponse overCapacity = searchService.search(
-                RentalTermType.DATE_RANGE, checkIn, checkOut, null, 6, null
+                RentalTermType.DATE_RANGE, checkIn, checkOut, null, 6, null, null, null
         );
 
         Assertions.assertAll(
@@ -148,6 +154,151 @@ class RentalSearchIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void cursorPaginationReturnsStablePagesAndOneExecutionPerSearch() {
+        List<Long> expectedIds = IntStream.rangeClosed(1, 45)
+                .mapToObj(index -> published("cursor-" + index, "100.00").id())
+                .toList();
+
+        RentalSearchResponse first = browse(null, null, null);
+        RentalSearchResponse second = browse(first.nextCursor(), null, null);
+        RentalSearchResponse third = browse(second.nextCursor(), null, null);
+        List<Long> actualIds = java.util.stream.Stream.of(first, second, third)
+                .flatMap(page -> page.properties().stream())
+                .map(RentalSearchPropertyResponse::id)
+                .toList();
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(20, first.properties().size()),
+                () -> Assertions.assertEquals(20, second.properties().size()),
+                () -> Assertions.assertEquals(5, third.properties().size()),
+                () -> Assertions.assertTrue(first.hasMore()),
+                () -> Assertions.assertTrue(second.hasMore()),
+                () -> Assertions.assertFalse(third.hasMore()),
+                () -> Assertions.assertNull(third.nextCursor()),
+                () -> Assertions.assertEquals(expectedIds, actualIds),
+                () -> Assertions.assertEquals(first.searchExecutionId(), second.searchExecutionId()),
+                () -> Assertions.assertEquals(first.searchExecutionId(), third.searchExecutionId()),
+                () -> Assertions.assertEquals(1, jdbcTemplate.queryForObject(
+                        "select count(*) from rental_search_execution",
+                        Integer.class
+                )),
+                () -> Assertions.assertEquals(20, jdbcTemplate.queryForObject(
+                        "select result_count from rental_search_execution where id = ?",
+                        Integer.class,
+                        first.searchExecutionId()
+                ))
+        );
+
+        LocalDate checkIn = stayPolicy.today().plusDays(10);
+        LocalDate checkOut = checkIn.plusDays(7);
+        RentalSearchResponse dateFirst = searchService.search(
+                RentalTermType.DATE_RANGE,
+                checkIn,
+                checkOut,
+                null,
+                2,
+                null,
+                20,
+                first.searchExecutionId()
+        );
+        RentalSearchResponse dateSecond = searchService.search(
+                RentalTermType.DATE_RANGE,
+                checkIn,
+                checkOut,
+                null,
+                2,
+                dateFirst.nextCursor(),
+                20,
+                null
+        );
+        RentalSearchResponse monthlyFirst = searchService.search(
+                RentalTermType.MONTHLY,
+                checkIn,
+                null,
+                1,
+                2,
+                null,
+                20,
+                dateFirst.searchExecutionId()
+        );
+        RentalSearchResponse monthlySecond = searchService.search(
+                RentalTermType.MONTHLY,
+                checkIn,
+                null,
+                1,
+                2,
+                monthlyFirst.nextCursor(),
+                20,
+                null
+        );
+
+        Assertions.assertAll(
+                () -> Assertions.assertEquals(20, dateSecond.properties().size()),
+                () -> Assertions.assertEquals(dateFirst.searchExecutionId(), dateSecond.searchExecutionId()),
+                () -> Assertions.assertEquals(20, monthlySecond.properties().size()),
+                () -> Assertions.assertEquals(
+                        monthlyFirst.searchExecutionId(),
+                        monthlySecond.searchExecutionId()
+                ),
+                () -> Assertions.assertEquals(first.searchExecutionId(), jdbcTemplate.queryForObject(
+                        "select previous_search_id from rental_search_execution where id = ?",
+                        UUID.class,
+                        dateFirst.searchExecutionId()
+                )),
+                () -> Assertions.assertEquals(dateFirst.searchExecutionId(), jdbcTemplate.queryForObject(
+                        "select previous_search_id from rental_search_execution where id = ?",
+                        UUID.class,
+                        monthlyFirst.searchExecutionId()
+                )),
+                () -> Assertions.assertEquals(3, jdbcTemplate.queryForObject(
+                        "select count(*) from rental_search_execution",
+                        Integer.class
+                ))
+        );
+    }
+
+    @Test
+    void invalidCursorSizeCriteriaAndPreviousSearchCombinationAreRejected() {
+        published("invalid-cursor-first", "100.00");
+        published("invalid-cursor-second", "100.00");
+        RentalSearchResponse first = browse(null, 1, null);
+        LocalDate checkIn = stayPolicy.today().plusDays(10);
+        LocalDate checkOut = checkIn.plusDays(7);
+
+        Assertions.assertAll(
+                () -> Assertions.assertThrows(
+                        InvalidCursorException.class,
+                        () -> browse("not-a-cursor", 20, null)
+                ),
+                () -> Assertions.assertThrows(
+                        InvalidCursorException.class,
+                        () -> browse(null, 0, null)
+                ),
+                () -> Assertions.assertThrows(
+                        InvalidCursorException.class,
+                        () -> browse(null, 21, null)
+                ),
+                () -> Assertions.assertThrows(
+                        InvalidCursorException.class,
+                        () -> browse(first.nextCursor(), 1, first.searchExecutionId())
+                ),
+                () -> Assertions.assertThrows(
+                        InvalidCursorException.class,
+                        () -> searchService.search(
+                                RentalTermType.DATE_RANGE,
+                                checkIn,
+                                checkOut,
+                                null,
+                                2,
+                                first.nextCursor(),
+                                1,
+                                null
+                        )
+                )
+        );
+    }
+
+    @Test
     void monthlySearchAndPublicQuoteUseTheSamePriceProjection() {
         RentalPropertyResponse property = published("monthly-search", "100.00");
         LocalDate checkIn = stayPolicy.today().plusDays(20);
@@ -159,6 +310,8 @@ class RentalSearchIntegrationTest extends BaseIntegrationTest {
                 null,
                 2,
                 3,
+                null,
+                null,
                 null
         ).properties().getFirst();
         RentalQuoteResponse quote = bookingService.quote(
@@ -228,7 +381,7 @@ class RentalSearchIntegrationTest extends BaseIntegrationTest {
     void trackingIsIdempotentAndUnknownIdsAreIgnored() {
         published("tracking", "100.00");
         RentalSearchResponse response = searchController.search(
-                null, null, null, null, null, null
+                null, null, null, null, null, null, null, null
         ).getBody();
         Assertions.assertNotNull(response);
         UUID executionId = response.searchExecutionId();
@@ -239,7 +392,7 @@ class RentalSearchIntegrationTest extends BaseIntegrationTest {
         trackingService.recordFirstCardSafely(executionId, 240);
         trackingService.recordBookingConflictSafely(executionId);
         RentalSearchResponse followUp = searchController.search(
-                null, null, null, null, null, executionId
+                null, null, null, null, null, null, null, executionId
         ).getBody();
         Assertions.assertNotNull(followUp);
         UUID unknown = UUID.randomUUID();
@@ -278,7 +431,9 @@ class RentalSearchIntegrationTest extends BaseIntegrationTest {
         LocalDate checkIn = stayPolicy.today().plusDays(10);
         Assertions.assertThrows(
                 InvalidRentalBookingException.class,
-                () -> searchService.search(null, checkIn, null, null, null, null)
+                () -> searchService.search(
+                        null, checkIn, null, null, null, null, null, null
+                )
         );
         jdbcTemplate.update("""
                 update platform_service_state set status = 'DISABLED', version = version + 1
@@ -287,7 +442,9 @@ class RentalSearchIntegrationTest extends BaseIntegrationTest {
         clearPlatformServiceStateCache();
         Assertions.assertThrows(
                 PlatformServiceNotAvailableException.class,
-                () -> searchService.search(null, null, null, null, null, null)
+                () -> searchService.search(
+                        null, null, null, null, null, null, null, null
+                )
         );
     }
 
@@ -297,6 +454,19 @@ class RentalSearchIntegrationTest extends BaseIntegrationTest {
                 mediaService,
                 slug,
                 new BigDecimal(dailyPrice)
+        );
+    }
+
+    private RentalSearchResponse browse(String cursor, Integer size, UUID previousSearchId) {
+        return searchService.search(
+                null,
+                null,
+                null,
+                null,
+                null,
+                cursor,
+                size,
+                previousSearchId
         );
     }
 

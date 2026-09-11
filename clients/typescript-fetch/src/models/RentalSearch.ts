@@ -50,6 +50,14 @@ export interface RentalSearch {
      * 
      */
     properties: Array<RentalSearchProperty>;
+    /**
+     * 
+     */
+    nextCursor: string | null;
+    /**
+     * 
+     */
+    hasMore: boolean;
 }
 
 /**
@@ -60,6 +68,8 @@ export function instanceOfRentalSearch(value: object): value is RentalSearch {
     if (!('criteria' in value) || value['criteria'] === undefined) return false;
     if (!('calculatedAt' in value) || value['calculatedAt'] === undefined) return false;
     if (!('properties' in value) || value['properties'] === undefined) return false;
+    if (!('nextCursor' in value) || value['nextCursor'] === undefined) return false;
+    if (!('hasMore' in value) || value['hasMore'] === undefined) return false;
     return true;
 }
 
@@ -77,6 +87,8 @@ export function RentalSearchFromJSONTyped(json: any, ignoreDiscriminator: boolea
         'criteria': RentalSearchCriteriaFromJSON(json['criteria']),
         'calculatedAt': (json['calculatedAt'] == null ? json['calculatedAt'] : parseDateTime(json['calculatedAt'])),
         'properties': ((json['properties'] as Array<any>).map(RentalSearchPropertyFromJSON)),
+        'nextCursor': json['nextCursor'],
+        'hasMore': json['hasMore'],
     };
 }
 
@@ -95,6 +107,8 @@ export function RentalSearchToJSONTyped(value?: RentalSearch | null, ignoreDiscr
         'criteria': RentalSearchCriteriaToJSON(value['criteria']),
         'calculatedAt': value['calculatedAt'] == null ? value['calculatedAt'] : serializeDateTime(value['calculatedAt']),
         'properties': ((value['properties'] as Array<any>).map(RentalSearchPropertyToJSON)),
+        'nextCursor': value['nextCursor'],
+        'hasMore': value['hasMore'],
     };
 }
 

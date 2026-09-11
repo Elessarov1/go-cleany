@@ -34,8 +34,12 @@ export function RentalCatalogPage() {
   const [activeRequest, setActiveRequest] = useState<RentalSearchRequest | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const generation = useRef(0);
+  const loadMoreController = useRef<AbortController | null>(null);
+  const loadingMoreRef = useRef(false);
   const pendingPreviousExecution = useRef<string | undefined>(undefined);
   const lastAppliedKey = useRef<string | null>(null);
   const searchStartedAt = useRef(0);
@@ -59,6 +63,11 @@ export function RentalCatalogPage() {
     setDraft(parsed.draft);
     setErrors(parsed.errors);
     setSearchError(false);
+    loadMoreController.current?.abort();
+    loadMoreController.current = null;
+    loadingMoreRef.current = false;
+    setLoadingMore(false);
+    setLoadMoreError(false);
     if (!parsed.applied) {
       generation.current += 1;
       setSearching(false);
@@ -78,7 +87,7 @@ export function RentalCatalogPage() {
     setSearching(true);
     setResponse(null);
     setActiveRequest(request);
-    api.search(request, controller.signal, previous)
+    api.search(request, { signal: controller.signal, previousSearchId: previous, size: 20 })
       .then((value) => {
         if (currentGeneration !== generation.current) return;
         rememberRentalSearchExecution(request, value.searchExecutionId);
@@ -92,7 +101,10 @@ export function RentalCatalogPage() {
       .finally(() => {
         if (currentGeneration === generation.current) setSearching(false);
       });
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      loadMoreController.current?.abort();
+    };
   }, [api, configuration, query, refreshKey]);
 
   useEffect(() => {
@@ -123,6 +135,53 @@ export function RentalCatalogPage() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
     applyRequest(rentalSearchRequestFromDraft(draft));
+  };
+
+  const loadMore = () => {
+    if (
+      loadingMoreRef.current
+      || !response?.hasMore
+      || !response.nextCursor
+      || !activeRequest
+    ) return;
+    const currentGeneration = generation.current;
+    const executionId = response.searchExecutionId;
+    const controller = new AbortController();
+    loadMoreController.current?.abort();
+    loadMoreController.current = controller;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    setLoadMoreError(false);
+    api.search(activeRequest, {
+      signal: controller.signal,
+      cursor: response.nextCursor,
+      size: 20,
+    })
+      .then((nextPage) => {
+        if (currentGeneration !== generation.current || controller.signal.aborted) return;
+        setResponse((current) => {
+          if (!current || current.searchExecutionId !== executionId) return current;
+          const knownIds = new Set(current.properties.map((property) => property.id));
+          const newProperties = nextPage.properties.filter((property) => !knownIds.has(property.id));
+          return {
+            ...current,
+            properties: [...current.properties, ...newProperties],
+            nextCursor: nextPage.nextCursor,
+            hasMore: nextPage.hasMore,
+          };
+        });
+      })
+      .catch((error: unknown) => {
+        if (currentGeneration !== generation.current) return;
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setLoadMoreError(true);
+      })
+      .finally(() => {
+        if (currentGeneration !== generation.current || loadMoreController.current !== controller) return;
+        loadMoreController.current = null;
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
+      });
   };
 
   if (configurationError) {
@@ -156,11 +215,28 @@ export function RentalCatalogPage() {
           <div className="rental-search-results__heading">
             <div>
               <span className="eyebrow">{t("rental.search.resultsEyebrow")}</span>
-              <h2>{t("rental.search.results", { count: response.properties.length })}</h2>
+              <h2>{t(response.hasMore ? "rental.search.resultsMore" : "rental.search.results", {
+                count: response.properties.length,
+              })}</h2>
             </div>
             <RentalAppliedCriteria criteria={response.criteria} locale={locale} />
           </div>
           <RentalSearchResults response={response} request={activeRequest} language={language} locale={locale} />
+          {response.hasMore ? (
+            <div className="rental-search-more">
+              {loadMoreError ? <p role="alert">{t("rental.search.loadMoreError")}</p> : null}
+              <button
+                className="button button--secondary button--full"
+                type="button"
+                disabled={loadingMore}
+                onClick={loadMore}
+              >
+                {loadingMore
+                  ? t("rental.search.loadingMore")
+                  : t(loadMoreError ? "rental.search.retryLoadMore" : "rental.search.loadMore")}
+              </button>
+            </div>
+          ) : null}
         </section>
       ) : null}
       {searching ? <RentalSearchSkeleton label={t("rental.search.searching")} /> : null}
